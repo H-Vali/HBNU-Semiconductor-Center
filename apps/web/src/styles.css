@@ -40,6 +40,66 @@ select {
   background-size: cover;
 }
 
+.brand-mark {
+  position: relative;
+  display: grid;
+  width: 3.25rem;
+  height: 3.25rem;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgba(125, 211, 252, 0.38);
+  background: rgba(34, 211, 238, 0.1);
+  color: #bae6fd;
+  box-shadow: 0 0 28px rgba(34, 211, 238, 0.16);
+}
+
+.brand-mark::after {
+  content: "";
+  position: absolute;
+  right: 0.15rem;
+  top: 0.15rem;
+  width: 0.72rem;
+  height: 0.72rem;
+  border-radius: 999px;
+  background: #5eead4;
+  box-shadow: 0 0 0 0 rgba(94, 234, 212, 0.8);
+  animation: activePulse 1.7s ease-out infinite;
+}
+
+.stat-card {
+  min-height: 13rem;
+}
+
+.stat-icon {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.active-indicator {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-radius: 999px;
+  background: #5eead4;
+  box-shadow: 0 0 0 0 rgba(94, 234, 212, 0.8);
+  animation: activePulse 1.7s ease-out infinite;
+}
+
+@keyframes activePulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(94, 234, 212, 0.75);
+    opacity: 1;
+  }
+
+  70% {
+    box-shadow: 0 0 0 0.65rem rgba(94, 234, 212, 0);
+    opacity: 0.78;
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(94, 234, 212, 0);
+    opacity: 1;
+  }
+}
+
 .wafer-visual {
   position: absolute;
   inset: 0;
@@ -127,6 +187,19 @@ select {
 
 .chart-card {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.facility-tab {
+  display: block;
+  min-height: 30rem;
+}
+
+.facility-tab img {
+  transition: transform 0.3s ease;
+}
+
+.facility-tab:hover img {
+  transform: scale(1.035);
 }
 
 .fc {
