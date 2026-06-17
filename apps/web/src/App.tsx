@@ -1,14 +1,24 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
+} from 'recharts';
 import {
   BookOpen,
   CalendarDays,
   CheckCircle2,
   CircuitBoard,
-  Clock,
   Cpu,
   Download,
   Factory,
@@ -22,28 +32,32 @@ import {
   Search,
   ShieldCheck,
   SlidersHorizontal,
-  Trash2,
   TrendingDown,
   TrendingUp,
   UserRound,
   Wrench
 } from 'lucide-react';
-import { equipment as fallbackEquipment, events as defaultEvents, monthlyUsage, type CalendarEvent, type EquipmentGroup, type EquipmentItem } from './data';
+import { equipment as fallbackEquipment, events, monthlyUsage, type EquipmentGroup, type EquipmentItem } from './data';
 
 type PageKey = 'home' | 'facility' | 'equipment' | 'training' | 'reservations' | 'mypage' | 'admin' | 'login';
 type Role = 'USER' | 'ADMIN';
-type EquipmentSubTab = 'status' | 'list';
-type GroupFilter = EquipmentGroup | 'all';
-
 type ApiEquipmentItem = Partial<EquipmentItem> & { imageUrl?: string; usageConditions?: string };
+type ReservationEvent = {
+  id: string;
+  title: string;
+  start: string;
+  end?: string;
+  status?: string;
+};
 
 const apiUrl = ((import.meta as ImportMeta & { env?: Record<string, string> }).env?.VITE_API_URL) ?? 'http://localhost:4000';
 
 const menu: Array<{ label: string; page: PageKey; icon: typeof Factory; admin?: boolean }> = [
-  { label: '시설소개', page: 'facility', icon: Factory },
+  { label: '센터소개', page: 'facility', icon: Factory },
+  { label: '시설안내', page: 'facility', icon: LayoutDashboard },
   { label: '장비현황', page: 'equipment', icon: Wrench },
   { label: '장비예약현황', page: 'reservations', icon: CalendarDays },
-  { label: '장비사용교육', page: 'training', icon: GraduationCap },
+  { label: '교육신청', page: 'training', icon: GraduationCap },
   { label: '마이페이지', page: 'mypage', icon: UserRound },
   { label: '관리자', page: 'admin', icon: ShieldCheck, admin: true }
 ];
@@ -58,7 +72,7 @@ const categoryMeta: Record<EquipmentGroup, { title: string; subtitle: string; im
   process: {
     title: '공정',
     subtitle: '박막, 노광, 식각, 열처리 장비',
-    image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1200&q=85',
+    image: 'https://images.unsplash.com/photo-1562408590-e32931084e23?auto=format&fit=crop&w=1200&q=85',
     bullets: ['Lithography / Coating', 'Deposition / Etching', 'Thermal Process', 'Packaging Support']
   },
   metrology: {
@@ -88,8 +102,8 @@ function normalizeEquipment(item: ApiEquipmentItem, index: number): EquipmentIte
     name,
     category: inferredGroup === 'process' ? '공정장비' : '측정 및 분석장비',
     group: inferredGroup,
-    groupName: inferredGroup === 'process' ? '공정' : '측정·분석',
-    location: item.location ?? `실습실 ${Math.floor(index / 6) + 1}`,
+    groupName: inferredGroup === 'process' ? '공정' : '측정 및 분석',
+    location: item.location ?? `공정동 ${Math.floor(index / 6) + 1}층`,
     image: item.image ?? item.imageUrl ?? fallbackEquipment[index % fallbackEquipment.length].image,
     features: item.features ?? ['예약 캘린더', '교육 인증', '사용 로그'],
     condition: item.condition ?? item.usageConditions ?? '교육 이수 후 사용 가능',
@@ -122,7 +136,7 @@ function useEquipmentData() {
     return () => controller.abort();
   }, []);
 
-  return { items, setItems, source };
+  return { items, source };
 }
 
 function downloadCsv(filename: string, rows: Array<Record<string, string | number>>) {
@@ -138,14 +152,18 @@ function downloadCsv(filename: string, rows: Array<Record<string, string | numbe
   URL.revokeObjectURL(url);
 }
 
-function SectionTitle({ title, eyebrow, action }: { title: string; eyebrow?: string; action?: React.ReactNode }) {
+function SectionTitle({ title, eyebrow, action }: { title: string; eyebrow?: string; action?: string | ReactNode }) {
   return (
-    <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+    <div className="mb-5 flex items-center justify-between gap-3">
       <div>
         {eyebrow && <p className="text-sm font-bold uppercase text-cyan-300">{eyebrow}</p>}
         <h2 className="mt-1 text-2xl font-extrabold text-white">{title}</h2>
       </div>
-      {action}
+      {typeof action === 'string' ? (
+        <button className="rounded-md bg-blue-700 px-5 py-2.5 text-sm font-bold text-white hover:bg-cyan-500 hover:text-slate-950">
+          {action}
+        </button>
+      ) : action}
     </div>
   );
 }
@@ -163,7 +181,15 @@ function LoadingOverlay({ visible }: { visible: boolean }) {
   );
 }
 
-function InstitutionHeader({ activePage, onNavigate, sessionRole }: { activePage: PageKey; onNavigate: (page: PageKey) => void; sessionRole: Role | null }) {
+function InstitutionHeader({
+  activePage,
+  onNavigate,
+  sessionRole
+}: {
+  activePage: PageKey;
+  onNavigate: (page: PageKey) => void;
+  sessionRole: Role | null;
+}) {
   return (
     <header className="sticky top-0 z-20 border-b border-white/10 bg-slate-950/90 backdrop-blur">
       <div className="mx-auto flex max-w-[1800px] items-center justify-between gap-5 px-5 py-3 2xl:px-8">
@@ -173,7 +199,7 @@ function InstitutionHeader({ activePage, onNavigate, sessionRole }: { activePage
           </div>
           <div>
             <p className="text-xs font-bold text-cyan-300">HBNU SEMICONDUCTOR CENTER</p>
-            <h1 className="text-lg font-extrabold text-white sm:text-xl">인프라 통합 관리 Web</h1>
+            <h1 className="text-lg font-extrabold text-white sm:text-xl">반도체 장비 공동활용 플랫폼</h1>
           </div>
         </button>
         <nav className="hidden items-center gap-1 xl:flex">
@@ -250,9 +276,9 @@ function Hero({ onNavigate }: { onNavigate: (page: PageKey) => void }) {
               { label: 'Etching', value: '9 recipes', tone: 'text-violet-300' },
               { label: 'Metrology', value: '41 samples', tone: 'text-amber-300' }
             ].map((item) => (
-              <div key={item.label} className="rounded-md border border-white/10 bg-slate-950/80 p-4">
-                <p className={`text-sm font-extrabold uppercase ${item.tone}`}>{item.label}</p>
-                <p className="mt-2 text-3xl font-extrabold text-white">{item.value}</p>
+              <div key={item.label} className="rounded-md border border-white/10 bg-slate-950/80 p-4 backdrop-blur">
+                <p className={`text-sm font-bold uppercase ${item.tone}`}>{item.label}</p>
+                <p className="mt-1 text-3xl font-extrabold text-white">{item.value}</p>
               </div>
             ))}
           </div>
@@ -262,403 +288,337 @@ function Hero({ onNavigate }: { onNavigate: (page: PageKey) => void }) {
   );
 }
 
-function Dashboard({ equipmentItems, calendarEvents, onNavigate }: { equipmentItems: EquipmentItem[]; calendarEvents: CalendarEvent[]; onNavigate: (page: PageKey) => void }) {
-  const totals = useMemo(() => {
-    const usage = equipmentItems.reduce((sum, item) => sum + item.usageHours, 0);
-    const certified = Math.round(equipmentItems.length * 13);
-    return { usage, certified, process: equipmentItems.filter((item) => item.group === 'process').length, metrology: equipmentItems.filter((item) => item.group === 'metrology').length };
-  }, [equipmentItems]);
+function StatGrid({ equipmentItems }: { equipmentItems: EquipmentItem[] }) {
+  const totalHours = monthlyUsage[monthlyUsage.length - 1].hours;
+  const monthlyDelta = monthlyUsage[monthlyUsage.length - 1].delta;
+  const averageUtilization = Math.round(equipmentItems.reduce((sum, item) => sum + item.utilization, 0) / equipmentItems.length);
+
+  const statCards = [
+    { label: '운영 장비', value: `${equipmentItems.length}종`, detail: '공정, 측정 및 분석', icon: Wrench, trend: 'neutral' as const },
+    { label: '월간 장비 총 가동 시간', value: `${totalHours.toLocaleString()}h`, detail: `전월 대비 ${monthlyDelta > 0 ? '+' : ''}${monthlyDelta}%`, icon: Gauge, trend: monthlyDelta >= 0 ? 'up' as const : 'down' as const },
+    { label: '교육 인증', value: '312명', detail: '최근 30일 27명', icon: CheckCircle2, trend: 'neutral' as const },
+    { label: 'FAB 가동률', value: `${averageUtilization}%`, detail: 'Cleanroom active', icon: Cpu, trend: 'neutral' as const }
+  ];
 
   return (
-    <div className="space-y-6">
-      <Hero onNavigate={onNavigate} />
-      <div className="grid gap-4 lg:grid-cols-4">
-        {[
-          { label: '운영 장비', value: `${equipmentItems.length}종`, detail: `공정 ${totals.process} / 측정 ${totals.metrology}`, icon: Wrench },
-          { label: '월간 장비 총 가동 시간', value: `${totals.usage.toLocaleString()}h`, detail: '전월 대비 +18%', icon: Gauge, delta: 18 },
-          { label: '교육 인증', value: `${totals.certified}명`, detail: '최근 30일 27명', icon: CheckCircle2 },
-          { label: 'FAB 가동률', value: '86%', detail: 'Cleanroom active', icon: Cpu }
-        ].map((item) => {
-          const Icon = item.icon;
-          return (
-            <div key={item.label} className="stat-card rounded-lg border border-white/10 bg-slate-800/80 p-6">
-              <div className="flex items-start justify-between">
-                <div className="stat-icon grid h-11 w-11 place-items-center rounded-md bg-slate-950/60 text-cyan-200">
-                  <Icon size={23} />
-                </div>
-                <span className="active-indicator" />
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      {statCards.map((card) => {
+        const Icon = card.icon;
+        const trendColor = card.trend === 'up' ? 'text-emerald-300' : card.trend === 'down' ? 'text-rose-300' : 'text-slate-400';
+        const TrendIcon = card.trend === 'down' ? TrendingDown : TrendingUp;
+
+        return (
+          <div key={card.label} className="stat-card rounded-lg border border-white/10 bg-surface/85 p-6">
+            <div className="mb-6 flex items-center justify-between">
+              <div className="stat-icon rounded-md bg-cyan-300/10 p-3 text-cyan-300">
+                <Icon size={25} />
               </div>
-              <p className="mt-6 text-base font-bold text-sky-200">{item.label}</p>
-              <p className="mt-2 text-4xl font-black text-white">{item.value}</p>
-              <p className={`mt-2 flex items-center gap-1 text-base ${item.delta && item.delta < 0 ? 'text-red-300' : item.delta ? 'text-emerald-300' : 'text-slate-300'}`}>
-                {item.delta ? item.delta > 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} /> : null}
-                {item.detail}
-              </p>
+              <span className="active-indicator" aria-label="Active equipment status" />
             </div>
-          );
-        })}
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-[1fr_0.9fr]">
-        <UsageBarChart equipmentItems={equipmentItems} />
-        <div className="rounded-lg border border-white/10 bg-slate-900/75 p-5">
-          <SectionTitle title="월간 장비 총 가동 시간" eyebrow="Monthly Runtime" />
-          <div className="h-[360px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={monthlyUsage} margin={{ left: 0, right: 16, top: 16, bottom: 4 }}>
-                <defs>
-                  <linearGradient id="usageGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#a855f7" stopOpacity={0.55} />
-                    <stop offset="100%" stopColor="#f97316" stopOpacity={0.02} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid stroke="rgba(148,163,184,0.14)" vertical={false} />
-                <XAxis dataKey="month" stroke="#9fb3c8" tickLine={false} axisLine={false} />
-                <YAxis stroke="#9fb3c8" tickFormatter={(value) => `${value}h`} tickLine={false} axisLine={false} />
-                <Tooltip contentStyle={{ background: '#020617', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8 }} />
-                <Area type="monotone" dataKey="hours" stroke="#d946ef" strokeWidth={3} fill="url(#usageGradient)" activeDot={{ r: 6, fill: '#f97316' }} />
-              </AreaChart>
-            </ResponsiveContainer>
+            <p className="text-base font-semibold text-slate-300">{card.label}</p>
+            <p className="mt-2 text-4xl font-extrabold text-white">{card.value}</p>
+            <p className={`mt-2 flex items-center gap-1.5 text-base font-semibold ${trendColor}`}>
+              {card.trend !== 'neutral' && <TrendIcon size={17} />}
+              {card.detail}
+            </p>
           </div>
-        </div>
-      </div>
-
-      <div className="rounded-lg border border-white/10 bg-slate-900/75 p-5">
-        <SectionTitle title="장비 예약 현황" eyebrow="Equipment Calendar" action={<button className="rounded-md bg-blue-700 px-4 py-2 text-sm font-bold text-white hover:bg-cyan-400 hover:text-slate-950" onClick={() => onNavigate('reservations')}>전체 보기</button>} />
-        <CalendarView events={calendarEvents} height={470} />
-      </div>
+        );
+      })}
     </div>
   );
 }
 
-function UsageBarChart({ equipmentItems }: { equipmentItems: EquipmentItem[] }) {
-  const chartData = equipmentItems.map((item) => ({ name: item.name.replace('Semiconductor ', ''), hours: item.usageHours, group: item.group }));
+function EquipmentUsageChart({ equipmentItems }: { equipmentItems: EquipmentItem[] }) {
+  const data = equipmentItems.map((item) => ({ label: item.name.replace('Semiconductor ', ''), value: item.usageHours, group: item.group }));
+  const maxValue = Math.max(...data.map((entry) => entry.value));
+  const minValue = Math.min(...data.map((entry) => entry.value));
 
   return (
-    <div className="rounded-lg border border-white/10 bg-slate-900/75 p-5">
-      <SectionTitle title="장비별 사용량" eyebrow="Realtime Analytics" />
-      <div className="h-[360px]">
+    <div className="chart-card rounded-lg border border-white/10 bg-[#101114] p-5">
+      <div className="mb-4 flex items-start justify-between gap-4">
+        <div>
+          <p className="text-sm font-bold uppercase text-blue-300">Realtime Analytics</p>
+          <h3 className="mt-1 text-2xl font-extrabold text-white">장비별 사용량</h3>
+        </div>
+        <div className="flex gap-2 text-sm font-bold text-slate-300">
+          <span className="rounded-full bg-white/10 px-3 py-1">24H</span>
+          <span className="rounded-full px-3 py-1">1W</span>
+          <span className="rounded-full px-3 py-1">1M</span>
+        </div>
+      </div>
+      <div className="h-[24rem] 2xl:h-[30rem]">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData} margin={{ left: 0, right: 12, top: 18, bottom: 44 }}>
-            <CartesianGrid stroke="rgba(148,163,184,0.14)" vertical={false} />
-            <XAxis dataKey="name" stroke="#9fb3c8" tickLine={false} axisLine={false} angle={-18} textAnchor="end" interval={0} height={68} />
-            <YAxis stroke="#9fb3c8" tickFormatter={(value) => `${value}h`} tickLine={false} axisLine={false} />
-            <Tooltip cursor={false} contentStyle={{ background: '#020617', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8 }} />
-            <Bar className="usage-bar-series" dataKey="hours" radius={[8, 8, 2, 2]}>
-              {chartData.map((item) => (
-                <Cell key={item.name} fill={item.group === 'process' ? '#38bdf8' : '#a78bfa'} />
+          <BarChart data={data} margin={{ top: 22, right: 22, left: 0, bottom: 0 }}>
+            <CartesianGrid stroke="rgba(255,255,255,.08)" vertical={false} />
+            <XAxis dataKey="label" stroke="#a8adb8" tickLine={false} axisLine={false} interval="preserveStartEnd" />
+            <YAxis stroke="#a8adb8" tickLine={false} axisLine={false} tickFormatter={(value) => `${value}h`} width={54} />
+            <Tooltip cursor={false} contentStyle={{ background: '#050607', border: '1px solid rgba(255,255,255,.12)', borderRadius: '8px', color: '#fff' }} labelStyle={{ color: '#aeb6c2' }} formatter={(value) => [`${value}h`, '사용시간']} />
+            <Bar className="usage-bar-series" dataKey="value" radius={[8, 8, 2, 2]}>
+              {data.map((entry) => (
+                <Cell key={entry.label} className="usage-bar-cell" fill={entry.group === 'process' ? '#22d3ee' : '#a78bfa'} />
               ))}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-400">
+        <div className="flex gap-3">
+          <span>Low: {minValue}h</span>
+          <span>High: {maxValue}h</span>
+        </div>
+        <div className="flex gap-3">
+          <span className="inline-flex items-center gap-2 text-white"><span className="h-3 w-3 rounded-sm bg-cyan-300" /> 공정</span>
+          <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-sm bg-violet-400" /> 측정 및 분석</span>
+        </div>
+      </div>
     </div>
   );
 }
 
-function CalendarView({ events, height }: { events: CalendarEvent[]; height: number }) {
+function MonthlyUsageChart() {
+  const maxValue = Math.max(...monthlyUsage.map((entry) => entry.hours));
+  const minValue = Math.min(...monthlyUsage.map((entry) => entry.hours));
+
   return (
-    <FullCalendar
-      plugins={[dayGridPlugin, interactionPlugin]}
-      initialView="dayGridMonth"
-      initialDate="2026-06-17"
-      height={height}
-      events={events.map((event) => ({
-        ...event,
-        classNames: [`reservation-${event.status}`]
-      }))}
-      headerToolbar={{ left: 'title', center: '', right: 'today prev,next' }}
-      dayMaxEventRows={3}
-    />
+    <div className="chart-card rounded-lg border border-white/10 bg-[#101114] p-5">
+      <div className="mb-4 flex items-start justify-between gap-4">
+        <div>
+          <p className="text-sm font-bold uppercase text-blue-300">Realtime Analytics</p>
+          <h3 className="mt-1 text-2xl font-extrabold text-white">월별 총 장비 사용시간</h3>
+        </div>
+        <div className="flex gap-2 text-sm font-bold text-slate-300">
+          <span className="rounded-full bg-white/10 px-3 py-1">24H</span>
+          <span className="rounded-full px-3 py-1">1W</span>
+          <span className="rounded-full px-3 py-1">1M</span>
+        </div>
+      </div>
+      <div className="h-[24rem] 2xl:h-[30rem]">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={monthlyUsage} margin={{ top: 22, right: 22, left: 0, bottom: 0 }}>
+            <defs>
+              <linearGradient id="monthly-stroke" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#22d3ee" />
+                <stop offset="55%" stopColor="#8b5cf6" />
+                <stop offset="100%" stopColor="#d46ab8" />
+              </linearGradient>
+              <linearGradient id="monthly-area" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.24} />
+                <stop offset="65%" stopColor="#8b5cf6" stopOpacity={0.08} />
+                <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid stroke="rgba(255,255,255,.08)" vertical={false} />
+            <XAxis dataKey="month" stroke="#a8adb8" tickLine={false} axisLine={false} />
+            <YAxis stroke="#a8adb8" tickLine={false} axisLine={false} tickFormatter={(value) => `${value}h`} width={54} />
+            <Tooltip contentStyle={{ background: '#050607', border: '1px solid rgba(255,255,255,.12)', borderRadius: '8px', color: '#fff' }} labelStyle={{ color: '#aeb6c2' }} formatter={(value) => [`${value}h`, '총 장비 사용시간']} />
+            <Area type="monotone" dataKey="hours" stroke="url(#monthly-stroke)" strokeWidth={3} fill="url(#monthly-area)" dot={false} activeDot={{ r: 6, fill: '#8b5cf6', stroke: '#111', strokeWidth: 2 }} />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-400">
+        <div className="flex gap-3">
+          <span>Low: {minValue}h</span>
+          <span>High: {maxValue}h</span>
+        </div>
+        <span className="inline-flex items-center gap-2 text-white"><span className="h-3 w-3 rounded-sm bg-violet-400" /> 총 장비 사용시간</span>
+      </div>
+    </div>
   );
 }
 
-function EquipmentPage({
-  equipmentItems,
-  setEquipmentItems,
-  source,
-  sessionRole
-}: {
-  equipmentItems: EquipmentItem[];
-  setEquipmentItems: React.Dispatch<React.SetStateAction<EquipmentItem[]>>;
-  source: 'api' | 'fallback';
-  sessionRole: Role | null;
-}) {
-  const [equipmentTab, setEquipmentTab] = useState<EquipmentSubTab>('status');
-  const [activeGroup, setActiveGroup] = useState<EquipmentGroup>('process');
-  const [showAddModal, setShowAddModal] = useState(false);
-  const isAdmin = sessionRole === 'ADMIN';
-  const filtered = equipmentItems.filter((item) => item.group === activeGroup);
-
-  const addEquipment = (item: Omit<EquipmentItem, 'id' | 'category' | 'groupName' | 'features' | 'utilization' | 'usageHours' | 'image'>) => {
-    const image = item.group === 'process' ? categoryMeta.process.image : categoryMeta.metrology.image;
-    setEquipmentItems((prev) => [
-      ...prev,
-      {
-        ...item,
-        id: `eq-${Date.now()}`,
-        category: item.group === 'process' ? '공정장비' : '측정 및 분석장비',
-        groupName: item.group === 'process' ? '공정' : '측정·분석',
-        image,
-        features: ['예약 캘린더', '교육 인증', '사용 로그'],
-        utilization: 0,
-        usageHours: 0
-      }
-    ]);
-    setShowAddModal(false);
+function EquipmentGateway({ equipmentItems, onOpen }: { equipmentItems: EquipmentItem[]; onOpen: (group: EquipmentGroup) => void }) {
+  const grouped = {
+    process: equipmentItems.filter((item) => item.group === 'process'),
+    metrology: equipmentItems.filter((item) => item.group === 'metrology')
   };
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap gap-2">
-        {[
-          { key: 'status', label: '장비현황' },
-          { key: 'list', label: '장비목록' }
-        ].map((tab) => (
-          <button key={tab.key} className={`rounded-md px-5 py-2.5 text-sm font-extrabold ${equipmentTab === tab.key ? 'bg-cyan-300 text-slate-950' : 'bg-slate-800 text-slate-200 hover:bg-blue-700 hover:text-white'}`} onClick={() => setEquipmentTab(tab.key as EquipmentSubTab)}>
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {equipmentTab === 'status' ? (
-        <div className="rounded-lg border border-white/10 bg-slate-900/75 p-5">
-          <SectionTitle title="장비현황" eyebrow="3D Lab Floor Status" />
-          <LabFloorPlan equipmentItems={equipmentItems} />
-        </div>
-      ) : (
-        <div className="rounded-lg border border-white/10 bg-slate-900/75 p-5">
-          <SectionTitle
-            title="장비목록"
-            eyebrow="Equipment Inventory"
-            action={
-              isAdmin ? (
-                <button className="inline-flex items-center gap-2 rounded-md bg-blue-700 px-4 py-2 text-sm font-bold text-white hover:bg-cyan-300 hover:text-slate-950" onClick={() => setShowAddModal(true)}>
-                  <Plus size={16} /> 장비추가
-                </button>
-              ) : null
-            }
-          />
-          <div className="grid gap-4 lg:grid-cols-2">
-            {(Object.keys(categoryMeta) as EquipmentGroup[]).map((group) => {
-              const meta = categoryMeta[group];
-              const count = equipmentItems.filter((item) => item.group === group).length;
-              return (
-                <button key={group} className={`category-gateway text-left ${activeGroup === group ? 'selected' : ''}`} onClick={() => setActiveGroup(group)}>
-                  <img src={meta.image} alt="" />
-                  <div className="category-overlay">
-                    <p className="text-xl font-extrabold text-white">{meta.title}</p>
-                    <p className="mt-1 text-sm font-bold text-sky-100">{meta.subtitle}</p>
-                    <p className="mt-5 text-sm text-slate-300">등록 장비</p>
-                    <strong className="text-3xl text-white">{count}종</strong>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-          <div className="mt-4 flex justify-end text-xs text-slate-400">데이터 소스: {source === 'api' ? 'API 연동' : '로컬 fallback'}</div>
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {filtered.map((item) => (
-              <article key={item.id} className="equipment-card overflow-hidden rounded-lg border border-white/10 bg-slate-800">
-                <img className="h-36 w-full object-cover" src={item.image} alt="" />
-                <div className="p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <span className={`rounded px-2 py-1 text-[11px] font-extrabold ${item.group === 'process' ? 'bg-sky-400/15 text-sky-200' : 'bg-violet-400/15 text-violet-200'}`}>{item.groupName}</span>
-                      <h3 className="mt-3 text-lg font-extrabold text-white">{item.name}</h3>
-                    </div>
-                    {isAdmin && (
-                      <button className="rounded-md border border-red-300/30 p-2 text-red-200 hover:bg-red-500 hover:text-white" title="장비 삭제" onClick={() => setEquipmentItems((prev) => prev.filter((target) => target.id !== item.id))}>
-                        <Trash2 size={16} />
-                      </button>
-                    )}
-                  </div>
-                  <p className="mt-2 text-sm text-slate-300">{item.condition}</p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <button className="rounded border border-white/10 px-2.5 py-1.5 text-xs font-bold text-slate-200 hover:border-cyan-300 hover:text-cyan-200">예약 캘린더</button>
-                    <button className="rounded border border-white/10 px-2.5 py-1.5 text-xs font-bold text-slate-200 hover:border-cyan-300 hover:text-cyan-200">교육 인증</button>
-                    <button className="rounded border border-white/10 px-2.5 py-1.5 text-xs font-bold text-slate-200 hover:border-cyan-300 hover:text-cyan-200">사용 로그</button>
-                  </div>
+    <section className="mt-5" id="장비목록요약">
+      <SectionTitle title="장비 목록" eyebrow="Equipment Inventory" action="장비 추가" />
+      <div className="grid gap-5 lg:grid-cols-2">
+        {(Object.keys(categoryMeta) as EquipmentGroup[]).map((group) => {
+          const meta = categoryMeta[group];
+          return (
+            <button key={group} className="facility-tab compact overflow-hidden rounded-lg border border-white/10 bg-surface/85 text-left hover:border-cyan-300/70" onClick={() => onOpen(group)}>
+              <div className="relative h-56 overflow-hidden">
+                <img className="h-full w-full object-cover" src={meta.image} alt={meta.title} />
+                <div className="absolute inset-x-0 bottom-0 bg-blue-950/80 px-6 py-4">
+                  <h3 className="text-2xl font-extrabold text-white">{meta.title}</h3>
+                  <p className="mt-1 text-sm font-semibold text-cyan-100">{meta.subtitle}</p>
                 </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {showAddModal && <EquipmentAddModal onClose={() => setShowAddModal(false)} onSubmit={addEquipment} />}
-    </div>
+              </div>
+              <div className="p-6">
+                <div className="mb-4 h-0.5 w-8 bg-blue-500" />
+                <div className="mb-4 flex items-end justify-between">
+                  <div>
+                    <p className="text-sm font-bold text-slate-400">등록 장비</p>
+                    <p className="mt-1 text-3xl font-extrabold text-white">{grouped[group].length}종</p>
+                  </div>
+                  <span className="rounded-md bg-white/10 px-3 py-1 text-sm font-bold text-cyan-200">보기</span>
+                </div>
+                <ul className="grid gap-2 text-sm text-slate-300">
+                  {meta.bullets.map((bullet) => (
+                    <li key={bullet} className="flex gap-2"><span className="text-slate-500">•</span>{bullet}</li>
+                  ))}
+                </ul>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
-function LabFloorPlan({ equipmentItems }: { equipmentItems: EquipmentItem[] }) {
-  const rooms = [
-    { name: 'Cleanroom A', type: '공정', group: 'process' as EquipmentGroup, count: equipmentItems.filter((item) => item.group === 'process').slice(0, 6).length, detail: '노광 / 박막 / 식각' },
-    { name: 'Cleanroom B', type: '공정', group: 'process' as EquipmentGroup, count: equipmentItems.filter((item) => item.group === 'process').slice(6).length, detail: '열처리 / 패키징' },
-    { name: 'Analysis Room', type: '측정·분석', group: 'metrology' as EquipmentGroup, count: equipmentItems.filter((item) => item.group === 'metrology').length, detail: 'SEM / XRD / Probe' },
-    { name: 'Education Lab', type: '교육', group: 'process' as EquipmentGroup, count: 4, detail: '사용자 인증 실습' },
-    { name: 'Utility Core', type: '운영', group: 'metrology' as EquipmentGroup, count: 6, detail: '가스 / 전원 / 배기' }
-  ];
+function Dashboard({ equipmentItems, onOpenEquipment }: { equipmentItems: EquipmentItem[]; onOpenEquipment: (group: EquipmentGroup) => void }) {
+  return (
+    <section className="mt-5 grid gap-5">
+      <StatGrid equipmentItems={equipmentItems} />
+      <EquipmentUsageChart equipmentItems={equipmentItems} />
+      <MonthlyUsageChart />
+      <EquipmentGateway equipmentItems={equipmentItems} onOpen={onOpenEquipment} />
+    </section>
+  );
+}
+
+function EquipmentPage({ equipmentItems, source, initialGroup }: { equipmentItems: EquipmentItem[]; source: 'api' | 'fallback'; initialGroup: EquipmentGroup }) {
+  const [activeGroup, setActiveGroup] = useState<EquipmentGroup>(initialGroup);
+
+  useEffect(() => setActiveGroup(initialGroup), [initialGroup]);
+
+  const grouped = useMemo(() => ({
+    process: equipmentItems.filter((item) => item.group === 'process'),
+    metrology: equipmentItems.filter((item) => item.group === 'metrology')
+  }), [equipmentItems]);
+  const activeItems = grouped[activeGroup];
 
   return (
-    <div className="lab-perspective">
-      <div className="lab-floor-grid">
-        {rooms.map((room, index) => (
-          <div key={room.name} className={`lab-room lab-room-${index + 1} ${room.group}`}>
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-extrabold uppercase text-cyan-200">{room.type}</p>
-                <h3 className="mt-1 text-xl font-black text-white">{room.name}</h3>
+    <section id="장비현황" className="grid gap-5">
+      <SectionTitle title="장비현황" eyebrow="Equipment Inventory" action="장비 추가" />
+      <EquipmentGateway equipmentItems={equipmentItems} onOpen={setActiveGroup} />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex gap-2">
+          {(Object.keys(categoryMeta) as EquipmentGroup[]).map((group) => (
+            <button key={group} className={`rounded-md px-4 py-2 text-sm font-bold ${activeGroup === group ? 'bg-blue-700 text-white' : 'bg-white/5 text-slate-300 hover:bg-blue-700 hover:text-white'}`} onClick={() => setActiveGroup(group)}>
+              {categoryMeta[group].title}
+            </button>
+          ))}
+        </div>
+        <p className="text-sm text-slate-400">데이터 소스: {source === 'api' ? 'API 연동' : '로컬 샘플 fallback'}</p>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {activeItems.map((item) => (
+          <article key={item.id} className="overflow-hidden rounded-lg border border-white/10 bg-surface/85">
+            <img className="h-40 w-full object-cover" src={item.image} alt={item.name} />
+            <div className="p-4">
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold uppercase text-cyan-300">{item.category}</p>
+                  <h3 className="mt-1 text-xl font-bold text-white">{item.name}</h3>
+                </div>
+                <span className="rounded-md bg-blue-500/20 px-2 py-1 text-xs font-bold text-blue-200">{item.location}</span>
               </div>
-              <span className="rounded bg-slate-950/60 px-2 py-1 text-xs font-bold text-white">{room.count} units</span>
+              <p className="mb-4 text-sm text-slate-300">{item.condition}</p>
+              <div className="flex flex-wrap gap-2">
+                {item.features.map((feature) => <span key={feature} className="rounded-md border border-white/10 px-2 py-1 text-xs text-slate-300">{feature}</span>)}
+              </div>
             </div>
-            <p className="mt-4 text-sm text-slate-300">{room.detail}</p>
-            <div className="mt-5 grid grid-cols-4 gap-2">
-              {Array.from({ length: Math.min(room.count, 8) }, (_, dot) => (
-                <span key={dot} className="h-4 rounded-sm bg-cyan-300/70 shadow-[0_0_14px_rgba(34,211,238,0.35)]" />
-              ))}
-            </div>
-          </div>
+          </article>
         ))}
       </div>
-    </div>
+    </section>
   );
 }
 
-function EquipmentAddModal({
-  onClose,
-  onSubmit
-}: {
-  onClose: () => void;
-  onSubmit: (item: Omit<EquipmentItem, 'id' | 'category' | 'groupName' | 'features' | 'utilization' | 'usageHours' | 'image'>) => void;
-}) {
-  const [form, setForm] = useState({ name: '', group: 'process' as EquipmentGroup, location: '실습실 1', condition: '교육 이수 후 사용 가능' });
-
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    if (!form.name.trim()) return;
-    onSubmit(form);
-  };
-
-  return (
-    <Modal title="장비 추가" onClose={onClose}>
-      <form className="grid gap-4" onSubmit={submit}>
-        <label className="form-label">
-          장비명
-          <input value={form.name} onChange={(event) => setForm((prev) => ({ ...prev, name: event.target.value }))} placeholder="예: Probe Station" required />
-        </label>
-        <label className="form-label">
-          대분류
-          <select value={form.group} onChange={(event) => setForm((prev) => ({ ...prev, group: event.target.value as EquipmentGroup }))}>
-            <option value="process">공정</option>
-            <option value="metrology">측정·분석</option>
-          </select>
-        </label>
-        <label className="form-label">
-          위치
-          <input value={form.location} onChange={(event) => setForm((prev) => ({ ...prev, location: event.target.value }))} />
-        </label>
-        <label className="form-label">
-          사용 조건
-          <input value={form.condition} onChange={(event) => setForm((prev) => ({ ...prev, condition: event.target.value }))} />
-        </label>
-        <div className="flex justify-end gap-2 pt-2">
-          <button type="button" className="rounded-md border border-white/15 px-4 py-2 font-bold text-slate-200 hover:border-cyan-300" onClick={onClose}>취소</button>
-          <button className="rounded-md bg-cyan-300 px-4 py-2 font-extrabold text-slate-950 hover:bg-white">등록</button>
-        </div>
-      </form>
-    </Modal>
-  );
-}
-
-function ReservationPage({
-  equipmentItems,
-  calendarEvents,
-  setCalendarEvents
-}: {
-  equipmentItems: EquipmentItem[];
-  calendarEvents: CalendarEvent[];
-  setCalendarEvents: React.Dispatch<React.SetStateAction<CalendarEvent[]>>;
-}) {
+function ReservationPage({ equipmentItems }: { equipmentItems: EquipmentItem[] }) {
   const [selectedEquipmentId, setSelectedEquipmentId] = useState(equipmentItems[0]?.id ?? '');
-  const [query, setQuery] = useState('');
-  const [groupFilter, setGroupFilter] = useState<GroupFilter>('all');
+  const [calendarEvents, setCalendarEvents] = useState<ReservationEvent[]>(events);
   const [showReservationModal, setShowReservationModal] = useState(false);
+  const selectedEquipment = equipmentItems.find((item) => item.id === selectedEquipmentId) ?? equipmentItems[0];
 
-  const filtered = equipmentItems.filter((item) => {
-    const matchesQuery = item.name.toLowerCase().includes(query.toLowerCase());
-    const matchesGroup = groupFilter === 'all' || item.group === groupFilter;
-    return matchesQuery && matchesGroup;
-  });
-  const selected = equipmentItems.find((item) => item.id === selectedEquipmentId) ?? equipmentItems[0];
+  function confirmReservation(form: { equipmentId: string; date: string; startTime: string; endTime: string; purpose: string }) {
+    const equipment = equipmentItems.find((item) => item.id === form.equipmentId);
+    if (!equipment) return;
 
-  const addReservation = (form: { equipmentId: string; date: string; startTime: string; endTime: string; purpose: string }) => {
-    const item = equipmentItems.find((target) => target.id === form.equipmentId);
-    if (!item) return;
     const purpose = form.purpose.trim() ? ` - ${form.purpose.trim()}` : '';
-    setCalendarEvents((prev) => [
-      ...prev,
+    setCalendarEvents((current) => [
+      ...current,
       {
         id: `reservation-${Date.now()}`,
-        title: `${item.name} 예약${purpose}`,
+        title: `${equipment.name} 예약${purpose}`,
         start: `${form.date}T${form.startTime}:00`,
         end: `${form.date}T${form.endTime}:00`,
         status: 'pending'
       }
     ]);
-    setSelectedEquipmentId(item.id);
+    setSelectedEquipmentId(equipment.id);
     setShowReservationModal(false);
-  };
+  }
 
   return (
-    <div className="grid gap-5 xl:grid-cols-[20rem_1fr]">
-      <aside className="rounded-lg border border-white/10 bg-slate-900/80 p-4">
-        <div className="mb-4 flex items-center gap-2 text-lg font-extrabold text-white">
-          <SlidersHorizontal size={20} /> 장비 검색/필터
+    <section className="grid gap-5 xl:grid-cols-[22rem_1fr]" id="예약현황">
+      <div className="rounded-lg border border-white/10 bg-surface/85 p-4">
+        <div className="mb-4 flex items-center gap-2">
+          <SlidersHorizontal size={20} className="text-cyan-300" />
+          <h2 className="text-lg font-bold text-white">장비 검색/필터</h2>
         </div>
-        <label className="relative block">
-          <Search className="absolute left-3 top-3 text-slate-400" size={18} />
-          <input className="w-full rounded-md border border-white/10 bg-slate-950 py-3 pl-10 pr-3 text-sm text-white outline-none focus:border-cyan-300" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="장비명 검색" />
-        </label>
-        <div className="mt-3 grid grid-cols-3 gap-2">
-          {[
-            { key: 'all', label: '전체' },
-            { key: 'process', label: '공정' },
-            { key: 'metrology', label: '측정·분석' }
-          ].map((item) => (
-            <button key={item.key} className={`filter-chip ${groupFilter === item.key ? 'selected' : ''}`} onClick={() => setGroupFilter(item.key as GroupFilter)}>
-              {item.label}
+        <div className="relative mb-3">
+          <Search className="absolute left-3 top-2.5 text-slate-500" size={17} />
+          <input className="w-full rounded-md border border-white/10 bg-slate-950 px-9 py-2 text-sm outline-none focus:border-cyan-300" placeholder="장비명 검색" />
+        </div>
+        <select className="mb-4 w-full rounded-md border border-white/10 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-cyan-300">
+          <option>전체 카테고리</option>
+          <option>공정장비</option>
+          <option>측정 및 분석장비</option>
+        </select>
+        <div className="grid max-h-[34rem] gap-2 overflow-auto pr-1">
+          {equipmentItems.map((item, index) => (
+            <button
+              key={item.id}
+              className={`rounded-md px-3 py-2 text-left text-sm font-semibold hover:bg-blue-600 ${item.id === selectedEquipmentId || (!selectedEquipmentId && index === 0) ? 'bg-blue-700 text-white' : 'bg-white/5 text-slate-300'}`}
+              onClick={() => setSelectedEquipmentId(item.id)}
+            >
+              {item.name}
             </button>
           ))}
         </div>
-        <div className="mt-4 max-h-[38rem] space-y-2 overflow-auto pr-1">
-          {filtered.map((item) => (
-            <button key={item.id} className={`equipment-filter-item ${item.group} ${selectedEquipmentId === item.id ? 'selected' : ''}`} onClick={() => setSelectedEquipmentId(item.id)}>
-              <span>{item.name}</span>
-              <small>{item.groupName}</small>
-            </button>
-          ))}
-        </div>
-      </aside>
-
-      <section className="rounded-lg border border-white/10 bg-slate-900/80 p-5">
+      </div>
+      <div className="rounded-lg border border-white/10 bg-surface/85 p-5">
         <SectionTitle
-          title={`${selected?.name ?? '장비'} 장비별 예약 캘린더`}
+          title={`${selectedEquipment?.name ?? 'FE-SEM'} 장비별 예약 캘린더`}
           eyebrow="Equipment Calendar"
           action={
-            <div className="flex flex-wrap gap-2">
-              <button className="rounded-md bg-slate-800 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700">내 예약 보기</button>
-              <button className="inline-flex items-center gap-2 rounded-md bg-blue-700 px-4 py-2 text-sm font-bold text-white hover:bg-cyan-300 hover:text-slate-950" onClick={() => setShowReservationModal(true)}>
+            <div className="flex gap-2">
+              <button className="rounded-md bg-slate-800 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700">
+                내 예약 보기
+              </button>
+              <button
+                className="inline-flex items-center gap-2 rounded-md bg-blue-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-cyan-500 hover:text-slate-950"
+                onClick={() => setShowReservationModal(true)}
+              >
                 <Plus size={16} /> 장비예약
               </button>
             </div>
           }
         />
-        <CalendarView events={calendarEvents.filter((event) => !selected || event.title.includes(selected.name))} height={720} />
-      </section>
-
-      {showReservationModal && <ReservationModal equipmentItems={equipmentItems} selectedEquipmentId={selectedEquipmentId} onClose={() => setShowReservationModal(false)} onSubmit={addReservation} />}
-    </div>
+        <FullCalendar
+          plugins={[dayGridPlugin, interactionPlugin]}
+          initialView="dayGridMonth"
+          initialDate="2026-06-17"
+          selectable
+          height="auto"
+          events={calendarEvents.filter((event) => !selectedEquipment || event.title.includes(selectedEquipment.name))}
+        />
+      </div>
+      {showReservationModal && (
+        <ReservationModal
+          equipmentItems={equipmentItems}
+          selectedEquipmentId={selectedEquipment?.id ?? ''}
+          onClose={() => setShowReservationModal(false)}
+          onConfirm={confirmReservation}
+        />
+      )}
+    </section>
   );
 }
 
@@ -666,197 +626,288 @@ function ReservationModal({
   equipmentItems,
   selectedEquipmentId,
   onClose,
-  onSubmit
+  onConfirm
 }: {
   equipmentItems: EquipmentItem[];
   selectedEquipmentId: string;
   onClose: () => void;
-  onSubmit: (form: { equipmentId: string; date: string; startTime: string; endTime: string; purpose: string }) => void;
+  onConfirm: (form: { equipmentId: string; date: string; startTime: string; endTime: string; purpose: string }) => void;
 }) {
-  const [form, setForm] = useState({ equipmentId: selectedEquipmentId || equipmentItems[0]?.id || '', date: '2026-06-17', startTime: '09:00', endTime: '10:00', purpose: '' });
+  const [form, setForm] = useState({
+    equipmentId: selectedEquipmentId || equipmentItems[0]?.id || '',
+    date: '2026-06-17',
+    startTime: '09:00',
+    endTime: '10:00',
+    purpose: ''
+  });
   const endTimes = reservationTimes.filter((time) => time > form.startTime);
 
-  const submit = (event: FormEvent) => {
+  function submit(event: FormEvent) {
     event.preventDefault();
-    onSubmit(form);
-  };
+    onConfirm(form);
+  }
 
   return (
-    <Modal title="장비 예약" onClose={onClose}>
-      <form className="grid gap-4" onSubmit={submit}>
-        <label className="form-label">
+    <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
+      <form className="reservation-modal" onSubmit={submit} onMouseDown={(event) => event.stopPropagation()}>
+        <div className="mb-5 flex items-center justify-between">
+          <h3 className="text-2xl font-extrabold text-white">장비 예약</h3>
+          <button type="button" className="rounded-md border border-white/10 px-4 py-2 text-sm font-bold text-slate-200 hover:border-cyan-300 hover:text-cyan-200" onClick={onClose}>
+            닫기
+          </button>
+        </div>
+        <label className="reservation-label">
           장비
-          <select value={form.equipmentId} onChange={(event) => setForm((prev) => ({ ...prev, equipmentId: event.target.value }))}>
+          <select value={form.equipmentId} onChange={(event) => setForm((current) => ({ ...current, equipmentId: event.target.value }))}>
             {equipmentItems.map((item) => (
               <option key={item.id} value={item.id}>{item.name}</option>
             ))}
           </select>
         </label>
-        <label className="form-label">
+        <label className="reservation-label">
           예약일
-          <input type="date" value={form.date} onChange={(event) => setForm((prev) => ({ ...prev, date: event.target.value }))} />
+          <input type="date" value={form.date} onChange={(event) => setForm((current) => ({ ...current, date: event.target.value }))} />
         </label>
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="form-label">
+          <label className="reservation-label">
             시작 시간
-            <select value={form.startTime} onChange={(event) => setForm((prev) => ({ ...prev, startTime: event.target.value, endTime: reservationTimes.find((time) => time > event.target.value) ?? prev.endTime }))}>
+            <select
+              value={form.startTime}
+              onChange={(event) => {
+                const nextStart = event.target.value;
+                setForm((current) => ({
+                  ...current,
+                  startTime: nextStart,
+                  endTime: reservationTimes.find((time) => time > nextStart) ?? current.endTime
+                }));
+              }}
+            >
               {reservationTimes.map((time) => (
                 <option key={time} value={time}>{time}</option>
               ))}
             </select>
           </label>
-          <label className="form-label">
+          <label className="reservation-label">
             종료 시간
-            <select value={form.endTime} onChange={(event) => setForm((prev) => ({ ...prev, endTime: event.target.value }))}>
+            <select value={form.endTime} onChange={(event) => setForm((current) => ({ ...current, endTime: event.target.value }))}>
               {endTimes.map((time) => (
                 <option key={time} value={time}>{time}</option>
               ))}
             </select>
           </label>
         </div>
-        <label className="form-label">
+        <label className="reservation-label">
           예약 목적
-          <input value={form.purpose} onChange={(event) => setForm((prev) => ({ ...prev, purpose: event.target.value }))} placeholder="예: 박막 증착 공정" />
+          <input value={form.purpose} onChange={(event) => setForm((current) => ({ ...current, purpose: event.target.value }))} placeholder="예: 박막 증착 공정" />
         </label>
-        <div className="flex justify-end gap-2 pt-2">
-          <button type="button" className="rounded-md border border-white/15 px-4 py-2 font-bold text-slate-200 hover:border-cyan-300" onClick={onClose}>취소</button>
-          <button className="rounded-md bg-cyan-300 px-4 py-2 font-extrabold text-slate-950 hover:bg-white">예약등록</button>
+        <div className="mt-6 flex justify-end gap-3">
+          <button type="button" className="rounded-md border border-white/15 px-5 py-3 font-bold text-slate-200 hover:border-cyan-300" onClick={onClose}>취소</button>
+          <button type="submit" className="rounded-md bg-cyan-300 px-5 py-3 font-extrabold text-slate-950 hover:bg-white">예약확정</button>
         </div>
       </form>
-    </Modal>
+    </div>
   );
 }
 
-function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+function TrainingPage({ equipmentItems }: { equipmentItems: EquipmentItem[] }) {
   return (
-    <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
-      <section className="modal-panel" role="dialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}>
-        <div className="mb-5 flex items-center justify-between gap-3">
-          <h3 className="text-xl font-black text-white">{title}</h3>
-          <button className="rounded-md border border-white/10 px-3 py-1.5 text-sm font-bold text-slate-200 hover:border-cyan-300 hover:text-cyan-200" onClick={onClose}>닫기</button>
+    <section className="grid gap-5 xl:grid-cols-[1fr_0.8fr]">
+      <div className="rounded-lg border border-white/10 bg-surface/85 p-5">
+        <SectionTitle title="장비 사용 교육" eyebrow="Training" action="교육 신청" />
+        <select className="mb-4 w-full rounded-md border border-white/10 bg-slate-950 px-3 py-3 outline-none focus:border-cyan-300">
+          {equipmentItems.map((item) => <option key={item.id}>{item.name} 교육 신청</option>)}
+        </select>
+        <div className="grid gap-3">
+          {['PDF 교육자료', '안전 교육 영상', '교육완료 인증서'].map((title) => (
+            <div key={title} className="flex items-center justify-between rounded-md bg-white/5 p-3">
+              <div className="flex items-center gap-3">
+                <BookOpen className="text-cyan-300" size={20} />
+                <span className="font-semibold text-white">{title}</span>
+              </div>
+              <button className="rounded-md bg-blue-700 px-3 py-2 text-sm font-semibold text-white hover:bg-cyan-500 hover:text-slate-950">열기</button>
+            </div>
+          ))}
         </div>
-        {children}
-      </section>
-    </div>
-  );
-}
-
-function LoginPage({ onLogin }: { onLogin: (role: Role) => void }) {
-  const login = (role: Role) => {
-    localStorage.setItem('hbnu-session-role', role);
-    onLogin(role);
-  };
-
-  return (
-    <div className="mx-auto max-w-5xl rounded-lg border border-white/10 bg-slate-900/80 p-6">
-      <SectionTitle title="로그인" eyebrow="OAuth Access" />
-      <div className="grid gap-4 md:grid-cols-3">
-        <button className="auth-card" onClick={() => login('USER')}>
-          <LogIn className="text-cyan-300" size={30} />
-          <strong>Google OAuth</strong>
-          <span>기관 계정으로 예약/교육 메뉴에 접근합니다.</span>
-        </button>
-        <button className="auth-card kakao" onClick={() => login('USER')}>
-          <LogIn className="text-yellow-300" size={30} />
-          <strong>Kakao OAuth</strong>
-          <span>카카오 인증 흐름을 연결할 자리입니다.</span>
-        </button>
-        <button className="auth-card admin" onClick={() => login('ADMIN')}>
-          <LockKeyhole className="text-emerald-300" size={30} />
-          <strong>Admin Preview</strong>
-          <span>관리자 버튼과 CMS 기능을 확인합니다.</span>
-        </button>
       </div>
-    </div>
+      <div className="rounded-lg border border-white/10 bg-surface/85 p-5">
+        <SectionTitle title="교육 완료 인증" eyebrow="Certification" />
+        <div className="grid gap-3 text-sm text-slate-300">
+          <p className="rounded-md bg-white/5 p-4">교육 이수 후 장비별 예약 권한이 자동 부여됩니다.</p>
+          <p className="rounded-md bg-white/5 p-4">관리자는 교육 일정, 자료, 인증서를 이 화면에서 관리할 수 있습니다.</p>
+        </div>
+      </div>
+    </section>
   );
 }
 
 function AdminPage({ equipmentItems }: { equipmentItems: EquipmentItem[] }) {
-  const equipmentRows = equipmentItems.map((item) => ({ 장비명: item.name, 대분류: item.groupName, 위치: item.location, 사용시간: item.usageHours, 가동률: `${item.utilization}%` }));
-  const monthlyRows = monthlyUsage.map((item) => ({ 월: item.month, 총가동시간: item.hours, 전월대비: `${item.delta}%` }));
+  const equipmentRows = equipmentItems.map((item) => ({
+    장비명: item.name,
+    대분류: item.groupName,
+    카테고리: item.category,
+    위치: item.location,
+    사용시간: item.usageHours,
+    사용률: `${item.utilization}%`
+  }));
+  const monthlyRows = monthlyUsage.map((item) => ({
+    월: item.month,
+    총장비사용시간: item.hours,
+    전월대비: `${item.delta > 0 ? '+' : ''}${item.delta}%`
+  }));
 
   return (
-    <div className="space-y-5">
-      <SectionTitle title="관리자 대시보드" eyebrow="Admin CMS" />
-      <div className="grid gap-4 lg:grid-cols-3">
-        {[
-          { label: '사용자관리', icon: UserRound },
-          { label: '장비관리', icon: Wrench },
-          { label: '예약승인/거부', icon: CalendarDays },
-          { label: '교육관리', icon: GraduationCap },
-          { label: '홈페이지편집', icon: LayoutDashboard },
-          { label: '대시보드 데이터', icon: Gauge }
-        ].map((item) => {
-          const Icon = item.icon;
-          return (
-            <button key={item.label} className="flex items-center justify-between rounded-lg border border-white/10 bg-slate-800 p-5 text-left font-extrabold text-white hover:border-cyan-300 hover:bg-slate-700">
-              <span>{item.label}</span>
-              <Icon className="text-cyan-300" size={22} />
-            </button>
-          );
-        })}
-      </div>
-      <div className="rounded-lg border border-white/10 bg-slate-900/80 p-5">
-        <SectionTitle title="운영 데이터 내보내기" eyebrow="Excel Export" />
+    <section className="grid gap-5">
+      <SectionTitle title="관리자 대시보드" eyebrow="Admin CMS" action="홈페이지 편집" />
+      <div className="rounded-lg border border-white/10 bg-surface/85 p-6">
+        <div className="mb-5 flex items-center gap-3">
+          <Download className="text-cyan-300" size={22} />
+          <div>
+            <h3 className="text-xl font-extrabold text-white">통계 엑셀 내보내기</h3>
+            <p className="mt-1 text-sm text-slate-400">관리자 권한 사용자는 장비 사용 데이터를 Excel에서 열 수 있는 CSV 파일로 내려받을 수 있습니다.</p>
+          </div>
+        </div>
         <div className="flex flex-wrap gap-3">
-          <button className="inline-flex items-center gap-2 rounded-md bg-cyan-300 px-4 py-2 font-extrabold text-slate-950 hover:bg-white" onClick={() => downloadCsv('equipment-usage.csv', equipmentRows)}>
-            <Download size={17} /> 장비별 사용량 CSV
+          <button className="rounded-md bg-blue-700 px-4 py-3 text-sm font-bold text-white hover:bg-cyan-500 hover:text-slate-950" onClick={() => downloadCsv('equipment-usage.csv', equipmentRows)}>
+            장비별 사용량 엑셀 다운로드
           </button>
-          <button className="inline-flex items-center gap-2 rounded-md bg-blue-700 px-4 py-2 font-extrabold text-white hover:bg-cyan-300 hover:text-slate-950" onClick={() => downloadCsv('monthly-runtime.csv', monthlyRows)}>
-            <Download size={17} /> 월별 총 장비 사용시간 CSV
+          <button className="rounded-md bg-blue-700 px-4 py-3 text-sm font-bold text-white hover:bg-cyan-500 hover:text-slate-950" onClick={() => downloadCsv('monthly-equipment-hours.csv', monthlyRows)}>
+            월별 총 장비 사용시간 엑셀 다운로드
           </button>
         </div>
       </div>
-    </div>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {['사용자관리', '장비관리', '예약승인/거부', '교육관리', '홈페이지편집', '대시보드 데이터', '권한관리', '공지사항', '운영 로그'].map((title) => (
+          <button key={title} className="rounded-lg border border-white/10 bg-surface/85 p-6 text-left text-lg font-extrabold text-white hover:border-cyan-300 hover:bg-blue-500/20">
+            {title}
+            <p className="mt-2 text-sm font-medium text-slate-400">상세 관리 화면으로 이동</p>
+          </button>
+        ))}
+      </div>
+    </section>
   );
 }
 
-function SimplePage({ title, eyebrow, icon: Icon }: { title: string; eyebrow: string; icon: typeof Factory }) {
+function LoginPage({ onAuthenticated }: { onAuthenticated: (role: Role) => void }) {
+  const [message, setMessage] = useState('Google 또는 Kakao OAuth로 로그인하세요.');
+
+  async function handleLogin(provider: 'Google' | 'Kakao', role: Role = 'USER') {
+    setMessage(`${provider} 인증을 확인하는 중입니다.`);
+
+    try {
+      const response = await fetch(`${apiUrl}/auth/dev-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role })
+      });
+      if (!response.ok) throw new Error('auth unavailable');
+      const data = await response.json();
+      localStorage.setItem('hbnu-session-token', data.token);
+      localStorage.setItem('hbnu-session-user', JSON.stringify(data.user));
+      onAuthenticated(data.user.role);
+      setMessage(`${provider} 인증이 완료되었습니다.`);
+    } catch {
+      localStorage.setItem('hbnu-session-token', `preview-${provider.toLowerCase()}-${role}`);
+      localStorage.setItem('hbnu-session-user', JSON.stringify({ name: role === 'ADMIN' ? '관리자' : '연구원', role }));
+      onAuthenticated(role);
+      setMessage(`${provider} 프리뷰 인증이 완료되었습니다. API 연결 시 실제 OAuth 콜백으로 교체됩니다.`);
+    }
+  }
+
   return (
-    <div className="rounded-lg border border-white/10 bg-slate-900/80 p-6">
-      <SectionTitle title={title} eyebrow={eyebrow} />
-      <div className="grid min-h-[22rem] place-items-center rounded-lg border border-dashed border-white/10 bg-slate-950/50 text-center">
-        <div>
-          <Icon className="mx-auto text-cyan-300" size={44} />
-          <p className="mt-4 text-lg font-bold text-slate-200">세부 기능 화면을 순차적으로 연결할 예정입니다.</p>
+    <section className="grid min-h-[34rem] gap-5 lg:grid-cols-[1fr_0.8fr]">
+      <div className="rounded-lg border border-white/10 bg-surface/85 p-8">
+        <div className="mb-8 flex items-center gap-4">
+          <div className="rounded-md bg-cyan-300/10 p-3 text-cyan-300">
+            <LockKeyhole size={26} />
+          </div>
+          <div>
+            <p className="text-sm font-bold uppercase text-cyan-300">OAuth Login</p>
+            <h2 className="mt-1 text-3xl font-extrabold text-white">로그인 / 회원가입</h2>
+          </div>
+        </div>
+        <p className="mb-6 max-w-2xl text-slate-300">Google, Kakao OAuth 인증을 통해 예약, 교육, 마이페이지, 관리자 기능에 접근합니다.</p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <button className="flex items-center justify-center gap-2 rounded-md bg-white px-5 py-4 text-base font-extrabold text-slate-950 hover:bg-cyan-100" onClick={() => handleLogin('Google')}>
+            <LogIn size={20} /> Google로 계속
+          </button>
+          <button className="flex items-center justify-center gap-2 rounded-md bg-[#FEE500] px-5 py-4 text-base font-extrabold text-slate-950 hover:brightness-110" onClick={() => handleLogin('Kakao')}>
+            <LogIn size={20} /> Kakao로 계속
+          </button>
+        </div>
+        <button className="mt-4 rounded-md border border-cyan-300/40 px-5 py-3 text-sm font-bold text-cyan-200 hover:bg-cyan-300 hover:text-slate-950" onClick={() => handleLogin('Google', 'ADMIN')}>
+          관리자 프리뷰 로그인
+        </button>
+        <p className="mt-5 rounded-md bg-white/5 p-4 text-sm text-slate-300">{message}</p>
+      </div>
+      <div className="rounded-lg border border-white/10 bg-slate-950/80 p-8">
+        <h3 className="text-2xl font-extrabold text-white">인증 흐름</h3>
+        <div className="mt-6 grid gap-4 text-sm text-slate-300">
+          <p className="rounded-md bg-white/5 p-4">1. OAuth 제공자 선택</p>
+          <p className="rounded-md bg-white/5 p-4">2. 백엔드 콜백에서 JWT 세션 발급</p>
+          <p className="rounded-md bg-white/5 p-4">3. RBAC 권한에 따라 예약, 교육, 관리자 기능 접근</p>
         </div>
       </div>
-    </div>
+    </section>
+  );
+}
+
+function PlaceholderPage({ title }: { title: string }) {
+  return (
+    <section className="rounded-lg border border-white/10 bg-surface/85 p-8">
+      <SectionTitle title={title} eyebrow="Coming Next" />
+      <p className="text-slate-300">이 메뉴는 다음 단계에서 상세 화면을 확장할 예정입니다.</p>
+    </section>
   );
 }
 
 export function App() {
-  const { items: equipmentItems, setItems: setEquipmentItems, source } = useEquipmentData();
+  const { items: equipmentItems, source } = useEquipmentData();
   const [activePage, setActivePage] = useState<PageKey>('home');
   const [loading, setLoading] = useState(false);
-  const [sessionRole, setSessionRole] = useState<Role | null>(() => (localStorage.getItem('hbnu-session-role') as Role | null) ?? null);
-  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>(defaultEvents);
+  const [initialGroup, setInitialGroup] = useState<EquipmentGroup>('process');
+  const [sessionRole, setSessionRole] = useState<Role | null>(() => {
+    const stored = localStorage.getItem('hbnu-session-user');
+    if (!stored) return null;
+    try {
+      return JSON.parse(stored).role ?? null;
+    } catch {
+      return null;
+    }
+  });
 
-  const navigate = (page: PageKey) => {
+  function navigate(page: PageKey) {
     setLoading(true);
     window.setTimeout(() => {
       setActivePage(page);
       setLoading(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 420);
-  };
+    }, 520);
+  }
 
-  const page = {
-    home: <Dashboard equipmentItems={equipmentItems} calendarEvents={calendarEvents} onNavigate={navigate} />,
-    facility: <SimplePage title="시설소개" eyebrow="Facility" icon={Factory} />,
-    equipment: <EquipmentPage equipmentItems={equipmentItems} setEquipmentItems={setEquipmentItems} source={source} sessionRole={sessionRole} />,
-    training: <SimplePage title="장비사용교육" eyebrow="Training" icon={BookOpen} />,
-    reservations: <ReservationPage equipmentItems={equipmentItems} calendarEvents={calendarEvents} setCalendarEvents={setCalendarEvents} />,
-    mypage: <SimplePage title="마이페이지" eyebrow="My Page" icon={UserRound} />,
-    admin: sessionRole === 'ADMIN' ? <AdminPage equipmentItems={equipmentItems} /> : <LoginPage onLogin={(role) => setSessionRole(role)} />,
-    login: <LoginPage onLogin={(role) => { setSessionRole(role); navigate(role === 'ADMIN' ? 'admin' : 'mypage'); }} />
-  }[activePage];
+  function openEquipment(group: EquipmentGroup) {
+    setInitialGroup(group);
+    navigate('equipment');
+  }
 
   return (
-    <>
+    <div className="min-h-screen">
       <LoadingOverlay visible={loading} />
       <InstitutionHeader activePage={activePage} onNavigate={navigate} sessionRole={sessionRole} />
-      <main className="mx-auto max-w-[1800px] px-4 py-5 sm:px-5 2xl:px-8">{page}</main>
-    </>
+      <main className="mx-auto max-w-[1800px] px-4 py-5 lg:px-6 2xl:px-8">
+        {activePage === 'home' && (
+          <>
+            <Hero onNavigate={navigate} />
+            <Dashboard equipmentItems={equipmentItems} onOpenEquipment={openEquipment} />
+          </>
+        )}
+        {activePage === 'equipment' && <EquipmentPage equipmentItems={equipmentItems} source={source} initialGroup={initialGroup} />}
+        {activePage === 'reservations' && <ReservationPage equipmentItems={equipmentItems} />}
+        {activePage === 'training' && <TrainingPage equipmentItems={equipmentItems} />}
+        {activePage === 'admin' && <AdminPage equipmentItems={equipmentItems} />}
+        {activePage === 'login' && <LoginPage onAuthenticated={(role) => setSessionRole(role)} />}
+        {activePage === 'facility' && <PlaceholderPage title="시설안내" />}
+        {activePage === 'mypage' && <PlaceholderPage title="마이페이지" />}
+      </main>
+    </div>
   );
 }
