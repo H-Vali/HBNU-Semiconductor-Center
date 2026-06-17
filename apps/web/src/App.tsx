@@ -2,37 +2,82 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import {
-  Bar, BarChart, CartesianGrid, Cell, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
 } from 'recharts';
 import {
-  BookOpen, CalendarDays, CheckCircle2, ChevronRight, Gauge, GraduationCap, Home, LayoutDashboard,
-  LockKeyhole, LogIn, Settings, ShieldCheck, SlidersHorizontal, UserRound, Wrench
+  BookOpen,
+  CalendarDays,
+  CheckCircle2,
+  CircuitBoard,
+  ClipboardCheck,
+  Cpu,
+  Factory,
+  Gauge,
+  GraduationCap,
+  LayoutDashboard,
+  LockKeyhole,
+  LogIn,
+  Microscope,
+  Search,
+  ShieldCheck,
+  SlidersHorizontal,
+  UserRound,
+  Wrench
 } from 'lucide-react';
 import { equipment, events, monthlyUsage } from './data';
 
 const menu = [
-  { label: '홈', icon: Home },
-  { label: '시설소개', icon: LayoutDashboard },
+  { label: '센터소개', icon: Factory },
+  { label: '시설안내', icon: LayoutDashboard },
   { label: '장비현황', icon: Wrench },
-  { label: '장비사용교육', icon: GraduationCap },
-  { label: '장비사용예약', icon: CalendarDays },
+  { label: '교육신청', icon: GraduationCap },
+  { label: '예약현황', icon: CalendarDays },
   { label: '마이페이지', icon: UserRound },
-  { label: '관리자페이지', icon: ShieldCheck, admin: true }
+  { label: '관리자', icon: ShieldCheck, admin: true }
+];
+
+const quickLinks = [
+  { label: '입소신청', icon: ClipboardCheck },
+  { label: '공정접수 및 장비예약', icon: CalendarDays },
+  { label: '장비사용자 교육신청', icon: GraduationCap },
+  { label: '장비 배치현황', icon: Microscope }
 ];
 
 const statCards = [
-  { label: '운영 장비', value: '24종', tone: 'text-cyan-300', icon: Wrench },
-  { label: '금월 사용시간', value: '1,284h', tone: 'text-emerald-300', icon: Gauge },
-  { label: '승인 대기', value: '9건', tone: 'text-amber-300', icon: CalendarDays },
-  { label: '교육 인증', value: '312명', tone: 'text-blue-300', icon: CheckCircle2 }
+  { label: '운영 장비', value: '24종', detail: '분석, 공정, 패키징', icon: Wrench },
+  { label: '월 사용시간', value: '1,284h', detail: '전월 대비 +18%', icon: Gauge },
+  { label: '교육 인증', value: '312명', detail: '최근 30일 27명', icon: CheckCircle2 },
+  { label: 'FAB 가동률', value: '86%', detail: 'Cleanroom active', icon: Cpu }
 ];
 
-function SectionTitle({ title, action }: { title: string; action?: string }) {
+const equipmentUsage = equipment.slice(0, 14).map((item, index) => ({
+  label: item.name.replace('Semiconductor ', ''),
+  value: item.usageHours,
+  trend: item.usageHours + Math.round(Math.sin(index / 2) * 18)
+}));
+
+const processCards = [
+  { label: 'Lithography', value: '12 lots', tone: 'text-sky-300' },
+  { label: 'Deposition', value: '18 runs', tone: 'text-emerald-300' },
+  { label: 'Etching', value: '9 recipes', tone: 'text-violet-300' },
+  { label: 'Metrology', value: '41 samples', tone: 'text-amber-300' }
+];
+
+function SectionTitle({ title, eyebrow, action }: { title: string; eyebrow?: string; action?: string }) {
   return (
-    <div className="mb-4 flex items-center justify-between gap-3">
-      <h2 className="text-lg font-bold text-white">{title}</h2>
+    <div className="mb-5 flex items-center justify-between gap-3">
+      <div>
+        {eyebrow && <p className="text-xs font-bold uppercase text-cyan-300">{eyebrow}</p>}
+        <h2 className="mt-1 text-xl font-extrabold text-white">{title}</h2>
+      </div>
       {action && (
-        <button className="rounded-md bg-navy px-3 py-2 text-sm font-semibold text-white hover:bg-blue-500">
+        <button className="rounded-md bg-blue-700 px-4 py-2 text-sm font-bold text-white hover:bg-cyan-500 hover:text-slate-950">
           {action}
         </button>
       )}
@@ -40,146 +85,278 @@ function SectionTitle({ title, action }: { title: string; action?: string }) {
   );
 }
 
-function LoginPanel() {
+function InstitutionHeader() {
   return (
-    <div className="rounded-lg border border-white/10 bg-surface/80 p-5 shadow-2xl shadow-black/20">
-      <div className="mb-4 flex items-center gap-3">
-        <div className="rounded-md bg-blue-500/20 p-2 text-cyan-300">
-          <LockKeyhole size={20} />
+    <header className="sticky top-0 z-20 border-b border-white/10 bg-slate-950/90 backdrop-blur">
+      <div className="mx-auto flex max-w-[1800px] items-center justify-between gap-5 px-5 py-3 2xl:px-8">
+        <div className="flex items-center gap-3">
+          <div className="grid h-10 w-10 place-items-center rounded-md border border-cyan-300/30 bg-cyan-300/10 text-cyan-200">
+            <CircuitBoard size={22} />
+          </div>
+          <div>
+            <p className="text-xs font-bold text-cyan-300">HBNU SEMICONDUCTOR CENTER</p>
+            <h1 className="text-base font-extrabold text-white sm:text-lg">반도체 장비 공동활용 플랫폼</h1>
+          </div>
         </div>
+        <nav className="hidden items-center gap-1 xl:flex">
+          {menu.map((item) => {
+            const Icon = item.icon;
+            return (
+              <a
+                key={item.label}
+                href={`#${item.label}`}
+                className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-bold text-slate-300 hover:bg-blue-700 hover:text-white"
+              >
+                <Icon size={16} />
+                {item.label}
+                {item.admin && <span className="rounded bg-cyan-300/15 px-1.5 py-0.5 text-[10px] text-cyan-200">ADMIN</span>}
+              </a>
+            );
+          })}
+        </nav>
+        <div className="hidden items-center gap-2 md:flex">
+          <button className="rounded-md border border-white/15 px-3 py-2 text-sm font-bold text-slate-200 hover:border-cyan-300 hover:text-cyan-200">
+            ENG
+          </button>
+          <button className="rounded-md bg-white px-4 py-2 text-sm font-extrabold text-slate-950 hover:bg-cyan-200">
+            로그인
+          </button>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function Hero() {
+  return (
+    <section className="hero-panel overflow-hidden rounded-lg border border-white/10 bg-slate-950">
+      <div className="grid min-h-[24rem] gap-6 p-6 lg:grid-cols-[1.1fr_0.9fr] xl:min-h-[30rem] xl:p-8">
+        <div className="flex flex-col justify-between gap-8">
+          <div>
+            <p className="mb-4 text-sm font-extrabold text-cyan-300">N-FACILITY / FAB OPERATION / EQUIPMENT RESERVATION</p>
+            <h2 className="max-w-4xl text-4xl font-extrabold leading-tight text-white lg:text-5xl 2xl:text-6xl">
+              반도체 공정 장비를 한 화면에서 예약하고 운영합니다
+            </h2>
+            <p className="mt-5 max-w-3xl text-base leading-7 text-slate-300 lg:text-lg">
+              장비 소개, 교육 인증, 예약 승인, 사용률 분석을 통합해 연구자와 관리자가 같은 데이터를 보고 움직이는 운영 플랫폼입니다.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {quickLinks.map((link) => {
+              const Icon = link.icon;
+              return (
+                <button key={link.label} className="flex items-center gap-3 rounded-md border border-white/10 bg-white/5 px-4 py-4 text-left font-bold text-white hover:border-cyan-300 hover:bg-cyan-300/10">
+                  <Icon className="text-cyan-300" size={20} />
+                  {link.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div className="relative min-h-[18rem]">
+          <div className="wafer-visual">
+            <div className="wafer-core" />
+            <div className="wafer-grid" />
+            <div className="wafer-label">
+              <span>Cleanroom</span>
+              <strong>ISO 5</strong>
+            </div>
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 grid gap-3 sm:grid-cols-2">
+            {processCards.map((item) => (
+              <div key={item.label} className="rounded-md border border-white/10 bg-slate-950/80 p-4 backdrop-blur">
+                <p className={`text-xs font-bold uppercase ${item.tone}`}>{item.label}</p>
+                <p className="mt-1 text-2xl font-extrabold text-white">{item.value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function StatGrid() {
+  return (
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      {statCards.map((card) => {
+        const Icon = card.icon;
+        return (
+          <div key={card.label} className="rounded-lg border border-white/10 bg-surface/85 p-5">
+            <div className="mb-6 flex items-center justify-between">
+              <div className="rounded-md bg-cyan-300/10 p-2 text-cyan-300">
+                <Icon size={20} />
+              </div>
+              <span className="h-2 w-2 rounded-full bg-emerald-300" />
+            </div>
+            <p className="text-sm font-semibold text-slate-400">{card.label}</p>
+            <p className="mt-2 text-3xl font-extrabold text-white">{card.value}</p>
+            <p className="mt-2 text-sm text-slate-400">{card.detail}</p>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ChartPanel({
+  title,
+  data,
+  dataKey,
+  xKey,
+  unit,
+  colorA,
+  colorB
+}: {
+  title: string;
+  data: Array<Record<string, string | number>>;
+  dataKey: string;
+  xKey: string;
+  unit: string;
+  colorA: string;
+  colorB: string;
+}) {
+  const maxValue = Math.max(...data.map((entry) => Number(entry[dataKey])));
+  const minValue = Math.min(...data.map((entry) => Number(entry[dataKey])));
+
+  return (
+    <div className="chart-card rounded-lg border border-white/10 bg-[#101114] p-5">
+      <div className="mb-4 flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm text-slate-400">OAuth 인증</p>
-          <h3 className="font-bold text-white">로그인/회원가입</h3>
+          <p className="text-xs font-bold uppercase text-slate-500">Realtime Analytics</p>
+          <h3 className="mt-1 text-xl font-extrabold text-white">{title}</h3>
+        </div>
+        <div className="flex gap-2 text-xs font-bold text-slate-300">
+          <span className="rounded-full bg-white/10 px-3 py-1">24H</span>
+          <span className="rounded-full px-3 py-1">1W</span>
+          <span className="rounded-full px-3 py-1">1M</span>
         </div>
       </div>
-      <div className="grid gap-2">
-        <button className="flex items-center justify-center gap-2 rounded-md bg-white px-4 py-3 font-bold text-slate-900 hover:bg-cyan-100">
-          <LogIn size={18} /> Google로 계속
-        </button>
-        <button className="flex items-center justify-center gap-2 rounded-md bg-[#FEE500] px-4 py-3 font-bold text-slate-950 hover:brightness-110">
-          <LogIn size={18} /> Kakao로 계속
-        </button>
+      <div className="h-[20rem] xl:h-[24rem] 2xl:h-[28rem]">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={data} margin={{ top: 22, right: 22, left: 0, bottom: 0 }}>
+            <defs>
+              <linearGradient id={`${dataKey}-stroke`} x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor={colorA} />
+                <stop offset="55%" stopColor={colorB} />
+                <stop offset="100%" stopColor="#B56CFF" />
+              </linearGradient>
+              <linearGradient id={`${dataKey}-area`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={colorB} stopOpacity={0.24} />
+                <stop offset="65%" stopColor={colorB} stopOpacity={0.08} />
+                <stop offset="100%" stopColor={colorB} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid stroke="rgba(255,255,255,.08)" vertical={false} />
+            <XAxis dataKey={xKey} stroke="#8b8f98" tickLine={false} axisLine={false} interval="preserveStartEnd" />
+            <YAxis stroke="#a8adb8" tickLine={false} axisLine={false} tickFormatter={(value) => `${value}${unit}`} width={54} />
+            <Tooltip
+              contentStyle={{ background: '#050607', border: '1px solid rgba(255,255,255,.12)', borderRadius: '8px', color: '#fff' }}
+              labelStyle={{ color: '#aeb6c2' }}
+              formatter={(value) => [`${value}${unit}`, title]}
+            />
+            <Area type="monotone" dataKey={dataKey} stroke={`url(#${dataKey}-stroke)`} strokeWidth={3} fill={`url(#${dataKey}-area)`} dot={false} activeDot={{ r: 6, fill: colorB, stroke: '#111', strokeWidth: 2 }} />
+          </AreaChart>
+        </ResponsiveContainer>
       </div>
-      <p className="mt-4 text-xs leading-5 text-slate-400">
-        예약과 교육 신청은 JWT 세션 확인 후 접근됩니다. 관리자 메뉴는 RBAC로 분리됩니다.
-      </p>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-400">
+        <div className="flex gap-3">
+          <span>Low: {minValue}{unit}</span>
+          <span>High: {maxValue}{unit}</span>
+        </div>
+        <div className="flex gap-3">
+          <span className="inline-flex items-center gap-2 text-white"><span className="h-3 w-3 rounded-sm bg-[#ff8a3d]" /> 사용시간</span>
+          <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-sm border border-slate-500" /> 승인예약</span>
+        </div>
+      </div>
     </div>
   );
 }
 
 function Dashboard() {
-  const topEquipment = equipment.slice(0, 8);
   return (
-    <div className="grid gap-5 xl:grid-cols-[1.5fr_0.9fr]">
-      <div className="grid gap-5">
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {statCards.map((card) => {
-            const Icon = card.icon;
-            return (
-              <div key={card.label} className="rounded-lg border border-white/10 bg-surface/80 p-4">
-                <div className={`mb-5 inline-flex rounded-md bg-white/5 p-2 ${card.tone}`}>
-                  <Icon size={20} />
-                </div>
-                <p className="text-sm text-slate-400">{card.label}</p>
-                <p className="mt-1 text-2xl font-extrabold text-white">{card.value}</p>
-              </div>
-            );
-          })}
+    <section className="dashboard-grid mt-5">
+      <div className="stat-area">
+        <StatGrid />
+      </div>
+      <div className="usage-chart">
+        <ChartPanel title="장비별 사용량" data={equipmentUsage} dataKey="value" xKey="label" unit="h" colorA="#ff8a3d" colorB="#d46ab8" />
+      </div>
+      <div className="monthly-chart">
+        <ChartPanel title="월별 총 사용시간" data={monthlyUsage} dataKey="hours" xKey="month" unit="h" colorA="#22d3ee" colorB="#8b5cf6" />
+      </div>
+      <div className="calendar-area rounded-lg border border-white/10 bg-surface/85 p-5">
+        <SectionTitle title="장비 예약 현황 캘린더" eyebrow="Reservation Calendar" action="예약 등록" />
+        <FullCalendar
+          plugins={[dayGridPlugin, interactionPlugin]}
+          initialView="dayGridMonth"
+          initialDate="2026-06-17"
+          height="auto"
+          events={events}
+          eventClick={(info: { event: { title: string; start: Date | null } }) => alert(`${info.event.title}\n${info.event.start?.toLocaleString()}`)}
+        />
+      </div>
+      <aside className="side-area grid content-start gap-5">
+        <LoginPanel />
+        <UtilizationPanel />
+      </aside>
+    </section>
+  );
+}
+
+function LoginPanel() {
+  return (
+    <div className="rounded-lg border border-white/10 bg-surface/85 p-5">
+      <div className="mb-5 flex items-center gap-3">
+        <div className="rounded-md bg-blue-500/15 p-2 text-cyan-300">
+          <LockKeyhole size={20} />
         </div>
-
-        <div className="grid gap-5 lg:grid-cols-2">
-          <div className="rounded-lg border border-white/10 bg-surface/80 p-5">
-            <SectionTitle title="장비별 사용량" action="상세보기" />
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={topEquipment}>
-                  <CartesianGrid stroke="rgba(148,163,184,.15)" vertical={false} />
-                  <XAxis dataKey="name" hide />
-                  <YAxis stroke="#94a3b8" />
-                  <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid rgba(255,255,255,.12)' }} />
-                  <Bar dataKey="usageHours" radius={[6, 6, 0, 0]}>
-                    {topEquipment.map((entry) => (
-                      <Cell key={entry.id} fill={entry.utilization > 75 ? '#22d3ee' : '#3b82f6'} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          <div className="rounded-lg border border-white/10 bg-surface/80 p-5">
-            <SectionTitle title="월별 총 사용시간" />
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={monthlyUsage}>
-                  <CartesianGrid stroke="rgba(148,163,184,.15)" vertical={false} />
-                  <XAxis dataKey="month" stroke="#94a3b8" />
-                  <YAxis stroke="#94a3b8" />
-                  <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid rgba(255,255,255,.12)' }} />
-                  <Line type="monotone" dataKey="hours" stroke="#22d3ee" strokeWidth={3} dot={false} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-lg border border-white/10 bg-surface/80 p-5">
-          <SectionTitle title="예약 현황 캘린더" action="예약 등록" />
-          <FullCalendar
-            plugins={[dayGridPlugin, interactionPlugin]}
-            initialView="dayGridMonth"
-            initialDate="2026-06-17"
-            height="auto"
-            events={events}
-            eventClick={(info: { event: { title: string; start: Date | null } }) => alert(`${info.event.title}\n${info.event.start?.toLocaleString()}`)}
-          />
+        <div>
+          <p className="text-sm text-slate-400">OAuth 인증</p>
+          <h3 className="font-bold text-white">연구자 로그인</h3>
         </div>
       </div>
+      <div className="grid gap-2">
+        <button className="flex items-center justify-center gap-2 rounded-md bg-white px-4 py-3 font-bold text-slate-900 hover:bg-cyan-100">
+          <LogIn size={18} /> Google
+        </button>
+        <button className="flex items-center justify-center gap-2 rounded-md bg-[#FEE500] px-4 py-3 font-bold text-slate-950 hover:brightness-110">
+          <LogIn size={18} /> Kakao
+        </button>
+      </div>
+      <p className="mt-4 text-xs leading-5 text-slate-400">교육 인증 및 예약 권한은 JWT 세션과 RBAC 권한으로 관리됩니다.</p>
+    </div>
+  );
+}
 
-      <aside className="grid content-start gap-5">
-        <LoginPanel />
-        <div className="rounded-lg border border-white/10 bg-surface/80 p-5">
-          <SectionTitle title="긴급 예약 알림" />
-          <div className="grid gap-3">
-            {events.slice(0, 2).map((event) => (
-              <div key={event.id} className="flex items-center justify-between rounded-md bg-white/5 p-3">
-                <div>
-                  <p className="font-semibold text-white">{event.title}</p>
-                  <p className="text-sm text-slate-400">{event.start.replace('T', ' ')}</p>
-                </div>
-                <ChevronRight className="text-cyan-300" size={18} />
-              </div>
-            ))}
+function UtilizationPanel() {
+  return (
+    <div className="rounded-lg border border-white/10 bg-surface/85 p-5">
+      <SectionTitle title="장비 사용률" eyebrow="Utilization" />
+      <div className="grid gap-4">
+        {equipment.slice(0, 8).map((item) => (
+          <div key={item.id}>
+            <div className="mb-1 flex justify-between text-sm">
+              <span className="text-slate-300">{item.name}</span>
+              <span className="font-bold text-cyan-300">{item.utilization}%</span>
+            </div>
+            <div className="h-2 rounded-full bg-slate-800">
+              <div className="h-2 rounded-full bg-gradient-to-r from-cyan-300 to-blue-600" style={{ width: `${item.utilization}%` }} />
+            </div>
           </div>
-        </div>
-        <div className="rounded-lg border border-white/10 bg-surface/80 p-5">
-          <SectionTitle title="장비 사용률 통계" />
-          <div className="grid gap-4">
-            {equipment.slice(0, 6).map((item) => (
-              <div key={item.id}>
-                <div className="mb-1 flex justify-between text-sm">
-                  <span className="text-slate-300">{item.name}</span>
-                  <span className="font-bold text-cyan-300">{item.utilization}%</span>
-                </div>
-                <div className="h-2 rounded-full bg-slate-700">
-                  <div className="h-2 rounded-full bg-gradient-to-r from-blue-500 to-cyan-300" style={{ width: `${item.utilization}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </aside>
+        ))}
+      </div>
     </div>
   );
 }
 
 function EquipmentCatalog() {
   return (
-    <section className="mt-5">
-      <SectionTitle title="장비 목록" action="장비 추가" />
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {equipment.map((item) => (
-          <article key={item.id} className="overflow-hidden rounded-lg border border-white/10 bg-surface/80">
+    <section className="mt-5" id="장비현황">
+      <SectionTitle title="장비 목록" eyebrow="Equipment Inventory" action="장비 추가" />
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {equipment.slice(0, 12).map((item) => (
+          <article key={item.id} className="overflow-hidden rounded-lg border border-white/10 bg-surface/85">
             <img className="h-36 w-full object-cover" src={item.image} alt={item.name} />
             <div className="p-4">
               <div className="mb-3 flex items-start justify-between gap-3">
@@ -205,29 +382,32 @@ function EquipmentCatalog() {
 
 function ReservationWorkspace() {
   return (
-    <section className="mt-5 grid gap-5 lg:grid-cols-[18rem_1fr]">
-      <div className="rounded-lg border border-white/10 bg-surface/80 p-4">
+    <section className="mt-5 grid gap-5 xl:grid-cols-[22rem_1fr]" id="예약현황">
+      <div className="rounded-lg border border-white/10 bg-surface/85 p-4">
         <div className="mb-4 flex items-center gap-2">
           <SlidersHorizontal size={18} className="text-cyan-300" />
           <h2 className="font-bold text-white">장비 검색/필터</h2>
         </div>
-        <input className="mb-3 w-full rounded-md border border-white/10 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-cyan-300" placeholder="장비명 검색" />
+        <div className="relative mb-3">
+          <Search className="absolute left-3 top-2.5 text-slate-500" size={17} />
+          <input className="w-full rounded-md border border-white/10 bg-slate-950 px-9 py-2 text-sm outline-none focus:border-cyan-300" placeholder="장비명 검색" />
+        </div>
         <select className="mb-4 w-full rounded-md border border-white/10 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-cyan-300">
           <option>전체 카테고리</option>
           <option>분석장비</option>
           <option>공정장비</option>
           <option>패키징/지원</option>
         </select>
-        <div className="grid max-h-[32rem] gap-2 overflow-auto pr-1">
+        <div className="grid max-h-[34rem] gap-2 overflow-auto pr-1">
           {equipment.map((item, index) => (
-            <button key={item.id} className={`rounded-md px-3 py-2 text-left text-sm hover:bg-blue-500 ${index === 0 ? 'bg-navy text-white' : 'bg-white/5 text-slate-300'}`}>
+            <button key={item.id} className={`rounded-md px-3 py-2 text-left text-sm font-semibold hover:bg-blue-600 ${index === 0 ? 'bg-blue-700 text-white' : 'bg-white/5 text-slate-300'}`}>
               {item.name}
             </button>
           ))}
         </div>
       </div>
-      <div className="rounded-lg border border-white/10 bg-surface/80 p-5">
-        <SectionTitle title="FE-SEM 예약 캘린더" action="내역 보기" />
+      <div className="rounded-lg border border-white/10 bg-surface/85 p-5">
+        <SectionTitle title="FE-SEM 장비별 예약 캘린더" eyebrow="Equipment Calendar" action="내 예약 보기" />
         <FullCalendar plugins={[dayGridPlugin, interactionPlugin]} initialView="dayGridMonth" initialDate="2026-06-17" selectable height="auto" events={events} />
       </div>
     </section>
@@ -237,8 +417,8 @@ function ReservationWorkspace() {
 function EducationAndAdmin() {
   return (
     <section className="mt-5 grid gap-5 xl:grid-cols-2">
-      <div className="rounded-lg border border-white/10 bg-surface/80 p-5">
-        <SectionTitle title="장비 사용 교육" action="교육 신청" />
+      <div className="rounded-lg border border-white/10 bg-surface/85 p-5">
+        <SectionTitle title="장비 사용 교육" eyebrow="Training" action="교육 신청" />
         <select className="mb-4 w-full rounded-md border border-white/10 bg-slate-950 px-3 py-3 outline-none focus:border-cyan-300">
           {equipment.map((item) => <option key={item.id}>{item.name} 교육 신청</option>)}
         </select>
@@ -249,13 +429,13 @@ function EducationAndAdmin() {
                 <BookOpen className="text-cyan-300" size={18} />
                 <span className="font-semibold text-white">{title}</span>
               </div>
-              <button className="rounded-md bg-navy px-3 py-2 text-sm font-semibold text-white hover:bg-blue-500">열기</button>
+              <button className="rounded-md bg-blue-700 px-3 py-2 text-sm font-semibold text-white hover:bg-cyan-500 hover:text-slate-950">열기</button>
             </div>
           ))}
         </div>
       </div>
-      <div className="rounded-lg border border-white/10 bg-surface/80 p-5">
-        <SectionTitle title="관리자 대시보드" action="CMS 편집" />
+      <div className="rounded-lg border border-white/10 bg-surface/85 p-5">
+        <SectionTitle title="관리자 대시보드" eyebrow="Admin CMS" action="CMS 편집" />
         <div className="grid gap-3 sm:grid-cols-2">
           {['사용자관리', '장비관리', '예약승인/거부', '교육관리', '홈페이지편집', '대시보드 데이터'].map((title) => (
             <button key={title} className="rounded-md border border-white/10 bg-white/5 p-4 text-left font-bold text-white hover:border-cyan-300 hover:bg-blue-500/20">
@@ -271,49 +451,14 @@ function EducationAndAdmin() {
 export function App() {
   return (
     <div className="min-h-screen">
-      <div className="mx-auto flex max-w-[1480px] gap-5 px-4 py-4 lg:px-6">
-        <nav className="sticky top-4 hidden h-[calc(100vh-2rem)] w-64 shrink-0 rounded-lg border border-white/10 bg-slate-950/80 p-4 backdrop-blur lg:block">
-          <div className="mb-8">
-            <p className="text-sm font-bold text-cyan-300">HBNU</p>
-            <h1 className="mt-1 text-xl font-extrabold text-white">Semiconductor Center</h1>
-          </div>
-          <div className="grid gap-1">
-            {menu.map((item) => {
-              const Icon = item.icon;
-              return (
-                <a key={item.label} className="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-semibold text-slate-300 hover:bg-blue-600 hover:text-white" href={`#${item.label}`}>
-                  <Icon size={18} />
-                  {item.label}
-                  {item.admin && <span className="ml-auto rounded bg-cyan-400/20 px-2 py-0.5 text-[10px] text-cyan-200">ADMIN</span>}
-                </a>
-              );
-            })}
-          </div>
-        </nav>
-
-        <main className="min-w-0 flex-1">
-          <header className="mb-5 rounded-lg border border-white/10 bg-surface/80 p-5">
-            <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
-              <div>
-                <p className="mb-2 text-sm font-bold uppercase text-cyan-300">Facility, Education, Reservation</p>
-                <h1 className="text-3xl font-extrabold text-white md:text-4xl">기관 장비 통합 운영 대시보드</h1>
-                <p className="mt-3 max-w-3xl text-slate-300">
-                  20~30종 반도체 장비 소개, 교육 인증, 예약 승인, 사용률 분석을 하나의 관리 화면에서 운영합니다.
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <button className="rounded-md bg-navy px-4 py-3 font-bold text-white hover:bg-blue-500">예약 등록</button>
-                <button className="rounded-md border border-cyan-300/40 px-4 py-3 font-bold text-cyan-200 hover:bg-cyan-300 hover:text-slate-950">교육 신청</button>
-              </div>
-            </div>
-          </header>
-
-          <Dashboard />
-          <EquipmentCatalog />
-          <ReservationWorkspace />
-          <EducationAndAdmin />
-        </main>
-      </div>
+      <InstitutionHeader />
+      <main className="mx-auto max-w-[1800px] px-4 py-5 lg:px-6 2xl:px-8">
+        <Hero />
+        <Dashboard />
+        <EquipmentCatalog />
+        <ReservationWorkspace />
+        <EducationAndAdmin />
+      </main>
     </div>
   );
 }
