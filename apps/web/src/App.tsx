@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ChangeEvent, type DragEvent, type FormEvent, type ReactNode } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -32,8 +32,10 @@ import {
   Search,
   ShieldCheck,
   SlidersHorizontal,
+  Trash2,
   TrendingDown,
   TrendingUp,
+  UploadCloud,
   UserRound,
   Wrench
 } from 'lucide-react';
@@ -136,7 +138,7 @@ function useEquipmentData() {
     return () => controller.abort();
   }, []);
 
-  return { items, source };
+  return { items, setItems, source };
 }
 
 function downloadCsv(filename: string, rows: Array<Record<string, string | number>>) {
@@ -426,7 +428,15 @@ function MonthlyUsageChart() {
   );
 }
 
-function EquipmentGateway({ equipmentItems, onOpen }: { equipmentItems: EquipmentItem[]; onOpen: (group: EquipmentGroup) => void }) {
+function EquipmentGateway({
+  equipmentItems,
+  onOpen,
+  action = '장비 추가'
+}: {
+  equipmentItems: EquipmentItem[];
+  onOpen: (group: EquipmentGroup) => void;
+  action?: string | ReactNode;
+}) {
   const grouped = {
     process: equipmentItems.filter((item) => item.group === 'process'),
     metrology: equipmentItems.filter((item) => item.group === 'metrology')
@@ -434,7 +444,7 @@ function EquipmentGateway({ equipmentItems, onOpen }: { equipmentItems: Equipmen
 
   return (
     <section className="mt-5" id="장비목록요약">
-      <SectionTitle title="장비 목록" eyebrow="Equipment Inventory" action="장비 추가" />
+      <SectionTitle title="장비 목록" eyebrow="Equipment Inventory" action={action} />
       <div className="grid gap-5 lg:grid-cols-2">
         {(Object.keys(categoryMeta) as EquipmentGroup[]).map((group) => {
           const meta = categoryMeta[group];
@@ -481,8 +491,27 @@ function Dashboard({ equipmentItems, onOpenEquipment }: { equipmentItems: Equipm
   );
 }
 
-function EquipmentPage({ equipmentItems, source, initialGroup }: { equipmentItems: EquipmentItem[]; source: 'api' | 'fallback'; initialGroup: EquipmentGroup }) {
+function EquipmentPage({
+  equipmentItems,
+  source,
+  initialGroup,
+  sessionRole,
+  onAddEquipment,
+  onDeleteEquipment
+}: {
+  equipmentItems: EquipmentItem[];
+  source: 'api' | 'fallback';
+  initialGroup: EquipmentGroup;
+  sessionRole: Role | null;
+  onAddEquipment: (item: EquipmentItem) => void;
+  onDeleteEquipment: (equipmentId: string) => void;
+}) {
   const [activeGroup, setActiveGroup] = useState<EquipmentGroup>(initialGroup);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [planImage, setPlanImage] = useState<string | null>(null);
+  const isAdmin = sessionRole === 'ADMIN';
 
   useEffect(() => setActiveGroup(initialGroup), [initialGroup]);
 
@@ -494,8 +523,38 @@ function EquipmentPage({ equipmentItems, source, initialGroup }: { equipmentItem
 
   return (
     <section id="장비현황" className="grid gap-5">
-      <SectionTitle title="장비현황" eyebrow="Equipment Inventory" action="장비 추가" />
-      <EquipmentGateway equipmentItems={equipmentItems} onOpen={setActiveGroup} />
+      <SectionTitle
+        title="장비현황"
+        eyebrow="Equipment Inventory"
+        action={
+          isAdmin ? (
+            <button
+              className="inline-flex items-center gap-2 rounded-md bg-blue-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-cyan-500 hover:text-slate-950"
+              onClick={() => setShowUploadModal(true)}
+              title="실습실 도면 이미지 업로드"
+            >
+              <Plus size={17} /> 도면 업로드
+            </button>
+          ) : null
+        }
+      />
+      <CleanroomPlanSection image={planImage} />
+      <EquipmentGateway
+        equipmentItems={equipmentItems}
+        onOpen={setActiveGroup}
+        action={
+          isAdmin ? (
+            <div className="flex flex-wrap gap-2">
+            <button className="rounded-md bg-blue-700 px-5 py-2.5 text-sm font-bold text-white hover:bg-cyan-500 hover:text-slate-950" onClick={() => setShowAddModal(true)}>
+              장비 추가
+            </button>
+            <button className="inline-flex items-center gap-2 rounded-md border border-red-300/30 px-5 py-2.5 text-sm font-bold text-red-100 hover:bg-red-500 hover:text-white" onClick={() => setShowDeleteModal(true)}>
+              <Trash2 size={16} /> 장비 삭제
+            </button>
+            </div>
+          ) : null
+        }
+      />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex gap-2">
           {(Object.keys(categoryMeta) as EquipmentGroup[]).map((group) => (
@@ -526,7 +585,159 @@ function EquipmentPage({ equipmentItems, source, initialGroup }: { equipmentItem
           </article>
         ))}
       </div>
+      {showUploadModal && <PlanUploadModal onClose={() => setShowUploadModal(false)} onUpload={(image) => { setPlanImage(image); setShowUploadModal(false); }} />}
+      {showAddModal && <EquipmentAddModal onClose={() => setShowAddModal(false)} onAdd={(item) => { onAddEquipment(item); setActiveGroup(item.group); setShowAddModal(false); }} />}
+      {showDeleteModal && <EquipmentDeleteModal equipmentItems={equipmentItems} onClose={() => setShowDeleteModal(false)} onDelete={(equipmentId) => { onDeleteEquipment(equipmentId); setShowDeleteModal(false); }} />}
     </section>
+  );
+}
+
+function CleanroomPlanSection({ image }: { image: string | null }) {
+  return (
+    <div className="rounded-lg border border-white/10 bg-surface/85 p-5">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-bold uppercase text-cyan-300">Cleanroom Floor Plan</p>
+          <h3 className="mt-1 text-2xl font-extrabold text-white">실습실 도면 3D 배치 공간</h3>
+        </div>
+      </div>
+      <div className="cleanroom-plan-space">
+        {image ? (
+          <img className="cleanroom-plan-image" src={image} alt="업로드된 실습실 도면" />
+        ) : (
+          <div className="cleanroom-3d-draft" aria-label="클린룸 3D 도면 가안">
+            <div className="cleanroom-room room-process">
+              <strong>Process Zone</strong>
+              <span>Lithography / Deposition / Etching</span>
+            </div>
+            <div className="cleanroom-room room-metrology">
+              <strong>Metrology Zone</strong>
+              <span>SEM / XRD / Probe Station</span>
+            </div>
+            <div className="cleanroom-room room-utility">
+              <strong>Utility Core</strong>
+              <span>Gas / Power / Exhaust</span>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PlanUploadModal({ onClose, onUpload }: { onClose: () => void; onUpload: (image: string) => void }) {
+  const [fileName, setFileName] = useState('');
+  const [preview, setPreview] = useState<string | null>(null);
+
+  function loadFile(file?: File) {
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPreview(String(reader.result));
+      setFileName(file.name);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function handleInput(event: ChangeEvent<HTMLInputElement>) {
+    loadFile(event.target.files?.[0]);
+  }
+
+  function handleDrop(event: DragEvent<HTMLLabelElement>) {
+    event.preventDefault();
+    loadFile(event.dataTransfer.files?.[0]);
+  }
+
+  return (
+    <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
+      <div className="reservation-modal" role="dialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}>
+        <div className="mb-5 flex items-center justify-between">
+          <h3 className="text-2xl font-extrabold text-white">실습실 도면 업로드</h3>
+          <button type="button" className="rounded-md border border-white/10 px-4 py-2 text-sm font-bold text-slate-200 hover:border-cyan-300 hover:text-cyan-200" onClick={onClose}>
+            닫기
+          </button>
+        </div>
+        <label className="upload-drop-zone" onDragOver={(event) => event.preventDefault()} onDrop={handleDrop}>
+          <UploadCloud size={34} />
+          <strong>이미지 파일을 선택하거나 이곳에 드래그하세요.</strong>
+          <span>{fileName || 'PNG, JPG, WEBP 파일 지원'}</span>
+          <input type="file" accept="image/*" onChange={handleInput} />
+        </label>
+        {preview && <img className="upload-preview" src={preview} alt="업로드 미리보기" />}
+        <div className="mt-6 flex justify-end gap-3">
+          <button type="button" className="rounded-md border border-white/15 px-5 py-3 font-bold text-slate-200 hover:border-cyan-300" onClick={onClose}>취소</button>
+          <button type="button" className="rounded-md bg-cyan-300 px-5 py-3 font-extrabold text-slate-950 hover:bg-white disabled:cursor-not-allowed disabled:opacity-40" disabled={!preview} onClick={() => preview && onUpload(preview)}>
+            업로드 적용
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EquipmentAddModal({ onClose, onAdd }: { onClose: () => void; onAdd: (item: EquipmentItem) => void }) {
+  const [form, setForm] = useState({ name: '', group: 'process' as EquipmentGroup, location: '공정동 1층', condition: '교육 이수 후 사용 가능' });
+
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    if (!form.name.trim()) return;
+    onAdd({
+      id: `eq-${Date.now()}`,
+      name: form.name.trim(),
+      category: form.group === 'process' ? '공정장비' : '측정 및 분석장비',
+      group: form.group,
+      groupName: form.group === 'process' ? '공정' : '측정 및 분석',
+      location: form.location,
+      image: form.group === 'process' ? categoryMeta.process.image : categoryMeta.metrology.image,
+      features: ['예약 캘린더', '교육 인증', '사용 로그'],
+      condition: form.condition,
+      utilization: 0,
+      usageHours: 0
+    });
+  }
+
+  return (
+    <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
+      <form className="reservation-modal" onSubmit={submit} onMouseDown={(event) => event.stopPropagation()}>
+        <div className="mb-5 flex items-center justify-between">
+          <h3 className="text-2xl font-extrabold text-white">장비 추가</h3>
+          <button type="button" className="rounded-md border border-white/10 px-4 py-2 text-sm font-bold text-slate-200 hover:border-cyan-300 hover:text-cyan-200" onClick={onClose}>
+            닫기
+          </button>
+        </div>
+        <label className="reservation-label">장비명<input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} required /></label>
+        <label className="reservation-label">대분류<select value={form.group} onChange={(event) => setForm((current) => ({ ...current, group: event.target.value as EquipmentGroup }))}><option value="process">공정</option><option value="metrology">측정 및 분석</option></select></label>
+        <label className="reservation-label">위치<input value={form.location} onChange={(event) => setForm((current) => ({ ...current, location: event.target.value }))} /></label>
+        <label className="reservation-label">사용 조건<input value={form.condition} onChange={(event) => setForm((current) => ({ ...current, condition: event.target.value }))} /></label>
+        <div className="mt-6 flex justify-end gap-3">
+          <button type="button" className="rounded-md border border-white/15 px-5 py-3 font-bold text-slate-200 hover:border-cyan-300" onClick={onClose}>취소</button>
+          <button type="submit" className="rounded-md bg-cyan-300 px-5 py-3 font-extrabold text-slate-950 hover:bg-white">장비 등록</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function EquipmentDeleteModal({ equipmentItems, onClose, onDelete }: { equipmentItems: EquipmentItem[]; onClose: () => void; onDelete: (equipmentId: string) => void }) {
+  const [equipmentId, setEquipmentId] = useState(equipmentItems[0]?.id ?? '');
+
+  return (
+    <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
+      <div className="reservation-modal" role="dialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}>
+        <div className="mb-5 flex items-center justify-between">
+          <h3 className="text-2xl font-extrabold text-white">장비 삭제</h3>
+          <button type="button" className="rounded-md border border-white/10 px-4 py-2 text-sm font-bold text-slate-200 hover:border-cyan-300 hover:text-cyan-200" onClick={onClose}>
+            닫기
+          </button>
+        </div>
+        <p className="mb-4 text-sm leading-6 text-slate-300">삭제된 장비는 화면과 대시보드 그래프에서 제외됩니다. 누적 사용량 CSV 산출을 위한 원본 데이터는 관리자 통계에 남겨두는 구조입니다.</p>
+        <label className="reservation-label">삭제할 장비<select value={equipmentId} onChange={(event) => setEquipmentId(event.target.value)}>{equipmentItems.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+        <div className="mt-6 flex justify-end gap-3">
+          <button type="button" className="rounded-md border border-white/15 px-5 py-3 font-bold text-slate-200 hover:border-cyan-300" onClick={onClose}>취소</button>
+          <button type="button" className="rounded-md bg-red-500 px-5 py-3 font-extrabold text-white hover:bg-red-400" onClick={() => equipmentId && onDelete(equipmentId)}>삭제 확정</button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -861,10 +1072,11 @@ function PlaceholderPage({ title }: { title: string }) {
 }
 
 export function App() {
-  const { items: equipmentItems, source } = useEquipmentData();
+  const { items: equipmentItems, setItems: setEquipmentItems, source } = useEquipmentData();
   const [activePage, setActivePage] = useState<PageKey>('home');
   const [loading, setLoading] = useState(false);
   const [initialGroup, setInitialGroup] = useState<EquipmentGroup>('process');
+  const [deletedEquipmentIds, setDeletedEquipmentIds] = useState<string[]>([]);
   const [sessionRole, setSessionRole] = useState<Role | null>(() => {
     const stored = localStorage.getItem('hbnu-session-user');
     if (!stored) return null;
@@ -889,6 +1101,16 @@ export function App() {
     navigate('equipment');
   }
 
+  function addEquipment(item: EquipmentItem) {
+    setEquipmentItems((current) => [...current, item]);
+  }
+
+  function deleteEquipment(equipmentId: string) {
+    setDeletedEquipmentIds((current) => current.includes(equipmentId) ? current : [...current, equipmentId]);
+  }
+
+  const activeEquipmentItems = equipmentItems.filter((item) => !deletedEquipmentIds.includes(item.id));
+
   return (
     <div className="min-h-screen">
       <LoadingOverlay visible={loading} />
@@ -897,12 +1119,21 @@ export function App() {
         {activePage === 'home' && (
           <>
             <Hero onNavigate={navigate} />
-            <Dashboard equipmentItems={equipmentItems} onOpenEquipment={openEquipment} />
+            <Dashboard equipmentItems={activeEquipmentItems} onOpenEquipment={openEquipment} />
           </>
         )}
-        {activePage === 'equipment' && <EquipmentPage equipmentItems={equipmentItems} source={source} initialGroup={initialGroup} />}
-        {activePage === 'reservations' && <ReservationPage equipmentItems={equipmentItems} />}
-        {activePage === 'training' && <TrainingPage equipmentItems={equipmentItems} />}
+        {activePage === 'equipment' && (
+          <EquipmentPage
+            equipmentItems={activeEquipmentItems}
+            source={source}
+            initialGroup={initialGroup}
+            sessionRole={sessionRole}
+            onAddEquipment={addEquipment}
+            onDeleteEquipment={deleteEquipment}
+          />
+        )}
+        {activePage === 'reservations' && <ReservationPage equipmentItems={activeEquipmentItems} />}
+        {activePage === 'training' && <TrainingPage equipmentItems={activeEquipmentItems} />}
         {activePage === 'admin' && <AdminPage equipmentItems={equipmentItems} />}
         {activePage === 'login' && <LoginPage onAuthenticated={(role) => setSessionRole(role)} />}
         {activePage === 'facility' && <PlaceholderPage title="시설안내" />}
