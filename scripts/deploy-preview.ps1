@@ -31,6 +31,7 @@ Get-ChildItem -Path $PreviewDir -Force |
   Remove-Item -Recurse -Force
 
 Copy-Item -Path "apps\web\dist\*" -Destination $PreviewDir -Recurse -Force
+New-Item -Path (Join-Path $PreviewDir ".nojekyll") -ItemType File -Force | Out-Null
 
 Push-Location $PreviewDir
 try {
