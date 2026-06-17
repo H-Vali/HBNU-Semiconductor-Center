@@ -42,3 +42,15 @@ git push -u origin main
 ```
 
 GitHub Actions는 `main` 브랜치 푸시 시 빌드 검증을 수행하고, Docker 이미지 빌드 및 Kubernetes 배포 단계로 확장할 수 있게 구성되어 있습니다.
+
+## 외부 프리뷰 배포
+
+현재 외부 확인용 정적 프리뷰 URL:
+
+https://h-vali.github.io/HBNU-Semiconductor-Center-Preview/
+
+원본 개발 저장소는 private로 유지하고, 빌드 결과물만 public preview 저장소에 배포합니다.
+
+```powershell
+.\scripts\deploy-preview.ps1
+```
