@@ -91,6 +91,17 @@ const reservationTimes = Array.from({ length: 48 }, (_, index) => {
   return `${hour}:${minute}`;
 });
 
+function getSeoulDateKey(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
 function normalizeEquipment(item: ApiEquipmentItem, index: number): EquipmentItem {
   const name = item.name ?? `Equipment ${index + 1}`;
   const inferredGroup: EquipmentGroup =
@@ -741,11 +752,56 @@ function EquipmentDeleteModal({ equipmentItems, onClose, onDelete }: { equipment
   );
 }
 
+function SeoulClock() {
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const parts = new Intl.DateTimeFormat('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  }).formatToParts(now);
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+
+  return (
+    <div className="seoul-clock" aria-label="서울 기준 현재 시각">
+      <div>
+        <span>SEOUL TIME</span>
+        <strong>{values.year}.{values.month}.{values.day}</strong>
+      </div>
+      <time dateTime={now.toISOString()}>
+        {values.hour}<em>:</em>{values.minute}<em>:</em>{values.second}
+      </time>
+    </div>
+  );
+}
+
 function ReservationPage({ equipmentItems }: { equipmentItems: EquipmentItem[] }) {
   const [selectedEquipmentId, setSelectedEquipmentId] = useState(equipmentItems[0]?.id ?? '');
   const [calendarEvents, setCalendarEvents] = useState<ReservationEvent[]>(events);
   const [showReservationModal, setShowReservationModal] = useState(false);
+  const [reservationDate, setReservationDate] = useState(getSeoulDateKey());
+  const [searchTerm, setSearchTerm] = useState('');
+  const [groupFilter, setGroupFilter] = useState<'all' | EquipmentGroup>('all');
   const selectedEquipment = equipmentItems.find((item) => item.id === selectedEquipmentId) ?? equipmentItems[0];
+  const todayKey = getSeoulDateKey();
+  const filteredEquipmentItems = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+    return equipmentItems.filter((item) => {
+      const matchesSearch = !normalizedSearch || [item.name, item.category, item.location].some((value) => value.toLowerCase().includes(normalizedSearch));
+      const matchesGroup = groupFilter === 'all' || item.group === groupFilter;
+      return matchesSearch && matchesGroup;
+    });
+  }, [equipmentItems, groupFilter, searchTerm]);
 
   function confirmReservation(form: { equipmentId: string; date: string; startTime: string; endTime: string; purpose: string }) {
     const equipment = equipmentItems.find((item) => item.id === form.equipmentId);
@@ -766,6 +822,11 @@ function ReservationPage({ equipmentItems }: { equipmentItems: EquipmentItem[] }
     setShowReservationModal(false);
   }
 
+  function openReservation(date = getSeoulDateKey()) {
+    setReservationDate(date);
+    setShowReservationModal(true);
+  }
+
   return (
     <section className="grid gap-5 xl:grid-cols-[22rem_1fr]" id="예약현황">
       <div className="rounded-lg border border-white/10 bg-surface/85 p-4">
@@ -775,23 +836,44 @@ function ReservationPage({ equipmentItems }: { equipmentItems: EquipmentItem[] }
         </div>
         <div className="relative mb-3">
           <Search className="absolute left-3 top-2.5 text-slate-500" size={17} />
-          <input className="w-full rounded-md border border-white/10 bg-slate-950 px-9 py-2 text-sm outline-none focus:border-cyan-300" placeholder="장비명 검색" />
+          <input
+            className="w-full rounded-md border border-white/10 bg-slate-950 px-9 py-2 text-sm outline-none focus:border-cyan-300"
+            placeholder="장비명 검색"
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+          />
         </div>
-        <select className="mb-4 w-full rounded-md border border-white/10 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-cyan-300">
-          <option>전체 카테고리</option>
-          <option>공정장비</option>
-          <option>측정 및 분석장비</option>
+        <select
+          className="mb-4 w-full rounded-md border border-white/10 bg-slate-950 px-3 py-2 text-sm outline-none focus:border-cyan-300"
+          value={groupFilter}
+          onChange={(event) => setGroupFilter(event.target.value as 'all' | EquipmentGroup)}
+        >
+          <option value="all">전체 카테고리</option>
+          <option value="process">공정장비</option>
+          <option value="metrology">계측 및 분석장비</option>
         </select>
-        <div className="grid max-h-[34rem] gap-2 overflow-auto pr-1">
-          {equipmentItems.map((item, index) => (
-            <button
-              key={item.id}
-              className={`rounded-md px-3 py-2 text-left text-sm font-semibold hover:bg-blue-600 ${item.id === selectedEquipmentId || (!selectedEquipmentId && index === 0) ? 'bg-blue-700 text-white' : 'bg-white/5 text-slate-300'}`}
-              onClick={() => setSelectedEquipmentId(item.id)}
-            >
-              {item.name}
-            </button>
-          ))}
+        <div className="reservation-equipment-list grid max-h-[34rem] gap-2 overflow-y-auto overflow-x-hidden pr-1">
+          {filteredEquipmentItems.map((item, index) => {
+            const isSelected = item.id === selectedEquipmentId || (!selectedEquipmentId && index === 0);
+            const isProcess = item.group === 'process';
+            const GroupIcon = isProcess ? Cpu : Microscope;
+            return (
+              <button
+                key={item.id}
+                className={`reservation-equipment-button ${isSelected ? 'is-selected' : ''}`}
+                onClick={() => setSelectedEquipmentId(item.id)}
+              >
+                <span className="min-w-0 truncate">{item.name}</span>
+                <span className={`equipment-type-chip ${isProcess ? 'is-process' : 'is-metrology'}`}>
+                  <GroupIcon size={14} />
+                  {isProcess ? '공정' : '계측 및 분석'}
+                </span>
+              </button>
+            );
+          })}
+          {filteredEquipmentItems.length === 0 && (
+            <p className="rounded-md border border-white/10 bg-white/5 px-3 py-4 text-center text-sm font-bold text-slate-400">검색 결과가 없습니다.</p>
+          )}
         </div>
       </div>
       <div className="rounded-lg border border-white/10 bg-surface/85 p-5">
@@ -805,19 +887,23 @@ function ReservationPage({ equipmentItems }: { equipmentItems: EquipmentItem[] }
               </button>
               <button
                 className="inline-flex items-center gap-2 rounded-md bg-blue-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-cyan-500 hover:text-slate-950"
-                onClick={() => setShowReservationModal(true)}
+                onClick={() => openReservation()}
               >
                 <Plus size={16} /> 장비예약
               </button>
             </div>
           }
         />
+        <SeoulClock />
         <FullCalendar
           plugins={[dayGridPlugin, interactionPlugin]}
           initialView="dayGridMonth"
-          initialDate="2026-06-17"
+          initialDate={todayKey}
+          timeZone="Asia/Seoul"
           selectable
           height="auto"
+          dayCellClassNames={(arg) => (getSeoulDateKey(arg.date) === todayKey ? ['seoul-today'] : [])}
+          dateClick={(arg) => openReservation(arg.dateStr)}
           events={calendarEvents.filter((event) => !selectedEquipment || event.title.includes(selectedEquipment.name))}
         />
       </div>
@@ -825,6 +911,7 @@ function ReservationPage({ equipmentItems }: { equipmentItems: EquipmentItem[] }
         <ReservationModal
           equipmentItems={equipmentItems}
           selectedEquipmentId={selectedEquipment?.id ?? ''}
+          initialDate={reservationDate}
           onClose={() => setShowReservationModal(false)}
           onConfirm={confirmReservation}
         />
@@ -836,17 +923,19 @@ function ReservationPage({ equipmentItems }: { equipmentItems: EquipmentItem[] }
 function ReservationModal({
   equipmentItems,
   selectedEquipmentId,
+  initialDate,
   onClose,
   onConfirm
 }: {
   equipmentItems: EquipmentItem[];
   selectedEquipmentId: string;
+  initialDate: string;
   onClose: () => void;
   onConfirm: (form: { equipmentId: string; date: string; startTime: string; endTime: string; purpose: string }) => void;
 }) {
   const [form, setForm] = useState({
     equipmentId: selectedEquipmentId || equipmentItems[0]?.id || '',
-    date: '2026-06-17',
+    date: initialDate,
     startTime: '09:00',
     endTime: '10:00',
     purpose: ''
@@ -860,10 +949,10 @@ function ReservationModal({
 
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
-      <form className="reservation-modal" onSubmit={submit} onMouseDown={(event) => event.stopPropagation()}>
+      <form className="reservation-modal reservation-confirm-modal" onSubmit={submit} onMouseDown={(event) => event.stopPropagation()}>
         <div className="mb-5 flex items-center justify-between">
           <h3 className="text-2xl font-extrabold text-white">장비 예약</h3>
-          <button type="button" className="rounded-md border border-white/10 px-4 py-2 text-sm font-bold text-slate-200 hover:border-cyan-300 hover:text-cyan-200" onClick={onClose}>
+          <button type="button" className="rounded-md border border-red-300/35 px-4 py-2 text-sm font-bold text-red-100 hover:border-red-300 hover:bg-red-500/20 hover:text-white" onClick={onClose}>
             닫기
           </button>
         </div>
@@ -912,8 +1001,8 @@ function ReservationModal({
           <input value={form.purpose} onChange={(event) => setForm((current) => ({ ...current, purpose: event.target.value }))} placeholder="예: 박막 증착 공정" />
         </label>
         <div className="mt-6 flex justify-end gap-3">
-          <button type="button" className="rounded-md border border-white/15 px-5 py-3 font-bold text-slate-200 hover:border-cyan-300" onClick={onClose}>취소</button>
-          <button type="submit" className="rounded-md bg-cyan-300 px-5 py-3 font-extrabold text-slate-950 hover:bg-white">예약확정</button>
+          <button type="button" className="rounded-md border border-red-300/35 px-5 py-3 font-bold text-red-100 hover:border-red-300 hover:bg-red-500/20 hover:text-white" onClick={onClose}>취소</button>
+          <button type="submit" className="rounded-md bg-cyan-300 px-5 py-3 font-extrabold text-slate-950 shadow-[0_0_28px_rgba(34,211,238,0.24)] hover:bg-white">예약 확정</button>
         </div>
       </form>
     </div>

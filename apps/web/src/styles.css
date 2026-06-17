@@ -306,6 +306,8 @@ select {
 }
 
 .fc .fc-daygrid-day-number {
+  position: relative;
+  z-index: 1;
   color: #dbeafe;
   font-weight: 700;
 }
@@ -317,7 +319,161 @@ select {
 }
 
 .fc .fc-daygrid-day-frame {
+  position: relative;
   min-height: 7rem;
+}
+
+.fc .fc-daygrid-day.fc-day-today,
+.fc .fc-daygrid-day.seoul-today {
+  background: transparent !important;
+}
+
+.fc .fc-daygrid-day.seoul-today .fc-daygrid-day-frame {
+  background: transparent !important;
+}
+
+.fc .fc-daygrid-day.seoul-today .fc-daygrid-day-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0.22rem;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: 8px;
+  border: 1px solid rgba(125, 211, 252, 0.65);
+  box-shadow: inset 0 0 0 1px rgba(168, 85, 247, 0.16), 0 0 14px rgba(34, 211, 238, 0.16);
+  animation: calendarTodayBorder 3.6s ease-in-out infinite;
+}
+
+.fc .fc-daygrid-day.seoul-today .fc-daygrid-day-number {
+  display: inline;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  border-radius: 0;
+  background: transparent !important;
+  color: #e0f2fe;
+  box-shadow: none !important;
+  animation: none !important;
+}
+
+.fc .fc-daygrid-day.seoul-today .fc-daygrid-day-number::before {
+  display: none !important;
+  content: none !important;
+}
+
+@keyframes calendarTodayBorder {
+  0%,
+  100% {
+    border-color: rgba(125, 211, 252, 0.42);
+    box-shadow: inset 0 0 0 1px rgba(168, 85, 247, 0.1), 0 0 10px rgba(34, 211, 238, 0.12);
+  }
+
+  50% {
+    border-color: rgba(216, 180, 254, 0.82);
+    box-shadow: inset 0 0 0 1px rgba(34, 211, 238, 0.2), 0 0 22px rgba(168, 85, 247, 0.3);
+  }
+}
+
+.seoul-clock {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: -0.25rem 0 1.1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(125, 211, 252, 0.22);
+  background:
+    linear-gradient(90deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.78)),
+    radial-gradient(circle at right, rgba(34, 211, 238, 0.16), transparent 32%);
+  padding: 0.9rem 1rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.seoul-clock span {
+  display: block;
+  color: #67e8f9;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.seoul-clock strong {
+  display: block;
+  margin-top: 0.15rem;
+  color: #e0f2fe;
+  font-size: 0.95rem;
+  font-weight: 900;
+}
+
+.seoul-clock time {
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(1.45rem, 3vw, 2.45rem);
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 0 24px rgba(34, 211, 238, 0.28);
+}
+
+.seoul-clock em {
+  color: #67e8f9;
+  font-style: normal;
+}
+
+.reservation-equipment-list {
+  scrollbar-gutter: stable;
+}
+
+.reservation-equipment-button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 3.25rem;
+  align-items: center;
+  gap: 0.3rem;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.62rem 0.45rem 0.62rem 0.65rem;
+  color: #cbd5e1;
+  text-align: left;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.reservation-equipment-button:hover,
+.reservation-equipment-button.is-selected {
+  border-color: rgba(125, 211, 252, 0.48);
+  background: rgba(29, 78, 216, 0.75);
+  color: #ffffff;
+}
+
+.equipment-type-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  border-radius: 7px;
+  justify-self: end;
+  max-width: 6.2rem;
+  overflow: hidden;
+  padding: 0.32rem 0.34rem;
+  font-size: 0.66rem;
+  text-overflow: ellipsis;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.equipment-type-chip.is-process {
+  border: 1px solid rgba(216, 180, 254, 0.46);
+  background: linear-gradient(135deg, rgba(126, 34, 206, 0.82), rgba(168, 85, 247, 0.36));
+  color: #f3e8ff;
+}
+
+.equipment-type-chip.is-metrology {
+  border: 1px solid rgba(125, 211, 252, 0.46);
+  background: linear-gradient(135deg, rgba(29, 78, 216, 0.86), rgba(14, 165, 233, 0.34));
+  color: #dbeafe;
 }
 
 @media (min-width: 1280px) {
@@ -391,6 +547,14 @@ select {
   background: #111827;
   padding: 1.5rem;
   box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
+}
+
+.reservation-confirm-modal {
+  border-color: rgba(125, 211, 252, 0.24);
+  background:
+    linear-gradient(145deg, rgba(15, 23, 42, 0.98), rgba(8, 13, 26, 0.98)),
+    radial-gradient(circle at 82% 12%, rgba(34, 211, 238, 0.15), transparent 30%);
+  box-shadow: 0 32px 90px rgba(0, 0, 0, 0.48), 0 0 0 1px rgba(34, 211, 238, 0.06);
 }
 
 .reservation-label {
