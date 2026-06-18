@@ -67,6 +67,14 @@ try {
 if (-not (Test-Path $PreviewDir)) {
   Write-Host "Cloning preview repository into $PreviewDir..."
   Invoke-Native $gh repo clone $PreviewRepo $PreviewDir
+} else {
+  Write-Host "Syncing preview repository..."
+  Push-Location $PreviewDir
+  try {
+    Invoke-Native $git pull --rebase origin main
+  } finally {
+    Pop-Location
+  }
 }
 
 Write-Host "Updating preview files..."

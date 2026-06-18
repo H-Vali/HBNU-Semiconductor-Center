@@ -276,15 +276,7 @@ function LoadingOverlay({ visible }: { visible: boolean }) {
   );
 }
 
-function InstitutionHeader({
-  activePage,
-  onNavigate,
-  sessionRole
-}: {
-  activePage: PageKey;
-  onNavigate: (page: PageKey) => void;
-  sessionRole: Role | null;
-}) {
+function InstitutionHeader({ onNavigate, sessionRole }: { onNavigate: (page: PageKey) => void; sessionRole: Role | null }) {
   return (
     <header className="sticky top-0 z-20 border-b border-white/10 bg-slate-950/90 backdrop-blur">
       <div className="mx-auto flex max-w-[1800px] items-center justify-between gap-5 px-5 py-3 2xl:px-8">
@@ -297,23 +289,7 @@ function InstitutionHeader({
             <h1 className="text-lg font-extrabold text-white sm:text-xl">반도체 장비 공동활용 플랫폼</h1>
           </div>
         </button>
-        <nav className="hidden items-center gap-1 xl:flex">
-          {menu.map((item) => {
-            const Icon = item.icon;
-            const selected = activePage === item.page;
-            return (
-              <button
-                key={`${item.page}-${item.label}`}
-                className={`flex items-center gap-2 rounded-md px-3 py-2 text-base font-bold ${selected ? 'bg-blue-700 text-white' : 'text-slate-300 hover:bg-blue-700 hover:text-white'}`}
-                onClick={() => onNavigate(item.page)}
-              >
-                <Icon size={18} />
-                {item.label}
-                {item.admin && <span className="rounded bg-cyan-300/15 px-1.5 py-0.5 text-[10px] text-cyan-200">ADMIN</span>}
-              </button>
-            );
-          })}
-        </nav>
+        <PartnerLogoStrip />
         <div className="hidden items-center gap-2 md:flex">
           <button className="rounded-md border border-white/15 px-3 py-2 text-sm font-bold text-slate-200 hover:border-cyan-300 hover:text-cyan-200">ENG</button>
           <button className="rounded-md bg-white px-4 py-2 text-sm font-extrabold text-slate-950 hover:bg-cyan-200" onClick={() => onNavigate('login')}>
@@ -322,6 +298,51 @@ function InstitutionHeader({
         </div>
       </div>
     </header>
+  );
+}
+
+function PartnerLogoStrip() {
+  const partners = [
+    { name: '대전광역시', src: '/partners/daejeon-metropolitan-city.svg' },
+    { name: '대전테크노파크', src: '/partners/daejeon-technopark.svg' }
+  ];
+
+  return (
+    <div className="partner-logo-strip" aria-label="협업 기관">
+      <span>협업 기관</span>
+      <div className="partner-logo-list">
+        {partners.map((partner) => (
+          <div key={partner.name} className="partner-logo-card">
+            <img src={partner.src} alt={`${partner.name} 로고`} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SidebarNavigation({ activePage, onNavigate }: { activePage: PageKey; onNavigate: (page: PageKey) => void }) {
+  return (
+    <aside className="app-sidebar" aria-label="주요 메뉴">
+      <div className="sidebar-section-label">Navigation</div>
+      <nav className="sidebar-nav">
+        {menu.map((item) => {
+          const Icon = item.icon;
+          const selected = activePage === item.page;
+          return (
+            <button
+              key={`${item.page}-${item.label}`}
+              className={`sidebar-nav-item ${selected ? 'is-active' : ''}`}
+              onClick={() => onNavigate(item.page)}
+            >
+              <Icon size={18} />
+              <span>{item.label}</span>
+              {item.admin && <em>ADMIN</em>}
+            </button>
+          );
+        })}
+      </nav>
+    </aside>
   );
 }
 
@@ -1604,52 +1625,55 @@ export function App() {
   return (
     <div className="min-h-screen">
       <LoadingOverlay visible={loading} />
-      <InstitutionHeader activePage={activePage} onNavigate={navigate} sessionRole={sessionRole} />
-      <main className="mx-auto max-w-[1800px] px-4 py-5 lg:px-6 2xl:px-8">
-        {activePage === 'home' && (
-          <>
-            <Hero onNavigate={navigate} />
-            <Dashboard equipmentItems={activeEquipmentItems} calendarEvents={reservationEvents} onOpenEquipment={openEquipment} />
-          </>
-        )}
-        {activePage === 'equipment' && (
-          <EquipmentPage
-            equipmentItems={activeEquipmentItems}
-            source={source}
-            initialGroup={initialGroup}
-            sessionRole={sessionRole}
-            onAddEquipment={addEquipment}
-            onDeleteEquipment={deleteEquipment}
-          />
-        )}
-        {activePage === 'reservations' && (
-          <ReservationPage
-            equipmentItems={activeEquipmentItems}
-            calendarEvents={reservationEvents}
-            sessionRole={sessionRole}
-            onAddReservation={addReservation}
-            onDeleteReservation={deleteReservation}
-          />
-        )}
-        {activePage === 'training' && <TrainingPage equipmentItems={activeEquipmentItems} />}
-        {activePage === 'admin' && (
-          <AdminPage
-            equipmentItems={equipmentItems}
-            calendarEvents={reservationEvents}
-            onAddReservation={addReservation}
-            onDeleteReservation={deleteReservation}
-          />
-        )}
-        {activePage === 'login' && <LoginPage onAuthenticated={(role) => setSessionRole(role)} />}
-        {activePage === 'facility' && <PlaceholderPage title="시설안내" />}
-        {activePage === 'mypage' && (
-          <MyPage
-            equipmentItems={activeEquipmentItems}
-            calendarEvents={reservationEvents}
-            onCancelReservation={deleteReservation}
-          />
-        )}
-      </main>
+      <InstitutionHeader onNavigate={navigate} sessionRole={sessionRole} />
+      <div className="app-shell mx-auto max-w-[1800px] px-4 py-5 lg:px-6 2xl:px-8">
+        <SidebarNavigation activePage={activePage} onNavigate={navigate} />
+        <main className="app-main">
+          {activePage === 'home' && (
+            <>
+              <Hero onNavigate={navigate} />
+              <Dashboard equipmentItems={activeEquipmentItems} calendarEvents={reservationEvents} onOpenEquipment={openEquipment} />
+            </>
+          )}
+          {activePage === 'equipment' && (
+            <EquipmentPage
+              equipmentItems={activeEquipmentItems}
+              source={source}
+              initialGroup={initialGroup}
+              sessionRole={sessionRole}
+              onAddEquipment={addEquipment}
+              onDeleteEquipment={deleteEquipment}
+            />
+          )}
+          {activePage === 'reservations' && (
+            <ReservationPage
+              equipmentItems={activeEquipmentItems}
+              calendarEvents={reservationEvents}
+              sessionRole={sessionRole}
+              onAddReservation={addReservation}
+              onDeleteReservation={deleteReservation}
+            />
+          )}
+          {activePage === 'training' && <TrainingPage equipmentItems={activeEquipmentItems} />}
+          {activePage === 'admin' && (
+            <AdminPage
+              equipmentItems={equipmentItems}
+              calendarEvents={reservationEvents}
+              onAddReservation={addReservation}
+              onDeleteReservation={deleteReservation}
+            />
+          )}
+          {activePage === 'login' && <LoginPage onAuthenticated={(role) => setSessionRole(role)} />}
+          {activePage === 'facility' && <PlaceholderPage title="시설안내" />}
+          {activePage === 'mypage' && (
+            <MyPage
+              equipmentItems={activeEquipmentItems}
+              calendarEvents={reservationEvents}
+              onCancelReservation={deleteReservation}
+            />
+          )}
+        </main>
+      </div>
     </div>
   );
 }
