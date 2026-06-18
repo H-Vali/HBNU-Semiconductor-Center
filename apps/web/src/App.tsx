@@ -43,7 +43,7 @@ import {
 } from 'lucide-react';
 import { equipment as fallbackEquipment, events, monthlyUsage, type EquipmentGroup, type EquipmentItem } from './data';
 
-type PageKey = 'home' | 'facility' | 'equipment' | 'training' | 'reservations' | 'mypage' | 'admin' | 'consumables' | 'login';
+type PageKey = 'home' | 'facility' | 'equipment' | 'training' | 'reservations' | 'mypage' | 'admin' | 'users' | 'consumables' | 'login';
 type Role = 'USER' | 'ADMIN';
 type UsagePeriod = '24H' | '1W' | '1M';
 type EquipmentRuntimeStatus = 'active' | 'maintenance' | 'idle';
@@ -77,6 +77,18 @@ type ConsumableItem = {
   minimum: number;
   note: string;
 };
+type ManagedUser = {
+  id: string;
+  index: number;
+  name: string;
+  roleLevel: '대표' | '일반';
+  department: string;
+  labProfessor: string;
+  phone: string;
+  email: string;
+  memo: string;
+  authProvider?: 'Google' | 'Kakao' | 'Manual';
+};
 
 const apiUrl = ((import.meta as ImportMeta & { env?: Record<string, string> }).env?.VITE_API_URL) ?? 'http://localhost:4000';
 
@@ -98,6 +110,16 @@ const quickLinks: Array<{ label: string; page: PageKey; icon: typeof CalendarDay
   { label: '장비사용자 교육신청', page: 'training', icon: GraduationCap },
   { label: '장비 배치현황', page: 'equipment', icon: Microscope }
 ];
+const initialManagedUsers: ManagedUser[] = [
+  { id: 'user-1', index: 1, name: '김동인', roleLevel: '대표', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-9772-5939', email: 'shehdshehd1123@gmail.com', memo: '', authProvider: 'Google' },
+  { id: 'user-2', index: 2, name: '길가영', roleLevel: '일반', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-6595-3930', email: 'gilgayeong2@gmail.com', memo: '', authProvider: 'Kakao' },
+  { id: 'user-3', index: 3, name: '최진영', roleLevel: '일반', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-4558-3205', email: 'lucy3205@gmail.com', memo: '', authProvider: 'Google' },
+  { id: 'user-4', index: 4, name: '정재웅', roleLevel: '일반', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-7166-2296', email: 'greadex2296@gmail.com', memo: '', authProvider: 'Kakao' },
+  { id: 'user-5', index: 5, name: '박형규', roleLevel: '일반', department: '창의융합학과', labProfessor: '백근우 교수님', phone: '010-5660-2425', email: '0518phg@gmail.com', memo: '', authProvider: 'Google' },
+  { id: 'user-6', index: 6, name: '배유진', roleLevel: '일반', department: '창의융합학과', labProfessor: '백근우 교수님', phone: '010-5291-6172', email: 'yoojin.bae23@gmail.com', memo: '', authProvider: 'Google' },
+  { id: 'user-7', index: 7, name: '김빈섭', roleLevel: '일반', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-9923-4322', email: 'doo4322@gmail.com', memo: '', authProvider: 'Kakao' }
+];
+
 const initialConsumables: ConsumableItem[] = [
   { id: 'supply-1', category: '단순소모품', name: '클린 마스크', unit: 'BOX 기준', monthStart: 36, current: 27, minimum: 20, note: 'BOX 기준' },
   { id: 'supply-2', category: '단순소모품', name: '라텍스 장갑 (L)', unit: 'BOX 기준', monthStart: 11, current: 17, minimum: 10, note: 'BOX 기준' },
@@ -430,6 +452,98 @@ function formatSeoulDateTime(value: string) {
   }).format(new Date(value));
 }
 
+function cloneManagedUsers(items = initialManagedUsers) {
+  return items.map((item) => ({ ...item }));
+}
+
+function formatProfessorLab(professor: string) {
+  const name = professor.replace(/교수님|교수|Prof\.|Lab/gi, '').trim() || '백근우';
+  return `Prof. ${name} Lab`;
+}
+
+function getProfessorTone(professor: string) {
+  const palette = ['#5FD9C9', '#93C5FD', '#C084FC', '#FBBF24', '#F472B6', '#34D399'];
+  const key = professor || 'default';
+  const hash = Array.from(key).reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return palette[hash % palette.length];
+}
+
+function downloadUsersExcel(rows: ManagedUser[]) {
+  const escapeCell = (value: string | number) => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const headers = ['연번', '이름', 'ROLE', '소속 학과', '소속 연구실', '연락처', '이메일', '메모', '인증'];
+  const body = rows.map((user, index) => [
+    index + 1,
+    user.name,
+    user.roleLevel,
+    user.department,
+    user.labProfessor,
+    user.phone,
+    user.email,
+    user.memo,
+    user.authProvider ?? 'Manual'
+  ]);
+  const tableRows = [headers, ...body]
+    .map((row) => `<tr>${row.map((cell) => `<td>${escapeCell(cell)}</td>`).join('')}</tr>`)
+    .join('');
+  const html = `\uFEFF<html><head><meta charset="utf-8" /></head><body><table>${tableRows}</table></body></html>`;
+  const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `hbnu-users-${getSeoulDateKey()}.xls`;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function parseUsersUpload(text: string) {
+  const readRowsFromHtml = () => {
+    const documentHtml = new DOMParser().parseFromString(text, 'text/html');
+    return Array.from(documentHtml.querySelectorAll('tr')).map((row) => (
+      Array.from(row.querySelectorAll('th,td')).map((cell) => cell.textContent?.trim() ?? '')
+    )).filter((row) => row.length > 0);
+  };
+  const readRowsFromCsv = () => text
+    .split(/\r?\n/)
+    .map((line) => line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map((cell) => cell.replace(/^"|"$/g, '').replace(/""/g, '"').trim()))
+    .filter((row) => row.some(Boolean));
+  const rows = text.includes('<table') || text.includes('<tr') ? readRowsFromHtml() : readRowsFromCsv();
+  const [headers = [], ...body] = rows;
+  const indexOf = (label: string) => headers.findIndex((header) => header === label);
+  const indexes = {
+    index: indexOf('연번'),
+    name: indexOf('이름'),
+    roleLevel: indexOf('ROLE'),
+    department: indexOf('소속 학과'),
+    labProfessor: indexOf('소속 연구실'),
+    phone: indexOf('연락처'),
+    email: indexOf('이메일'),
+    memo: indexOf('메모'),
+    authProvider: indexOf('인증')
+  };
+
+  if (indexes.name < 0 || indexes.roleLevel < 0 || indexes.labProfessor < 0 || indexes.email < 0) {
+    throw new Error('사용자 엑셀 업로드 서식을 인식할 수 없습니다.');
+  }
+
+  return body
+    .filter((row) => row[indexes.name])
+    .map((row, index): ManagedUser => {
+      const authProvider = row[indexes.authProvider];
+      return {
+        id: `uploaded-user-${Date.now()}-${index}`,
+        index: Number(row[indexes.index]) || index + 1,
+        name: row[indexes.name] || '',
+        roleLevel: row[indexes.roleLevel] === '대표' ? '대표' : '일반',
+        department: row[indexes.department] || '',
+        labProfessor: row[indexes.labProfessor] || '',
+        phone: row[indexes.phone] || '',
+        email: row[indexes.email] || '',
+        memo: row[indexes.memo] || '',
+        authProvider: (['Google', 'Kakao', 'Manual'].includes(authProvider) ? authProvider : 'Manual') as ManagedUser['authProvider']
+      };
+    });
+}
+
 function downloadConsumablesExcel(month: string, rows: ConsumableItem[]) {
   const escapeCell = (value: string | number) => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const headers = ['월', '분류', '품명', '단위/비고', '월초재고', '현재고', '사용량', '최소기준', '상태', '메모'];
@@ -684,7 +798,17 @@ function SidebarNavigation({ activePage, onNavigate }: { activePage: PageKey; on
   );
 }
 
-function Hero({ onNavigate, equipmentItems }: { onNavigate: (page: PageKey) => void; equipmentItems: EquipmentItem[] }) {
+function Hero({
+  onNavigate,
+  equipmentItems,
+  userName,
+  userLab
+}: {
+  onNavigate: (page: PageKey) => void;
+  equipmentItems: EquipmentItem[];
+  userName: string;
+  userLab: string;
+}) {
   const processStatusCards = [
     { label: 'Lithography', value: '12', unit: 'lots', tone: 'lithography' },
     { label: 'Deposition', value: '18', unit: 'runs', tone: 'deposition' },
@@ -724,8 +848,10 @@ function Hero({ onNavigate, equipmentItems }: { onNavigate: (page: PageKey) => v
         </div>
         <div className="hero-user-summary" aria-label="사용자 예약 요약">
           <div className="hero-user-summary-head">
-            <h3><strong>USER NAME</strong> 님 환영합니다.</h3>
-            <span>Prof. 백근우 Lab</span>
+            <h3><strong>{userName}</strong> 님 환영합니다.</h3>
+            <span style={{ borderColor: `${getProfessorTone(userLab)}66`, backgroundColor: `${getProfessorTone(userLab)}1f`, color: getProfessorTone(userLab) }}>
+              {formatProfessorLab(userLab)}
+            </span>
           </div>
           <div className="hero-reservation-list">
             <div className="hero-reservation-row">
@@ -1038,17 +1164,27 @@ function EquipmentGateway({
 function Dashboard({
   equipmentItems,
   calendarEvents,
+  managedUsers,
+  sessionUserName,
   onNavigate,
   onOpenEquipment
 }: {
   equipmentItems: EquipmentItem[];
   calendarEvents: ReservationEvent[];
+  managedUsers: ManagedUser[];
+  sessionUserName: string;
   onNavigate: (page: PageKey) => void;
   onOpenEquipment: (group: EquipmentGroup) => void;
 }) {
+  const dashboardUser = managedUsers.find((user) => user.name === sessionUserName) ?? managedUsers[0];
   return (
     <section className="mt-5 grid gap-5">
-      <Hero onNavigate={onNavigate} equipmentItems={equipmentItems} />
+      <Hero
+        onNavigate={onNavigate}
+        equipmentItems={equipmentItems}
+        userName={sessionUserName || 'USER NAME'}
+        userLab={dashboardUser?.labProfessor ?? '백근우 교수님'}
+      />
       <RealtimeEquipmentStatus equipmentItems={equipmentItems} calendarEvents={calendarEvents} />
       <MonthlyUsageChart equipmentItems={equipmentItems} calendarEvents={calendarEvents} />
       <EquipmentGateway equipmentItems={equipmentItems} onOpen={onOpenEquipment} />
@@ -1793,7 +1929,8 @@ function AdminPage({
   onAddReservation,
   onDeleteReservation,
   onNavigate,
-  consumablesUpdatedAt
+  consumablesUpdatedAt,
+  usersUpdatedAt
 }: {
   equipmentItems: EquipmentItem[];
   calendarEvents: ReservationEvent[];
@@ -1801,6 +1938,7 @@ function AdminPage({
   onDeleteReservation: (reservationId: string) => void;
   onNavigate: (page: PageKey) => void;
   consumablesUpdatedAt: string;
+  usersUpdatedAt: string;
 }) {
   const [showReservationModal, setShowReservationModal] = useState(false);
   const [selectedAdminDate, setSelectedAdminDate] = useState(getSeoulDateKey());
@@ -1978,9 +2116,9 @@ function AdminPage({
       </div>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {[
-          { title: '사용자관리' },
+          { title: '사용자관리', page: 'users' as PageKey, icon: UserRound, updatedAt: usersUpdatedAt },
           { title: '장비관리' },
-          { title: '소모품관리', page: 'consumables' as PageKey, icon: PackageCheck },
+          { title: '소모품관리', page: 'consumables' as PageKey, icon: PackageCheck, updatedAt: consumablesUpdatedAt },
           { title: '예약승인/거부' },
           { title: '교육관리' },
           { title: '홈페이지편집' },
@@ -2001,9 +2139,9 @@ function AdminPage({
                 {item.title}
               </span>
               <p className="mt-2 text-sm font-medium text-slate-400">상세 관리 화면으로 이동</p>
-              {item.page === 'consumables' && (
+              {item.updatedAt && (
                 <p className="mt-4 text-xs font-bold text-cyan-200">
-                  최근 업데이트 {formatSeoulDateTime(consumablesUpdatedAt)}
+                  최근 업데이트 {formatSeoulDateTime(item.updatedAt)}
                 </p>
               )}
             </button>
@@ -2027,7 +2165,13 @@ function AdminPage({
   );
 }
 
-function LoginPage({ onAuthenticated }: { onAuthenticated: (role: Role) => void }) {
+function LoginPage({
+  onAuthenticated,
+  onRegisterUser
+}: {
+  onAuthenticated: (role: Role) => void;
+  onRegisterUser: (provider: 'Google' | 'Kakao', user: { name?: string; email?: string }) => void;
+}) {
   const [message, setMessage] = useState('Google 또는 Kakao OAuth로 로그인하세요.');
 
   async function handleLogin(provider: 'Google' | 'Kakao', role: Role = 'USER') {
@@ -2043,11 +2187,14 @@ function LoginPage({ onAuthenticated }: { onAuthenticated: (role: Role) => void 
       const data = await response.json();
       localStorage.setItem('hbnu-session-token', data.token);
       localStorage.setItem('hbnu-session-user', JSON.stringify(data.user));
+      onRegisterUser(provider, data.user);
       onAuthenticated(data.user.role);
       setMessage(`${provider} 인증이 완료되었습니다.`);
     } catch {
+      const fallbackUser = { name: role === 'ADMIN' ? '관리자' : 'USER NAME', email: `${provider.toLowerCase()}-preview@hbnu.local`, role };
       localStorage.setItem('hbnu-session-token', `preview-${provider.toLowerCase()}-${role}`);
-      localStorage.setItem('hbnu-session-user', JSON.stringify({ name: role === 'ADMIN' ? '관리자' : '연구원', role }));
+      localStorage.setItem('hbnu-session-user', JSON.stringify(fallbackUser));
+      onRegisterUser(provider, fallbackUser);
       onAuthenticated(role);
       setMessage(`${provider} 프리뷰 인증이 완료되었습니다. API 연결 시 실제 OAuth 콜백으로 교체됩니다.`);
     }
@@ -2134,6 +2281,175 @@ function MyPage({
           <p className="rounded-md bg-white/5 p-4">교육 이수 상태와 장비별 예약 권한을 이 영역에서 표시할 예정입니다.</p>
           <p className="rounded-md bg-white/5 p-4">예약 취소 기능은 현재 프리뷰 데이터 기준으로 즉시 반영됩니다.</p>
         </div>
+      </div>
+    </section>
+  );
+}
+
+function UserManagementPage({
+  users,
+  onUpdateUser,
+  onAddUser,
+  onImportUsers,
+  onSave
+}: {
+  users: ManagedUser[];
+  onUpdateUser: (id: string, patch: Partial<ManagedUser>) => void;
+  onAddUser: () => void;
+  onImportUsers: (rows: ManagedUser[]) => void;
+  onSave: () => void;
+}) {
+  const uploadInputRef = useRef<HTMLInputElement | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState('전체');
+  const [labFilter, setLabFilter] = useState('전체');
+  const labs = useMemo(() => ['전체', ...Array.from(new Set(users.map((user) => user.labProfessor).filter(Boolean)))], [users]);
+  const filteredUsers = useMemo(() => (
+    users.filter((user) => {
+      const keyword = searchTerm.trim().toLowerCase();
+      const matchesSearch = !keyword || `${user.name} ${user.department} ${user.labProfessor} ${user.email} ${user.phone} ${user.memo}`.toLowerCase().includes(keyword);
+      const matchesRole = roleFilter === '전체' || user.roleLevel === roleFilter;
+      const matchesLab = labFilter === '전체' || user.labProfessor === labFilter;
+      return matchesSearch && matchesRole && matchesLab;
+    })
+  ), [labFilter, roleFilter, searchTerm, users]);
+  const representativeCount = users.filter((user) => user.roleLevel === '대표').length;
+
+  function handleUsersUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        onImportUsers(parseUsersUpload(String(reader.result ?? '')));
+      } catch (error) {
+        window.alert(error instanceof Error ? error.message : '사용자 엑셀 업로드에 실패했습니다.');
+      } finally {
+        event.target.value = '';
+      }
+    };
+    reader.readAsText(file, 'utf-8');
+  }
+
+  return (
+    <section className="user-management-page">
+      <div className="consumables-hero">
+        <div>
+          <p className="consumables-eyebrow">User Directory</p>
+          <h2>사용자 관리</h2>
+          <span>Google 또는 Kakao 인증 후 가입자가 입력한 정보를 기준으로 사용자 권한과 Lab 정보를 관리합니다.</span>
+        </div>
+        <div className="consumables-actions">
+          <button type="button" onClick={() => downloadUsersExcel(users)} aria-label="사용자 명단 엑셀 다운로드">
+            <Download size={17} /> Excel 다운로드
+          </button>
+          <input ref={uploadInputRef} type="file" accept=".xls,.html,.csv,.txt" onChange={handleUsersUpload} aria-label="사용자 엑셀 업로드 파일 선택" hidden />
+          <button type="button" onClick={() => uploadInputRef.current?.click()} aria-label="사용자 엑셀 업로드">
+            <UploadCloud size={17} /> Excel 업로드
+          </button>
+        </div>
+      </div>
+
+      <div className="user-summary-grid">
+        <div>
+          <span>전체 사용자</span>
+          <strong>{users.length}</strong>
+          <em>registered</em>
+        </div>
+        <div>
+          <span>대표 사용자</span>
+          <strong>{representativeCount}</strong>
+          <em>lab representatives</em>
+        </div>
+        <div>
+          <span>소속 Lab</span>
+          <strong>{Math.max(labs.length - 1, 0)}</strong>
+          <em>professor groups</em>
+        </div>
+        <div className="consumables-summary-action">
+          <span>데이터 저장</span>
+          <button type="button" className="is-primary" onClick={onSave} aria-label="사용자 데이터 저장">
+            <CheckCircle2 size={18} /> 저장
+          </button>
+        </div>
+        <div className="consumables-summary-action">
+          <span>사용자 추가</span>
+          <button type="button" onClick={onAddUser} aria-label="신규 사용자 추가">
+            <Plus size={18} /> 사용자 추가
+          </button>
+        </div>
+      </div>
+
+      <div className="consumables-toolbar">
+        <div className="consumables-search">
+          <Search size={17} />
+          <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="이름, 학과, 연구실, 이메일 검색" aria-label="사용자 검색" />
+        </div>
+        <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)} aria-label="대표/일반 필터">
+          <option value="전체">전체</option>
+          <option value="대표">대표</option>
+          <option value="일반">일반</option>
+        </select>
+        <select value={labFilter} onChange={(event) => setLabFilter(event.target.value)} aria-label="소속 연구실 필터">
+          {labs.map((lab) => (
+            <option key={lab} value={lab}>{lab}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="consumables-table-wrap">
+        <table className="consumables-table users-table">
+          <thead>
+            <tr>
+              <th>연번</th>
+              <th>이름</th>
+              <th>ROLE</th>
+              <th>소속 학과</th>
+              <th>소속 연구실</th>
+              <th>연락처</th>
+              <th>이메일</th>
+              <th>인증</th>
+              <th>메모</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredUsers.map((user, index) => (
+              <tr key={user.id}>
+                <td>{index + 1}</td>
+                <td>
+                  <input value={user.name} onChange={(event) => onUpdateUser(user.id, { name: event.target.value })} aria-label={`${user.name} 이름`} />
+                </td>
+                <td>
+                  <select value={user.roleLevel} onChange={(event) => onUpdateUser(user.id, { roleLevel: event.target.value === '대표' ? '대표' : '일반' })} aria-label={`${user.name} 대표 여부`}>
+                    <option value="대표">대표</option>
+                    <option value="일반">일반</option>
+                  </select>
+                </td>
+                <td>
+                  <input value={user.department} onChange={(event) => onUpdateUser(user.id, { department: event.target.value })} aria-label={`${user.name} 소속 학과`} />
+                </td>
+                <td>
+                  <label className="user-lab-input">
+                    <i style={{ backgroundColor: getProfessorTone(user.labProfessor) }} />
+                    <input value={user.labProfessor} onChange={(event) => onUpdateUser(user.id, { labProfessor: event.target.value })} aria-label={`${user.name} 소속 연구실`} />
+                  </label>
+                </td>
+                <td>
+                  <input value={user.phone} onChange={(event) => onUpdateUser(user.id, { phone: event.target.value })} aria-label={`${user.name} 연락처`} />
+                </td>
+                <td>
+                  <input value={user.email} onChange={(event) => onUpdateUser(user.id, { email: event.target.value })} aria-label={`${user.name} 이메일`} />
+                </td>
+                <td>
+                  <span className={`auth-provider-badge is-${(user.authProvider ?? 'Manual').toLowerCase()}`}>{user.authProvider ?? 'Manual'}</span>
+                </td>
+                <td>
+                  <input value={user.memo} onChange={(event) => onUpdateUser(user.id, { memo: event.target.value })} aria-label={`${user.name} 메모`} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </section>
   );
@@ -2341,6 +2657,17 @@ export function App() {
   const [hasUnsavedConsumables, setHasUnsavedConsumables] = useState(false);
   const [saveFeedbackPhase, setSaveFeedbackPhase] = useState<'idle' | 'feedback' | 'returning'>('idle');
   const saveFeedbackTimers = useRef<number[]>([]);
+  const [managedUsers, setManagedUsers] = useState<ManagedUser[]>(() => {
+    try {
+      const stored = localStorage.getItem('hbnu-managed-users');
+      return stored ? JSON.parse(stored) : cloneManagedUsers();
+    } catch {
+      return cloneManagedUsers();
+    }
+  });
+  const [usersUpdatedAt, setUsersUpdatedAt] = useState(() => (
+    localStorage.getItem('hbnu-users-updated-at') ?? new Date().toISOString()
+  ));
   const [sessionRole, setSessionRole] = useState<Role | null>(() => {
     const stored = localStorage.getItem('hbnu-session-user');
     if (!stored) return null;
@@ -2360,6 +2687,14 @@ export function App() {
     }));
     return [...previewTestReservations, ...baseEvents];
   });
+  const sessionUserName = (() => {
+    try {
+      const stored = localStorage.getItem('hbnu-session-user');
+      return stored ? JSON.parse(stored).name ?? 'USER NAME' : 'USER NAME';
+    } catch {
+      return 'USER NAME';
+    }
+  })();
 
   function navigate(page: PageKey) {
     setLoading(true);
@@ -2472,6 +2807,75 @@ export function App() {
     ];
   }
 
+  function updateManagedUser(id: string, patch: Partial<ManagedUser>) {
+    setManagedUsers((current) => current.map((user) => (
+      user.id === id ? { ...user, ...patch } : user
+    )));
+  }
+
+  function addManagedUser() {
+    setManagedUsers((current) => [
+      ...current,
+      {
+        id: `managed-user-${Date.now()}`,
+        index: current.length + 1,
+        name: '신규 사용자',
+        roleLevel: '일반',
+        department: '',
+        labProfessor: '',
+        phone: '',
+        email: '',
+        memo: '',
+        authProvider: 'Manual'
+      }
+    ]);
+  }
+
+  function importManagedUsers(rows: ManagedUser[]) {
+    if (rows.length === 0) return;
+    setManagedUsers(rows.map((user, index) => ({ ...user, index: index + 1 })));
+  }
+
+  function saveManagedUsers() {
+    const savedAt = new Date().toISOString();
+    const normalized = managedUsers.map((user, index) => ({ ...user, index: index + 1 }));
+    setManagedUsers(normalized);
+    localStorage.setItem('hbnu-managed-users', JSON.stringify(normalized));
+    localStorage.setItem('hbnu-users-updated-at', savedAt);
+    setUsersUpdatedAt(savedAt);
+  }
+
+  function registerAuthenticatedUser(provider: 'Google' | 'Kakao', user: { name?: string; email?: string }) {
+    const savedAt = new Date().toISOString();
+    setManagedUsers((current) => {
+      const email = user.email ?? `${provider.toLowerCase()}-preview@hbnu.local`;
+      const name = user.name ?? 'USER NAME';
+      const exists = current.some((item) => item.email === email);
+      const next: ManagedUser[] = exists
+        ? current.map((item) => item.email === email ? { ...item, name, authProvider: provider } : item)
+        : [
+            ...current,
+            {
+              id: `auth-user-${Date.now()}`,
+              index: current.length + 1,
+              name,
+              roleLevel: '일반' as const,
+              department: '가입 정보 입력 필요',
+              labProfessor: '백근우 교수님',
+              phone: '',
+              email,
+              memo: '인증 완료 후 상세 정보 입력 대기',
+              authProvider: provider
+            }
+          ];
+      const normalized = next.map((item, index) => ({ ...item, index: index + 1 }));
+      localStorage.setItem('hbnu-managed-users', JSON.stringify(normalized));
+      return normalized;
+    });
+    localStorage.setItem('hbnu-users-updated-at', savedAt);
+    setUsersUpdatedAt(savedAt);
+  }
+
   const activeEquipmentItems = equipmentItems.filter((item) => !deletedEquipmentIds.includes(item.id));
   const activeConsumables = monthlyConsumables[selectedConsumableMonth] ?? cloneConsumables();
 
@@ -2484,7 +2888,14 @@ export function App() {
         <main className="app-main">
           {activePage === 'home' && (
             <>
-              <Dashboard equipmentItems={activeEquipmentItems} calendarEvents={reservationEvents} onNavigate={navigate} onOpenEquipment={openEquipment} />
+              <Dashboard
+                equipmentItems={activeEquipmentItems}
+                calendarEvents={reservationEvents}
+                managedUsers={managedUsers}
+                sessionUserName={sessionUserName}
+                onNavigate={navigate}
+                onOpenEquipment={openEquipment}
+              />
             </>
           )}
           {activePage === 'equipment' && (
@@ -2515,6 +2926,16 @@ export function App() {
               onDeleteReservation={deleteReservation}
               onNavigate={navigate}
               consumablesUpdatedAt={consumablesUpdatedAt}
+              usersUpdatedAt={usersUpdatedAt}
+            />
+          )}
+          {activePage === 'users' && (
+            <UserManagementPage
+              users={managedUsers}
+              onUpdateUser={updateManagedUser}
+              onAddUser={addManagedUser}
+              onImportUsers={importManagedUsers}
+              onSave={saveManagedUsers}
             />
           )}
           {activePage === 'consumables' && (
@@ -2529,7 +2950,12 @@ export function App() {
               onSave={saveConsumables}
             />
           )}
-          {activePage === 'login' && <LoginPage onAuthenticated={(role) => setSessionRole(role)} />}
+          {activePage === 'login' && (
+            <LoginPage
+              onAuthenticated={(role) => setSessionRole(role)}
+              onRegisterUser={registerAuthenticatedUser}
+            />
+          )}
           {activePage === 'facility' && <PlaceholderPage title="시설안내" />}
           {activePage === 'mypage' && (
             <MyPage
