@@ -102,6 +102,12 @@ function getSeoulDateKey(date = new Date()) {
   return `${values.year}-${values.month}-${values.day}`;
 }
 
+function formatReservationTime(value?: string) {
+  if (!value) return '';
+  const [, time = ''] = value.split('T');
+  return time.slice(0, 5);
+}
+
 function normalizeEquipment(item: ApiEquipmentItem, index: number): EquipmentItem {
   const name = item.name ?? `Equipment ${index + 1}`;
   const inferredGroup: EquipmentGroup =
@@ -908,8 +914,9 @@ function ReservationPage({ equipmentItems }: { equipmentItems: EquipmentItem[] }
         />
       </div>
       {showReservationModal && (
-        <ReservationModal
+        <ReservationModalV2
           equipmentItems={equipmentItems}
+          calendarEvents={calendarEvents}
           selectedEquipmentId={selectedEquipment?.id ?? ''}
           initialDate={reservationDate}
           onClose={() => setShowReservationModal(false)}
@@ -1003,6 +1010,120 @@ function ReservationModal({
         <div className="mt-6 flex justify-end gap-3">
           <button type="button" className="rounded-md border border-red-300/35 px-5 py-3 font-bold text-red-100 hover:border-red-300 hover:bg-red-500/20 hover:text-white" onClick={onClose}>취소</button>
           <button type="submit" className="rounded-md bg-cyan-300 px-5 py-3 font-extrabold text-slate-950 shadow-[0_0_28px_rgba(34,211,238,0.24)] hover:bg-white">예약 확정</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function ReservationModalV2({
+  equipmentItems,
+  calendarEvents,
+  selectedEquipmentId,
+  initialDate,
+  onClose,
+  onConfirm
+}: {
+  equipmentItems: EquipmentItem[];
+  calendarEvents: ReservationEvent[];
+  selectedEquipmentId: string;
+  initialDate: string;
+  onClose: () => void;
+  onConfirm: (form: { equipmentId: string; date: string; startTime: string; endTime: string; purpose: string }) => void;
+}) {
+  const [form, setForm] = useState({
+    equipmentId: selectedEquipmentId || equipmentItems[0]?.id || '',
+    date: initialDate,
+    startTime: '09:00',
+    endTime: '10:00',
+    purpose: ''
+  });
+  const endTimes = reservationTimes.filter((time) => time > form.startTime);
+  const reservationsForDate = calendarEvents
+    .filter((event) => event.start.slice(0, 10) === form.date)
+    .sort((first, second) => first.start.localeCompare(second.start));
+
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    onConfirm(form);
+  }
+
+  return (
+    <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
+      <form className="reservation-modal reservation-confirm-modal reservation-modal-wide" onSubmit={submit} onMouseDown={(event) => event.stopPropagation()}>
+        <div className="mb-5 flex items-center justify-between">
+          <h3 className="text-2xl font-extrabold text-white">장비 예약</h3>
+          <button type="button" className="reservation-danger-button px-4 py-2 text-sm" onClick={onClose}>
+            닫기
+          </button>
+        </div>
+        <div className="reservation-modal-grid">
+          <aside className="reservation-day-panel">
+            <p className="text-xs font-extrabold uppercase text-cyan-300">Daily Schedule</p>
+            <h4>{form.date} 예약현황</h4>
+            <div className="reservation-day-list">
+              {reservationsForDate.length > 0 ? (
+                reservationsForDate.map((event) => (
+                  <div key={event.id} className="reservation-day-item">
+                    <span>{formatReservationTime(event.start)}{event.end ? ` - ${formatReservationTime(event.end)}` : ''}</span>
+                    <strong>{event.title}</strong>
+                  </div>
+                ))
+              ) : (
+                <p className="reservation-empty-state">선택한 날짜에 등록된 예약이 없습니다.</p>
+              )}
+            </div>
+          </aside>
+          <div className="reservation-form-fields">
+            <label className="reservation-label">
+              장비
+              <select value={form.equipmentId} onChange={(event) => setForm((current) => ({ ...current, equipmentId: event.target.value }))}>
+                {equipmentItems.map((item) => (
+                  <option key={item.id} value={item.id}>{item.name}</option>
+                ))}
+              </select>
+            </label>
+            <label className="reservation-label">
+              예약일
+              <input type="date" value={form.date} onChange={(event) => setForm((current) => ({ ...current, date: event.target.value }))} />
+            </label>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="reservation-label">
+                시작 시간
+                <select
+                  value={form.startTime}
+                  onChange={(event) => {
+                    const nextStart = event.target.value;
+                    setForm((current) => ({
+                      ...current,
+                      startTime: nextStart,
+                      endTime: reservationTimes.find((time) => time > nextStart) ?? current.endTime
+                    }));
+                  }}
+                >
+                  {reservationTimes.map((time) => (
+                    <option key={time} value={time}>{time}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="reservation-label">
+                종료 시간
+                <select value={form.endTime} onChange={(event) => setForm((current) => ({ ...current, endTime: event.target.value }))}>
+                  {endTimes.map((time) => (
+                    <option key={time} value={time}>{time}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <label className="reservation-label">
+              예약 목적
+              <input value={form.purpose} onChange={(event) => setForm((current) => ({ ...current, purpose: event.target.value }))} placeholder="예: 박막 증착 공정" />
+            </label>
+          </div>
+        </div>
+        <div className="mt-6 flex justify-end gap-3">
+          <button type="button" className="reservation-danger-button px-5 py-3" onClick={onClose}>취소</button>
+          <button type="submit" className="reservation-confirm-button px-5 py-3">예약확정</button>
         </div>
       </form>
     </div>

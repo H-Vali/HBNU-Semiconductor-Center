@@ -321,6 +321,17 @@ select {
 .fc .fc-daygrid-day-frame {
   position: relative;
   min-height: 7rem;
+  overflow: hidden;
+  transition: transform 0.22s ease, background 0.22s ease, box-shadow 0.22s ease;
+}
+
+.fc .fc-daygrid-day:not(.fc-day-disabled) .fc-daygrid-day-frame:hover {
+  z-index: 2;
+  background:
+    radial-gradient(circle at top right, rgba(34, 211, 238, 0.12), transparent 34%),
+    rgba(15, 23, 42, 0.78);
+  box-shadow: inset 0 0 0 1px rgba(125, 211, 252, 0.28), 0 16px 32px rgba(2, 6, 23, 0.28);
+  transform: translateY(-3px) scale(1.008);
 }
 
 .fc .fc-daygrid-day.fc-day-today,
@@ -335,30 +346,39 @@ select {
 .fc .fc-daygrid-day.seoul-today .fc-daygrid-day-frame::after {
   content: "";
   position: absolute;
-  inset: 0.22rem;
+  inset: 0.18rem;
   z-index: 0;
   pointer-events: none;
   border-radius: 8px;
-  border: 1px solid rgba(125, 211, 252, 0.65);
-  box-shadow: inset 0 0 0 1px rgba(168, 85, 247, 0.16), 0 0 14px rgba(34, 211, 238, 0.16);
+  border: 1px solid rgba(125, 211, 252, 0.75);
+  box-shadow: inset 0 0 0 1px rgba(168, 85, 247, 0.16), 0 0 18px rgba(34, 211, 238, 0.22);
   animation: calendarTodayBorder 3.6s ease-in-out infinite;
 }
 
 .fc .fc-daygrid-day.seoul-today .fc-daygrid-day-number {
-  display: inline;
-  min-width: 0;
-  min-height: 0;
-  margin: 0;
-  border-radius: 0;
-  background: transparent !important;
-  color: #e0f2fe;
-  box-shadow: none !important;
-  animation: none !important;
+  display: inline-grid;
+  min-width: 2.2rem;
+  min-height: 2.2rem;
+  margin: 0.25rem;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(125, 211, 252, 0.72);
+  background:
+    linear-gradient(90deg, transparent 47%, rgba(125, 211, 252, 0.26) 48%, rgba(125, 211, 252, 0.26) 52%, transparent 53%),
+    linear-gradient(0deg, transparent 47%, rgba(125, 211, 252, 0.2) 48%, rgba(125, 211, 252, 0.2) 52%, transparent 53%),
+    conic-gradient(from 25deg, rgba(34, 211, 238, 0.2), rgba(59, 130, 246, 0.42), rgba(167, 139, 250, 0.28), rgba(34, 211, 238, 0.2));
+  background-size: 10px 10px, 10px 10px, auto;
+  color: #ffffff;
+  box-shadow: inset 0 0 16px rgba(34, 211, 238, 0.28), 0 0 22px rgba(34, 211, 238, 0.34);
+  font-weight: 900;
 }
 
 .fc .fc-daygrid-day.seoul-today .fc-daygrid-day-number::before {
-  display: none !important;
-  content: none !important;
+  content: "";
+  position: absolute;
+  inset: 0.45rem;
+  border-radius: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 @keyframes calendarTodayBorder {
@@ -582,6 +602,109 @@ select {
 .reservation-label select:focus {
   border-color: rgba(34, 211, 238, 0.85);
   box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.1);
+}
+
+.reservation-modal-wide {
+  width: min(56rem, 100%);
+}
+
+.reservation-modal-grid {
+  display: grid;
+  grid-template-columns: minmax(14rem, 0.78fr) minmax(0, 1.35fr);
+  gap: 1rem;
+}
+
+.reservation-day-panel {
+  min-height: 100%;
+  border-radius: 8px;
+  border: 1px solid rgba(125, 211, 252, 0.18);
+  background:
+    radial-gradient(circle at top left, rgba(34, 211, 238, 0.16), transparent 36%),
+    rgba(2, 6, 23, 0.56);
+  padding: 1rem;
+}
+
+.reservation-day-panel h4 {
+  margin-top: 0.35rem;
+  color: #ffffff;
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.reservation-day-list {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+.reservation-day-item {
+  border-radius: 7px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(15, 23, 42, 0.74);
+  padding: 0.75rem;
+}
+
+.reservation-day-item span {
+  display: block;
+  color: #7dd3fc;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.reservation-day-item strong {
+  display: block;
+  margin-top: 0.25rem;
+  color: #e5edf8;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.reservation-empty-state {
+  border-radius: 7px;
+  border: 1px dashed rgba(148, 163, 184, 0.24);
+  background: rgba(15, 23, 42, 0.52);
+  padding: 1rem;
+  color: #94a3b8;
+  font-size: 0.88rem;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
+.reservation-form-fields {
+  min-width: 0;
+}
+
+.reservation-danger-button,
+.reservation-confirm-button {
+  border-radius: 7px;
+  border: 0;
+  font-weight: 900;
+  color: #ffffff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.reservation-danger-button {
+  background: #dc2626;
+}
+
+.reservation-danger-button:hover {
+  background: #ef4444;
+}
+
+.reservation-confirm-button {
+  background: #1d4ed8;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 0 24px rgba(29, 78, 216, 0.28);
+}
+
+.reservation-confirm-button:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+@media (max-width: 760px) {
+  .reservation-modal-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .cleanroom-plan-space {
