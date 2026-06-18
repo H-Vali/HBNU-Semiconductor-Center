@@ -146,6 +146,7 @@ select {
 }
 
 .hero-intro-copy {
+  grid-column: 1;
   min-width: 0;
 }
 
@@ -169,6 +170,8 @@ select {
 }
 
 .hero-user-summary {
+  grid-column: 2;
+  grid-row: 1 / span 2;
   align-self: stretch;
   display: flex;
   flex-direction: column;
@@ -276,6 +279,7 @@ select {
 }
 
 .hero-action-group {
+  grid-column: 1;
   display: flex;
   flex-wrap: wrap;
   gap: 9px;
@@ -1579,6 +1583,13 @@ select {
 @media (max-width: 1100px) {
   .hero-intro {
     grid-template-columns: 1fr;
+  }
+
+  .hero-intro-copy,
+  .hero-action-group,
+  .hero-user-summary {
+    grid-column: 1;
+    grid-row: auto;
   }
 
   .hero-user-summary {
