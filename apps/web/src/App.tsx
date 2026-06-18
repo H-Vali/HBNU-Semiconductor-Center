@@ -1667,7 +1667,8 @@ function AdminPage({
             selectable
             height="100%"
             contentHeight="auto"
-            dayMaxEvents={3}
+            dayMaxEvents={2}
+            dayMaxEventRows={2}
             moreLinkClick="popover"
             headerToolbar={{ left: 'title', center: '', right: 'adminToday prev,next' }}
             customButtons={{

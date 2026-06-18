@@ -1917,7 +1917,8 @@ select {
 
 .admin-reservation-calendar,
 .admin-reservation-detail {
-  height: clamp(37rem, 54vw, 46rem);
+  height: 40rem;
+  max-height: 40rem;
   min-width: 0;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1997,6 +1998,8 @@ select {
 
 .admin-reservation-calendar .fc-view-harness {
   flex: 1;
+  min-height: 0;
+  height: auto !important;
 }
 
 .admin-reservation-calendar .fc .fc-toolbar {
@@ -2033,12 +2036,19 @@ select {
 }
 
 .admin-reservation-calendar .fc .fc-daygrid-day-frame {
-  min-height: 4.45rem;
+  height: 4.1rem;
+  min-height: 4.1rem !important;
+  max-height: 4.1rem;
 }
 
 .admin-reservation-calendar .fc .fc-daygrid-day-number {
   margin: 0.1rem 0.18rem 0 0;
   font-size: 0.86rem;
+}
+
+.admin-reservation-calendar .fc .fc-daygrid-day-events {
+  max-height: 2.15rem;
+  overflow: hidden;
 }
 
 .admin-reservation-calendar .fc .fc-daygrid-event {
@@ -2140,6 +2150,12 @@ select {
 @media (max-width: 760px) {
   .admin-reservation-manager {
     grid-template-columns: 1fr;
+  }
+
+  .admin-reservation-calendar,
+  .admin-reservation-detail {
+    height: auto;
+    max-height: none;
   }
 
   .admin-reservation-panel-head,
