@@ -12,11 +12,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background:
-    linear-gradient(rgba(34, 211, 238, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(34, 211, 238, 0.035) 1px, transparent 1px),
-    linear-gradient(135deg, #07111f 0%, #0d1727 48%, #111827 100%);
-  background-size: 44px 44px, 44px 44px, auto;
+  background: #0b1220;
   color: #e5edf8;
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
 }
@@ -94,19 +90,20 @@ select {
 }
 
 .hero-panel {
-  background:
-    linear-gradient(115deg, rgba(7, 17, 31, 0.96) 0%, rgba(15, 23, 42, 0.9) 52%, rgba(18, 31, 54, 0.82) 100%),
-    url('https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1800&q=85');
-  background-position: center;
-  background-size: cover;
+  border-radius: 16px;
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  background: #0b1220;
 }
 
 .hero-title {
   display: grid;
   gap: 0.2rem;
-  font-size: clamp(2.15rem, 3.8vw, 3.75rem);
+  margin: 0;
+  color: #f3f6fb;
+  font-size: clamp(2rem, 3vw, 3.05rem);
+  font-weight: 500;
+  line-height: 1.32;
   letter-spacing: 0;
-  text-shadow: 0 0 28px rgba(34, 211, 238, 0.13), 0 10px 26px rgba(2, 6, 23, 0.5);
 }
 
 .hero-title span {
@@ -119,11 +116,174 @@ select {
 
 .hero-title span:last-child {
   width: fit-content;
-  background: linear-gradient(90deg, #ffffff 0%, #bfdbfe 44%, #67e8f9 100%);
-  background-clip: text;
-  color: transparent;
-  -webkit-background-clip: text;
-  text-shadow: none;
+  color: #f3f6fb;
+}
+
+.hero-title em {
+  color: #5fd9c9;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.hero-intro {
+  position: relative;
+  overflow: hidden;
+  background: #0c1322;
+  padding: 22px;
+}
+
+.hero-intro::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 45%;
+  background: #0e1830;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.hero-intro > * {
+  position: relative;
+  z-index: 1;
+}
+
+.hero-breadcrumb {
+  margin: 0 0 13px;
+  padding-left: 2px;
+  color: #5fd9c9;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.hero-copy {
+  max-width: 62%;
+  margin: 12px 0 20px;
+  color: #aab4c4;
+  font-size: 0.86rem;
+  font-weight: 400;
+  line-height: 1.65;
+}
+
+.hero-action-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  justify-content: flex-start;
+}
+
+.hero-action-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 2.7rem;
+  border-radius: 9px;
+  padding: 11px 16px;
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.hero-action-button.is-primary {
+  border: 0;
+  background: #34d6b0;
+  color: #062018;
+}
+
+.hero-action-button.is-primary:hover {
+  background: #5fd9c9;
+}
+
+.hero-action-button.is-secondary {
+  border: 0.5px solid rgba(255, 255, 255, 0.18);
+  background: transparent;
+  color: #cdd5e1;
+}
+
+.hero-action-button.is-secondary:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.hero-metrics-panel {
+  display: grid;
+  gap: 24px;
+  background: #0b1220;
+  padding: 20px 22px 22px;
+}
+
+.hero-section-label {
+  margin: 0 0 9px 2px;
+  color: #8b96a8;
+  font-size: 0.66rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+}
+
+.hero-process-grid,
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.process-status-card {
+  border-radius: 11px;
+  padding: 13px 14px;
+  background: transparent;
+}
+
+.process-status-card p {
+  margin: 0 0 7px;
+  font-size: 0.66rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.process-status-card strong {
+  color: #f3f6fb;
+  font-size: 1.2rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.process-status-card strong span {
+  margin-left: 0.18rem;
+  color: #8b96a8;
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+.process-status-card.is-lithography {
+  border: 0.5px solid rgba(125, 179, 240, 0.3);
+}
+
+.process-status-card.is-lithography p {
+  color: #7db3f0;
+}
+
+.process-status-card.is-deposition {
+  border: 0.5px solid rgba(82, 224, 176, 0.3);
+}
+
+.process-status-card.is-deposition p {
+  color: #52e0b0;
+}
+
+.process-status-card.is-etching {
+  border: 0.5px solid rgba(159, 176, 255, 0.3);
+}
+
+.process-status-card.is-etching p {
+  color: #9fb0ff;
+}
+
+.process-status-card.is-metrology {
+  border: 0.5px solid rgba(245, 185, 66, 0.3);
+}
+
+.process-status-card.is-metrology p {
+  color: #f5b942;
 }
 
 .brand-mark {
@@ -371,20 +531,64 @@ select {
 }
 
 .stat-card {
-  min-height: 13rem;
+  min-height: 0;
+  border-radius: 11px;
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
+  background: #11192b;
+  padding: 14px;
 }
 
-.stat-icon {
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+.stat-card-heading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 11px;
+  color: #8b96a8;
+  font-size: 0.76rem;
+  font-weight: 400;
 }
 
-.active-indicator {
-  width: 0.9rem;
-  height: 0.9rem;
-  border-radius: 999px;
-  background: #5eead4;
-  box-shadow: 0 0 0 0 rgba(94, 234, 212, 0.8);
-  animation: activePulse 1.7s ease-out infinite;
+.stat-card-value {
+  margin: 0;
+  color: #f3f6fb;
+  font-size: 1.5rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.stat-card-value span {
+  margin-left: 0.2rem;
+  color: #8b96a8;
+  font-size: 0.82rem;
+  font-weight: 400;
+}
+
+.stat-card-detail {
+  margin: 8px 0 0;
+  color: #6b7689;
+  font-size: 0.7rem;
+  font-weight: 400;
+}
+
+.stat-card-detail.is-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #52e0b0;
+}
+
+.stat-progress {
+  height: 5px;
+  margin-top: 11px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.stat-progress span {
+  display: block;
+  height: 100%;
+  background: #34d6b0;
 }
 
 @keyframes activePulse {
@@ -1254,10 +1458,6 @@ select {
 }
 
 @media (min-width: 1600px) {
-  .hero-panel {
-    min-height: calc((100vw - 4rem) * 0.22);
-  }
-
   .dashboard-grid {
     grid-auto-rows: minmax(0, auto);
   }
@@ -1307,6 +1507,20 @@ select {
 
   .usage-period-toggle button {
     flex: 1;
+  }
+
+  .hero-intro,
+  .hero-metrics-panel {
+    padding-inline: 1rem;
+  }
+
+  .hero-copy {
+    max-width: 100%;
+  }
+
+  .hero-process-grid,
+  .stat-grid {
+    grid-template-columns: 1fr;
   }
 
   .wafer-core {

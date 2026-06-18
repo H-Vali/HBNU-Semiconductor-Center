@@ -512,58 +512,64 @@ function SidebarNavigation({ activePage, onNavigate }: { activePage: PageKey; on
 }
 
 function Hero({ onNavigate, equipmentItems }: { onNavigate: (page: PageKey) => void; equipmentItems: EquipmentItem[] }) {
+  const processStatusCards = [
+    { label: 'Lithography', value: '12', unit: 'lots', tone: 'lithography' },
+    { label: 'Deposition', value: '18', unit: 'runs', tone: 'deposition' },
+    { label: 'Etching', value: '9', unit: 'recipes', tone: 'etching' },
+    { label: 'Metrology', value: '41', unit: 'samples', tone: 'metrology' }
+  ];
+
   return (
-    <section className="hero-panel relative overflow-hidden rounded-lg border border-white/10 bg-slate-950">
-      <div className="wafer-visual" aria-hidden="true">
-        <div className="wafer-core" />
-        <div className="wafer-grid" />
-      </div>
+    <section className="hero-panel relative overflow-hidden">
       <div className="wafer-label">
         <span>Cleanroom</span>
         <strong>ISO 5</strong>
       </div>
-      <div className="relative grid gap-5 p-6 xl:p-8">
-        <div className="flex flex-col gap-7">
-          <div>
-            <p className="mb-4 text-base font-extrabold text-cyan-300">N-FACILITY / FAB OPERATION / EQUIPMENT RESERVATION</p>
-            <h2 className="hero-title max-w-5xl text-4xl font-extrabold leading-tight text-white lg:text-5xl 2xl:text-6xl">
+      <div className="hero-intro">
+        <div>
+          <p className="hero-breadcrumb">N-FACILITY · FAB OPERATION · EQUIPMENT RESERVATION</p>
+          <h2 className="hero-title">
               <span>국립한밭대학교 창의융합교육센터</span>
-              <span>인프라 통합 관리 시스템</span>
-            </h2>
-            <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-300">
-              장비 소개, 교육 인증, 예약 승인, 사용률 분석을 통합해 연구자와 관리자가 같은 데이터를 보고 움직이는 운영 플랫폼입니다.
-            </p>
-          </div>
-          <div className="grid gap-4 lg:grid-cols-3">
-            {quickLinks.map((link) => {
-              const Icon = link.icon;
-              return (
-                <button
-                  key={link.label}
-                  className="quick-link flex min-h-24 items-center gap-4 rounded-md border border-white/10 bg-white/5 px-5 py-5 text-left text-lg font-bold text-white hover:border-cyan-300 hover:bg-cyan-300/10"
-                  onClick={() => onNavigate(link.page)}
-                >
-                  <Icon className="text-cyan-300" size={26} />
-                  {link.label}
-                </button>
-              );
-            })}
+              <span>인프라 <em>통합 관리</em> 시스템</span>
+          </h2>
+          <p className="hero-copy">
+            장비 소개, 교육 인증, 예약 승인, 사용률 분석을 통합해 연구자와 관리자가 같은 데이터를 보고 움직이는 운영 플랫폼입니다.
+          </p>
+        </div>
+        <div className="hero-action-group">
+          {quickLinks.map((link, index) => {
+            const Icon = link.icon;
+            return (
+              <button
+                key={link.label}
+                aria-label={link.label}
+                className={`hero-action-button ${index === 0 ? 'is-primary' : 'is-secondary'}`}
+                onClick={() => onNavigate(link.page)}
+                type="button"
+              >
+                <Icon size={16} aria-hidden="true" />
+                {link.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <div className="hero-metrics-panel">
+        <div>
+          <p className="hero-section-label">금주 공정 현황</p>
+          <div className="hero-process-grid">
+            {processStatusCards.map((item) => (
+              <div key={item.label} className={`process-status-card is-${item.tone}`}>
+                <p>{item.label}</p>
+                <strong>{item.value}<span>{item.unit}</span></strong>
+              </div>
+            ))}
           </div>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {[
-            { label: 'Lithography', value: '12 lots', tone: 'text-sky-300' },
-            { label: 'Deposition', value: '18 runs', tone: 'text-emerald-300' },
-            { label: 'Etching', value: '9 recipes', tone: 'text-violet-300' },
-            { label: 'Metrology', value: '41 samples', tone: 'text-amber-300' }
-          ].map((item) => (
-            <div key={item.label} className="rounded-md border border-white/10 bg-slate-950/80 p-4 backdrop-blur">
-              <p className={`text-sm font-bold uppercase ${item.tone}`}>{item.label}</p>
-              <p className="mt-1 text-3xl font-extrabold text-white">{item.value}</p>
-            </div>
-          ))}
+        <div>
+          <p className="hero-section-label">운영 지표</p>
+          <StatGrid equipmentItems={equipmentItems} />
         </div>
-        <StatGrid equipmentItems={equipmentItems} />
       </div>
     </section>
   );
@@ -575,33 +581,37 @@ function StatGrid({ equipmentItems }: { equipmentItems: EquipmentItem[] }) {
   const averageUtilization = Math.round(equipmentItems.reduce((sum, item) => sum + item.utilization, 0) / equipmentItems.length);
 
   const statCards = [
-    { label: '운영 장비', value: `${equipmentItems.length}종`, detail: '공정, 측정 및 분석', icon: Wrench, trend: 'neutral' as const },
-    { label: '월간 장비 총 가동 시간', value: `${totalHours.toLocaleString()}h`, detail: `전월 대비 ${monthlyDelta > 0 ? '+' : ''}${monthlyDelta}%`, icon: Gauge, trend: monthlyDelta >= 0 ? 'up' as const : 'down' as const },
-    { label: '교육 인증', value: '312명', detail: '최근 30일 27명', icon: CheckCircle2, trend: 'neutral' as const },
-    { label: 'FAB 가동률', value: `${averageUtilization}%`, detail: 'Cleanroom active', icon: Cpu, trend: 'neutral' as const }
+    { label: '운영 장비', value: `${equipmentItems.length}`, unit: '종', detail: '공정·측정·분석', icon: Wrench, type: 'text' as const },
+    { label: '월간 가동시간', value: `${totalHours.toLocaleString()}`, unit: 'h', detail: `전월 대비 ${monthlyDelta > 0 ? '+' : ''}${monthlyDelta}%`, icon: Gauge, type: 'trend' as const },
+    { label: '교육 인증', value: '312', unit: '명', detail: '최근 30일 신규 27명', icon: CheckCircle2, type: 'text' as const },
+    { label: 'FAB 가동률', value: `${averageUtilization}`, unit: '%', detail: 'Cleanroom active', icon: Cpu, type: 'gauge' as const }
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <div className="stat-grid">
       {statCards.map((card) => {
         const Icon = card.icon;
-        const trendColor = card.trend === 'up' ? 'text-emerald-300' : card.trend === 'down' ? 'text-rose-300' : 'text-slate-400';
-        const TrendIcon = card.trend === 'down' ? TrendingDown : TrendingUp;
+        const TrendIcon = monthlyDelta >= 0 ? TrendingUp : TrendingDown;
 
         return (
-          <div key={card.label} className="stat-card rounded-lg border border-white/10 bg-surface/85 p-6">
-            <div className="mb-6 flex items-center justify-between">
-              <div className="stat-icon rounded-md bg-cyan-300/10 p-3 text-cyan-300">
-                <Icon size={25} />
-              </div>
-              <span className="active-indicator" aria-label="Active equipment status" />
+          <div key={card.label} className="stat-card">
+            <div className="stat-card-heading">
+              <Icon size={16} aria-hidden="true" />
+              <span>{card.label}</span>
             </div>
-            <p className="text-base font-semibold text-slate-300">{card.label}</p>
-            <p className="mt-2 text-4xl font-extrabold text-white">{card.value}</p>
-            <p className={`mt-2 flex items-center gap-1.5 text-base font-semibold ${trendColor}`}>
-              {card.trend !== 'neutral' && <TrendIcon size={17} />}
-              {card.detail}
-            </p>
+            <p className="stat-card-value">{card.value}<span>{card.unit}</span></p>
+            {card.type === 'trend' && (
+              <p className="stat-card-detail is-trend">
+                <TrendIcon size={13} aria-hidden="true" />
+                {card.detail}
+              </p>
+            )}
+            {card.type === 'text' && <p className="stat-card-detail">{card.detail}</p>}
+            {card.type === 'gauge' && (
+              <div className="stat-progress" aria-label={`FAB 가동률 ${averageUtilization}%`}>
+                <span style={{ width: `${averageUtilization}%` }} />
+              </div>
+            )}
           </div>
         );
       })}
