@@ -1906,6 +1906,7 @@ select {
 .admin-reservation-manager {
   display: grid;
   grid-template-columns: minmax(0, 1.08fr) minmax(22rem, 0.72fr);
+  align-items: stretch;
   gap: 1rem;
 }
 
@@ -1916,6 +1917,7 @@ select {
 
 .admin-reservation-calendar,
 .admin-reservation-detail {
+  height: clamp(37rem, 54vw, 46rem);
   min-width: 0;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1981,8 +1983,75 @@ select {
   font-size: 0.9rem;
 }
 
+.admin-reservation-calendar {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-reservation-calendar .fc {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.admin-reservation-calendar .fc-view-harness {
+  flex: 1;
+}
+
+.admin-reservation-calendar .fc .fc-toolbar {
+  margin-bottom: 0.72rem;
+}
+
+.admin-reservation-calendar .fc .fc-toolbar-title {
+  font-size: 1rem;
+}
+
+.admin-reservation-calendar .fc .fc-button-primary {
+  border-color: rgba(95, 217, 201, 0.28);
+  background: rgba(52, 214, 176, 0.14);
+  color: #d9fffa;
+}
+
+.admin-reservation-calendar .fc .fc-button-primary:hover,
+.admin-reservation-calendar .fc .fc-button-primary:focus {
+  border-color: rgba(95, 217, 201, 0.5);
+  background: rgba(52, 214, 176, 0.24);
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.admin-reservation-calendar .fc .fc-button-primary:disabled {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
+  color: #8b96a8;
+  opacity: 1;
+}
+
 .admin-reservation-calendar .fc-daygrid-day {
   cursor: pointer;
+}
+
+.admin-reservation-calendar .fc .fc-daygrid-day-frame {
+  min-height: 4.45rem;
+}
+
+.admin-reservation-calendar .fc .fc-daygrid-day-number {
+  margin: 0.1rem 0.18rem 0 0;
+  font-size: 0.86rem;
+}
+
+.admin-reservation-calendar .fc .fc-daygrid-event {
+  margin-top: 0.08rem;
+  padding: 0.05rem 0.18rem;
+  font-size: 0.72rem;
+  line-height: 1.2;
+}
+
+.admin-reservation-calendar .fc .fc-daygrid-more-link {
+  color: #5fd9c9;
+  font-size: 0.72rem;
+  font-weight: 800;
 }
 
 .admin-reservation-calendar .fc-daygrid-day.admin-selected-day {
@@ -1993,7 +2062,6 @@ select {
 .admin-reservation-detail {
   display: flex;
   flex-direction: column;
-  max-height: 46rem;
 }
 
 .admin-reservation-detail .admin-reservation-list {

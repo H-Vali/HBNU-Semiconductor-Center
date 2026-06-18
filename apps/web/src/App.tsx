@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ChangeEvent, type DragEvent, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent, type ReactNode } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -1597,6 +1597,7 @@ function AdminPage({
 }) {
   const [showReservationModal, setShowReservationModal] = useState(false);
   const [selectedAdminDate, setSelectedAdminDate] = useState(getSeoulDateKey());
+  const adminCalendarRef = useRef<FullCalendar | null>(null);
   const todayKey = getSeoulDateKey();
   const selectedDayReservations = useMemo(() => (
     calendarEvents
@@ -1641,6 +1642,11 @@ function AdminPage({
     setShowReservationModal(false);
   }
 
+  function moveAdminCalendarToToday() {
+    setSelectedAdminDate(todayKey);
+    adminCalendarRef.current?.getApi().today();
+  }
+
   return (
     <section className="grid gap-5">
       <div className="admin-reservation-manager">
@@ -1651,17 +1657,25 @@ function AdminPage({
               <h3>예약관리 캘린더</h3>
               <span>월별 일정을 확인하고 날짜를 선택하세요.</span>
             </div>
-            <button type="button" aria-label="오늘 날짜 예약 보기" onClick={() => setSelectedAdminDate(todayKey)}>
-              오늘
-            </button>
           </div>
           <FullCalendar
+            ref={adminCalendarRef}
             plugins={[dayGridPlugin, interactionPlugin]}
             initialView="dayGridMonth"
             initialDate={selectedAdminDate}
             timeZone="Asia/Seoul"
             selectable
-            height="auto"
+            height="100%"
+            contentHeight="auto"
+            dayMaxEvents={3}
+            moreLinkClick="popover"
+            headerToolbar={{ left: 'title', center: '', right: 'adminToday prev,next' }}
+            customButtons={{
+              adminToday: {
+                text: '오늘',
+                click: moveAdminCalendarToToday
+              }
+            }}
             dayCellClassNames={(arg) => {
               const dateKey = getSeoulDateKey(arg.date);
               return [
