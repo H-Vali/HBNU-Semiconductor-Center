@@ -511,10 +511,19 @@ function formatProfessorLab(professor: string) {
 }
 
 function getProfessorTone(professor: string) {
-  const palette = ['#5FD9C9', '#93C5FD', '#C084FC', '#FBBF24', '#F472B6', '#34D399'];
-  const key = professor || 'default';
-  const hash = Array.from(key).reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  return palette[hash % palette.length];
+  const palette: Record<string, string> = {
+    '김민회': '#B56CFF',
+    '노진성': '#38BDF8',
+    '이재현': '#34D399',
+    '전승배': '#F59E0B',
+    '최윤석': '#F43F5E',
+    '하지환': '#14B8A6',
+    '정우익': '#818CF8',
+    '구치완': '#F97316',
+    '백근우': '#22D3EE'
+  };
+  const key = Object.keys(palette).find((name) => professor.includes(name));
+  return key ? palette[key] : '#5FD9C9';
 }
 
 function downloadUsersExcel(rows: ManagedUser[]) {
@@ -2350,18 +2359,27 @@ function UserManagementPage({
 }) {
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [nameFilter, setNameFilter] = useState('');
   const [roleFilter, setRoleFilter] = useState('전체');
+  const [departmentFilter, setDepartmentFilter] = useState('전체');
   const [labFilter, setLabFilter] = useState('전체');
+  const [authFilter, setAuthFilter] = useState('전체');
+  const departments = useMemo(() => ['전체', ...Array.from(new Set(users.map((user) => user.department).filter(Boolean)))], [users]);
   const labs = useMemo(() => ['전체', ...Array.from(new Set(users.map((user) => user.labProfessor).filter(Boolean)))], [users]);
+  const authProviders = useMemo(() => ['전체', ...Array.from(new Set(users.map((user) => user.authProvider ?? 'Manual')))], [users]);
   const filteredUsers = useMemo(() => (
     users.filter((user) => {
       const keyword = searchTerm.trim().toLowerCase();
+      const nameKeyword = nameFilter.trim().toLowerCase();
       const matchesSearch = !keyword || `${user.name} ${user.department} ${user.labProfessor} ${user.email} ${user.phone} ${user.memo}`.toLowerCase().includes(keyword);
+      const matchesName = !nameKeyword || user.name.toLowerCase().includes(nameKeyword);
       const matchesRole = roleFilter === '전체' || user.roleLevel === roleFilter;
+      const matchesDepartment = departmentFilter === '전체' || user.department === departmentFilter;
       const matchesLab = labFilter === '전체' || user.labProfessor === labFilter;
-      return matchesSearch && matchesRole && matchesLab;
+      const matchesAuth = authFilter === '전체' || (user.authProvider ?? 'Manual') === authFilter;
+      return matchesSearch && matchesName && matchesRole && matchesDepartment && matchesLab && matchesAuth;
     })
-  ), [labFilter, roleFilter, searchTerm, users]);
+  ), [authFilter, departmentFilter, labFilter, nameFilter, roleFilter, searchTerm, users]);
   const representativeCount = users.filter((user) => user.roleLevel === '대표').length;
 
   function handleUsersUpload(event: ChangeEvent<HTMLInputElement>) {
@@ -2471,48 +2489,93 @@ function UserManagementPage({
               <th>인증</th>
               <th>메모</th>
             </tr>
+            <tr className="users-table-filter-row">
+              <th />
+              <th>
+                <input value={nameFilter} onChange={(event) => setNameFilter(event.target.value)} placeholder="이름 필터" aria-label="이름 컬럼 필터" />
+              </th>
+              <th>
+                <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)} aria-label="ROLE 컬럼 필터">
+                  <option value="전체">전체</option>
+                  <option value="대표">대표</option>
+                  <option value="일반">일반</option>
+                </select>
+              </th>
+              <th>
+                <select value={departmentFilter} onChange={(event) => setDepartmentFilter(event.target.value)} aria-label="소속 학과 컬럼 필터">
+                  {departments.map((department) => (
+                    <option key={department} value={department}>{department}</option>
+                  ))}
+                </select>
+              </th>
+              <th>
+                <select value={labFilter} onChange={(event) => setLabFilter(event.target.value)} aria-label="소속 연구실 컬럼 필터">
+                  {labs.map((lab) => (
+                    <option key={lab} value={lab}>{lab}</option>
+                  ))}
+                </select>
+              </th>
+              <th />
+              <th />
+              <th>
+                <select value={authFilter} onChange={(event) => setAuthFilter(event.target.value)} aria-label="인증 컬럼 필터">
+                  {authProviders.map((provider) => (
+                    <option key={provider} value={provider}>{provider}</option>
+                  ))}
+                </select>
+              </th>
+              <th />
+            </tr>
           </thead>
           <tbody>
-            {filteredUsers.map((user, index) => (
-              <tr key={user.id}>
-                <td>{index + 1}</td>
-                <td>
-                  <input value={user.name} onChange={(event) => onUpdateUser(user.id, { name: event.target.value })} aria-label={`${user.name} 이름`} />
-                </td>
-                <td>
-                  <select
-                    className={`user-role-select is-${user.roleLevel === '대표' ? 'lead' : 'member'}`}
-                    value={user.roleLevel}
-                    onChange={(event) => onUpdateUser(user.id, { roleLevel: event.target.value === '대표' ? '대표' : '일반' })}
-                    aria-label={`${user.name} 대표 여부`}
-                  >
-                    <option value="대표">대표</option>
-                    <option value="일반">일반</option>
-                  </select>
-                </td>
-                <td>
-                  <input value={user.department} onChange={(event) => onUpdateUser(user.id, { department: event.target.value })} aria-label={`${user.name} 소속 학과`} />
-                </td>
-                <td>
-                  <label className="user-lab-input">
-                    <i style={{ backgroundColor: getProfessorTone(user.labProfessor) }} />
-                    <input value={user.labProfessor} onChange={(event) => onUpdateUser(user.id, { labProfessor: event.target.value })} aria-label={`${user.name} 소속 연구실`} />
-                  </label>
-                </td>
-                <td>
-                  <input value={user.phone} onChange={(event) => onUpdateUser(user.id, { phone: event.target.value })} aria-label={`${user.name} 연락처`} />
-                </td>
-                <td>
-                  <input value={user.email} onChange={(event) => onUpdateUser(user.id, { email: event.target.value })} aria-label={`${user.name} 이메일`} />
-                </td>
-                <td>
-                  <span className={`auth-provider-badge is-${(user.authProvider ?? 'Manual').toLowerCase()}`}>{user.authProvider ?? 'Manual'}</span>
-                </td>
-                <td>
-                  <input value={user.memo} onChange={(event) => onUpdateUser(user.id, { memo: event.target.value })} aria-label={`${user.name} 메모`} />
-                </td>
-              </tr>
-            ))}
+            {filteredUsers.map((user, index) => {
+              const labTone = getProfessorTone(user.labProfessor);
+              return (
+                <tr key={user.id}>
+                  <td>{index + 1}</td>
+                  <td>
+                    <input value={user.name} onChange={(event) => onUpdateUser(user.id, { name: event.target.value })} aria-label={`${user.name} 이름`} />
+                  </td>
+                  <td>
+                    <select
+                      className={`user-role-select is-${user.roleLevel === '대표' ? 'lead' : 'member'}`}
+                      value={user.roleLevel}
+                      onChange={(event) => onUpdateUser(user.id, { roleLevel: event.target.value === '대표' ? '대표' : '일반' })}
+                      aria-label={`${user.name} 대표 여부`}
+                    >
+                      <option value="대표">대표</option>
+                      <option value="일반">일반</option>
+                    </select>
+                  </td>
+                  <td>
+                    <input value={user.department} onChange={(event) => onUpdateUser(user.id, { department: event.target.value })} aria-label={`${user.name} 소속 학과`} />
+                  </td>
+                  <td>
+                    <label className="user-lab-input">
+                      <i style={{ backgroundColor: labTone, color: labTone }} />
+                      <input
+                        value={user.labProfessor}
+                        onChange={(event) => onUpdateUser(user.id, { labProfessor: event.target.value })}
+                        aria-label={`${user.name} 소속 연구실`}
+                        style={{ borderColor: `${labTone}cc`, backgroundColor: `${labTone}18` }}
+                      />
+                    </label>
+                  </td>
+                  <td>
+                    <input value={user.phone} onChange={(event) => onUpdateUser(user.id, { phone: event.target.value })} aria-label={`${user.name} 연락처`} />
+                  </td>
+                  <td>
+                    <input value={user.email} onChange={(event) => onUpdateUser(user.id, { email: event.target.value })} aria-label={`${user.name} 이메일`} />
+                  </td>
+                  <td>
+                    <span className={`auth-provider-badge is-${(user.authProvider ?? 'Manual').toLowerCase()}`}>{user.authProvider ?? 'Manual'}</span>
+                  </td>
+                  <td>
+                    <input value={user.memo} onChange={(event) => onUpdateUser(user.id, { memo: event.target.value })} aria-label={`${user.name} 메모`} />
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
