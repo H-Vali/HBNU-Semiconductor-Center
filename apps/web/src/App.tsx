@@ -159,6 +159,31 @@ function createRealtimeTestReservations(equipmentItems: EquipmentItem[]): Reserv
   });
 }
 
+function getSeoulClockParts() {
+  const parts = new Intl.DateTimeFormat('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    weekday: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  }).formatToParts(new Date());
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+
+  return {
+    year: values.year,
+    month: values.month,
+    day: values.day,
+    hour: values.hour === '24' ? '00' : values.hour,
+    minute: values.minute,
+    second: values.second,
+    weekday: values.weekday
+  };
+}
+
 function normalizeEquipment(item: ApiEquipmentItem, index: number): EquipmentItem {
   const name = item.name ?? `Equipment ${index + 1}`;
   const inferredGroup: EquipmentGroup =
@@ -406,6 +431,7 @@ function RealtimeEquipmentStatus({
   equipmentItems: EquipmentItem[];
   calendarEvents: ReservationEvent[];
 }) {
+  const [clock, setClock] = useState(getSeoulClockParts);
   const statusItems = equipmentItems.map((item) => {
     const activeEvent = calendarEvents.find((event) => isEventForEquipment(event, item, equipmentItems) && isReservationActive(event));
     return {
@@ -418,12 +444,30 @@ function RealtimeEquipmentStatus({
   const idleCount = Math.max(statusItems.length - activeCount, 0);
   const sliderItems = statusItems.length > 0 ? [...statusItems, ...statusItems] : [];
 
+  useEffect(() => {
+    const timer = window.setInterval(() => setClock(getSeoulClockParts()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
   return (
     <div className="chart-card realtime-equipment-card rounded-lg border border-white/10 bg-[#101114] p-5">
-      <div className="mb-4 flex items-start justify-between gap-4">
+      <div className="realtime-equipment-header mb-4">
         <div>
           <p className="text-sm font-bold uppercase text-blue-300">Realtime Analytics</p>
           <h3 className="mt-1 text-2xl font-extrabold text-white">REALTIME 장비 구동 현황</h3>
+        </div>
+        <div className="realtime-digital-clock" aria-label="서울 기준 실시간 시계">
+          <span>{clock.year}</span>
+          <em>/</em>
+          <span>{clock.month}</span>
+          <em>/</em>
+          <span>{clock.day}</span>
+          <strong>{clock.hour}</strong>
+          <em>:</em>
+          <strong>{clock.minute}</strong>
+          <em>:</em>
+          <strong>{clock.second}</strong>
+          <span>{clock.weekday}</span>
         </div>
         <div className="flex flex-wrap justify-end gap-2 text-sm font-bold text-slate-300">
           <span className="rounded-full bg-red-500/15 px-3 py-1 text-red-200">가동중 {activeCount}</span>
