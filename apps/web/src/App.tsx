@@ -46,13 +46,15 @@ type PageKey = 'home' | 'facility' | 'equipment' | 'training' | 'reservations' |
 type Role = 'USER' | 'ADMIN';
 type UsagePeriod = '24H' | '1W' | '1M';
 type EquipmentRuntimeStatus = 'active' | 'maintenance' | 'idle';
+type ReservationStatus = 'pending' | 'approved' | 'maintenance';
+type ReservationForm = { equipmentId: string; date: string; startTime: string; endTime: string; purpose: string; reservationType?: 'use' | 'maintenance' };
 type ApiEquipmentItem = Partial<EquipmentItem> & { imageUrl?: string; usageConditions?: string };
 type ReservationEvent = {
   id: string;
   title: string;
   start: string;
   end?: string;
-  status?: string;
+  status?: ReservationStatus;
   equipmentId?: string;
   createdBy?: string;
 };
@@ -136,6 +138,14 @@ function isReservationActive(event: ReservationEvent, now = new Date()) {
   if (!event.end) return false;
   const currentTime = now.getTime();
   return new Date(event.start).getTime() <= currentTime && currentTime < new Date(event.end).getTime();
+}
+
+function isMaintenanceReservation(event: ReservationEvent) {
+  return event.status === 'maintenance';
+}
+
+function normalizeReservationStatus(status: unknown): ReservationStatus {
+  return status === 'maintenance' || status === 'approved' || status === 'pending' ? status : 'approved';
 }
 
 function getRealtimeCategoryLabel(item: EquipmentItem) {
@@ -645,13 +655,13 @@ function RealtimeEquipmentStatus({
   calendarEvents: ReservationEvent[];
 }) {
   const [clock, setClock] = useState(getSeoulClockParts);
-  const maintenanceEquipmentIds = useMemo(() => new Set(equipmentItems.slice(5, 7).map((item) => item.id)), [equipmentItems]);
   const statusItems = equipmentItems.map((item) => {
-    const activeEvent = calendarEvents.find((event) => isEventForEquipment(event, item, equipmentItems) && isReservationActive(event));
-    const status: EquipmentRuntimeStatus = activeEvent ? 'active' : maintenanceEquipmentIds.has(item.id) ? 'maintenance' : 'idle';
+    const maintenanceEvent = calendarEvents.find((event) => isMaintenanceReservation(event) && isEventForEquipment(event, item, equipmentItems) && isReservationActive(event));
+    const activeEvent = calendarEvents.find((event) => !isMaintenanceReservation(event) && isEventForEquipment(event, item, equipmentItems) && isReservationActive(event));
+    const status: EquipmentRuntimeStatus = maintenanceEvent ? 'maintenance' : activeEvent ? 'active' : 'idle';
     return {
       item,
-      activeEvent,
+      activeEvent: maintenanceEvent ?? activeEvent,
       status
     };
   });
@@ -706,7 +716,7 @@ function RealtimeEquipmentStatus({
                 {status === 'active'
                   ? `${formatReservationTime(activeEvent?.start)} - ${formatReservationTime(activeEvent?.end)} 종료`
                   : status === 'maintenance'
-                    ? '예상 완료 17:00'
+                    ? `${formatReservationTime(activeEvent?.start)} - ${formatReservationTime(activeEvent?.end)} 점검`
                     : '현재 예약 없음'}
               </span>
             </article>
@@ -1197,7 +1207,7 @@ function ReservationPage({
     });
   }, [equipmentItems, groupFilter, searchTerm]);
 
-  function confirmReservation(form: { equipmentId: string; date: string; startTime: string; endTime: string; purpose: string }) {
+  function confirmReservation(form: ReservationForm) {
     const equipment = equipmentItems.find((item) => item.id === form.equipmentId);
     if (!equipment) return;
 
@@ -1311,7 +1321,10 @@ function ReservationPage({
           height="auto"
           dayCellClassNames={(arg) => (getSeoulDateKey(arg.date) === todayKey ? ['seoul-today'] : [])}
           dateClick={(arg) => openReservation(arg.dateStr)}
-          eventClassNames={(arg) => (arg.event.start && arg.event.end && arg.event.start.getTime() <= Date.now() && Date.now() < arg.event.end.getTime() ? ['is-live-event'] : [])}
+          eventClassNames={(arg) => [
+            arg.event.extendedProps.status === 'maintenance' ? 'is-maintenance-event' : '',
+            arg.event.start && arg.event.end && arg.event.start.getTime() <= Date.now() && Date.now() < arg.event.end.getTime() ? 'is-live-event' : ''
+          ].filter(Boolean)}
           events={calendarEvents.filter((event) => isEventForEquipment(event, selectedEquipment, equipmentItems))}
         />
       </div>
@@ -1341,7 +1354,7 @@ function ReservationModal({
   selectedEquipmentId: string;
   initialDate: string;
   onClose: () => void;
-  onConfirm: (form: { equipmentId: string; date: string; startTime: string; endTime: string; purpose: string }) => void;
+  onConfirm: (form: ReservationForm) => void;
 }) {
   const [form, setForm] = useState({
     equipmentId: selectedEquipmentId || equipmentItems[0]?.id || '',
@@ -1426,22 +1439,27 @@ function ReservationModalV2({
   initialDate,
   onClose,
   onConfirm,
-  onDeleteReservation
+  onDeleteReservation,
+  allowMaintenanceReservation = false,
+  titleSuffix = ''
 }: {
   equipmentItems: EquipmentItem[];
   calendarEvents: ReservationEvent[];
   selectedEquipmentId: string;
   initialDate: string;
   onClose: () => void;
-  onConfirm: (form: { equipmentId: string; date: string; startTime: string; endTime: string; purpose: string }) => void;
+  onConfirm: (form: ReservationForm) => void;
   onDeleteReservation?: (reservationId: string) => void;
+  allowMaintenanceReservation?: boolean;
+  titleSuffix?: string;
 }) {
   const [form, setForm] = useState({
     equipmentId: selectedEquipmentId || equipmentItems[0]?.id || '',
     date: initialDate,
     startTime: '09:00',
     endTime: '10:00',
-    purpose: ''
+    purpose: '',
+    reservationType: 'use' as 'use' | 'maintenance'
   });
 
   const sameEquipmentReservations = calendarEvents.filter((event) => {
@@ -1483,7 +1501,7 @@ function ReservationModalV2({
     <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
       <form className="reservation-modal reservation-confirm-modal reservation-modal-wide" onSubmit={submit} onMouseDown={(event) => event.stopPropagation()}>
         <div className="mb-5 flex items-center justify-between">
-          <h3 className="text-2xl font-extrabold text-white">장비 예약</h3>
+          <h3 className="text-2xl font-extrabold text-white">장비 예약 {titleSuffix}</h3>
           <button type="button" className="reservation-danger-button px-4 py-2 text-sm" onClick={onClose}>닫기</button>
         </div>
         <div className="reservation-modal-grid">
@@ -1493,10 +1511,10 @@ function ReservationModalV2({
             <div className="reservation-day-list">
               {reservationsForDate.length > 0 ? (
                 reservationsForDate.map((event) => (
-                  <div key={event.id} className={`reservation-day-item ${isReservationActive(event) ? 'is-live' : ''}`}>
+                  <div key={event.id} className={`reservation-day-item ${isReservationActive(event) ? 'is-live' : ''} ${isMaintenanceReservation(event) ? 'is-maintenance' : ''}`}>
                     <span>{formatReservationTime(event.start)}{event.end ? ` - ${formatReservationTime(event.end)}` : ''}</span>
                     <strong>{event.title}</strong>
-                    {isReservationActive(event) && <em>사용중</em>}
+                    {isReservationActive(event) && <em>{isMaintenanceReservation(event) ? '점검중' : '사용중'}</em>}
                     {onDeleteReservation && (
                       <button type="button" className="reservation-mini-danger" onClick={() => onDeleteReservation(event.id)}>삭제</button>
                     )}
@@ -1516,6 +1534,15 @@ function ReservationModalV2({
                 ))}
               </select>
             </label>
+            {allowMaintenanceReservation && (
+              <label className="reservation-label">
+                예약 유형
+                <select value={form.reservationType} onChange={(event) => setForm((current) => ({ ...current, reservationType: event.target.value as 'use' | 'maintenance' }))}>
+                  <option value="use">장비 사용</option>
+                  <option value="maintenance">장비 점검</option>
+                </select>
+              </label>
+            )}
             <label className="reservation-label">
               예약일
               <input type="date" value={form.date} onChange={(event) => setForm((current) => ({ ...current, date: event.target.value }))} />
@@ -1625,16 +1652,17 @@ function AdminPage({
     전월대비: `${item.delta > 0 ? '+' : ''}${item.delta}%`
   }));
 
-  function confirmAdminReservation(form: { equipmentId: string; date: string; startTime: string; endTime: string; purpose: string }) {
+  function confirmAdminReservation(form: ReservationForm) {
     const equipment = equipmentItems.find((item) => item.id === form.equipmentId);
     if (!equipment) return;
     const purpose = form.purpose.trim() ? ` - ${form.purpose.trim()}` : '';
+    const isMaintenance = form.reservationType === 'maintenance';
     onAddReservation({
       id: `admin-reservation-${Date.now()}`,
-      title: `${equipment.name} 관리자 예약${purpose}`,
+      title: `${equipment.name} ${isMaintenance ? '장비 점검' : '관리자 예약'}${purpose}`,
       start: toReservationDateTime(form.date, form.startTime),
       end: toReservationDateTime(form.date, form.endTime),
-      status: 'approved',
+      status: isMaintenance ? 'maintenance' : 'approved',
       equipmentId: equipment.id,
       createdBy: 'ADMIN'
     });
@@ -1685,7 +1713,10 @@ function AdminPage({
               ].filter(Boolean);
             }}
             dateClick={(arg) => setSelectedAdminDate(arg.dateStr)}
-            eventClassNames={(arg) => (arg.event.start && arg.event.end && arg.event.start.getTime() <= Date.now() && Date.now() < arg.event.end.getTime() ? ['is-live-event'] : [])}
+            eventClassNames={(arg) => [
+              arg.event.extendedProps.status === 'maintenance' ? 'is-maintenance-event' : '',
+              arg.event.start && arg.event.end && arg.event.start.getTime() <= Date.now() && Date.now() < arg.event.end.getTime() ? 'is-live-event' : ''
+            ].filter(Boolean)}
             events={calendarEvents}
           />
         </div>
@@ -1705,7 +1736,7 @@ function AdminPage({
               selectedDayReservations.map((event) => {
                 const equipment = equipmentItems.find((item) => getEventEquipmentId(event, equipmentItems) === item.id);
                 return (
-                  <div key={event.id} className={`admin-reservation-row ${isReservationActive(event) ? 'is-live' : ''}`}>
+                  <div key={event.id} className={`admin-reservation-row ${isReservationActive(event) ? 'is-live' : ''} ${isMaintenanceReservation(event) ? 'is-maintenance' : ''}`}>
                     <div>
                       <strong>{equipment?.name ?? event.title}</strong>
                       <span>{formatReservationTime(event.start)}{event.end ? ` - ${formatReservationTime(event.end)}` : ''}</span>
@@ -1735,7 +1766,7 @@ function AdminPage({
         </div>
         <div className="admin-reservation-list">
           {calendarEvents.map((event) => (
-            <div key={event.id} className={`admin-reservation-row ${isReservationActive(event) ? 'is-live' : ''}`}>
+            <div key={event.id} className={`admin-reservation-row ${isReservationActive(event) ? 'is-live' : ''} ${isMaintenanceReservation(event) ? 'is-maintenance' : ''}`}>
               <div>
                 <strong>{event.title}</strong>
                 <span>{event.start.slice(0, 10)} · {formatReservationTime(event.start)}{event.end ? ` - ${formatReservationTime(event.end)}` : ''}</span>
@@ -1779,6 +1810,8 @@ function AdminPage({
           onClose={() => setShowReservationModal(false)}
           onConfirm={confirmAdminReservation}
           onDeleteReservation={onDeleteReservation}
+          allowMaintenanceReservation
+          titleSuffix="(ADMIN)"
         />
       )}
     </section>
@@ -1925,7 +1958,8 @@ export function App() {
     const previewTestReservations = createRealtimeTestReservations(fallbackEquipment);
     const baseEvents = events.map((event) => ({
       ...event,
-      equipmentId: getEventEquipmentId(event, fallbackEquipment),
+      status: normalizeReservationStatus(event.status),
+      equipmentId: fallbackEquipment.find((item) => event.title.includes(item.name))?.id ?? '',
       createdBy: 'USER'
     }));
     return [...previewTestReservations, ...baseEvents];
