@@ -1596,6 +1596,20 @@ function AdminPage({
   onDeleteReservation: (reservationId: string) => void;
 }) {
   const [showReservationModal, setShowReservationModal] = useState(false);
+  const [selectedAdminDate, setSelectedAdminDate] = useState(getSeoulDateKey());
+  const todayKey = getSeoulDateKey();
+  const selectedDayReservations = useMemo(() => (
+    calendarEvents
+      .filter((event) => event.start.slice(0, 10) === selectedAdminDate)
+      .sort((first, second) => first.start.localeCompare(second.start))
+  ), [calendarEvents, selectedAdminDate]);
+  const selectedDateLabel = new Intl.DateTimeFormat('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    weekday: 'short'
+  }).format(new Date(`${selectedAdminDate}T00:00:00`));
   const equipmentRows = equipmentItems.map((item) => ({
     장비명: item.name,
     대분류: item.groupName,
@@ -1623,11 +1637,75 @@ function AdminPage({
       equipmentId: equipment.id,
       createdBy: 'ADMIN'
     });
+    setSelectedAdminDate(form.date);
     setShowReservationModal(false);
   }
 
   return (
     <section className="grid gap-5">
+      <div className="admin-reservation-manager">
+        <div className="admin-reservation-calendar">
+          <div className="admin-reservation-panel-head">
+            <div>
+              <p>Reservation Calendar</p>
+              <h3>예약관리 캘린더</h3>
+              <span>월별 일정을 확인하고 날짜를 선택하세요.</span>
+            </div>
+            <button type="button" aria-label="오늘 날짜 예약 보기" onClick={() => setSelectedAdminDate(todayKey)}>
+              오늘
+            </button>
+          </div>
+          <FullCalendar
+            plugins={[dayGridPlugin, interactionPlugin]}
+            initialView="dayGridMonth"
+            initialDate={selectedAdminDate}
+            timeZone="Asia/Seoul"
+            selectable
+            height="auto"
+            dayCellClassNames={(arg) => {
+              const dateKey = getSeoulDateKey(arg.date);
+              return [
+                dateKey === todayKey ? 'seoul-today' : '',
+                dateKey === selectedAdminDate ? 'admin-selected-day' : ''
+              ].filter(Boolean);
+            }}
+            dateClick={(arg) => setSelectedAdminDate(arg.dateStr)}
+            eventClassNames={(arg) => (arg.event.start && arg.event.end && arg.event.start.getTime() <= Date.now() && Date.now() < arg.event.end.getTime() ? ['is-live-event'] : [])}
+            events={calendarEvents}
+          />
+        </div>
+        <aside className="admin-reservation-detail">
+          <div className="admin-reservation-panel-head">
+            <div>
+              <p>Daily Reservations</p>
+              <h3>{selectedDateLabel}</h3>
+              <span>선택일 예약 {selectedDayReservations.length}건</span>
+            </div>
+            <button type="button" aria-label="선택한 날짜에 예약 추가" onClick={() => setShowReservationModal(true)}>
+              <Plus size={16} /> 예약 추가
+            </button>
+          </div>
+          <div className="admin-reservation-list">
+            {selectedDayReservations.length > 0 ? (
+              selectedDayReservations.map((event) => {
+                const equipment = equipmentItems.find((item) => getEventEquipmentId(event, equipmentItems) === item.id);
+                return (
+                  <div key={event.id} className={`admin-reservation-row ${isReservationActive(event) ? 'is-live' : ''}`}>
+                    <div>
+                      <strong>{equipment?.name ?? event.title}</strong>
+                      <span>{formatReservationTime(event.start)}{event.end ? ` - ${formatReservationTime(event.end)}` : ''}</span>
+                      <em>{event.title}</em>
+                    </div>
+                    <button className="reservation-mini-danger" onClick={() => onDeleteReservation(event.id)}>예약 삭제</button>
+                  </div>
+                );
+              })
+            ) : (
+              <p className="reservation-empty-state">선택한 날짜에 등록된 예약이 없습니다.</p>
+            )}
+          </div>
+        </aside>
+      </div>
       <SectionTitle title="관리자 대시보드" eyebrow="Admin CMS" action="홈페이지 편집" />
       <div className="rounded-lg border border-white/10 bg-surface/85 p-6">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -1682,7 +1760,7 @@ function AdminPage({
           equipmentItems={equipmentItems}
           calendarEvents={calendarEvents}
           selectedEquipmentId={equipmentItems[0]?.id ?? ''}
-          initialDate={getSeoulDateKey()}
+          initialDate={selectedAdminDate}
           onClose={() => setShowReservationModal(false)}
           onConfirm={confirmAdminReservation}
           onDeleteReservation={onDeleteReservation}
