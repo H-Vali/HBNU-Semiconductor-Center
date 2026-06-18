@@ -83,6 +83,25 @@ Get-ChildItem -Path $PreviewDir -Force |
   Remove-Item -Recurse -Force
 
 Copy-Item -Path "apps\web\dist\*" -Destination $PreviewDir -Recurse -Force
+
+$assetsDir = Join-Path $PreviewDir "assets"
+$currentEntryScript = Get-ChildItem -Path $assetsDir -Filter "index-*.js" |
+  Sort-Object LastWriteTime -Descending |
+  Select-Object -First 1
+if ($currentEntryScript) {
+  $legacyEntryScripts = @(
+    "index-CcDMUnzf.js",
+    "index-B25E1UeN.js",
+    "index-CzT4YHYL.js",
+    "index-CItcL8sA.js"
+  )
+  foreach ($legacyEntryScript in $legacyEntryScripts) {
+    if ($legacyEntryScript -ne $currentEntryScript.Name) {
+      Copy-Item -Path $currentEntryScript.FullName -Destination (Join-Path $assetsDir $legacyEntryScript) -Force
+    }
+  }
+}
+
 New-Item -Path (Join-Path $PreviewDir ".nojekyll") -ItemType File -Force | Out-Null
 Set-Content -Path (Join-Path $PreviewDir ".gitattributes") -Value @(
   "*.css text eol=lf"
