@@ -45,6 +45,7 @@ import { equipment as fallbackEquipment, events, monthlyUsage, type EquipmentGro
 type PageKey = 'home' | 'facility' | 'equipment' | 'training' | 'reservations' | 'mypage' | 'admin' | 'login';
 type Role = 'USER' | 'ADMIN';
 type UsagePeriod = '24H' | '1W' | '1M';
+type EquipmentRuntimeStatus = 'active' | 'maintenance' | 'idle';
 type ApiEquipmentItem = Partial<EquipmentItem> & { imageUrl?: string; usageConditions?: string };
 type ReservationEvent = {
   id: string;
@@ -135,6 +136,19 @@ function isReservationActive(event: ReservationEvent, now = new Date()) {
   if (!event.end) return false;
   const currentTime = now.getTime();
   return new Date(event.start).getTime() <= currentTime && currentTime < new Date(event.end).getTime();
+}
+
+function getRealtimeCategoryLabel(item: EquipmentItem) {
+  if (/etch|rie/i.test(item.name)) return 'ETCHING';
+  if (/aligner|mask|lithography|coater/i.test(item.name)) return 'LITHOGRAPHY';
+  if (item.group === 'metrology') return 'METROLOGY';
+  return 'PROCESS';
+}
+
+function getRuntimeStatusLabel(status: EquipmentRuntimeStatus) {
+  if (status === 'active') return '가동중';
+  if (status === 'maintenance') return '점검중';
+  return '대기';
 }
 
 function toLocalReservationDateTime(date: Date) {
@@ -604,16 +618,19 @@ function RealtimeEquipmentStatus({
   calendarEvents: ReservationEvent[];
 }) {
   const [clock, setClock] = useState(getSeoulClockParts);
+  const maintenanceEquipmentIds = useMemo(() => new Set(equipmentItems.slice(5, 7).map((item) => item.id)), [equipmentItems]);
   const statusItems = equipmentItems.map((item) => {
     const activeEvent = calendarEvents.find((event) => isEventForEquipment(event, item, equipmentItems) && isReservationActive(event));
+    const status: EquipmentRuntimeStatus = activeEvent ? 'active' : maintenanceEquipmentIds.has(item.id) ? 'maintenance' : 'idle';
     return {
       item,
       activeEvent,
-      isActive: Boolean(activeEvent)
+      status
     };
   });
-  const activeCount = statusItems.filter((entry) => entry.isActive).length;
-  const idleCount = Math.max(statusItems.length - activeCount, 0);
+  const activeCount = statusItems.filter((entry) => entry.status === 'active').length;
+  const maintenanceCount = statusItems.filter((entry) => entry.status === 'maintenance').length;
+  const idleCount = Math.max(statusItems.length - activeCount - maintenanceCount, 0);
   const sliderItems = statusItems.length > 0 ? [...statusItems, ...statusItems] : [];
 
   useEffect(() => {
@@ -625,8 +642,8 @@ function RealtimeEquipmentStatus({
     <div className="chart-card realtime-equipment-card rounded-lg border border-white/10 bg-[#101114] p-5">
       <div className="realtime-equipment-header mb-4">
         <div>
-          <p className="text-sm font-bold uppercase text-blue-300">Realtime Analytics</p>
-          <h3 className="mt-1 text-2xl font-extrabold text-white">REALTIME 장비 구동 현황</h3>
+          <p className="text-sm font-bold text-teal-300">실시간 모니터링</p>
+          <h3 className="mt-1 text-2xl font-extrabold text-white">장비 구동 현황</h3>
         </div>
         <div className="realtime-digital-clock" aria-label="서울 기준 실시간 시계">
           <span>{clock.year}</span>
@@ -643,19 +660,28 @@ function RealtimeEquipmentStatus({
           <em>:</em>
           <strong>{clock.second}</strong>
         </div>
-        <div className="flex flex-wrap justify-end gap-2 text-sm font-bold text-slate-300">
-          <span className="rounded-full bg-red-500/15 px-3 py-1 text-red-200">가동중 {activeCount}</span>
-          <span className="rounded-full bg-white/10 px-3 py-1 text-slate-300">대기 {idleCount}</span>
+        <div className="realtime-status-summary">
+          <span className="runtime-summary-pill is-active">가동중 {activeCount}</span>
+          <span className="runtime-summary-pill is-maintenance">점검 {maintenanceCount}</span>
+          <span className="runtime-summary-pill is-idle">대기 {idleCount}</span>
         </div>
       </div>
-      <div className="realtime-equipment-viewport" aria-label="REALTIME 장비 구동 현황">
+      <div className="realtime-equipment-viewport" aria-label="장비 구동 현황">
         <div className="realtime-equipment-track">
-          {sliderItems.map(({ item, activeEvent, isActive }, index) => (
-            <article key={`${item.id}-${index}`} className={`realtime-equipment-item ${isActive ? 'is-active' : 'is-idle'}`}>
-              <span className="realtime-status-dot" aria-label={isActive ? '가동중' : '대기'} />
-              <p>{item.group === 'process' ? 'PROCESS' : 'METROLOGY'}</p>
+          {sliderItems.map(({ item, activeEvent, status }, index) => (
+            <article key={`${item.id}-${index}`} className={`realtime-equipment-item is-${status}`}>
+              <div className="realtime-equipment-item-top">
+                <p>{getRealtimeCategoryLabel(item)}</p>
+                <span className={`runtime-status-badge is-${status}`}>{getRuntimeStatusLabel(status)}</span>
+              </div>
               <h4>{item.name}</h4>
-              <span>{isActive ? `${formatReservationTime(activeEvent?.start)} - ${formatReservationTime(activeEvent?.end)} 종료` : '현재 예약 없음'}</span>
+              <span>
+                {status === 'active'
+                  ? `${formatReservationTime(activeEvent?.start)} - ${formatReservationTime(activeEvent?.end)} 종료`
+                  : status === 'maintenance'
+                    ? '예상 완료 17:00'
+                    : '현재 예약 없음'}
+              </span>
             </article>
           ))}
         </div>

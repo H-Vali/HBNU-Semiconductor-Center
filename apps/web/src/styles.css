@@ -502,9 +502,51 @@ select {
 
 .realtime-equipment-header {
   display: grid;
-  grid-template-columns: minmax(15rem, 1fr) minmax(24rem, 0.78fr) minmax(8rem, 1fr);
+  grid-template-columns: minmax(15rem, 1fr) minmax(24rem, 0.78fr) minmax(14rem, 1fr);
   align-items: start;
   gap: 1rem;
+}
+
+.realtime-status-summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.runtime-summary-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  border-radius: 999px;
+  padding: 0.4rem 0.65rem;
+  font-size: 0.84rem;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.runtime-summary-pill::before {
+  content: "";
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  box-shadow: 0 0 0 0 currentColor;
+  animation: runtimeDotPulse 1.65s ease-out infinite;
+}
+
+.runtime-summary-pill.is-active {
+  background: rgba(16, 185, 129, 0.15);
+  color: #5eead4;
+}
+
+.runtime-summary-pill.is-maintenance {
+  background: rgba(245, 158, 11, 0.16);
+  color: #fbbf24;
+}
+
+.runtime-summary-pill.is-idle {
+  background: rgba(100, 116, 139, 0.22);
+  color: #cbd5e1;
 }
 
 .realtime-digital-clock {
@@ -587,7 +629,7 @@ select {
 .realtime-equipment-track {
   display: flex;
   width: max-content;
-  gap: 0.9rem;
+  gap: 1rem;
   animation: realtimeEquipmentSlide 72s linear infinite;
 }
 
@@ -597,11 +639,11 @@ select {
 
 .realtime-equipment-item {
   position: relative;
-  min-width: 15.5rem;
+  min-width: 17.75rem;
   border: 1px solid rgba(148, 163, 184, 0.17);
   border-radius: 8px;
   background: linear-gradient(145deg, rgba(30, 41, 59, 0.92), rgba(15, 23, 42, 0.86));
-  padding: 1rem 1.1rem;
+  padding: 1.15rem 1.25rem;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
   transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
@@ -612,17 +654,59 @@ select {
   box-shadow: 0 16px 34px rgba(8, 13, 27, 0.32);
 }
 
+.realtime-equipment-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
 .realtime-equipment-item p {
   color: #7dd3fc;
   font-size: 0.72rem;
   font-weight: 900;
 }
 
+.runtime-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  border-radius: 7px;
+  padding: 0.28rem 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.runtime-status-badge::before {
+  content: "";
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 0 0 currentColor;
+  animation: runtimeDotPulse 1.65s ease-out infinite;
+}
+
+.runtime-status-badge.is-active {
+  background: rgba(16, 185, 129, 0.16);
+  color: #5eead4;
+}
+
+.runtime-status-badge.is-maintenance {
+  background: rgba(245, 158, 11, 0.17);
+  color: #fbbf24;
+}
+
+.runtime-status-badge.is-idle {
+  background: rgba(100, 116, 139, 0.18);
+  color: #cbd5e1;
+}
+
 .realtime-equipment-item h4 {
-  margin-top: 0.45rem;
-  padding-right: 1.2rem;
+  margin-top: 0.6rem;
   color: #ffffff;
-  font-size: 1.05rem;
+  font-size: 1.14rem;
   font-weight: 900;
   line-height: 1.2;
 }
@@ -635,34 +719,38 @@ select {
   font-weight: 700;
 }
 
-.realtime-status-dot {
-  position: absolute;
-  top: 0.95rem;
-  right: 0.95rem;
-  width: 0.72rem;
-  height: 0.72rem;
-  border-radius: 999px;
-}
-
 .realtime-equipment-item.is-active {
-  border-color: rgba(248, 113, 113, 0.35);
-  background: linear-gradient(145deg, rgba(51, 18, 28, 0.92), rgba(15, 23, 42, 0.9));
+  border-color: rgba(20, 184, 166, 0.48);
+  background: linear-gradient(145deg, rgba(19, 78, 74, 0.58), rgba(15, 23, 42, 0.9));
 }
 
 .realtime-equipment-item.is-active p,
 .realtime-equipment-item.is-active > span:last-child {
-  color: #f87171;
+  color: #5eead4;
 }
 
-.realtime-equipment-item.is-active .realtime-status-dot {
-  background: #ef4444;
-  box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.12), 0 0 18px rgba(239, 68, 68, 0.45);
-  animation: liveReservationPulse 1.25s ease-out infinite;
+.realtime-equipment-item.is-maintenance {
+  border-color: rgba(245, 158, 11, 0.5);
+  background: linear-gradient(145deg, rgba(69, 48, 15, 0.7), rgba(15, 23, 42, 0.9));
 }
 
-.realtime-equipment-item.is-idle .realtime-status-dot {
-  background: #64748b;
-  box-shadow: 0 0 0 5px rgba(100, 116, 139, 0.13);
+.realtime-equipment-item.is-maintenance p,
+.realtime-equipment-item.is-maintenance > span:last-child {
+  color: #fbbf24;
+}
+
+.realtime-equipment-item.is-idle {
+  border-color: rgba(100, 116, 139, 0.28);
+}
+
+@keyframes runtimeDotPulse {
+  70% {
+    box-shadow: 0 0 0 0.42rem transparent;
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
 }
 
 .usage-trend-card {
