@@ -369,6 +369,11 @@ select {
   background: linear-gradient(145deg, rgba(51, 18, 28, 0.92), rgba(15, 23, 42, 0.9));
 }
 
+.realtime-equipment-item.is-active p,
+.realtime-equipment-item.is-active > span:last-child {
+  color: #f87171;
+}
+
 .realtime-equipment-item.is-active .realtime-status-dot {
   background: #ef4444;
   box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.12), 0 0 18px rgba(239, 68, 68, 0.45);

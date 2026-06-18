@@ -138,22 +138,25 @@ function toLocalReservationDateTime(date: Date) {
   return `${year}-${month}-${day}T${hours}:${minutes}:00`;
 }
 
-function createRealtimeTestReservation(equipmentItems: EquipmentItem[]): ReservationEvent | null {
-  const testEquipment = equipmentItems[0];
-  if (!testEquipment) return null;
+function createRealtimeTestReservations(equipmentItems: EquipmentItem[]): ReservationEvent[] {
+  const testEquipmentItems = [equipmentItems[0], equipmentItems[1], equipmentItems[4], equipmentItems[13]].filter(Boolean);
+  if (testEquipmentItems.length === 0) return [];
   const now = new Date();
-  const start = new Date(now.getTime() - 30 * 60 * 1000);
-  const end = new Date(now.getTime() + 90 * 60 * 1000);
 
-  return {
-    id: 'preview-live-test-reservation',
-    title: `${testEquipment.name} TEST 예약`,
-    start: toLocalReservationDateTime(start),
-    end: toLocalReservationDateTime(end),
-    status: 'approved',
-    equipmentId: testEquipment.id,
-    createdBy: 'USER'
-  };
+  return testEquipmentItems.map((testEquipment, index) => {
+    const start = new Date(now.getTime() - (30 + index * 10) * 60 * 1000);
+    const end = new Date(now.getTime() + (90 + index * 15) * 60 * 1000);
+
+    return {
+      id: `preview-live-test-reservation-${index + 1}`,
+      title: `${testEquipment.name} TEST 예약`,
+      start: toLocalReservationDateTime(start),
+      end: toLocalReservationDateTime(end),
+      status: 'approved',
+      equipmentId: testEquipment.id,
+      createdBy: 'USER'
+    };
+  });
 }
 
 function normalizeEquipment(item: ApiEquipmentItem, index: number): EquipmentItem {
@@ -1511,13 +1514,13 @@ export function App() {
     }
   });
   const [reservationEvents, setReservationEvents] = useState<ReservationEvent[]>(() => {
-    const previewTestReservation = createRealtimeTestReservation(fallbackEquipment);
+    const previewTestReservations = createRealtimeTestReservations(fallbackEquipment);
     const baseEvents = events.map((event) => ({
       ...event,
       equipmentId: getEventEquipmentId(event, fallbackEquipment),
       createdBy: 'USER'
     }));
-    return previewTestReservation ? [previewTestReservation, ...baseEvents] : baseEvents;
+    return [...previewTestReservations, ...baseEvents];
   });
 
   function navigate(page: PageKey) {
