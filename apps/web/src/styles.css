@@ -2660,6 +2660,42 @@ select {
   min-width: 1380px;
 }
 
+.users-table .user-col-index {
+  width: 4.5rem;
+}
+
+.users-table .user-col-name {
+  width: 8rem;
+}
+
+.users-table .user-col-role {
+  width: 8.5rem;
+}
+
+.users-table .user-col-department {
+  width: 12rem;
+}
+
+.users-table .user-col-lab {
+  width: 15rem;
+}
+
+.users-table .user-col-phone {
+  width: 11rem;
+}
+
+.users-table .user-col-email {
+  width: 17rem;
+}
+
+.users-table .user-col-auth {
+  width: 7rem;
+}
+
+.users-table .user-col-memo {
+  width: 18rem;
+}
+
 .consumables-table th,
 .consumables-table td {
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -2696,6 +2732,23 @@ select {
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(2, 6, 23, 0.62);
   color: #f8fafc;
+}
+
+.users-table .user-role-select {
+  border-width: 1.5px;
+  font-weight: 900;
+}
+
+.users-table .user-role-select.is-lead {
+  border-color: rgba(248, 113, 113, 0.78);
+  background: rgba(127, 29, 29, 0.26);
+  color: #fecaca;
+}
+
+.users-table .user-role-select.is-member {
+  border-color: rgba(148, 163, 184, 0.42);
+  background: rgba(15, 23, 42, 0.72);
+  color: #cbd5e1;
 }
 
 .consumables-table input[type='number'] {

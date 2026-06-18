@@ -111,13 +111,62 @@ const quickLinks: Array<{ label: string; page: PageKey; icon: typeof CalendarDay
   { label: '장비 배치현황', page: 'equipment', icon: Microscope }
 ];
 const initialManagedUsers: ManagedUser[] = [
-  { id: 'user-1', index: 1, name: '김동인', roleLevel: '대표', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-9772-5939', email: 'shehdshehd1123@gmail.com', memo: '', authProvider: 'Google' },
-  { id: 'user-2', index: 2, name: '길가영', roleLevel: '일반', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-6595-3930', email: 'gilgayeong2@gmail.com', memo: '', authProvider: 'Kakao' },
-  { id: 'user-3', index: 3, name: '최진영', roleLevel: '일반', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-4558-3205', email: 'lucy3205@gmail.com', memo: '', authProvider: 'Google' },
-  { id: 'user-4', index: 4, name: '정재웅', roleLevel: '일반', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-7166-2296', email: 'greadex2296@gmail.com', memo: '', authProvider: 'Kakao' },
-  { id: 'user-5', index: 5, name: '박형규', roleLevel: '일반', department: '창의융합학과', labProfessor: '백근우 교수님', phone: '010-5660-2425', email: '0518phg@gmail.com', memo: '', authProvider: 'Google' },
-  { id: 'user-6', index: 6, name: '배유진', roleLevel: '일반', department: '창의융합학과', labProfessor: '백근우 교수님', phone: '010-5291-6172', email: 'yoojin.bae23@gmail.com', memo: '', authProvider: 'Google' },
-  { id: 'user-7', index: 7, name: '김빈섭', roleLevel: '일반', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-9923-4322', email: 'doo4322@gmail.com', memo: '', authProvider: 'Kakao' }
+  { id: 'user-1', index: 1, name: '김동인', roleLevel: '대표', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-9772-5939', email: 'shehdshehd1123@gmail.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-2', index: 2, name: '길가영', roleLevel: '일반', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-6595-3930', email: 'gilgayeong2@gmail.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-3', index: 3, name: '최진영', roleLevel: '일반', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-4558-3205', email: 'lucy3205@gmail.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-4', index: 4, name: '정재웅', roleLevel: '일반', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-7166-2296', email: 'greadex2296@gmail.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-5', index: 5, name: '박형규', roleLevel: '일반', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-5660-2425', email: '0518phg@gmail.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-6', index: 6, name: '배유진', roleLevel: '일반', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-5291-6172', email: 'yoojin.bae23@gmail.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-7', index: 7, name: '김빈섭', roleLevel: '일반', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-9923-4322', email: 'doo4322@gmail.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-8', index: 8, name: '이수민', roleLevel: '일반', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-2933-2815', email: 'leesuminn23@gmail.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-9', index: 9, name: '허승혁', roleLevel: '일반', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-9643-4117', email: 'heoseunghyeok0@gmail.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-10', index: 10, name: '천도현', roleLevel: '일반', department: '전자공학과', labProfessor: '김민회 교수님', phone: '010-5588-2490', email: 'cheondohyun99@gmail.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-11', index: 11, name: '김세형', roleLevel: '일반', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-8357-8849', email: 'kimsehyung1009@gmail.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-12', index: 12, name: '이현준', roleLevel: '일반', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-4266-5253', email: 'hyeonjunlee917@gmail.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-13', index: 13, name: '김택균', roleLevel: '대표', department: '기계공학과', labProfessor: '노진성 교수님', phone: '010-4066-1760', email: 'kimtk1346@gmail.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-14', index: 14, name: '이동규', roleLevel: '일반', department: '기계공학과', labProfessor: '노진성 교수님', phone: '010-4878-3369', email: 'bestcubist@naver.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-15', index: 15, name: '박준우', roleLevel: '일반', department: '기계공학과', labProfessor: '노진성 교수님', phone: '010-7487-5220', email: 'pjw981121@gmail.com', memo: '1학기 회의 참석 어려움(매주 화요일 19~22시 야간대 수업)', authProvider: 'Manual' },
+  { id: 'user-16', index: 16, name: '강정민', roleLevel: '일반', department: '기계공학과', labProfessor: '노진성 교수님', phone: '010-5024-7735', email: 'Scipio.kang@gmail.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-17', index: 17, name: 'Chu Duc Thanh', roleLevel: '일반', department: '기계공학과', labProfessor: '노진성 교수님', phone: '010-5801-2310', email: 'chuducthanh972310@gmail.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-18', index: 18, name: 'Ngoc Tram Pham Le', roleLevel: '일반', department: '기계공학과', labProfessor: '노진성 교수님', phone: '010-7989-7771', email: 'ngoctram9128@outlook.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-19', index: 19, name: 'Truong Dang Thanh', roleLevel: '일반', department: '기계공학과', labProfessor: '노진성 교수님', phone: '010-8837-3979', email: 'michaeldangvn@gmail.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-20', index: 20, name: 'To Thi Tu Linh', roleLevel: '일반', department: '기계공학과', labProfessor: '노진성 교수님', phone: '010-3336-7762', email: 'tothitulinhche98@gmail.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-21', index: 21, name: '김서현', roleLevel: '대표', department: '창의융합학과', labProfessor: '이재현 교수님', phone: '010-6286-9373', email: 'kshg0419@naver.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-22', index: 22, name: '이승진', roleLevel: '대표', department: '전자공학과', labProfessor: '전승배 교수님', phone: '010-4036-9815', email: '20201706@edu.hanbat.ac.kr', memo: '', authProvider: 'Manual' },
+  { id: 'user-23', index: 23, name: '정우성', roleLevel: '일반', department: '지능형나노반도체학과', labProfessor: '전승배 교수님', phone: '010-2343-8349', email: 'dntjd1972@naver.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-24', index: 24, name: '윤진언', roleLevel: '일반', department: '전자공학과', labProfessor: '전승배 교수님', phone: '010-2559-4804', email: '20211074@edu.hanbat.ac.kr', memo: '', authProvider: 'Manual' },
+  { id: 'user-25', index: 25, name: '노우용', roleLevel: '일반', department: '전자공학과', labProfessor: '전승배 교수님', phone: '010-7550-5669', email: '20221167@edu.hanbat.ac.kr', memo: '', authProvider: 'Manual' },
+  { id: 'user-26', index: 26, name: '박준성', roleLevel: '일반', department: '전자공학과', labProfessor: '전승배 교수님', phone: '010-5635-5915', email: 'qn0esnuj@naver.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-27', index: 27, name: '정재영', roleLevel: '일반', department: '화학생명공학과', labProfessor: '전승배 교수님', phone: '010-2251-5596', email: 'jaeyoung0921@gmail.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-28', index: 28, name: '김재윤', roleLevel: '일반', department: '전자공학과', labProfessor: '전승배 교수님', phone: '010-9149-8203', email: 'jaeyun12245@gmail.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-29', index: 29, name: '한의정', roleLevel: '일반', department: '전자공학과', labProfessor: '전승배 교수님', phone: '010-5611-5441', email: 'eui_jeong@naver.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-30', index: 30, name: '권준형', roleLevel: '대표', department: '지능형나노반도체학과', labProfessor: '최윤석 교수님', phone: '010-7590-0288', email: 'tmzkdlxka@naver.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-31', index: 31, name: '성유진', roleLevel: '일반', department: '지능형나노반도체학과', labProfessor: '최윤석 교수님', phone: '010-9950-7504', email: 'dbwls010211@naver.com', memo: '5월 이후 회사 출근 (회의 및 청소 참여 어려움)', authProvider: 'Manual' },
+  { id: 'user-32', index: 32, name: '권아현', roleLevel: '일반', department: '지능형나노반도체학과', labProfessor: '최윤석 교수님', phone: '010-5426-0458', email: 'kah0458@naver.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-33', index: 33, name: '김보혜', roleLevel: '일반', department: '지능형나노반도체학과', labProfessor: '최윤석 교수님', phone: '010-7166-6290', email: 'qhgP6290@gmail.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-34', index: 34, name: '안현식', roleLevel: '일반', department: '전자공학과', labProfessor: '최윤석 교수님', phone: '010-9436-9445', email: 'princass123@naver.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-35', index: 35, name: '임성민', roleLevel: '일반', department: '전자공학과', labProfessor: '최윤석 교수님', phone: '010-4870-5202', email: 'seongmin625@naver.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-36', index: 36, name: '이예규', roleLevel: '대표', department: '기계공학과', labProfessor: '하지환 교수님', phone: '010-5437-9475', email: '20204012@edu.hanbat.ac.kr', memo: '', authProvider: 'Manual' },
+  { id: 'user-37', index: 37, name: '이철희', roleLevel: '일반', department: '기계공학과', labProfessor: '하지환 교수님', phone: '010-4447-0447', email: '20224015@edu.hanbat.ac.kr', memo: '', authProvider: 'Manual' },
+  { id: 'user-38', index: 38, name: '이민규', roleLevel: '일반', department: '기계공학과', labProfessor: '하지환 교수님', phone: '010-9473-2498', email: '20211394@edu.hanbat.ac.kr', memo: '', authProvider: 'Manual' },
+  { id: 'user-39', index: 39, name: '신우빈', roleLevel: '일반', department: '기계공학과', labProfessor: '하지환 교수님', phone: '010-4772-3721', email: 'ssshinwoovin@gmail.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-40', index: 40, name: '정진호', roleLevel: '일반', department: '기계공학과', labProfessor: '하지환 교수님', phone: '010-9568-1713', email: '607jinho@gmail.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-41', index: 41, name: '빙성윤', roleLevel: '일반', department: '기계공학과', labProfessor: '하지환 교수님', phone: '010-8572-1565', email: 'smartbing2001@gmail.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-42', index: 42, name: '이우진', roleLevel: '일반', department: '기계공학과', labProfessor: '하지환 교수님', phone: '010-4137-4829', email: 'wjin03274@gmail.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-43', index: 43, name: '정예림', roleLevel: '일반', department: '신소재공학과', labProfessor: '하지환 교수님', phone: '010-5449-2175', email: 'jungyerim0713@gmail.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-44', index: 44, name: '이원섭', roleLevel: '대표', department: '창의융합학과', labProfessor: '정우익 교수님', phone: '010-8741-7849', email: 'hahaman767@gmail.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-45', index: 45, name: '김동혁', roleLevel: '일반', department: '창의융합학과', labProfessor: '정우익 교수님', phone: '010-2655-3001', email: 'kdhy3001@gmail.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-46', index: 46, name: '이리안', roleLevel: '일반', department: '창의융합학과', labProfessor: '정우익 교수님', phone: '010-6631-6162', email: 'comonlra@naver.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-47', index: 47, name: '임경민', roleLevel: '일반', department: '창의융합학과', labProfessor: '정우익 교수님', phone: '010-8871-9415', email: 'dlariddlas@gmail.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-48', index: 48, name: '손민진', roleLevel: '일반', department: '창의융합학과', labProfessor: '정우익 교수님', phone: '010-3072-4154', email: '20232713@edu.hanbat.ac.kr', memo: '', authProvider: 'Manual' },
+  { id: 'user-49', index: 49, name: '구연우', roleLevel: '일반', department: '창의융합학과', labProfessor: '정우익 교수님', phone: '010-8625-3711', email: '20242742@edu.hanbat.ac.kr', memo: '', authProvider: 'Manual' },
+  { id: 'user-50', index: 50, name: '박보미', roleLevel: '일반', department: '창의융합학과', labProfessor: '정우익 교수님', phone: '010-8321-1844', email: '20244099@edu.hanbat.ac.kr', memo: '', authProvider: 'Manual' },
+  { id: 'user-51', index: 51, name: '최진규', roleLevel: '대표', department: '전자공학과', labProfessor: '구치완 교수님', phone: '010-7217-3034', email: '30231153@edu.hanbat.ac.kr', memo: '', authProvider: 'Manual' },
+  { id: 'user-52', index: 52, name: '김정태', roleLevel: '일반', department: '전자공학과', labProfessor: '구치완 교수님', phone: '010-3070-3019', email: 'jeotae@edu.hanbat.ac.kr', memo: '', authProvider: 'Manual' },
+  { id: 'user-53', index: 53, name: '구자성', roleLevel: '대표', department: '전자공학과', labProfessor: '백근우 교수님', phone: '010-3103-2501', email: 'koo020716@naver.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-54', index: 54, name: '이동현', roleLevel: '일반', department: '전자공학과', labProfessor: '백근우 교수님', phone: '010-6434-8551', email: 'ddadda05@naver.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-55', index: 55, name: '이유경', roleLevel: '일반', department: '전자공학과', labProfessor: '백근우 교수님', phone: '010-5585-5698', email: 'dbsdb8389@naver.com', memo: '', authProvider: 'Manual' },
+  { id: 'user-56', index: 56, name: '최민용', roleLevel: '일반', department: '전자공학과', labProfessor: '백근우 교수님', phone: '010-2315-4255', email: 'cjh103741@naver.com', memo: '', authProvider: 'Manual' }
 ];
 
 const initialConsumables: ConsumableItem[] = [
@@ -2399,6 +2448,17 @@ function UserManagementPage({
 
       <div className="consumables-table-wrap">
         <table className="consumables-table users-table">
+          <colgroup>
+            <col className="user-col-index" />
+            <col className="user-col-name" />
+            <col className="user-col-role" />
+            <col className="user-col-department" />
+            <col className="user-col-lab" />
+            <col className="user-col-phone" />
+            <col className="user-col-email" />
+            <col className="user-col-auth" />
+            <col className="user-col-memo" />
+          </colgroup>
           <thead>
             <tr>
               <th>연번</th>
@@ -2420,7 +2480,12 @@ function UserManagementPage({
                   <input value={user.name} onChange={(event) => onUpdateUser(user.id, { name: event.target.value })} aria-label={`${user.name} 이름`} />
                 </td>
                 <td>
-                  <select value={user.roleLevel} onChange={(event) => onUpdateUser(user.id, { roleLevel: event.target.value === '대표' ? '대표' : '일반' })} aria-label={`${user.name} 대표 여부`}>
+                  <select
+                    className={`user-role-select is-${user.roleLevel === '대표' ? 'lead' : 'member'}`}
+                    value={user.roleLevel}
+                    onChange={(event) => onUpdateUser(user.id, { roleLevel: event.target.value === '대표' ? '대표' : '일반' })}
+                    aria-label={`${user.name} 대표 여부`}
+                  >
                     <option value="대표">대표</option>
                     <option value="일반">일반</option>
                   </select>
@@ -2660,7 +2725,9 @@ export function App() {
   const [managedUsers, setManagedUsers] = useState<ManagedUser[]>(() => {
     try {
       const stored = localStorage.getItem('hbnu-managed-users');
-      return stored ? JSON.parse(stored) : cloneManagedUsers();
+      if (!stored) return cloneManagedUsers();
+      const parsed = JSON.parse(stored) as ManagedUser[];
+      return parsed.length >= initialManagedUsers.length ? parsed : cloneManagedUsers();
     } catch {
       return cloneManagedUsers();
     }
