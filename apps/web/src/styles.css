@@ -104,12 +104,17 @@ select {
 .hero-title {
   display: grid;
   gap: 0.2rem;
+  font-size: clamp(2.15rem, 3.8vw, 3.75rem);
   letter-spacing: 0;
   text-shadow: 0 0 28px rgba(34, 211, 238, 0.13), 0 10px 26px rgba(2, 6, 23, 0.5);
 }
 
 .hero-title span {
   display: block;
+}
+
+.hero-title span:first-child {
+  white-space: nowrap;
 }
 
 .hero-title span:last-child {
