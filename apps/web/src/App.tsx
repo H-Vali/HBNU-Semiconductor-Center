@@ -29,6 +29,7 @@ import {
   LockKeyhole,
   LogIn,
   Microscope,
+  PackageCheck,
   Plus,
   Search,
   ShieldCheck,
@@ -42,7 +43,7 @@ import {
 } from 'lucide-react';
 import { equipment as fallbackEquipment, events, monthlyUsage, type EquipmentGroup, type EquipmentItem } from './data';
 
-type PageKey = 'home' | 'facility' | 'equipment' | 'training' | 'reservations' | 'mypage' | 'admin' | 'login';
+type PageKey = 'home' | 'facility' | 'equipment' | 'training' | 'reservations' | 'mypage' | 'admin' | 'consumables' | 'login';
 type Role = 'USER' | 'ADMIN';
 type UsagePeriod = '24H' | '1W' | '1M';
 type EquipmentRuntimeStatus = 'active' | 'maintenance' | 'idle';
@@ -66,6 +67,16 @@ type ReservationEvent = {
   equipmentId?: string;
   createdBy?: string;
 };
+type ConsumableItem = {
+  id: string;
+  category: string;
+  name: string;
+  unit: string;
+  monthStart: number;
+  current: number;
+  minimum: number;
+  note: string;
+};
 
 const apiUrl = ((import.meta as ImportMeta & { env?: Record<string, string> }).env?.VITE_API_URL) ?? 'http://localhost:4000';
 
@@ -87,6 +98,56 @@ const quickLinks: Array<{ label: string; page: PageKey; icon: typeof CalendarDay
   { label: '장비사용자 교육신청', page: 'training', icon: GraduationCap },
   { label: '장비 배치현황', page: 'equipment', icon: Microscope }
 ];
+const initialConsumables: ConsumableItem[] = [
+  { id: 'supply-1', category: '단순소모품', name: '클린 마스크', unit: 'BOX 기준', monthStart: 36, current: 27, minimum: 20, note: 'BOX 기준' },
+  { id: 'supply-2', category: '단순소모품', name: '라텍스 장갑 (L)', unit: 'BOX 기준', monthStart: 11, current: 17, minimum: 10, note: 'BOX 기준' },
+  { id: 'supply-3', category: '단순소모품', name: '라텍스 장갑 (M)', unit: 'BOX 기준', monthStart: 5, current: 19, minimum: 10, note: 'BOX 기준' },
+  { id: 'supply-4', category: '단순소모품', name: '라텍스 장갑 (S)', unit: 'BOX 기준', monthStart: 16, current: 22, minimum: 20, note: 'BOX 기준' },
+  { id: 'supply-5', category: '단순소모품', name: 'PVC 장갑 (L)', unit: 'BOX 기준', monthStart: 14, current: 24, minimum: 20, note: 'BOX 기준' },
+  { id: 'supply-6', category: '단순소모품', name: 'PVC 장갑 (M)', unit: 'BOX 기준', monthStart: 12, current: 22, minimum: 20, note: 'BOX 기준' },
+  { id: 'supply-7', category: '단순소모품', name: 'PVC 장갑 (S)', unit: 'BOX 기준', monthStart: 2, current: 22, minimum: 20, note: 'BOX 기준' },
+  { id: 'supply-8', category: '단순소모품', name: '클린룸 sticky mat', unit: '개', monthStart: 37, current: 36, minimum: 20, note: '개' },
+  { id: 'supply-9', category: '단순소모품', name: '킴테크 와이퍼', unit: 'BOX 기준', monthStart: 80, current: 75, minimum: 20, note: 'BOX 기준' },
+  { id: 'supply-10', category: '단순소모품', name: '알루미늄 호일', unit: '개', monthStart: 69, current: 68, minimum: 20, note: '개' },
+  { id: 'supply-11', category: '단순소모품', name: '무진천', unit: '신규주문 필요', monthStart: 0, current: 10, minimum: 10, note: '신규주문 필요' },
+  { id: 'supply-12', category: '단순소모품', name: '폐액통', unit: '통', monthStart: 8, current: 21, minimum: 20, note: '2,4주차 수요일 오전' },
+  { id: 'supply-13', category: '가스', name: 'N2 gas', unit: '봄베 압력', monthStart: 5.5, current: 12, minimum: 10, note: 'main gas 봄베 regulator 압력 기준' },
+  { id: 'supply-14', category: '가스', name: 'O2 gas', unit: '봄베 압력', monthStart: 9.5, current: 9, minimum: 10, note: 'main gas 봄베 regulator 압력 기준' },
+  { id: 'supply-15', category: '가스', name: 'Ar gas', unit: '봄베 압력', monthStart: 6, current: 6.5, minimum: 10, note: 'main gas 봄베 regulator 압력 기준' },
+  { id: 'supply-16', category: '가스', name: 'CF4 gas', unit: '봄베 압력', monthStart: 8, current: 8, minimum: 10, note: 'main gas 봄베 regulator 압력 기준' },
+  { id: 'supply-17', category: '가스', name: 'CHF3 gas', unit: '봄베 압력', monthStart: 4, current: 4, minimum: 5, note: 'main gas 봄베 regulator 압력 기준' },
+  { id: 'supply-18', category: 'White room 용액 (산)', name: '황산', unit: '병', monthStart: 2, current: 2, minimum: 5, note: '2병 이하일 때는 분수로 기록' },
+  { id: 'supply-19', category: 'White room 용액 (산)', name: '질산', unit: '병', monthStart: 2, current: 2, minimum: 5, note: '2병 이하일 때는 분수로 기록' },
+  { id: 'supply-20', category: 'White room 용액 (산)', name: '과산화수소', unit: '병', monthStart: 3, current: 3, minimum: 5, note: '2병 이하일 때는 분수로 기록' },
+  { id: 'supply-21', category: 'White room 용액 (산)', name: 'BOE', unit: '병', monthStart: 4, current: 4, minimum: 5, note: '2병 이하일 때는 분수로 기록' },
+  { id: 'supply-22', category: 'Yellow room 용액 (유기, 염기)', name: '아세톤', unit: '병', monthStart: 1, current: 4, minimum: 5, note: '2병 이하일 때는 분수로 기록' },
+  { id: 'supply-23', category: 'Yellow room 용액 (유기, 염기)', name: 'IPA (이소프로판올)', unit: '병', monthStart: 2, current: 4, minimum: 5, note: '2병 이하일 때는 분수로 기록' },
+  { id: 'supply-24', category: 'Yellow room 용액 (유기, 염기)', name: 'AZ300MIF', unit: '병', monthStart: 1, current: 1, minimum: 5, note: '1병 이하일 때는 분수로 기록' },
+  { id: 'supply-25', category: 'Yellow room 용액 (유기, 염기)', name: 'AZ GXR601-14cp', unit: '병', monthStart: 1, current: 1, minimum: 5, note: '1병 이하일 때는 분수로 기록' },
+  { id: 'supply-26', category: 'Yellow room 용액 (유기, 염기)', name: 'NR9-1000 PY', unit: '병', monthStart: 2, current: 3, minimum: 5, note: '1병 이하일 때는 분수로 기록' },
+  { id: 'supply-27', category: 'Yellow room 용액 (유기, 염기)', name: 'RD6', unit: '병', monthStart: 4, current: 4, minimum: 5, note: '1병 이하일 때는 분수로 기록' },
+  { id: 'supply-28', category: 'Yellow room 용액 (유기, 염기)', name: 'AZ 5214 E', unit: '병', monthStart: 1, current: 1, minimum: 5, note: '1병 이하일 때는 분수로 기록' },
+  { id: 'supply-29', category: 'Yellow room 용액 (유기, 염기)', name: 'AZ AD promoter-K', unit: '병', monthStart: 1, current: 1, minimum: 5, note: '1병 이하일 때는 분수로 기록' },
+  { id: 'supply-30', category: '폐기스티커', name: '할로겐폐유기용제', unit: 'EA', monthStart: 33, current: 32, minimum: 20, note: '' },
+  { id: 'supply-31', category: '폐기스티커', name: '비할로겐폐유기용제', unit: 'EA', monthStart: 22, current: 50, minimum: 20, note: '' },
+  { id: 'supply-32', category: '폐기스티커', name: '폐시약병', unit: 'EA', monthStart: 38, current: 29, minimum: 20, note: '' },
+  { id: 'supply-33', category: '폐기스티커', name: '기타폐기물', unit: 'EA', monthStart: 6, current: 50, minimum: 20, note: '' },
+  { id: 'supply-34', category: '폐기스티커', name: '폐시약', unit: 'EA', monthStart: 22, current: 22, minimum: 20, note: '' },
+  { id: 'supply-35', category: '폐기스티커', name: '폐유독물(액상)', unit: 'EA', monthStart: 14, current: 14, minimum: 10, note: '' },
+  { id: 'supply-36', category: '폐기스티커', name: '폐산', unit: 'EA', monthStart: 35, current: 34, minimum: 20, note: '' },
+  { id: 'supply-37', category: '폐기스티커', name: '할로겐유기용제', unit: 'EA', monthStart: 28, current: 28, minimum: 20, note: '' },
+  { id: 'supply-38', category: '폐기스티커', name: '폐유기용제(고상)', unit: 'EA', monthStart: 14, current: 14, minimum: 10, note: '' },
+  { id: 'supply-39', category: '장비 내 소모품', name: 'miniSEM 필라멘트', unit: '교체 일자', monthStart: 0, current: 0, minimum: 5, note: '26년 5월 / 여분 4개' },
+  { id: 'supply-40', category: '장비 내 소모품', name: 'miniSEM 코팅 물질(PT Target)', unit: '교체 일자', monthStart: 0, current: 0, minimum: 5, note: '25년 12월 / 재고 여분 있음' },
+  { id: 'supply-41', category: '장비 내 소모품', name: 'ALD TMA 소스', unit: '교체 일자', monthStart: 0, current: 0, minimum: 5, note: '24년 5월 / 소스 소진 시 파형 확인' },
+  { id: 'supply-42', category: '장비 내 소모품', name: 'ALD TEMAHf 소스', unit: '교체 일자', monthStart: 0, current: 0, minimum: 5, note: '24년 5월 / 소스 소진 시 파형 확인' },
+  { id: 'supply-43', category: '장비 내 소모품', name: 'MASK aligner UV lamp', unit: '교체 일자', monthStart: 0, current: 0, minimum: 5, note: '24년 2월 / UV intensity 확인 필요' },
+  { id: 'supply-44', category: '장비 내 소모품', name: '클린부스 헤파필터', unit: '교체 일자', monthStart: 0, current: 0, minimum: 5, note: '25년 8월 / 보통 1년 주기 교체' },
+  { id: 'supply-45', category: '장비 내 소모품', name: '시약장 필터', unit: '교체 일자', monthStart: 0, current: 0, minimum: 5, note: '25년 9월 / 교체 알림이 뜸' },
+  { id: 'supply-46', category: '장비 내 소모품', name: '공기정화장치필터', unit: '교체 일자', monthStart: 0, current: 0, minimum: 5, note: '25년 11월 / 보통 1년 주기 교체' },
+  { id: 'supply-47', category: '장비 내 소모품', name: '초순수제조장치필터', unit: '교체 일자', monthStart: 0, current: 0, minimum: 5, note: '26년 5월 / 4개월 주기 교체' }
+];
+
 const categoryMeta: Record<EquipmentGroup, { title: string; subtitle: string; image: string; bullets: string[] }> = {
   process: {
     title: '공정',
@@ -343,6 +404,37 @@ function downloadCsv(filename: string, rows: Array<Record<string, string | numbe
   const anchor = document.createElement('a');
   anchor.href = url;
   anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function getConsumableStatus(item: ConsumableItem) {
+  if (item.current <= item.minimum) return { label: '발주 필요', tone: 'danger' };
+  if (item.current <= item.minimum * 1.5) return { label: '주의', tone: 'warning' };
+  return { label: '정상', tone: 'good' };
+}
+
+function cloneConsumables(items = initialConsumables) {
+  return items.map((item) => ({ ...item }));
+}
+
+function downloadConsumablesExcel(month: string, rows: ConsumableItem[]) {
+  const escapeCell = (value: string | number) => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const headers = ['월', '분류', '품명', '단위/비고', '월초재고', '현재고', '사용량', '최소기준', '상태', '메모'];
+  const body = rows.map((item) => {
+    const used = Math.max(item.monthStart - item.current, 0);
+    const status = getConsumableStatus(item).label;
+    return [month, item.category, item.name, item.unit, item.monthStart, item.current, used, item.minimum, status, item.note];
+  });
+  const tableRows = [headers, ...body]
+    .map((row) => `<tr>${row.map((cell) => `<td>${escapeCell(cell)}</td>`).join('')}</tr>`)
+    .join('');
+  const html = `\uFEFF<html><head><meta charset="utf-8" /></head><body><table>${tableRows}</table></body></html>`;
+  const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `consumables-${month}.xls`;
   anchor.click();
   URL.revokeObjectURL(url);
 }
@@ -1640,12 +1732,14 @@ function AdminPage({
   equipmentItems,
   calendarEvents,
   onAddReservation,
-  onDeleteReservation
+  onDeleteReservation,
+  onNavigate
 }: {
   equipmentItems: EquipmentItem[];
   calendarEvents: ReservationEvent[];
   onAddReservation: (event: ReservationEvent) => void;
   onDeleteReservation: (reservationId: string) => void;
+  onNavigate: (page: PageKey) => void;
 }) {
   const [showReservationModal, setShowReservationModal] = useState(false);
   const [selectedAdminDate, setSelectedAdminDate] = useState(getSeoulDateKey());
@@ -1822,12 +1916,33 @@ function AdminPage({
         </div>
       </div>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {['사용자관리', '장비관리', '예약승인/거부', '교육관리', '홈페이지편집', '대시보드 데이터', '권한관리', '공지사항', '운영 로그'].map((title) => (
-          <button key={title} className="rounded-lg border border-white/10 bg-surface/85 p-6 text-left text-lg font-extrabold text-white hover:border-cyan-300 hover:bg-blue-500/20">
-            {title}
-            <p className="mt-2 text-sm font-medium text-slate-400">상세 관리 화면으로 이동</p>
-          </button>
-        ))}
+        {[
+          { title: '사용자관리' },
+          { title: '장비관리' },
+          { title: '예약승인/거부' },
+          { title: '교육관리' },
+          { title: '홈페이지편집' },
+          { title: '대시보드 데이터' },
+          { title: '소모품관리', page: 'consumables' as PageKey, icon: PackageCheck },
+          { title: '권한관리' },
+          { title: '공지사항' },
+          { title: '운영 로그' }
+        ].map((item) => {
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.title}
+              className="rounded-lg border border-white/10 bg-surface/85 p-6 text-left text-lg font-extrabold text-white hover:border-cyan-300 hover:bg-blue-500/20"
+              onClick={() => item.page && onNavigate(item.page)}
+            >
+              <span className="inline-flex items-center gap-2">
+                {Icon && <Icon size={20} className="text-cyan-300" />}
+                {item.title}
+              </span>
+              <p className="mt-2 text-sm font-medium text-slate-400">상세 관리 화면으로 이동</p>
+            </button>
+          );
+        })}
       </div>
       {showReservationModal && (
         <ReservationModalV2
@@ -1958,6 +2073,135 @@ function MyPage({
   );
 }
 
+function ConsumablesPage({
+  month,
+  consumables,
+  onMonthChange,
+  onUpdateConsumable,
+  onAddConsumable
+}: {
+  month: string;
+  consumables: ConsumableItem[];
+  onMonthChange: (month: string) => void;
+  onUpdateConsumable: (id: string, patch: Partial<ConsumableItem>) => void;
+  onAddConsumable: () => void;
+}) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('전체');
+  const categories = useMemo(() => ['전체', ...Array.from(new Set(consumables.map((item) => item.category)))], [consumables]);
+  const filteredItems = useMemo(() => (
+    consumables.filter((item) => {
+      const matchesCategory = categoryFilter === '전체' || item.category === categoryFilter;
+      const keyword = searchTerm.trim().toLowerCase();
+      const matchesSearch = !keyword || `${item.category} ${item.name} ${item.note}`.toLowerCase().includes(keyword);
+      return matchesCategory && matchesSearch;
+    })
+  ), [categoryFilter, consumables, searchTerm]);
+  const shortageCount = consumables.filter((item) => getConsumableStatus(item).tone === 'danger').length;
+  const warningCount = consumables.filter((item) => getConsumableStatus(item).tone === 'warning').length;
+  const totalUsed = consumables.reduce((sum, item) => sum + Math.max(item.monthStart - item.current, 0), 0);
+
+  function updateNumber(id: string, key: 'monthStart' | 'current' | 'minimum', value: string) {
+    onUpdateConsumable(id, { [key]: Number(value) || 0 });
+  }
+
+  return (
+    <section className="consumables-page">
+      <div className="consumables-hero">
+        <div>
+          <p className="consumables-eyebrow">Inventory Control</p>
+          <h2>소모품 관리</h2>
+          <span>첨부 엑셀의 월별 재고 흐름을 기준으로 품목을 편집하고 월 단위 파일로 저장합니다.</span>
+        </div>
+        <div className="consumables-actions">
+          <label>
+            관리 월
+            <input type="month" value={month} onChange={(event) => onMonthChange(event.target.value)} aria-label="소모품 관리 월 선택" />
+          </label>
+          <button type="button" onClick={() => downloadConsumablesExcel(month, consumables)} aria-label="소모품 현황 엑셀 다운로드">
+            <Download size={17} /> Excel 다운로드
+          </button>
+          <button type="button" onClick={onAddConsumable} aria-label="소모품 신규 품목 추가">
+            <Plus size={17} /> 품목 추가
+          </button>
+        </div>
+      </div>
+
+      <div className="consumables-summary-grid">
+        <div>
+          <span>전체 품목</span>
+          <strong>{consumables.length}</strong>
+          <em>items</em>
+        </div>
+        <div>
+          <span>발주 필요</span>
+          <strong>{shortageCount}</strong>
+          <em>minimum 이하</em>
+        </div>
+        <div>
+          <span>주의 품목</span>
+          <strong>{warningCount}</strong>
+          <em>기준 150% 이하</em>
+        </div>
+        <div>
+          <span>월 사용량</span>
+          <strong>{totalUsed.toLocaleString()}</strong>
+          <em>tracked units</em>
+        </div>
+      </div>
+
+      <div className="consumables-toolbar">
+        <div className="consumables-search">
+          <Search size={17} />
+          <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="품명, 분류, 메모 검색" aria-label="소모품 검색" />
+        </div>
+        <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} aria-label="소모품 분류 필터">
+          {categories.map((category) => (
+            <option key={category} value={category}>{category}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="consumables-table-wrap">
+        <table className="consumables-table">
+          <thead>
+            <tr>
+              <th>상태</th>
+              <th>분류</th>
+              <th>품명</th>
+              <th>단위/비고</th>
+              <th>월초</th>
+              <th>현재</th>
+              <th>사용량</th>
+              <th>최소 기준</th>
+              <th>메모</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredItems.map((item) => {
+              const status = getConsumableStatus(item);
+              const used = Math.max(item.monthStart - item.current, 0);
+              return (
+                <tr key={item.id}>
+                  <td><span className={`consumable-status is-${status.tone}`}>{status.label}</span></td>
+                  <td><input value={item.category} onChange={(event) => onUpdateConsumable(item.id, { category: event.target.value })} aria-label={`${item.name} 분류`} /></td>
+                  <td><input value={item.name} onChange={(event) => onUpdateConsumable(item.id, { name: event.target.value })} aria-label={`${item.name} 품명`} /></td>
+                  <td><input value={item.unit} onChange={(event) => onUpdateConsumable(item.id, { unit: event.target.value })} aria-label={`${item.name} 단위`} /></td>
+                  <td><input type="number" value={item.monthStart} onChange={(event) => updateNumber(item.id, 'monthStart', event.target.value)} aria-label={`${item.name} 월초 재고`} /></td>
+                  <td><input type="number" value={item.current} onChange={(event) => updateNumber(item.id, 'current', event.target.value)} aria-label={`${item.name} 현재 재고`} /></td>
+                  <td><strong>{used}</strong></td>
+                  <td><input type="number" value={item.minimum} onChange={(event) => updateNumber(item.id, 'minimum', event.target.value)} aria-label={`${item.name} 최소 기준`} /></td>
+                  <td><input value={item.note} onChange={(event) => onUpdateConsumable(item.id, { note: event.target.value })} aria-label={`${item.name} 메모`} /></td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
 function PlaceholderPage({ title }: { title: string }) {
   return (
     <section className="rounded-lg border border-white/10 bg-surface/85 p-8">
@@ -1973,6 +2217,10 @@ export function App() {
   const [loading, setLoading] = useState(false);
   const [initialGroup, setInitialGroup] = useState<EquipmentGroup>('process');
   const [deletedEquipmentIds, setDeletedEquipmentIds] = useState<string[]>([]);
+  const [selectedConsumableMonth, setSelectedConsumableMonth] = useState('2026-06');
+  const [monthlyConsumables, setMonthlyConsumables] = useState<Record<string, ConsumableItem[]>>(() => ({
+    '2026-06': cloneConsumables()
+  }));
   const [sessionRole, setSessionRole] = useState<Role | null>(() => {
     const stored = localStorage.getItem('hbnu-session-user');
     if (!stored) return null;
@@ -2023,7 +2271,48 @@ export function App() {
     setReservationEvents((current) => current.filter((event) => event.id !== reservationId));
   }
 
+  function changeConsumableMonth(month: string) {
+    setSelectedConsumableMonth(month);
+    setMonthlyConsumables((current) => (
+      current[month]
+        ? current
+        : { ...current, [month]: cloneConsumables(current[selectedConsumableMonth] ?? initialConsumables) }
+    ));
+  }
+
+  function updateConsumable(id: string, patch: Partial<ConsumableItem>) {
+    setMonthlyConsumables((current) => ({
+      ...current,
+      [selectedConsumableMonth]: (current[selectedConsumableMonth] ?? cloneConsumables()).map((item) => (
+        item.id === id ? { ...item, ...patch } : item
+      ))
+    }));
+  }
+
+  function addConsumable() {
+    setMonthlyConsumables((current) => {
+      const rows = current[selectedConsumableMonth] ?? cloneConsumables();
+      return {
+        ...current,
+        [selectedConsumableMonth]: [
+          ...rows,
+          {
+            id: `supply-${selectedConsumableMonth}-${Date.now()}`,
+            category: '신규 소모품',
+            name: '신규 품목',
+            unit: 'EA',
+            monthStart: 0,
+            current: 0,
+            minimum: 0,
+            note: ''
+          }
+        ]
+      };
+    });
+  }
+
   const activeEquipmentItems = equipmentItems.filter((item) => !deletedEquipmentIds.includes(item.id));
+  const activeConsumables = monthlyConsumables[selectedConsumableMonth] ?? cloneConsumables();
 
   return (
     <div className="min-h-screen">
@@ -2063,6 +2352,16 @@ export function App() {
               calendarEvents={reservationEvents}
               onAddReservation={addReservation}
               onDeleteReservation={deleteReservation}
+              onNavigate={navigate}
+            />
+          )}
+          {activePage === 'consumables' && (
+            <ConsumablesPage
+              month={selectedConsumableMonth}
+              consumables={activeConsumables}
+              onMonthChange={changeConsumableMonth}
+              onUpdateConsumable={updateConsumable}
+              onAddConsumable={addConsumable}
             />
           )}
           {activePage === 'login' && <LoginPage onAuthenticated={(role) => setSessionRole(role)} />}
