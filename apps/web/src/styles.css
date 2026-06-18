@@ -2463,6 +2463,17 @@ select {
   color: #f8fafc;
 }
 
+.consumables-actions button.is-primary {
+  border-color: rgba(52, 214, 176, 0.8);
+  background: #34d6b0;
+  color: #062018;
+}
+
+.consumables-actions button.is-primary:hover {
+  background: #5eead4;
+  color: #062018;
+}
+
 .consumables-summary-grid {
   display: grid;
   gap: 0.85rem;

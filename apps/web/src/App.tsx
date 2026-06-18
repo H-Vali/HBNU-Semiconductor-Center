@@ -90,8 +90,7 @@ const menu: Array<{ label: string; page: PageKey; icon: typeof Factory }> = [
 ];
 
 const adminMenu: Array<{ label: string; page: PageKey; icon: typeof ShieldCheck }> = [
-  { label: '관리자', page: 'admin', icon: ShieldCheck },
-  { label: '소모품관리', page: 'consumables', icon: PackageCheck }
+  { label: '관리자', page: 'admin', icon: ShieldCheck }
 ];
 
 const quickLinks: Array<{ label: string; page: PageKey; icon: typeof CalendarDays }> = [
@@ -417,6 +416,18 @@ function getConsumableStatus(item: ConsumableItem) {
 
 function cloneConsumables(items = initialConsumables) {
   return items.map((item) => ({ ...item }));
+}
+
+function formatSeoulDateTime(value: string) {
+  return new Intl.DateTimeFormat('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).format(new Date(value));
 }
 
 function downloadConsumablesExcel(month: string, rows: ConsumableItem[]) {
@@ -1734,13 +1745,15 @@ function AdminPage({
   calendarEvents,
   onAddReservation,
   onDeleteReservation,
-  onNavigate
+  onNavigate,
+  consumablesUpdatedAt
 }: {
   equipmentItems: EquipmentItem[];
   calendarEvents: ReservationEvent[];
   onAddReservation: (event: ReservationEvent) => void;
   onDeleteReservation: (reservationId: string) => void;
   onNavigate: (page: PageKey) => void;
+  consumablesUpdatedAt: string;
 }) {
   const [showReservationModal, setShowReservationModal] = useState(false);
   const [selectedAdminDate, setSelectedAdminDate] = useState(getSeoulDateKey());
@@ -1941,6 +1954,11 @@ function AdminPage({
                 {item.title}
               </span>
               <p className="mt-2 text-sm font-medium text-slate-400">상세 관리 화면으로 이동</p>
+              {item.page === 'consumables' && (
+                <p className="mt-4 text-xs font-bold text-cyan-200">
+                  최근 업데이트 {formatSeoulDateTime(consumablesUpdatedAt)}
+                </p>
+              )}
             </button>
           );
         })}
@@ -2077,27 +2095,34 @@ function MyPage({
 function ConsumablesPage({
   month,
   consumables,
+  hasUnsavedChanges,
   onMonthChange,
   onUpdateConsumable,
-  onAddConsumable
+  onAddConsumable,
+  onSave
 }: {
   month: string;
   consumables: ConsumableItem[];
+  hasUnsavedChanges: boolean;
   onMonthChange: (month: string) => void;
   onUpdateConsumable: (id: string, patch: Partial<ConsumableItem>) => void;
   onAddConsumable: () => void;
+  onSave: () => void;
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('전체');
+  const [statusFilter, setStatusFilter] = useState('전체');
   const categories = useMemo(() => ['전체', ...Array.from(new Set(consumables.map((item) => item.category)))], [consumables]);
   const filteredItems = useMemo(() => (
     consumables.filter((item) => {
       const matchesCategory = categoryFilter === '전체' || item.category === categoryFilter;
+      const status = getConsumableStatus(item);
+      const matchesStatus = statusFilter === '전체' || status.label === statusFilter;
       const keyword = searchTerm.trim().toLowerCase();
       const matchesSearch = !keyword || `${item.category} ${item.name} ${item.note}`.toLowerCase().includes(keyword);
-      return matchesCategory && matchesSearch;
+      return matchesCategory && matchesStatus && matchesSearch;
     })
-  ), [categoryFilter, consumables, searchTerm]);
+  ), [categoryFilter, consumables, searchTerm, statusFilter]);
   const shortageCount = consumables.filter((item) => getConsumableStatus(item).tone === 'danger').length;
   const warningCount = consumables.filter((item) => getConsumableStatus(item).tone === 'warning').length;
   const totalUsed = consumables.reduce((sum, item) => sum + Math.max(item.monthStart - item.current, 0), 0);
@@ -2121,6 +2146,9 @@ function ConsumablesPage({
           </label>
           <button type="button" onClick={() => downloadConsumablesExcel(month, consumables)} aria-label="소모품 현황 엑셀 다운로드">
             <Download size={17} /> Excel 다운로드
+          </button>
+          <button type="button" className="is-primary" onClick={onSave} aria-label="소모품 데이터 저장">
+            <CheckCircle2 size={17} /> 저장{hasUnsavedChanges ? ' 필요' : ' 완료'}
           </button>
           <button type="button" onClick={onAddConsumable} aria-label="소모품 신규 품목 추가">
             <Plus size={17} /> 품목 추가
@@ -2159,6 +2187,11 @@ function ConsumablesPage({
         <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} aria-label="소모품 분류 필터">
           {categories.map((category) => (
             <option key={category} value={category}>{category}</option>
+          ))}
+        </select>
+        <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} aria-label="소모품 상태 필터">
+          {['전체', '정상', '주의', '발주 필요'].map((status) => (
+            <option key={status} value={status}>{status}</option>
           ))}
         </select>
       </div>
@@ -2219,9 +2252,18 @@ export function App() {
   const [initialGroup, setInitialGroup] = useState<EquipmentGroup>('process');
   const [deletedEquipmentIds, setDeletedEquipmentIds] = useState<string[]>([]);
   const [selectedConsumableMonth, setSelectedConsumableMonth] = useState('2026-06');
-  const [monthlyConsumables, setMonthlyConsumables] = useState<Record<string, ConsumableItem[]>>(() => ({
-    '2026-06': cloneConsumables()
-  }));
+  const [monthlyConsumables, setMonthlyConsumables] = useState<Record<string, ConsumableItem[]>>(() => {
+    try {
+      const stored = localStorage.getItem('hbnu-consumables-monthly-data');
+      return stored ? JSON.parse(stored) : { '2026-06': cloneConsumables() };
+    } catch {
+      return { '2026-06': cloneConsumables() };
+    }
+  });
+  const [consumablesUpdatedAt, setConsumablesUpdatedAt] = useState(() => (
+    localStorage.getItem('hbnu-consumables-updated-at') ?? new Date().toISOString()
+  ));
+  const [hasUnsavedConsumables, setHasUnsavedConsumables] = useState(false);
   const [sessionRole, setSessionRole] = useState<Role | null>(() => {
     const stored = localStorage.getItem('hbnu-session-user');
     if (!stored) return null;
@@ -2282,6 +2324,7 @@ export function App() {
   }
 
   function updateConsumable(id: string, patch: Partial<ConsumableItem>) {
+    setHasUnsavedConsumables(true);
     setMonthlyConsumables((current) => ({
       ...current,
       [selectedConsumableMonth]: (current[selectedConsumableMonth] ?? cloneConsumables()).map((item) => (
@@ -2291,6 +2334,7 @@ export function App() {
   }
 
   function addConsumable() {
+    setHasUnsavedConsumables(true);
     setMonthlyConsumables((current) => {
       const rows = current[selectedConsumableMonth] ?? cloneConsumables();
       return {
@@ -2310,6 +2354,14 @@ export function App() {
         ]
       };
     });
+  }
+
+  function saveConsumables() {
+    const savedAt = new Date().toISOString();
+    localStorage.setItem('hbnu-consumables-monthly-data', JSON.stringify(monthlyConsumables));
+    localStorage.setItem('hbnu-consumables-updated-at', savedAt);
+    setConsumablesUpdatedAt(savedAt);
+    setHasUnsavedConsumables(false);
   }
 
   const activeEquipmentItems = equipmentItems.filter((item) => !deletedEquipmentIds.includes(item.id));
@@ -2354,15 +2406,18 @@ export function App() {
               onAddReservation={addReservation}
               onDeleteReservation={deleteReservation}
               onNavigate={navigate}
+              consumablesUpdatedAt={consumablesUpdatedAt}
             />
           )}
           {activePage === 'consumables' && (
             <ConsumablesPage
               month={selectedConsumableMonth}
               consumables={activeConsumables}
+              hasUnsavedChanges={hasUnsavedConsumables}
               onMonthChange={changeConsumableMonth}
               onUpdateConsumable={updateConsumable}
               onAddConsumable={addConsumable}
+              onSave={saveConsumables}
             />
           )}
           {activePage === 'login' && <LoginPage onAuthenticated={(role) => setSessionRole(role)} />}
