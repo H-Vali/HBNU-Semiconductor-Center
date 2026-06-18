@@ -46,8 +46,16 @@ type PageKey = 'home' | 'facility' | 'equipment' | 'training' | 'reservations' |
 type Role = 'USER' | 'ADMIN';
 type UsagePeriod = '24H' | '1W' | '1M';
 type EquipmentRuntimeStatus = 'active' | 'maintenance' | 'idle';
-type ReservationStatus = 'pending' | 'approved' | 'maintenance';
-type ReservationForm = { equipmentId: string; date: string; startTime: string; endTime: string; purpose: string; reservationType?: 'use' | 'maintenance' };
+type ReservationStatus = 'pending' | 'approved' | 'maintenance' | 'external';
+type ReservationForm = {
+  equipmentId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  purpose: string;
+  reservationType?: 'use' | 'maintenance';
+  userType?: 'internal' | 'external';
+};
 type ApiEquipmentItem = Partial<EquipmentItem> & { imageUrl?: string; usageConditions?: string };
 type ReservationEvent = {
   id: string;
@@ -144,8 +152,12 @@ function isMaintenanceReservation(event: ReservationEvent) {
   return event.status === 'maintenance';
 }
 
+function isExternalReservation(event: ReservationEvent) {
+  return event.status === 'external';
+}
+
 function normalizeReservationStatus(status: unknown): ReservationStatus {
-  return status === 'maintenance' || status === 'approved' || status === 'pending' ? status : 'approved';
+  return status === 'maintenance' || status === 'external' || status === 'approved' || status === 'pending' ? status : 'approved';
 }
 
 function getRealtimeCategoryLabel(item: EquipmentItem) {
@@ -714,7 +726,7 @@ function RealtimeEquipmentStatus({
               <h4>{item.name}</h4>
               <span>
                 {status === 'active'
-                  ? `${formatReservationTime(activeEvent?.start)} - ${formatReservationTime(activeEvent?.end)} 종료`
+                  ? `${formatReservationTime(activeEvent?.start)} - ${formatReservationTime(activeEvent?.end)} ${activeEvent && isExternalReservation(activeEvent) ? '외부 사용' : '종료'}`
                   : status === 'maintenance'
                     ? `${formatReservationTime(activeEvent?.start)} - ${formatReservationTime(activeEvent?.end)} 점검`
                     : '현재 예약 없음'}
@@ -1323,6 +1335,7 @@ function ReservationPage({
           dateClick={(arg) => openReservation(arg.dateStr)}
           eventClassNames={(arg) => [
             arg.event.extendedProps.status === 'maintenance' ? 'is-maintenance-event' : '',
+            arg.event.extendedProps.status === 'external' ? 'is-external-event' : '',
             arg.event.start && arg.event.end && arg.event.start.getTime() <= Date.now() && Date.now() < arg.event.end.getTime() ? 'is-live-event' : ''
           ].filter(Boolean)}
           events={calendarEvents.filter((event) => isEventForEquipment(event, selectedEquipment, equipmentItems))}
@@ -1337,6 +1350,8 @@ function ReservationPage({
           onClose={() => setShowReservationModal(false)}
           onConfirm={confirmReservation}
           onDeleteReservation={sessionRole === 'ADMIN' ? onDeleteReservation : undefined}
+          allowMaintenanceReservation={sessionRole === 'ADMIN'}
+          titleSuffix={sessionRole === 'ADMIN' ? '(ADMIN)' : ''}
         />
       )}
     </section>
@@ -1459,7 +1474,8 @@ function ReservationModalV2({
     startTime: '09:00',
     endTime: '10:00',
     purpose: '',
-    reservationType: 'use' as 'use' | 'maintenance'
+    reservationType: 'use' as 'use' | 'maintenance',
+    userType: 'internal' as 'internal' | 'external'
   });
 
   const sameEquipmentReservations = calendarEvents.filter((event) => {
@@ -1511,10 +1527,10 @@ function ReservationModalV2({
             <div className="reservation-day-list">
               {reservationsForDate.length > 0 ? (
                 reservationsForDate.map((event) => (
-                  <div key={event.id} className={`reservation-day-item ${isReservationActive(event) ? 'is-live' : ''} ${isMaintenanceReservation(event) ? 'is-maintenance' : ''}`}>
+                  <div key={event.id} className={`reservation-day-item ${isReservationActive(event) ? 'is-live' : ''} ${isMaintenanceReservation(event) ? 'is-maintenance' : ''} ${isExternalReservation(event) ? 'is-external' : ''}`}>
                     <span>{formatReservationTime(event.start)}{event.end ? ` - ${formatReservationTime(event.end)}` : ''}</span>
                     <strong>{event.title}</strong>
-                    {isReservationActive(event) && <em>{isMaintenanceReservation(event) ? '점검중' : '사용중'}</em>}
+                    {isReservationActive(event) && <em>{isMaintenanceReservation(event) ? '점검중' : isExternalReservation(event) ? '외부 사용중' : '사용중'}</em>}
                     {onDeleteReservation && (
                       <button type="button" className="reservation-mini-danger" onClick={() => onDeleteReservation(event.id)}>삭제</button>
                     )}
@@ -1535,13 +1551,22 @@ function ReservationModalV2({
               </select>
             </label>
             {allowMaintenanceReservation && (
-              <label className="reservation-label">
-                예약 유형
-                <select value={form.reservationType} onChange={(event) => setForm((current) => ({ ...current, reservationType: event.target.value as 'use' | 'maintenance' }))}>
-                  <option value="use">장비 사용</option>
-                  <option value="maintenance">장비 점검</option>
-                </select>
-              </label>
+              <div className="reservation-admin-status-grid">
+                <label className="reservation-label">
+                  장비 점검
+                  <select value={form.reservationType} onChange={(event) => setForm((current) => ({ ...current, reservationType: event.target.value as 'use' | 'maintenance' }))}>
+                    <option value="use">일반 사용</option>
+                    <option value="maintenance">장비 점검</option>
+                  </select>
+                </label>
+                <label className="reservation-label">
+                  외부 기업
+                  <select value={form.userType} onChange={(event) => setForm((current) => ({ ...current, userType: event.target.value as 'internal' | 'external' }))}>
+                    <option value="internal">내부 사용자</option>
+                    <option value="external">외부 기업</option>
+                  </select>
+                </label>
+              </div>
             )}
             <label className="reservation-label">
               예약일
@@ -1657,12 +1682,14 @@ function AdminPage({
     if (!equipment) return;
     const purpose = form.purpose.trim() ? ` - ${form.purpose.trim()}` : '';
     const isMaintenance = form.reservationType === 'maintenance';
+    const isExternal = !isMaintenance && form.userType === 'external';
+    const reservationStatus: ReservationStatus = isMaintenance ? 'maintenance' : isExternal ? 'external' : 'approved';
     onAddReservation({
       id: `admin-reservation-${Date.now()}`,
-      title: `${equipment.name} ${isMaintenance ? '장비 점검' : '관리자 예약'}${purpose}`,
+      title: `${equipment.name} ${isMaintenance ? '장비 점검' : isExternal ? '외부 기업 예약' : '관리자 예약'}${purpose}`,
       start: toReservationDateTime(form.date, form.startTime),
       end: toReservationDateTime(form.date, form.endTime),
-      status: isMaintenance ? 'maintenance' : 'approved',
+      status: reservationStatus,
       equipmentId: equipment.id,
       createdBy: 'ADMIN'
     });
@@ -1715,6 +1742,7 @@ function AdminPage({
             dateClick={(arg) => setSelectedAdminDate(arg.dateStr)}
             eventClassNames={(arg) => [
               arg.event.extendedProps.status === 'maintenance' ? 'is-maintenance-event' : '',
+              arg.event.extendedProps.status === 'external' ? 'is-external-event' : '',
               arg.event.start && arg.event.end && arg.event.start.getTime() <= Date.now() && Date.now() < arg.event.end.getTime() ? 'is-live-event' : ''
             ].filter(Boolean)}
             events={calendarEvents}
@@ -1736,7 +1764,7 @@ function AdminPage({
               selectedDayReservations.map((event) => {
                 const equipment = equipmentItems.find((item) => getEventEquipmentId(event, equipmentItems) === item.id);
                 return (
-                  <div key={event.id} className={`admin-reservation-row ${isReservationActive(event) ? 'is-live' : ''} ${isMaintenanceReservation(event) ? 'is-maintenance' : ''}`}>
+                  <div key={event.id} className={`admin-reservation-row ${isReservationActive(event) ? 'is-live' : ''} ${isMaintenanceReservation(event) ? 'is-maintenance' : ''} ${isExternalReservation(event) ? 'is-external' : ''}`}>
                     <div>
                       <strong>{equipment?.name ?? event.title}</strong>
                       <span>{formatReservationTime(event.start)}{event.end ? ` - ${formatReservationTime(event.end)}` : ''}</span>
@@ -1766,7 +1794,7 @@ function AdminPage({
         </div>
         <div className="admin-reservation-list">
           {calendarEvents.map((event) => (
-            <div key={event.id} className={`admin-reservation-row ${isReservationActive(event) ? 'is-live' : ''} ${isMaintenanceReservation(event) ? 'is-maintenance' : ''}`}>
+            <div key={event.id} className={`admin-reservation-row ${isReservationActive(event) ? 'is-live' : ''} ${isMaintenanceReservation(event) ? 'is-maintenance' : ''} ${isExternalReservation(event) ? 'is-external' : ''}`}>
               <div>
                 <strong>{event.title}</strong>
                 <span>{event.start.slice(0, 10)} · {formatReservationTime(event.start)}{event.end ? ` - ${formatReservationTime(event.end)}` : ''}</span>
