@@ -526,9 +526,6 @@ function Hero({ onNavigate, equipmentItems }: { onNavigate: (page: PageKey) => v
         <strong>ISO 5</strong>
       </div>
       <div className="hero-intro">
-        <div className="hero-hologram-wafer" aria-hidden="true">
-          <div className="hero-hologram-wafer-core" />
-        </div>
         <div>
           <p className="hero-breadcrumb">N-FACILITY · FAB OPERATION · EQUIPMENT RESERVATION</p>
           <h2 className="hero-title">

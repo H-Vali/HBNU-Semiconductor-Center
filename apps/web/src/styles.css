@@ -137,53 +137,15 @@ select {
   position: absolute;
   inset: 0 0 0 auto;
   width: 45%;
-  background: #0e1830;
+  background:
+    radial-gradient(circle at 62% 48%, rgba(95, 217, 201, 0.06) 0 12%, transparent 13%),
+    repeating-linear-gradient(88deg, transparent 0 27px, rgba(95, 217, 201, 0.055) 28px 29px),
+    repeating-linear-gradient(-3deg, transparent 0 29px, rgba(125, 179, 240, 0.04) 30px 31px),
+    radial-gradient(circle at 62% 48%, rgba(95, 217, 201, 0.05) 0 44%, transparent 45%),
+    #0e1830;
+  background-size: auto, 100% 100%, 100% 100%, auto, auto;
   opacity: 0.5;
   pointer-events: none;
-}
-
-.hero-hologram-wafer {
-  position: absolute;
-  top: 50%;
-  right: 6%;
-  z-index: 1;
-  width: min(34vw, 31rem);
-  aspect-ratio: 1;
-  transform: translateY(-50%) rotate(-14deg);
-  opacity: 0.24;
-  pointer-events: none;
-}
-
-.hero-hologram-wafer::before,
-.hero-hologram-wafer::after,
-.hero-hologram-wafer-core {
-  position: absolute;
-  border-radius: 50%;
-  content: "";
-}
-
-.hero-hologram-wafer::before {
-  inset: 0;
-  border: 1px solid rgba(95, 217, 201, 0.58);
-  background:
-    repeating-linear-gradient(90deg, transparent 0 28px, rgba(95, 217, 201, 0.18) 29px 30px),
-    repeating-linear-gradient(0deg, transparent 0 28px, rgba(125, 179, 240, 0.12) 29px 30px);
-  mask-image: radial-gradient(circle, #000 66%, transparent 67%);
-}
-
-.hero-hologram-wafer::after {
-  inset: 11%;
-  border: 0.5px solid rgba(125, 179, 240, 0.38);
-  background:
-    linear-gradient(120deg, transparent 35%, rgba(95, 217, 201, 0.2) 48%, transparent 62%),
-    repeating-linear-gradient(90deg, transparent 0 20px, rgba(243, 246, 251, 0.08) 21px 22px);
-  mask-image: radial-gradient(circle, #000 63%, transparent 64%);
-}
-
-.hero-hologram-wafer-core {
-  inset: 38%;
-  border: 1px solid rgba(52, 214, 176, 0.38);
-  background: rgba(95, 217, 201, 0.08);
 }
 
 .hero-intro > * {
@@ -1560,10 +1522,6 @@ select {
 
   .hero-copy {
     max-width: 100%;
-  }
-
-  .hero-hologram-wafer {
-    display: none;
   }
 
   .hero-process-grid,
