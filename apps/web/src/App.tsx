@@ -2237,14 +2237,12 @@ function ConsumablesPage({
           <button type="button" className="is-primary" onClick={onSave} aria-label="소모품 데이터 저장">
             <CheckCircle2 size={18} /> 저장{hasUnsavedChanges ? ' 필요' : ' 완료'}
           </button>
-          <em>{hasUnsavedChanges ? '변경사항 있음' : '최신 상태'}</em>
         </div>
         <div className="consumables-summary-action">
           <span>품목 관리</span>
           <button type="button" onClick={onAddConsumable} aria-label="소모품 신규 품목 추가">
             <Plus size={18} /> 품목 추가
           </button>
-          <em>신규 행 생성</em>
         </div>
       </div>
 
@@ -2263,8 +2261,7 @@ function ConsumablesPage({
             <option key={status} value={status}>{status}</option>
           ))}
         </select>
-        <label className="consumables-month-control">
-          관리 월
+        <label className="consumables-month-control" aria-label="소모품 관리 월">
           <input type="month" value={month} onChange={(event) => onMonthChange(event.target.value)} aria-label="소모품 관리 월 선택" />
         </label>
       </div>
