@@ -303,7 +303,8 @@ select {
 
 .realtime-digital-clock span,
 .realtime-digital-clock strong,
-.realtime-digital-clock em {
+.realtime-digital-clock em,
+.realtime-digital-clock i {
   line-height: 1;
   letter-spacing: 0;
 }
@@ -326,6 +327,11 @@ select {
   font-size: 1rem;
   font-style: normal;
   font-weight: 900;
+}
+
+.realtime-digital-clock i {
+  display: inline-block;
+  width: 0.7rem;
 }
 
 .realtime-equipment-viewport {

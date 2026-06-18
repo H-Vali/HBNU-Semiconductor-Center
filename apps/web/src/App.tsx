@@ -462,12 +462,14 @@ function RealtimeEquipmentStatus({
           <span>{clock.month}</span>
           <em>/</em>
           <span>{clock.day}</span>
+          <em>/</em>
+          <span>{clock.weekday}</span>
+          <i aria-hidden="true" />
           <strong>{clock.hour}</strong>
           <em>:</em>
           <strong>{clock.minute}</strong>
           <em>:</em>
           <strong>{clock.second}</strong>
-          <span>{clock.weekday}</span>
         </div>
         <div className="flex flex-wrap justify-end gap-2 text-sm font-bold text-slate-300">
           <span className="rounded-full bg-red-500/15 px-3 py-1 text-red-200">가동중 {activeCount}</span>
