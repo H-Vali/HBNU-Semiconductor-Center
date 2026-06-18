@@ -5,7 +5,11 @@ import interactionPlugin from '@fullcalendar/interaction';
 import {
   Area,
   AreaChart,
+  Bar,
+  BarChart,
   CartesianGrid,
+  Cell,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -40,6 +44,7 @@ import { equipment as fallbackEquipment, events, monthlyUsage, type EquipmentGro
 
 type PageKey = 'home' | 'facility' | 'equipment' | 'training' | 'reservations' | 'mypage' | 'admin' | 'login';
 type Role = 'USER' | 'ADMIN';
+type UsagePeriod = '24H' | '1W' | '1M';
 type ApiEquipmentItem = Partial<EquipmentItem> & { imageUrl?: string; usageConditions?: string };
 type ReservationEvent = {
   id: string;
@@ -53,14 +58,17 @@ type ReservationEvent = {
 
 const apiUrl = ((import.meta as ImportMeta & { env?: Record<string, string> }).env?.VITE_API_URL) ?? 'http://localhost:4000';
 
-const menu: Array<{ label: string; page: PageKey; icon: typeof Factory; admin?: boolean }> = [
+const menu: Array<{ label: string; page: PageKey; icon: typeof Factory }> = [
   { label: '센터소개', page: 'facility', icon: Factory },
   { label: '시설안내', page: 'facility', icon: LayoutDashboard },
   { label: '장비현황', page: 'equipment', icon: Wrench },
   { label: '장비예약현황', page: 'reservations', icon: CalendarDays },
   { label: '교육신청', page: 'training', icon: GraduationCap },
-  { label: '마이페이지', page: 'mypage', icon: UserRound },
-  { label: '관리자', page: 'admin', icon: ShieldCheck, admin: true }
+  { label: '마이페이지', page: 'mypage', icon: UserRound }
+];
+
+const adminMenu: Array<{ label: string; page: PageKey; icon: typeof ShieldCheck }> = [
+  { label: '관리자', page: 'admin', icon: ShieldCheck }
 ];
 
 const quickLinks: Array<{ label: string; page: PageKey; icon: typeof CalendarDays }> = [
@@ -136,6 +144,62 @@ function toLocalReservationDateTime(date: Date) {
   const hours = String(date.getHours()).padStart(2, '0');
   const minutes = String(date.getMinutes()).padStart(2, '0');
   return `${year}-${month}-${day}T${hours}:${minutes}:00`;
+}
+
+function getReservationDurationHours(event: ReservationEvent) {
+  if (!event.end) return 0;
+  const duration = new Date(event.end).getTime() - new Date(event.start).getTime();
+  return Math.max(duration / (1000 * 60 * 60), 0);
+}
+
+function buildUsageTrend(period: UsagePeriod, equipmentItems: EquipmentItem[], calendarEvents: ReservationEvent[]) {
+  if (period === '1M') {
+    return monthlyUsage.map((entry) => ({
+      label: entry.month,
+      hours: entry.hours,
+      delta: entry.delta
+    }));
+  }
+
+  const now = new Date();
+  const totalEquipmentHours = equipmentItems.reduce((sum, item) => sum + item.usageHours, 0);
+
+  if (period === '1W') {
+    return Array.from({ length: 7 }, (_, index) => {
+      const day = new Date(now);
+      day.setDate(now.getDate() - (6 - index));
+      const dateKey = getSeoulDateKey(day);
+      const reservationHours = calendarEvents
+        .filter((event) => getSeoulDateKey(new Date(event.start)) === dateKey)
+        .reduce((sum, event) => sum + getReservationDurationHours(event), 0);
+      const baseline = totalEquipmentHours / Math.max(equipmentItems.length, 1) * (0.42 + index * 0.018);
+
+      return {
+        label: new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', weekday: 'short' }).format(day),
+        hours: Math.round(baseline + reservationHours * 12),
+        delta: index === 6 ? 3 : 0
+      };
+    });
+  }
+
+  return Array.from({ length: 6 }, (_, index) => {
+    const startHour = index * 4;
+    const endHour = startHour + 4;
+    const reservationHours = calendarEvents
+      .filter((event) => {
+        const eventDate = new Date(event.start);
+        const eventHour = eventDate.getHours();
+        return getSeoulDateKey(eventDate) === getSeoulDateKey(now) && eventHour >= startHour && eventHour < endHour;
+      })
+      .reduce((sum, event) => sum + getReservationDurationHours(event), 0);
+    const baseline = totalEquipmentHours / Math.max(equipmentItems.length, 1) * (0.24 + index * 0.028);
+
+    return {
+      label: `${String(startHour).padStart(2, '0')}-${String(endHour).padStart(2, '0')}`,
+      hours: Math.round(baseline + reservationHours * 10),
+      delta: index === 5 ? 3 : 0
+    };
+  });
 }
 
 function createRealtimeTestReservations(equipmentItems: EquipmentItem[]): ReservationEvent[] {
@@ -305,16 +369,16 @@ function PartnerLogoStrip() {
   const baseUrl = ((import.meta as ImportMeta & { env?: Record<string, string> }).env?.BASE_URL) ?? '/';
   const assetBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
   const partners = [
-    { name: '국립한밭대학교', src: `${assetBase}partners/hanbat-national-university.svg` },
-    { name: '대전광역시', src: `${assetBase}partners/daejeon-metropolitan-city.svg` },
-    { name: '대전테크노파크', src: `${assetBase}partners/daejeon-technopark.svg` }
+    { id: 'hanbat', name: '국립한밭대학교', src: `${assetBase}partners/hanbat-national-university.svg` },
+    { id: 'daejeon', name: '대전광역시', src: `${assetBase}partners/daejeon-metropolitan-city.svg` },
+    { id: 'djtp', name: '대전테크노파크', src: `${assetBase}partners/daejeon-technopark.svg` }
   ];
 
   return (
     <div className="partner-logo-strip" aria-label="협업 기관">
       <div className="partner-logo-list">
         {partners.map((partner) => (
-          <div key={partner.name} className="partner-logo-card">
+          <div key={partner.name} className={`partner-logo-card partner-logo-card-${partner.id}`}>
             <img src={partner.src} alt={`${partner.name} 로고`} />
           </div>
         ))}
@@ -376,8 +440,8 @@ function SidebarNavigation({ activePage, onNavigate }: { activePage: PageKey; on
   const visitorStats = useVisitorStats();
 
   return (
-    <aside className="app-sidebar" aria-label="주요 메뉴">
-      <div className="sidebar-nav-area">
+    <div className="sidebar-stack">
+      <aside className="app-sidebar" aria-label="주요 메뉴">
         <div className="sidebar-section-label">Navigation</div>
         <nav className="sidebar-nav">
           {menu.map((item) => {
@@ -391,12 +455,30 @@ function SidebarNavigation({ activePage, onNavigate }: { activePage: PageKey; on
               >
                 <Icon size={18} />
                 <span>{item.label}</span>
-                {item.admin && <em>ADMIN</em>}
               </button>
             );
           })}
         </nav>
-      </div>
+        <div className="sidebar-admin-block">
+          <div className="sidebar-section-label">Admin</div>
+          <nav className="sidebar-nav sidebar-nav-admin">
+            {adminMenu.map((item) => {
+              const Icon = item.icon;
+              const selected = activePage === item.page;
+              return (
+                <button
+                  key={`${item.page}-${item.label}`}
+                  className={`sidebar-nav-item sidebar-nav-item-admin ${selected ? 'is-active' : ''}`}
+                  onClick={() => onNavigate(item.page)}
+                >
+                  <Icon size={18} />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+      </aside>
       <div className="visitor-counter-card" aria-label="방문자 통계">
         <div className="visitor-counter-head">
           <Gauge size={18} />
@@ -411,7 +493,7 @@ function SidebarNavigation({ activePage, onNavigate }: { activePage: PageKey; on
           <strong>{visitorStats.total.toLocaleString('ko-KR')}</strong>
         </div>
       </div>
-    </aside>
+    </div>
   );
 }
 
@@ -582,52 +664,94 @@ function RealtimeEquipmentStatus({
   );
 }
 
-function MonthlyUsageChart() {
-  const maxValue = Math.max(...monthlyUsage.map((entry) => entry.hours));
-  const minValue = Math.min(...monthlyUsage.map((entry) => entry.hours));
+function MonthlyUsageChart({
+  equipmentItems,
+  calendarEvents
+}: {
+  equipmentItems: EquipmentItem[];
+  calendarEvents: ReservationEvent[];
+}) {
+  const [period, setPeriod] = useState<UsagePeriod>('1M');
+  const chartData = useMemo(() => buildUsageTrend(period, equipmentItems, calendarEvents), [period, equipmentItems, calendarEvents]);
+  const maxEntry = chartData.reduce((max, entry) => entry.hours > max.hours ? entry : max, chartData[0]);
+  const averageValue = Math.round(chartData.reduce((sum, entry) => sum + entry.hours, 0) / Math.max(chartData.length, 1));
+  const latestDelta = chartData[chartData.length - 1]?.delta ?? 0;
+  const periodOptions: UsagePeriod[] = ['24H', '1W', '1M'];
 
   return (
-    <div className="chart-card rounded-lg border border-white/10 bg-[#101114] p-5">
-      <div className="mb-4 flex items-start justify-between gap-4">
+    <div className="chart-card usage-trend-card rounded-lg border border-white/10 bg-[#101114] p-5">
+      <div className="usage-trend-header">
         <div>
-          <p className="text-sm font-bold uppercase text-blue-300">Realtime Analytics</p>
-          <h3 className="mt-1 text-2xl font-extrabold text-white">월별 총 장비 사용시간</h3>
+          <p className="text-sm font-bold uppercase text-teal-300">사용 분석</p>
+          <h3 className="mt-1 text-2xl font-extrabold text-white">장비 사용시간 추이</h3>
         </div>
-        <div className="flex gap-2 text-sm font-bold text-slate-300">
-          <span className="rounded-full bg-white/10 px-3 py-1">24H</span>
-          <span className="rounded-full px-3 py-1">1W</span>
-          <span className="rounded-full px-3 py-1">1M</span>
+        <div className="usage-period-toggle" aria-label="사용시간 기간 선택">
+          {periodOptions.map((option) => (
+            <button
+              key={option}
+              className={period === option ? 'is-active' : ''}
+              onClick={() => setPeriod(option)}
+              type="button"
+            >
+              {option}
+            </button>
+          ))}
         </div>
+      </div>
+      <div className="usage-trend-summary">
+        <span>평균 <strong>{averageValue.toLocaleString()}h</strong></span>
+        <span>최고 <strong>{maxEntry?.hours.toLocaleString()}h</strong>{period === '1M' ? ` (${maxEntry?.label})` : ''}</span>
+        <span className={latestDelta >= 0 ? 'is-up' : 'is-down'}>
+          {latestDelta >= 0 ? '전월 대비' : '전기간 대비'} {latestDelta > 0 ? '+' : ''}{latestDelta}%
+        </span>
       </div>
       <div className="h-[24rem] 2xl:h-[30rem]">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={monthlyUsage} margin={{ top: 22, right: 22, left: 0, bottom: 0 }}>
+          <BarChart data={chartData} margin={{ top: 28, right: 18, left: 0, bottom: 0 }}>
             <defs>
-              <linearGradient id="monthly-stroke" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="#22d3ee" />
-                <stop offset="55%" stopColor="#8b5cf6" />
-                <stop offset="100%" stopColor="#d46ab8" />
-              </linearGradient>
-              <linearGradient id="monthly-area" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.24} />
-                <stop offset="65%" stopColor="#8b5cf6" stopOpacity={0.08} />
-                <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0} />
+              <linearGradient id="usage-bar-fill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#34d6b0" stopOpacity={0.92} />
+                <stop offset="100%" stopColor="#25496e" stopOpacity={0.92} />
               </linearGradient>
             </defs>
             <CartesianGrid stroke="rgba(255,255,255,.08)" vertical={false} />
-            <XAxis dataKey="month" stroke="#a8adb8" tickLine={false} axisLine={false} />
-            <YAxis stroke="#a8adb8" tickLine={false} axisLine={false} tickFormatter={(value) => `${value}h`} width={54} />
-            <Tooltip contentStyle={{ background: '#050607', border: '1px solid rgba(255,255,255,.12)', borderRadius: '8px', color: '#fff' }} labelStyle={{ color: '#aeb6c2' }} formatter={(value) => [`${value}h`, '총 장비 사용시간']} />
-            <Area type="monotone" dataKey="hours" stroke="url(#monthly-stroke)" strokeWidth={3} fill="url(#monthly-area)" dot={false} activeDot={{ r: 6, fill: '#8b5cf6', stroke: '#111', strokeWidth: 2 }} />
-          </AreaChart>
+            <XAxis dataKey="label" stroke="#8b96a8" tickLine={false} axisLine={{ stroke: 'rgba(255,255,255,.12)' }} />
+            <YAxis
+              stroke="#8b96a8"
+              tickLine={false}
+              axisLine={{ stroke: 'rgba(255,255,255,.12)' }}
+              tickFormatter={(value) => `${value}h`}
+              ticks={[0, 250, 500, 750, 1000]}
+              domain={[0, 1000]}
+              width={58}
+            />
+            <Tooltip
+              cursor={{ fill: 'rgba(255,255,255,.04)' }}
+              contentStyle={{ background: '#050607', border: '1px solid rgba(255,255,255,.12)', borderRadius: '8px', color: '#fff' }}
+              labelStyle={{ color: '#aeb6c2' }}
+              formatter={(value) => [`${Number(value).toLocaleString()}h`, '장비 사용시간']}
+            />
+            <ReferenceLine
+              y={averageValue}
+              stroke="#f5b942"
+              strokeDasharray="5 5"
+              strokeOpacity={0.78}
+              label={{ value: `평균 ${averageValue}h`, position: 'insideTopRight', fill: '#f5b942', fontSize: 12 }}
+            />
+            <Bar className="usage-bar-series" dataKey="hours" radius={[6, 6, 0, 0]} maxBarSize={44}>
+              {chartData.map((entry) => (
+                <Cell key={entry.label} fill={entry.label === maxEntry?.label ? '#34d6b0' : 'url(#usage-bar-fill)'} />
+              ))}
+            </Bar>
+          </BarChart>
         </ResponsiveContainer>
       </div>
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-400">
         <div className="flex gap-3">
-          <span>Low: {minValue}h</span>
-          <span>High: {maxValue}h</span>
+          <span>Range: 0-1000h</span>
+          <span>High: {maxEntry?.hours.toLocaleString()}h</span>
         </div>
-        <span className="inline-flex items-center gap-2 text-white"><span className="h-3 w-3 rounded-sm bg-violet-400" /> 총 장비 사용시간</span>
+        <span className="inline-flex items-center gap-2 text-white"><span className="h-3 w-3 rounded-sm bg-teal-300" /> 장비 사용시간</span>
       </div>
     </div>
   );
@@ -698,7 +822,7 @@ function Dashboard({
     <section className="mt-5 grid gap-5">
       <StatGrid equipmentItems={equipmentItems} />
       <RealtimeEquipmentStatus equipmentItems={equipmentItems} calendarEvents={calendarEvents} />
-      <MonthlyUsageChart />
+      <MonthlyUsageChart equipmentItems={equipmentItems} calendarEvents={calendarEvents} />
       <EquipmentGateway equipmentItems={equipmentItems} onOpen={onOpenEquipment} />
     </section>
   );

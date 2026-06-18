@@ -63,18 +63,14 @@ export const equipment: EquipmentItem[] = [...processEquipment, ...metrologyEqui
 });
 
 export const monthlyUsage = [
-  { month: '1월', hours: 420, delta: 8 },
-  { month: '2월', hours: 491, delta: 17 },
-  { month: '3월', hours: 541, delta: 10 },
-  { month: '4월', hours: 556, delta: 3 },
-  { month: '5월', hours: 540, delta: -3 },
-  { month: '6월', hours: 524, delta: -3 },
-  { month: '7월', hours: 538, delta: 3 },
-  { month: '8월', hours: 587, delta: 9 },
-  { month: '9월', hours: 663, delta: 13 },
-  { month: '10월', hours: 744, delta: 12 },
-  { month: '11월', hours: 806, delta: 8 },
-  { month: '12월', hours: 834, delta: 3 }
+  { month: '11월', hours: 612, delta: 5 },
+  { month: '12월', hours: 706, delta: 15 },
+  { month: '1월', hours: 668, delta: -5 },
+  { month: '2월', hours: 742, delta: 11 },
+  { month: '3월', hours: 689, delta: -7 },
+  { month: '4월', hours: 801, delta: 16 },
+  { month: '5월', hours: 756, delta: -6 },
+  { month: '6월', hours: 834, delta: 3 }
 ];
 
 export const events = [

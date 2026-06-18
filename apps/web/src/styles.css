@@ -173,28 +173,44 @@ select {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1.25rem;
+  gap: 2rem;
   min-width: 0;
 }
 
 .partner-logo-card {
   display: grid;
-  min-width: 12.5rem;
-  height: 3.55rem;
+  min-width: 13.5rem;
+  height: 3.8rem;
   place-items: center;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.96);
-  padding: 0.55rem 1.05rem;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42), 0 14px 34px rgba(2, 6, 23, 0.24);
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
 }
 
 .partner-logo-card img {
   display: block;
   max-width: 14rem;
   width: 100%;
-  max-height: 2.45rem;
+  max-height: 2.7rem;
   object-fit: contain;
+  filter: drop-shadow(0 5px 12px rgba(2, 6, 23, 0.34));
+}
+
+.partner-logo-card-hanbat img {
+  max-width: 15.5rem;
+  max-height: 3.1rem;
+}
+
+.partner-logo-card-daejeon img {
+  max-width: 4rem;
+  max-height: 3.3rem;
+}
+
+.partner-logo-card-djtp img {
+  max-width: 10.8rem;
+  max-height: 3.15rem;
 }
 
 .app-shell {
@@ -208,24 +224,22 @@ select {
   min-width: 0;
 }
 
-.app-sidebar {
+.sidebar-stack {
   position: sticky;
   top: 5.6rem;
   z-index: 10;
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 1rem;
   max-height: calc(100vh - 7rem);
   overflow: auto;
+}
+
+.app-sidebar {
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(15, 23, 42, 0.84);
   padding: 1rem;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-}
-
-.sidebar-nav-area {
-  min-width: 0;
 }
 
 .sidebar-section-label {
@@ -281,8 +295,36 @@ select {
   color: #ffffff;
 }
 
+.sidebar-admin-block {
+  margin-top: 1.15rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.16);
+  padding-top: 1rem;
+}
+
+.sidebar-admin-block .sidebar-section-label {
+  color: #64748b;
+  font-size: 0.67rem;
+  letter-spacing: 0.04em;
+}
+
+.sidebar-nav-admin {
+  gap: 0.25rem;
+}
+
+.sidebar-nav-item-admin {
+  min-height: 2.6rem;
+  color: #93c5fd;
+  font-size: 0.86rem;
+}
+
+.sidebar-nav-item-admin:hover,
+.sidebar-nav-item-admin.is-active {
+  background: rgba(15, 23, 42, 0.74);
+  border-color: rgba(96, 165, 250, 0.28);
+  color: #bfdbfe;
+}
+
 .visitor-counter-card {
-  margin-top: auto;
   display: grid;
   gap: 0.85rem;
   border-radius: 8px;
@@ -621,6 +663,67 @@ select {
 .realtime-equipment-item.is-idle .realtime-status-dot {
   background: #64748b;
   box-shadow: 0 0 0 5px rgba(100, 116, 139, 0.13);
+}
+
+.usage-trend-card {
+  background:
+    radial-gradient(circle at 82% 8%, rgba(52, 214, 176, 0.09), transparent 34%),
+    #0c1322;
+}
+
+.usage-trend-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.55rem;
+}
+
+.usage-period-toggle {
+  display: flex;
+  gap: 0.2rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.2rem;
+}
+
+.usage-period-toggle button {
+  min-width: 3.1rem;
+  border-radius: 6px;
+  padding: 0.34rem 0.65rem;
+  color: #8b96a8;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.usage-period-toggle button:hover,
+.usage-period-toggle button.is-active {
+  background: #34d6b0;
+  color: #062018;
+}
+
+.usage-trend-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.1rem;
+  margin-bottom: 0.75rem;
+  color: #8b96a8;
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.usage-trend-summary strong {
+  color: #cdd5e1;
+  font-weight: 900;
+}
+
+.usage-trend-summary .is-up {
+  color: #52e0b0;
+}
+
+.usage-trend-summary .is-down {
+  color: #fca5a5;
 }
 
 @keyframes realtimeEquipmentSlide {
@@ -1005,21 +1108,23 @@ select {
   }
 
   .partner-logo-card {
-    min-width: 9.25rem;
+    min-width: 7.2rem;
     height: 3rem;
-    padding-inline: 0.55rem;
   }
 
   .app-shell {
     grid-template-columns: 1fr;
   }
 
-  .app-sidebar {
+  .sidebar-stack {
     position: static;
     display: grid;
     gap: 0.8rem;
     max-height: none;
     overflow: visible;
+  }
+
+  .app-sidebar {
     padding: 0.7rem;
   }
 
@@ -1039,6 +1144,11 @@ select {
     grid-template-columns: 1.25rem auto auto;
     min-height: 2.75rem;
     white-space: nowrap;
+  }
+
+  .sidebar-admin-block {
+    margin-top: 0.6rem;
+    padding-top: 0.6rem;
   }
 
   .visitor-counter-card {
@@ -1096,6 +1206,19 @@ select {
     border-top: 1px solid rgba(255, 255, 255, 0.08);
     padding-left: 0;
     padding-top: 0.75rem;
+  }
+
+  .usage-trend-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .usage-period-toggle {
+    width: 100%;
+  }
+
+  .usage-period-toggle button {
+    flex: 1;
   }
 
   .wafer-core {
