@@ -129,6 +129,33 @@ function isReservationActive(event: ReservationEvent, now = new Date()) {
   return new Date(event.start).getTime() <= currentTime && currentTime < new Date(event.end).getTime();
 }
 
+function toLocalReservationDateTime(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}:00`;
+}
+
+function createRealtimeTestReservation(equipmentItems: EquipmentItem[]): ReservationEvent | null {
+  const testEquipment = equipmentItems[0];
+  if (!testEquipment) return null;
+  const now = new Date();
+  const start = new Date(now.getTime() - 30 * 60 * 1000);
+  const end = new Date(now.getTime() + 90 * 60 * 1000);
+
+  return {
+    id: 'preview-live-test-reservation',
+    title: `${testEquipment.name} TEST 예약`,
+    start: toLocalReservationDateTime(start),
+    end: toLocalReservationDateTime(end),
+    status: 'approved',
+    equipmentId: testEquipment.id,
+    createdBy: 'USER'
+  };
+}
+
 function normalizeEquipment(item: ApiEquipmentItem, index: number): EquipmentItem {
   const name = item.name ?? `Equipment ${index + 1}`;
   const inferredGroup: EquipmentGroup =
@@ -407,7 +434,7 @@ function RealtimeEquipmentStatus({
               <span className="realtime-status-dot" aria-label={isActive ? '가동중' : '대기'} />
               <p>{item.group === 'process' ? 'PROCESS' : 'METROLOGY'}</p>
               <h4>{item.name}</h4>
-              <span>{isActive ? `${activeEvent?.start.slice(11, 16)} - ${activeEvent?.end?.slice(11, 16) ?? '진행중'}` : '현재 예약 없음'}</span>
+              <span>{isActive ? `${formatReservationTime(activeEvent?.start)} - ${formatReservationTime(activeEvent?.end)} 종료` : '현재 예약 없음'}</span>
             </article>
           ))}
         </div>
@@ -1483,13 +1510,15 @@ export function App() {
       return null;
     }
   });
-  const [reservationEvents, setReservationEvents] = useState<ReservationEvent[]>(() =>
-    events.map((event) => ({
+  const [reservationEvents, setReservationEvents] = useState<ReservationEvent[]>(() => {
+    const previewTestReservation = createRealtimeTestReservation(fallbackEquipment);
+    const baseEvents = events.map((event) => ({
       ...event,
       equipmentId: getEventEquipmentId(event, fallbackEquipment),
       createdBy: 'USER'
-    }))
-  );
+    }));
+    return previewTestReservation ? [previewTestReservation, ...baseEvents] : baseEvents;
+  });
 
   function navigate(page: PageKey) {
     setLoading(true);

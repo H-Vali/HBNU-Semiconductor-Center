@@ -308,7 +308,7 @@ select {
   display: flex;
   width: max-content;
   gap: 0.9rem;
-  animation: realtimeEquipmentSlide 44s linear infinite;
+  animation: realtimeEquipmentSlide 72s linear infinite;
 }
 
 .realtime-equipment-track:hover {
