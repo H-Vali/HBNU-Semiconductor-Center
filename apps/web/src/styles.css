@@ -129,9 +129,10 @@ select {
   position: relative;
   overflow: hidden;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(24rem, 0.62fr);
+  grid-template-columns: minmax(0, 1fr) clamp(24rem, 28vw, 31rem);
   align-items: center;
-  gap: 24px;
+  column-gap: 56px;
+  row-gap: 24px;
   background: #0c1322;
   padding: 22px;
 }
@@ -173,9 +174,12 @@ select {
   grid-column: 2;
   grid-row: 1 / span 2;
   align-self: stretch;
+  justify-self: end;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  width: 100%;
+  max-width: 31rem;
   min-height: 13.5rem;
   border-radius: 16px;
   border: 0.5px solid rgba(255, 255, 255, 0.12);
