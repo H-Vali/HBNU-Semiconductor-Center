@@ -521,12 +521,8 @@ function Hero({ onNavigate, equipmentItems }: { onNavigate: (page: PageKey) => v
 
   return (
     <section className="hero-panel relative overflow-hidden">
-      <div className="wafer-label">
-        <span>Cleanroom</span>
-        <strong>ISO 5</strong>
-      </div>
       <div className="hero-intro">
-        <div>
+        <div className="hero-intro-copy">
           <p className="hero-breadcrumb">N-FACILITY · FAB OPERATION · EQUIPMENT RESERVATION</p>
           <h2 className="hero-title">
               <span>국립한밭대학교 창의융합교육센터</span>
@@ -552,6 +548,28 @@ function Hero({ onNavigate, equipmentItems }: { onNavigate: (page: PageKey) => v
               </button>
             );
           })}
+        </div>
+        <div className="hero-user-summary" aria-label="사용자 예약 요약">
+          <div className="hero-user-summary-head">
+            <h3><strong>USER NAME</strong> 님 환영합니다.</h3>
+            <span>Prof. 백근우 Lab</span>
+          </div>
+          <div className="hero-reservation-list">
+            <div className="hero-reservation-row">
+              <time>14:00</time>
+              <strong>FE-SEM</strong>
+              <span>이용 예약</span>
+            </div>
+            <div className="hero-reservation-row">
+              <time>16:30</time>
+              <strong>XRD</strong>
+              <span>이용 예약</span>
+            </div>
+          </div>
+          <div className="hero-user-summary-foot">
+            <span>오늘 이용 예약 2건</span>
+            <button type="button" aria-label="내 예약 전체 보기">전체 보기</button>
+          </div>
         </div>
       </div>
       <div className="hero-metrics-panel">
