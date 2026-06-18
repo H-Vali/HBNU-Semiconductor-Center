@@ -511,11 +511,19 @@ function SidebarNavigation({ activePage, onNavigate }: { activePage: PageKey; on
   );
 }
 
-function Hero({ onNavigate }: { onNavigate: (page: PageKey) => void }) {
+function Hero({ onNavigate, equipmentItems }: { onNavigate: (page: PageKey) => void; equipmentItems: EquipmentItem[] }) {
   return (
-    <section className="hero-panel overflow-hidden rounded-lg border border-white/10 bg-slate-950">
-      <div className="grid min-h-[24rem] gap-6 p-6 lg:grid-cols-[1.1fr_0.9fr] xl:min-h-[30rem] xl:p-8">
-        <div className="flex flex-col justify-between gap-8">
+    <section className="hero-panel relative overflow-hidden rounded-lg border border-white/10 bg-slate-950">
+      <div className="wafer-visual" aria-hidden="true">
+        <div className="wafer-core" />
+        <div className="wafer-grid" />
+      </div>
+      <div className="wafer-label">
+        <span>Cleanroom</span>
+        <strong>ISO 5</strong>
+      </div>
+      <div className="relative grid gap-5 p-6 xl:p-8">
+        <div className="flex flex-col gap-7">
           <div>
             <p className="mb-4 text-base font-extrabold text-cyan-300">N-FACILITY / FAB OPERATION / EQUIPMENT RESERVATION</p>
             <h2 className="hero-title max-w-5xl text-4xl font-extrabold leading-tight text-white lg:text-5xl 2xl:text-6xl">
@@ -542,29 +550,20 @@ function Hero({ onNavigate }: { onNavigate: (page: PageKey) => void }) {
             })}
           </div>
         </div>
-        <div className="relative min-h-[18rem]">
-          <div className="wafer-visual">
-            <div className="wafer-core" />
-            <div className="wafer-grid" />
-            <div className="wafer-label">
-              <span>Cleanroom</span>
-              <strong>ISO 5</strong>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {[
+            { label: 'Lithography', value: '12 lots', tone: 'text-sky-300' },
+            { label: 'Deposition', value: '18 runs', tone: 'text-emerald-300' },
+            { label: 'Etching', value: '9 recipes', tone: 'text-violet-300' },
+            { label: 'Metrology', value: '41 samples', tone: 'text-amber-300' }
+          ].map((item) => (
+            <div key={item.label} className="rounded-md border border-white/10 bg-slate-950/80 p-4 backdrop-blur">
+              <p className={`text-sm font-bold uppercase ${item.tone}`}>{item.label}</p>
+              <p className="mt-1 text-3xl font-extrabold text-white">{item.value}</p>
             </div>
-          </div>
-          <div className="absolute bottom-0 left-0 right-0 grid gap-3 sm:grid-cols-2">
-            {[
-              { label: 'Lithography', value: '12 lots', tone: 'text-sky-300' },
-              { label: 'Deposition', value: '18 runs', tone: 'text-emerald-300' },
-              { label: 'Etching', value: '9 recipes', tone: 'text-violet-300' },
-              { label: 'Metrology', value: '41 samples', tone: 'text-amber-300' }
-            ].map((item) => (
-              <div key={item.label} className="rounded-md border border-white/10 bg-slate-950/80 p-4 backdrop-blur">
-                <p className={`text-sm font-bold uppercase ${item.tone}`}>{item.label}</p>
-                <p className="mt-1 text-3xl font-extrabold text-white">{item.value}</p>
-              </div>
-            ))}
-          </div>
+          ))}
         </div>
+        <StatGrid equipmentItems={equipmentItems} />
       </div>
     </section>
   );
@@ -838,15 +837,17 @@ function EquipmentGateway({
 function Dashboard({
   equipmentItems,
   calendarEvents,
+  onNavigate,
   onOpenEquipment
 }: {
   equipmentItems: EquipmentItem[];
   calendarEvents: ReservationEvent[];
+  onNavigate: (page: PageKey) => void;
   onOpenEquipment: (group: EquipmentGroup) => void;
 }) {
   return (
     <section className="mt-5 grid gap-5">
-      <StatGrid equipmentItems={equipmentItems} />
+      <Hero onNavigate={onNavigate} equipmentItems={equipmentItems} />
       <RealtimeEquipmentStatus equipmentItems={equipmentItems} calendarEvents={calendarEvents} />
       <MonthlyUsageChart equipmentItems={equipmentItems} calendarEvents={calendarEvents} />
       <EquipmentGateway equipmentItems={equipmentItems} onOpen={onOpenEquipment} />
@@ -1850,8 +1851,7 @@ export function App() {
         <main className="app-main">
           {activePage === 'home' && (
             <>
-              <Hero onNavigate={navigate} />
-              <Dashboard equipmentItems={activeEquipmentItems} calendarEvents={reservationEvents} onOpenEquipment={openEquipment} />
+              <Dashboard equipmentItems={activeEquipmentItems} calendarEvents={reservationEvents} onNavigate={navigate} onOpenEquipment={openEquipment} />
             </>
           )}
           {activePage === 'equipment' && (
