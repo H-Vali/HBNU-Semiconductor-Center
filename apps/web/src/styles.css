@@ -270,6 +270,126 @@ select {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
+.realtime-equipment-card {
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 14% 0%, rgba(34, 211, 238, 0.1), transparent 30%),
+    #101114;
+}
+
+.realtime-equipment-viewport {
+  position: relative;
+  overflow: hidden;
+  padding: 0.15rem 0 0.35rem;
+}
+
+.realtime-equipment-viewport::before,
+.realtime-equipment-viewport::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  width: 4rem;
+  pointer-events: none;
+}
+
+.realtime-equipment-viewport::before {
+  left: 0;
+  background: linear-gradient(90deg, #101114, rgba(16, 17, 20, 0));
+}
+
+.realtime-equipment-viewport::after {
+  right: 0;
+  background: linear-gradient(270deg, #101114, rgba(16, 17, 20, 0));
+}
+
+.realtime-equipment-track {
+  display: flex;
+  width: max-content;
+  gap: 0.9rem;
+  animation: realtimeEquipmentSlide 44s linear infinite;
+}
+
+.realtime-equipment-track:hover {
+  animation-play-state: paused;
+}
+
+.realtime-equipment-item {
+  position: relative;
+  min-width: 15.5rem;
+  border: 1px solid rgba(148, 163, 184, 0.17);
+  border-radius: 8px;
+  background: linear-gradient(145deg, rgba(30, 41, 59, 0.92), rgba(15, 23, 42, 0.86));
+  padding: 1rem 1.1rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.realtime-equipment-item:hover {
+  transform: translateY(-4px);
+  border-color: rgba(125, 211, 252, 0.48);
+  box-shadow: 0 16px 34px rgba(8, 13, 27, 0.32);
+}
+
+.realtime-equipment-item p {
+  color: #7dd3fc;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.realtime-equipment-item h4 {
+  margin-top: 0.45rem;
+  padding-right: 1.2rem;
+  color: #ffffff;
+  font-size: 1.05rem;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.realtime-equipment-item > span:last-child {
+  display: block;
+  margin-top: 0.75rem;
+  color: #cbd5e1;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.realtime-status-dot {
+  position: absolute;
+  top: 0.95rem;
+  right: 0.95rem;
+  width: 0.72rem;
+  height: 0.72rem;
+  border-radius: 999px;
+}
+
+.realtime-equipment-item.is-active {
+  border-color: rgba(248, 113, 113, 0.35);
+  background: linear-gradient(145deg, rgba(51, 18, 28, 0.92), rgba(15, 23, 42, 0.9));
+}
+
+.realtime-equipment-item.is-active .realtime-status-dot {
+  background: #ef4444;
+  box-shadow: 0 0 0 6px rgba(239, 68, 68, 0.12), 0 0 18px rgba(239, 68, 68, 0.45);
+  animation: liveReservationPulse 1.25s ease-out infinite;
+}
+
+.realtime-equipment-item.is-idle .realtime-status-dot {
+  background: #64748b;
+  box-shadow: 0 0 0 5px rgba(100, 116, 139, 0.13);
+}
+
+@keyframes realtimeEquipmentSlide {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
 .usage-bar-series .recharts-bar-rectangle path,
 .usage-bar-series .recharts-bar-rectangle rect {
   transform-box: fill-box;

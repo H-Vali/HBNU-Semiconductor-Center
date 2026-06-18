@@ -5,10 +5,7 @@ import interactionPlugin from '@fullcalendar/interaction';
 import {
   Area,
   AreaChart,
-  Bar,
-  BarChart,
   CartesianGrid,
-  Cell,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -372,47 +369,47 @@ function StatGrid({ equipmentItems }: { equipmentItems: EquipmentItem[] }) {
   );
 }
 
-function EquipmentUsageChart({ equipmentItems }: { equipmentItems: EquipmentItem[] }) {
-  const data = equipmentItems.map((item) => ({ label: item.name.replace('Semiconductor ', ''), value: item.usageHours, group: item.group }));
-  const maxValue = Math.max(...data.map((entry) => entry.value));
-  const minValue = Math.min(...data.map((entry) => entry.value));
+function RealtimeEquipmentStatus({
+  equipmentItems,
+  calendarEvents
+}: {
+  equipmentItems: EquipmentItem[];
+  calendarEvents: ReservationEvent[];
+}) {
+  const statusItems = equipmentItems.map((item) => {
+    const activeEvent = calendarEvents.find((event) => isEventForEquipment(event, item, equipmentItems) && isReservationActive(event));
+    return {
+      item,
+      activeEvent,
+      isActive: Boolean(activeEvent)
+    };
+  });
+  const activeCount = statusItems.filter((entry) => entry.isActive).length;
+  const idleCount = Math.max(statusItems.length - activeCount, 0);
+  const sliderItems = statusItems.length > 0 ? [...statusItems, ...statusItems] : [];
 
   return (
-    <div className="chart-card rounded-lg border border-white/10 bg-[#101114] p-5">
+    <div className="chart-card realtime-equipment-card rounded-lg border border-white/10 bg-[#101114] p-5">
       <div className="mb-4 flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-bold uppercase text-blue-300">Realtime Analytics</p>
-          <h3 className="mt-1 text-2xl font-extrabold text-white">장비별 사용량</h3>
+          <h3 className="mt-1 text-2xl font-extrabold text-white">REALTIME 장비 구동 현황</h3>
         </div>
-        <div className="flex gap-2 text-sm font-bold text-slate-300">
-          <span className="rounded-full bg-white/10 px-3 py-1">24H</span>
-          <span className="rounded-full px-3 py-1">1W</span>
-          <span className="rounded-full px-3 py-1">1M</span>
+        <div className="flex flex-wrap justify-end gap-2 text-sm font-bold text-slate-300">
+          <span className="rounded-full bg-red-500/15 px-3 py-1 text-red-200">가동중 {activeCount}</span>
+          <span className="rounded-full bg-white/10 px-3 py-1 text-slate-300">대기 {idleCount}</span>
         </div>
       </div>
-      <div className="h-[24rem] 2xl:h-[30rem]">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 22, right: 22, left: 0, bottom: 0 }}>
-            <CartesianGrid stroke="rgba(255,255,255,.08)" vertical={false} />
-            <XAxis dataKey="label" stroke="#a8adb8" tickLine={false} axisLine={false} interval="preserveStartEnd" />
-            <YAxis stroke="#a8adb8" tickLine={false} axisLine={false} tickFormatter={(value) => `${value}h`} width={54} />
-            <Tooltip cursor={false} contentStyle={{ background: '#050607', border: '1px solid rgba(255,255,255,.12)', borderRadius: '8px', color: '#fff' }} labelStyle={{ color: '#aeb6c2' }} formatter={(value) => [`${value}h`, '사용시간']} />
-            <Bar className="usage-bar-series" dataKey="value" radius={[8, 8, 2, 2]}>
-              {data.map((entry) => (
-                <Cell key={entry.label} className="usage-bar-cell" fill={entry.group === 'process' ? '#22d3ee' : '#a78bfa'} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-400">
-        <div className="flex gap-3">
-          <span>Low: {minValue}h</span>
-          <span>High: {maxValue}h</span>
-        </div>
-        <div className="flex gap-3">
-          <span className="inline-flex items-center gap-2 text-white"><span className="h-3 w-3 rounded-sm bg-cyan-300" /> 공정</span>
-          <span className="inline-flex items-center gap-2"><span className="h-3 w-3 rounded-sm bg-violet-400" /> 측정 및 분석</span>
+      <div className="realtime-equipment-viewport" aria-label="REALTIME 장비 구동 현황">
+        <div className="realtime-equipment-track">
+          {sliderItems.map(({ item, activeEvent, isActive }, index) => (
+            <article key={`${item.id}-${index}`} className={`realtime-equipment-item ${isActive ? 'is-active' : 'is-idle'}`}>
+              <span className="realtime-status-dot" aria-label={isActive ? '가동중' : '대기'} />
+              <p>{item.group === 'process' ? 'PROCESS' : 'METROLOGY'}</p>
+              <h4>{item.name}</h4>
+              <span>{isActive ? `${activeEvent?.start.slice(11, 16)} - ${activeEvent?.end?.slice(11, 16) ?? '진행중'}` : '현재 예약 없음'}</span>
+            </article>
+          ))}
         </div>
       </div>
     </div>
@@ -522,11 +519,19 @@ function EquipmentGateway({
   );
 }
 
-function Dashboard({ equipmentItems, onOpenEquipment }: { equipmentItems: EquipmentItem[]; onOpenEquipment: (group: EquipmentGroup) => void }) {
+function Dashboard({
+  equipmentItems,
+  calendarEvents,
+  onOpenEquipment
+}: {
+  equipmentItems: EquipmentItem[];
+  calendarEvents: ReservationEvent[];
+  onOpenEquipment: (group: EquipmentGroup) => void;
+}) {
   return (
     <section className="mt-5 grid gap-5">
       <StatGrid equipmentItems={equipmentItems} />
-      <EquipmentUsageChart equipmentItems={equipmentItems} />
+      <RealtimeEquipmentStatus equipmentItems={equipmentItems} calendarEvents={calendarEvents} />
       <MonthlyUsageChart />
       <EquipmentGateway equipmentItems={equipmentItems} onOpen={onOpenEquipment} />
     </section>
@@ -1526,7 +1531,7 @@ export function App() {
         {activePage === 'home' && (
           <>
             <Hero onNavigate={navigate} />
-            <Dashboard equipmentItems={activeEquipmentItems} onOpenEquipment={openEquipment} />
+            <Dashboard equipmentItems={activeEquipmentItems} calendarEvents={reservationEvents} onOpenEquipment={openEquipment} />
           </>
         )}
         {activePage === 'equipment' && (
