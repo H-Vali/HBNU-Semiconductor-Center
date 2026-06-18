@@ -2142,7 +2142,7 @@ function MyPage({
 function ConsumablesPage({
   month,
   consumables,
-  saveFeedbackVisible,
+  saveFeedbackPhase,
   onMonthChange,
   onUpdateConsumable,
   onAddConsumable,
@@ -2151,7 +2151,7 @@ function ConsumablesPage({
 }: {
   month: string;
   consumables: ConsumableItem[];
-  saveFeedbackVisible: boolean;
+  saveFeedbackPhase: 'idle' | 'feedback' | 'returning';
   onMonthChange: (month: string) => void;
   onUpdateConsumable: (id: string, patch: Partial<ConsumableItem>) => void;
   onAddConsumable: () => void;
@@ -2234,8 +2234,13 @@ function ConsumablesPage({
         </div>
         <div className="consumables-summary-action">
           <span>데이터 저장</span>
-          <button type="button" className={`is-primary ${saveFeedbackVisible ? 'is-save-feedback' : ''}`} onClick={onSave} aria-label="소모품 데이터 저장">
-            <CheckCircle2 size={18} /> {saveFeedbackVisible ? '저장완료!' : '저장'}
+          <button
+            type="button"
+            className={`is-primary ${saveFeedbackPhase === 'feedback' ? 'is-save-feedback' : ''} ${saveFeedbackPhase === 'returning' ? 'is-save-returning' : ''}`}
+            onClick={onSave}
+            aria-label="소모품 데이터 저장"
+          >
+            <CheckCircle2 size={18} /> {saveFeedbackPhase === 'feedback' ? '저장완료!' : '저장'}
           </button>
         </div>
         <div className="consumables-summary-action">
@@ -2334,8 +2339,8 @@ export function App() {
     localStorage.getItem('hbnu-consumables-updated-at') ?? new Date().toISOString()
   ));
   const [hasUnsavedConsumables, setHasUnsavedConsumables] = useState(false);
-  const [saveFeedbackVisible, setSaveFeedbackVisible] = useState(false);
-  const saveFeedbackTimer = useRef<number | null>(null);
+  const [saveFeedbackPhase, setSaveFeedbackPhase] = useState<'idle' | 'feedback' | 'returning'>('idle');
+  const saveFeedbackTimers = useRef<number[]>([]);
   const [sessionRole, setSessionRole] = useState<Role | null>(() => {
     const stored = localStorage.getItem('hbnu-session-user');
     if (!stored) return null;
@@ -2395,9 +2400,15 @@ export function App() {
     ));
   }
 
+  function clearSaveFeedbackTimers() {
+    saveFeedbackTimers.current.forEach((timer) => window.clearTimeout(timer));
+    saveFeedbackTimers.current = [];
+  }
+
   function updateConsumable(id: string, patch: Partial<ConsumableItem>) {
     setHasUnsavedConsumables(true);
-    setSaveFeedbackVisible(false);
+    clearSaveFeedbackTimers();
+    setSaveFeedbackPhase('idle');
     setMonthlyConsumables((current) => ({
       ...current,
       [selectedConsumableMonth]: (current[selectedConsumableMonth] ?? cloneConsumables()).map((item) => (
@@ -2408,7 +2419,8 @@ export function App() {
 
   function addConsumable() {
     setHasUnsavedConsumables(true);
-    setSaveFeedbackVisible(false);
+    clearSaveFeedbackTimers();
+    setSaveFeedbackPhase('idle');
     setMonthlyConsumables((current) => {
       const rows = current[selectedConsumableMonth] ?? cloneConsumables();
       return {
@@ -2438,7 +2450,8 @@ export function App() {
       [month]: rows
     }));
     setHasUnsavedConsumables(true);
-    setSaveFeedbackVisible(false);
+    clearSaveFeedbackTimers();
+    setSaveFeedbackPhase('idle');
   }
 
   function saveConsumables() {
@@ -2447,15 +2460,16 @@ export function App() {
     localStorage.setItem('hbnu-consumables-updated-at', savedAt);
     setConsumablesUpdatedAt(savedAt);
     setHasUnsavedConsumables(false);
-    if (saveFeedbackTimer.current) {
-      window.clearTimeout(saveFeedbackTimer.current);
-    }
-    setSaveFeedbackVisible(false);
-    window.requestAnimationFrame(() => setSaveFeedbackVisible(true));
-    saveFeedbackTimer.current = window.setTimeout(() => {
-      setSaveFeedbackVisible(false);
-      saveFeedbackTimer.current = null;
-    }, 1400);
+    clearSaveFeedbackTimers();
+    setSaveFeedbackPhase('idle');
+    window.requestAnimationFrame(() => setSaveFeedbackPhase('feedback'));
+    saveFeedbackTimers.current = [
+      window.setTimeout(() => setSaveFeedbackPhase('returning'), 2600),
+      window.setTimeout(() => {
+        setSaveFeedbackPhase('idle');
+        saveFeedbackTimers.current = [];
+      }, 3500)
+    ];
   }
 
   const activeEquipmentItems = equipmentItems.filter((item) => !deletedEquipmentIds.includes(item.id));
@@ -2507,7 +2521,7 @@ export function App() {
             <ConsumablesPage
               month={selectedConsumableMonth}
               consumables={activeConsumables}
-              saveFeedbackVisible={saveFeedbackVisible}
+              saveFeedbackPhase={saveFeedbackPhase}
               onMonthChange={changeConsumableMonth}
               onUpdateConsumable={updateConsumable}
               onAddConsumable={addConsumable}

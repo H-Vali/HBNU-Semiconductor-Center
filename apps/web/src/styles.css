@@ -2539,21 +2539,40 @@ select {
 }
 
 .consumables-summary-action button.is-save-feedback {
-  animation: consumables-save-feedback 1.4s ease forwards;
+  animation: consumables-save-feedback 2.6s ease forwards;
+}
+
+.consumables-summary-action button.is-save-returning {
+  animation: consumables-save-returning 0.9s ease forwards;
 }
 
 @keyframes consumables-save-feedback {
   0% {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  31% {
     opacity: 1;
     transform: translateY(0);
   }
-  72% {
+  69% {
     opacity: 1;
     transform: translateY(0);
   }
   100% {
     opacity: 0;
     transform: translateY(-3px);
+  }
+}
+
+@keyframes consumables-save-returning {
+  0% {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
