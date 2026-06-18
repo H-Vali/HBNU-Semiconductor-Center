@@ -829,13 +829,15 @@ function ReservationPage({
   onAddReservation: (event: ReservationEvent) => void;
   onDeleteReservation: (reservationId: string) => void;
 }) {
-  const [selectedEquipmentId, setSelectedEquipmentId] = useState(equipmentItems[0]?.id ?? '');
+  const allEquipmentId = 'all-equipment';
+  const [selectedEquipmentId, setSelectedEquipmentId] = useState(allEquipmentId);
   const [showReservationModal, setShowReservationModal] = useState(false);
   const [reservationDate, setReservationDate] = useState(getSeoulDateKey());
   const [searchTerm, setSearchTerm] = useState('');
   const [groupFilter, setGroupFilter] = useState<'all' | EquipmentGroup>('all');
-  const selectedEquipment = equipmentItems.find((item) => item.id === selectedEquipmentId) ?? equipmentItems[0];
+  const selectedEquipment = selectedEquipmentId === allEquipmentId ? undefined : equipmentItems.find((item) => item.id === selectedEquipmentId);
   const todayKey = getSeoulDateKey();
+  const isAllLive = calendarEvents.some((event) => isReservationActive(event));
   const filteredEquipmentItems = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
     return equipmentItems.filter((item) => {
@@ -893,6 +895,17 @@ function ReservationPage({
           <option value="metrology">계측 및 분석장비</option>
         </select>
         <div className="reservation-equipment-list grid max-h-[34rem] gap-2 overflow-y-auto overflow-x-hidden pr-1">
+          <button
+            className={`reservation-equipment-button is-all-filter ${selectedEquipmentId === allEquipmentId ? 'is-selected' : ''} ${isAllLive ? 'is-live' : ''}`}
+            onClick={() => setSelectedEquipmentId(allEquipmentId)}
+          >
+            <span className="reservation-equipment-name">
+              {isAllLive && <span className="live-equipment-dot" aria-label="사용중" />}
+              <span className="all-equipment-badge">ALL</span>
+              <span className="min-w-0 truncate">전체 예약현황</span>
+            </span>
+            <span className="equipment-type-chip is-all">전체</span>
+          </button>
           {filteredEquipmentItems.map((item, index) => {
             const isSelected = item.id === selectedEquipmentId || (!selectedEquipmentId && index === 0);
             const isProcess = item.group === 'process';
@@ -922,7 +935,7 @@ function ReservationPage({
       </div>
       <div className="rounded-lg border border-white/10 bg-surface/85 p-5">
         <SectionTitle
-          title={`${selectedEquipment?.name ?? 'FE-SEM'} 장비별 예약 캘린더`}
+          title={selectedEquipment ? `${selectedEquipment.name} \uC7A5\uBE44\uBCC4 \uC608\uC57D \uCE98\uB9B0\uB354` : '\uC804\uCCB4 \uC7A5\uBE44 \uC608\uC57D\uD604\uD669 \uCE98\uB9B0\uB354'}
           eyebrow="Equipment Calendar"
           action={
             <div className="flex gap-2">
@@ -956,7 +969,7 @@ function ReservationPage({
         <ReservationModalV2
           equipmentItems={equipmentItems}
           calendarEvents={calendarEvents}
-          selectedEquipmentId={selectedEquipment?.id ?? ''}
+          selectedEquipmentId={selectedEquipment?.id ?? equipmentItems[0]?.id ?? ''}
           initialDate={reservationDate}
           onClose={() => setShowReservationModal(false)}
           onConfirm={confirmReservation}
