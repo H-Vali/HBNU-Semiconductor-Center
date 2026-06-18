@@ -451,6 +451,53 @@ function downloadConsumablesExcel(month: string, rows: ConsumableItem[]) {
   URL.revokeObjectURL(url);
 }
 
+function parseConsumablesUpload(text: string) {
+  const normalizeNumber = (value: string) => Number(String(value).replace(/,/g, '').trim()) || 0;
+  const readRowsFromHtml = () => {
+    const documentHtml = new DOMParser().parseFromString(text, 'text/html');
+    return Array.from(documentHtml.querySelectorAll('tr')).map((row) => (
+      Array.from(row.querySelectorAll('th,td')).map((cell) => cell.textContent?.trim() ?? '')
+    )).filter((row) => row.length > 0);
+  };
+  const readRowsFromCsv = () => text
+    .split(/\r?\n/)
+    .map((line) => line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map((cell) => cell.replace(/^"|"$/g, '').replace(/""/g, '"').trim()))
+    .filter((row) => row.some(Boolean));
+  const rows = text.includes('<table') || text.includes('<tr') ? readRowsFromHtml() : readRowsFromCsv();
+  const [headers = [], ...body] = rows;
+  const indexOf = (label: string) => headers.findIndex((header) => header === label);
+  const indexes = {
+    month: indexOf('월'),
+    category: indexOf('분류'),
+    name: indexOf('품명'),
+    unit: indexOf('단위/비고'),
+    monthStart: indexOf('월초재고'),
+    current: indexOf('현재고'),
+    minimum: indexOf('최소기준'),
+    note: indexOf('메모')
+  };
+
+  if (indexes.category < 0 || indexes.name < 0 || indexes.current < 0) {
+    throw new Error('소모품 엑셀 업로드 서식을 인식할 수 없습니다.');
+  }
+
+  const importedMonth = body.find((row) => row[indexes.month])?.[indexes.month] ?? '';
+  const items = body
+    .filter((row) => row[indexes.name])
+    .map((row, index) => ({
+      id: `uploaded-supply-${Date.now()}-${index}`,
+      category: row[indexes.category] || '미분류',
+      name: row[indexes.name] || '품목명 없음',
+      unit: row[indexes.unit] || '',
+      monthStart: normalizeNumber(row[indexes.monthStart]),
+      current: normalizeNumber(row[indexes.current]),
+      minimum: normalizeNumber(row[indexes.minimum]),
+      note: row[indexes.note] || ''
+    }));
+
+  return { month: importedMonth.match(/^\d{4}-\d{2}$/) ? importedMonth : '', items };
+}
+
 function SectionTitle({ title, eyebrow, action }: { title: string; eyebrow?: string; action?: string | ReactNode }) {
   return (
     <div className="mb-5 flex items-center justify-between gap-3">
@@ -2099,6 +2146,7 @@ function ConsumablesPage({
   onMonthChange,
   onUpdateConsumable,
   onAddConsumable,
+  onImportConsumables,
   onSave
 }: {
   month: string;
@@ -2107,8 +2155,10 @@ function ConsumablesPage({
   onMonthChange: (month: string) => void;
   onUpdateConsumable: (id: string, patch: Partial<ConsumableItem>) => void;
   onAddConsumable: () => void;
+  onImportConsumables: (month: string, rows: ConsumableItem[]) => void;
   onSave: () => void;
 }) {
+  const uploadInputRef = useRef<HTMLInputElement | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('전체');
   const [statusFilter, setStatusFilter] = useState('전체');
@@ -2125,10 +2175,26 @@ function ConsumablesPage({
   ), [categoryFilter, consumables, searchTerm, statusFilter]);
   const shortageCount = consumables.filter((item) => getConsumableStatus(item).tone === 'danger').length;
   const warningCount = consumables.filter((item) => getConsumableStatus(item).tone === 'warning').length;
-  const totalUsed = consumables.reduce((sum, item) => sum + Math.max(item.monthStart - item.current, 0), 0);
 
   function updateNumber(id: string, key: 'monthStart' | 'current' | 'minimum', value: string) {
     onUpdateConsumable(id, { [key]: Number(value) || 0 });
+  }
+
+  function handleConsumablesUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const result = parseConsumablesUpload(String(reader.result ?? ''));
+        onImportConsumables(result.month || month, result.items);
+      } catch (error) {
+        window.alert(error instanceof Error ? error.message : '소모품 엑셀 업로드에 실패했습니다.');
+      } finally {
+        event.target.value = '';
+      }
+    };
+    reader.readAsText(file, 'utf-8');
   }
 
   return (
@@ -2140,18 +2206,12 @@ function ConsumablesPage({
           <span>첨부 엑셀의 월별 재고 흐름을 기준으로 품목을 편집하고 월 단위 파일로 저장합니다.</span>
         </div>
         <div className="consumables-actions">
-          <label>
-            관리 월
-            <input type="month" value={month} onChange={(event) => onMonthChange(event.target.value)} aria-label="소모품 관리 월 선택" />
-          </label>
           <button type="button" onClick={() => downloadConsumablesExcel(month, consumables)} aria-label="소모품 현황 엑셀 다운로드">
             <Download size={17} /> Excel 다운로드
           </button>
-          <button type="button" className="is-primary" onClick={onSave} aria-label="소모품 데이터 저장">
-            <CheckCircle2 size={17} /> 저장{hasUnsavedChanges ? ' 필요' : ' 완료'}
-          </button>
-          <button type="button" onClick={onAddConsumable} aria-label="소모품 신규 품목 추가">
-            <Plus size={17} /> 품목 추가
+          <input ref={uploadInputRef} type="file" accept=".xls,.html,.csv,.txt" onChange={handleConsumablesUpload} aria-label="소모품 엑셀 업로드 파일 선택" hidden />
+          <button type="button" onClick={() => uploadInputRef.current?.click()} aria-label="소모품 엑셀 업로드">
+            <UploadCloud size={17} /> Excel 업로드
           </button>
         </div>
       </div>
@@ -2172,10 +2232,19 @@ function ConsumablesPage({
           <strong>{warningCount}</strong>
           <em>기준 150% 이하</em>
         </div>
-        <div>
-          <span>월 사용량</span>
-          <strong>{totalUsed.toLocaleString()}</strong>
-          <em>tracked units</em>
+        <div className="consumables-summary-action">
+          <span>데이터 저장</span>
+          <button type="button" className="is-primary" onClick={onSave} aria-label="소모품 데이터 저장">
+            <CheckCircle2 size={18} /> 저장{hasUnsavedChanges ? ' 필요' : ' 완료'}
+          </button>
+          <em>{hasUnsavedChanges ? '변경사항 있음' : '최신 상태'}</em>
+        </div>
+        <div className="consumables-summary-action">
+          <span>품목 관리</span>
+          <button type="button" onClick={onAddConsumable} aria-label="소모품 신규 품목 추가">
+            <Plus size={18} /> 품목 추가
+          </button>
+          <em>신규 행 생성</em>
         </div>
       </div>
 
@@ -2194,6 +2263,10 @@ function ConsumablesPage({
             <option key={status} value={status}>{status}</option>
           ))}
         </select>
+        <label className="consumables-month-control">
+          관리 월
+          <input type="month" value={month} onChange={(event) => onMonthChange(event.target.value)} aria-label="소모품 관리 월 선택" />
+        </label>
       </div>
 
       <div className="consumables-table-wrap">
@@ -2356,6 +2429,16 @@ export function App() {
     });
   }
 
+  function importConsumables(month: string, rows: ConsumableItem[]) {
+    if (rows.length === 0) return;
+    setSelectedConsumableMonth(month);
+    setMonthlyConsumables((current) => ({
+      ...current,
+      [month]: rows
+    }));
+    setHasUnsavedConsumables(true);
+  }
+
   function saveConsumables() {
     const savedAt = new Date().toISOString();
     localStorage.setItem('hbnu-consumables-monthly-data', JSON.stringify(monthlyConsumables));
@@ -2417,6 +2500,7 @@ export function App() {
               onMonthChange={changeConsumableMonth}
               onUpdateConsumable={updateConsumable}
               onAddConsumable={addConsumable}
+              onImportConsumables={importConsumables}
               onSave={saveConsumables}
             />
           )}
