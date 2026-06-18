@@ -302,14 +302,16 @@ function InstitutionHeader({ onNavigate, sessionRole }: { onNavigate: (page: Pag
 }
 
 function PartnerLogoStrip() {
+  const baseUrl = ((import.meta as ImportMeta & { env?: Record<string, string> }).env?.BASE_URL) ?? '/';
+  const assetBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
   const partners = [
-    { name: '대전광역시', src: '/partners/daejeon-metropolitan-city.svg' },
-    { name: '대전테크노파크', src: '/partners/daejeon-technopark.svg' }
+    { name: '국립한밭대학교', src: `${assetBase}partners/hanbat-national-university.svg` },
+    { name: '대전광역시', src: `${assetBase}partners/daejeon-metropolitan-city.svg` },
+    { name: '대전테크노파크', src: `${assetBase}partners/daejeon-technopark.svg` }
   ];
 
   return (
     <div className="partner-logo-strip" aria-label="협업 기관">
-      <span>협업 기관</span>
       <div className="partner-logo-list">
         {partners.map((partner) => (
           <div key={partner.name} className="partner-logo-card">
@@ -321,27 +323,94 @@ function PartnerLogoStrip() {
   );
 }
 
+function useVisitorStats() {
+  const [visitorStats, setVisitorStats] = useState({ today: 184, total: 12840 });
+
+  useEffect(() => {
+    const todayKey = getSeoulDateKey();
+    const storageKey = 'hbnu-preview-visitor-stats';
+    const sessionKey = `hbnu-preview-visitor-session-${todayKey}`;
+    const baseToday = 184;
+    const baseTotal = 12840;
+
+    try {
+      const stored = localStorage.getItem(storageKey);
+      const parsed = stored ? JSON.parse(stored) : null;
+      let next = {
+        date: todayKey,
+        todayExtra: 0,
+        totalExtra: Number(parsed?.totalExtra ?? 0)
+      };
+
+      if (parsed?.date === todayKey) {
+        next = {
+          date: todayKey,
+          todayExtra: Number(parsed.todayExtra ?? 0),
+          totalExtra: Number(parsed.totalExtra ?? 0)
+        };
+      }
+
+      if (!sessionStorage.getItem(sessionKey)) {
+        next = {
+          ...next,
+          todayExtra: next.todayExtra + 1,
+          totalExtra: next.totalExtra + 1
+        };
+        sessionStorage.setItem(sessionKey, '1');
+        localStorage.setItem(storageKey, JSON.stringify(next));
+      }
+
+      setVisitorStats({
+        today: baseToday + next.todayExtra,
+        total: baseTotal + next.totalExtra
+      });
+    } catch {
+      setVisitorStats({ today: baseToday, total: baseTotal });
+    }
+  }, []);
+
+  return visitorStats;
+}
+
 function SidebarNavigation({ activePage, onNavigate }: { activePage: PageKey; onNavigate: (page: PageKey) => void }) {
+  const visitorStats = useVisitorStats();
+
   return (
     <aside className="app-sidebar" aria-label="주요 메뉴">
-      <div className="sidebar-section-label">Navigation</div>
-      <nav className="sidebar-nav">
-        {menu.map((item) => {
-          const Icon = item.icon;
-          const selected = activePage === item.page;
-          return (
-            <button
-              key={`${item.page}-${item.label}`}
-              className={`sidebar-nav-item ${selected ? 'is-active' : ''}`}
-              onClick={() => onNavigate(item.page)}
-            >
-              <Icon size={18} />
-              <span>{item.label}</span>
-              {item.admin && <em>ADMIN</em>}
-            </button>
-          );
-        })}
-      </nav>
+      <div className="sidebar-nav-area">
+        <div className="sidebar-section-label">Navigation</div>
+        <nav className="sidebar-nav">
+          {menu.map((item) => {
+            const Icon = item.icon;
+            const selected = activePage === item.page;
+            return (
+              <button
+                key={`${item.page}-${item.label}`}
+                className={`sidebar-nav-item ${selected ? 'is-active' : ''}`}
+                onClick={() => onNavigate(item.page)}
+              >
+                <Icon size={18} />
+                <span>{item.label}</span>
+                {item.admin && <em>ADMIN</em>}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+      <div className="visitor-counter-card" aria-label="방문자 통계">
+        <div className="visitor-counter-head">
+          <Gauge size={18} />
+          <span>Visitor</span>
+        </div>
+        <div className="visitor-counter-row">
+          <span>일 방문자</span>
+          <strong>{visitorStats.today.toLocaleString('ko-KR')}</strong>
+        </div>
+        <div className="visitor-counter-row">
+          <span>토탈 방문자</span>
+          <strong>{visitorStats.total.toLocaleString('ko-KR')}</strong>
+        </div>
+      </div>
     </aside>
   );
 }
