@@ -50,6 +50,8 @@ type ReservationEvent = {
   start: string;
   end?: string;
   status?: string;
+  equipmentId?: string;
+  createdBy?: string;
 };
 
 const apiUrl = ((import.meta as ImportMeta & { env?: Record<string, string> }).env?.VITE_API_URL) ?? 'http://localhost:4000';
@@ -106,6 +108,29 @@ function formatReservationTime(value?: string) {
   if (!value) return '';
   const [, time = ''] = value.split('T');
   return time.slice(0, 5);
+}
+
+function toReservationDateTime(date: string, time: string) {
+  return `${date}T${time}:00`;
+}
+
+function reservationOverlaps(startA: string, endA = startA, startB: string, endB = startB) {
+  return new Date(startA).getTime() < new Date(endB).getTime() && new Date(startB).getTime() < new Date(endA).getTime();
+}
+
+function getEventEquipmentId(event: ReservationEvent, equipmentItems: EquipmentItem[]) {
+  return event.equipmentId ?? equipmentItems.find((item) => event.title.includes(item.name))?.id ?? '';
+}
+
+function isEventForEquipment(event: ReservationEvent, equipment: EquipmentItem | undefined, equipmentItems: EquipmentItem[]) {
+  if (!equipment) return true;
+  return getEventEquipmentId(event, equipmentItems) === equipment.id || event.title.includes(equipment.name);
+}
+
+function isReservationActive(event: ReservationEvent, now = new Date()) {
+  if (!event.end) return false;
+  const currentTime = now.getTime();
+  return new Date(event.start).getTime() <= currentTime && currentTime < new Date(event.end).getTime();
 }
 
 function normalizeEquipment(item: ApiEquipmentItem, index: number): EquipmentItem {
@@ -791,9 +816,20 @@ function SeoulClock() {
   );
 }
 
-function ReservationPage({ equipmentItems }: { equipmentItems: EquipmentItem[] }) {
+function ReservationPage({
+  equipmentItems,
+  calendarEvents,
+  sessionRole,
+  onAddReservation,
+  onDeleteReservation
+}: {
+  equipmentItems: EquipmentItem[];
+  calendarEvents: ReservationEvent[];
+  sessionRole: Role | null;
+  onAddReservation: (event: ReservationEvent) => void;
+  onDeleteReservation: (reservationId: string) => void;
+}) {
   const [selectedEquipmentId, setSelectedEquipmentId] = useState(equipmentItems[0]?.id ?? '');
-  const [calendarEvents, setCalendarEvents] = useState<ReservationEvent[]>(events);
   const [showReservationModal, setShowReservationModal] = useState(false);
   const [reservationDate, setReservationDate] = useState(getSeoulDateKey());
   const [searchTerm, setSearchTerm] = useState('');
@@ -814,20 +850,18 @@ function ReservationPage({ equipmentItems }: { equipmentItems: EquipmentItem[] }
     if (!equipment) return;
 
     const purpose = form.purpose.trim() ? ` - ${form.purpose.trim()}` : '';
-    setCalendarEvents((current) => [
-      ...current,
-      {
-        id: `reservation-${Date.now()}`,
-        title: `${equipment.name} 예약${purpose}`,
-        start: `${form.date}T${form.startTime}:00`,
-        end: `${form.date}T${form.endTime}:00`,
-        status: 'pending'
-      }
-    ]);
+    onAddReservation({
+      id: `reservation-${Date.now()}`,
+      title: `${equipment.name} 예약${purpose}`,
+      start: toReservationDateTime(form.date, form.startTime),
+      end: toReservationDateTime(form.date, form.endTime),
+      status: sessionRole === 'ADMIN' ? 'approved' : 'pending',
+      equipmentId: equipment.id,
+      createdBy: sessionRole === 'ADMIN' ? 'ADMIN' : 'USER'
+    });
     setSelectedEquipmentId(equipment.id);
     setShowReservationModal(false);
   }
-
   function openReservation(date = getSeoulDateKey()) {
     setReservationDate(date);
     setShowReservationModal(true);
@@ -910,7 +944,8 @@ function ReservationPage({ equipmentItems }: { equipmentItems: EquipmentItem[] }
           height="auto"
           dayCellClassNames={(arg) => (getSeoulDateKey(arg.date) === todayKey ? ['seoul-today'] : [])}
           dateClick={(arg) => openReservation(arg.dateStr)}
-          events={calendarEvents.filter((event) => !selectedEquipment || event.title.includes(selectedEquipment.name))}
+          eventClassNames={(arg) => (arg.event.start && arg.event.end && arg.event.start.getTime() <= Date.now() && Date.now() < arg.event.end.getTime() ? ['is-live-event'] : [])}
+          events={calendarEvents.filter((event) => isEventForEquipment(event, selectedEquipment, equipmentItems))}
         />
       </div>
       {showReservationModal && (
@@ -921,6 +956,7 @@ function ReservationPage({ equipmentItems }: { equipmentItems: EquipmentItem[] }
           initialDate={reservationDate}
           onClose={() => setShowReservationModal(false)}
           onConfirm={confirmReservation}
+          onDeleteReservation={sessionRole === 'ADMIN' ? onDeleteReservation : undefined}
         />
       )}
     </section>
@@ -1022,7 +1058,8 @@ function ReservationModalV2({
   selectedEquipmentId,
   initialDate,
   onClose,
-  onConfirm
+  onConfirm,
+  onDeleteReservation
 }: {
   equipmentItems: EquipmentItem[];
   calendarEvents: ReservationEvent[];
@@ -1030,6 +1067,7 @@ function ReservationModalV2({
   initialDate: string;
   onClose: () => void;
   onConfirm: (form: { equipmentId: string; date: string; startTime: string; endTime: string; purpose: string }) => void;
+  onDeleteReservation?: (reservationId: string) => void;
 }) {
   const [form, setForm] = useState({
     equipmentId: selectedEquipmentId || equipmentItems[0]?.id || '',
@@ -1038,13 +1076,39 @@ function ReservationModalV2({
     endTime: '10:00',
     purpose: ''
   });
-  const endTimes = reservationTimes.filter((time) => time > form.startTime);
+
+  const sameEquipmentReservations = calendarEvents.filter((event) => {
+    const eventEquipmentId = getEventEquipmentId(event, equipmentItems);
+    return event.start.slice(0, 10) === form.date && eventEquipmentId === form.equipmentId;
+  });
+  const availableStartTimes = reservationTimes.filter((time, index) => {
+    const nextTime = reservationTimes[index + 1];
+    if (!nextTime) return false;
+    const slotStart = toReservationDateTime(form.date, time);
+    const slotEnd = toReservationDateTime(form.date, nextTime);
+    return !sameEquipmentReservations.some((event) => reservationOverlaps(slotStart, slotEnd, event.start, event.end));
+  });
+  const endTimes = reservationTimes.filter((time) => {
+    if (time <= form.startTime) return false;
+    const requestedStart = toReservationDateTime(form.date, form.startTime);
+    const requestedEnd = toReservationDateTime(form.date, time);
+    return !sameEquipmentReservations.some((event) => reservationOverlaps(requestedStart, requestedEnd, event.start, event.end));
+  });
   const reservationsForDate = calendarEvents
-    .filter((event) => event.start.slice(0, 10) === form.date)
+    .filter((event) => event.start.slice(0, 10) === form.date && getEventEquipmentId(event, equipmentItems) === form.equipmentId)
     .sort((first, second) => first.start.localeCompare(second.start));
+  const canSubmit = availableStartTimes.includes(form.startTime) && endTimes.includes(form.endTime);
+
+  function updateStartTime(nextStart: string) {
+    setForm((current) => {
+      const nextEnd = reservationTimes.find((time) => time > nextStart && !sameEquipmentReservations.some((event) => reservationOverlaps(toReservationDateTime(current.date, nextStart), toReservationDateTime(current.date, time), event.start, event.end)));
+      return { ...current, startTime: nextStart, endTime: nextEnd ?? current.endTime };
+    });
+  }
 
   function submit(event: FormEvent) {
     event.preventDefault();
+    if (!canSubmit) return;
     onConfirm(form);
   }
 
@@ -1053,9 +1117,7 @@ function ReservationModalV2({
       <form className="reservation-modal reservation-confirm-modal reservation-modal-wide" onSubmit={submit} onMouseDown={(event) => event.stopPropagation()}>
         <div className="mb-5 flex items-center justify-between">
           <h3 className="text-2xl font-extrabold text-white">장비 예약</h3>
-          <button type="button" className="reservation-danger-button px-4 py-2 text-sm" onClick={onClose}>
-            닫기
-          </button>
+          <button type="button" className="reservation-danger-button px-4 py-2 text-sm" onClick={onClose}>닫기</button>
         </div>
         <div className="reservation-modal-grid">
           <aside className="reservation-day-panel">
@@ -1064,9 +1126,13 @@ function ReservationModalV2({
             <div className="reservation-day-list">
               {reservationsForDate.length > 0 ? (
                 reservationsForDate.map((event) => (
-                  <div key={event.id} className="reservation-day-item">
+                  <div key={event.id} className={`reservation-day-item ${isReservationActive(event) ? 'is-live' : ''}`}>
                     <span>{formatReservationTime(event.start)}{event.end ? ` - ${formatReservationTime(event.end)}` : ''}</span>
                     <strong>{event.title}</strong>
+                    {isReservationActive(event) && <em>사용중</em>}
+                    {onDeleteReservation && (
+                      <button type="button" className="reservation-mini-danger" onClick={() => onDeleteReservation(event.id)}>삭제</button>
+                    )}
                   </div>
                 ))
               ) : (
@@ -1090,27 +1156,17 @@ function ReservationModalV2({
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="reservation-label">
                 시작 시간
-                <select
-                  value={form.startTime}
-                  onChange={(event) => {
-                    const nextStart = event.target.value;
-                    setForm((current) => ({
-                      ...current,
-                      startTime: nextStart,
-                      endTime: reservationTimes.find((time) => time > nextStart) ?? current.endTime
-                    }));
-                  }}
-                >
-                  {reservationTimes.map((time) => (
-                    <option key={time} value={time}>{time}</option>
+                <select value={form.startTime} onChange={(event) => updateStartTime(event.target.value)}>
+                  {reservationTimes.map((time, index) => (
+                    <option key={time} value={time} disabled={index === reservationTimes.length - 1 || !availableStartTimes.includes(time)}>{time}</option>
                   ))}
                 </select>
               </label>
               <label className="reservation-label">
                 종료 시간
                 <select value={form.endTime} onChange={(event) => setForm((current) => ({ ...current, endTime: event.target.value }))}>
-                  {endTimes.map((time) => (
-                    <option key={time} value={time}>{time}</option>
+                  {reservationTimes.filter((time) => time > form.startTime).map((time) => (
+                    <option key={time} value={time} disabled={!endTimes.includes(time)}>{time}</option>
                   ))}
                 </select>
               </label>
@@ -1119,17 +1175,17 @@ function ReservationModalV2({
               예약 목적
               <input value={form.purpose} onChange={(event) => setForm((current) => ({ ...current, purpose: event.target.value }))} placeholder="예: 박막 증착 공정" />
             </label>
+            {!canSubmit && <p className="reservation-warning">이미 예약된 시간입니다. 다른 시간을 선택해주세요.</p>}
           </div>
         </div>
         <div className="mt-6 flex justify-end gap-3">
           <button type="button" className="reservation-danger-button px-5 py-3" onClick={onClose}>취소</button>
-          <button type="submit" className="reservation-confirm-button px-5 py-3">예약확정</button>
+          <button type="submit" className="reservation-confirm-button px-5 py-3" disabled={!canSubmit}>예약확정</button>
         </div>
       </form>
     </div>
   );
 }
-
 function TrainingPage({ equipmentItems }: { equipmentItems: EquipmentItem[] }) {
   return (
     <section className="grid gap-5 xl:grid-cols-[1fr_0.8fr]">
@@ -1161,7 +1217,18 @@ function TrainingPage({ equipmentItems }: { equipmentItems: EquipmentItem[] }) {
   );
 }
 
-function AdminPage({ equipmentItems }: { equipmentItems: EquipmentItem[] }) {
+function AdminPage({
+  equipmentItems,
+  calendarEvents,
+  onAddReservation,
+  onDeleteReservation
+}: {
+  equipmentItems: EquipmentItem[];
+  calendarEvents: ReservationEvent[];
+  onAddReservation: (event: ReservationEvent) => void;
+  onDeleteReservation: (reservationId: string) => void;
+}) {
+  const [showReservationModal, setShowReservationModal] = useState(false);
   const equipmentRows = equipmentItems.map((item) => ({
     장비명: item.name,
     대분류: item.groupName,
@@ -1176,9 +1243,48 @@ function AdminPage({ equipmentItems }: { equipmentItems: EquipmentItem[] }) {
     전월대비: `${item.delta > 0 ? '+' : ''}${item.delta}%`
   }));
 
+  function confirmAdminReservation(form: { equipmentId: string; date: string; startTime: string; endTime: string; purpose: string }) {
+    const equipment = equipmentItems.find((item) => item.id === form.equipmentId);
+    if (!equipment) return;
+    const purpose = form.purpose.trim() ? ` - ${form.purpose.trim()}` : '';
+    onAddReservation({
+      id: `admin-reservation-${Date.now()}`,
+      title: `${equipment.name} 관리자 예약${purpose}`,
+      start: toReservationDateTime(form.date, form.startTime),
+      end: toReservationDateTime(form.date, form.endTime),
+      status: 'approved',
+      equipmentId: equipment.id,
+      createdBy: 'ADMIN'
+    });
+    setShowReservationModal(false);
+  }
+
   return (
     <section className="grid gap-5">
       <SectionTitle title="관리자 대시보드" eyebrow="Admin CMS" action="홈페이지 편집" />
+      <div className="rounded-lg border border-white/10 bg-surface/85 p-6">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-extrabold uppercase text-cyan-300">Reservation Control</p>
+            <h3 className="text-xl font-extrabold text-white">예약 관리</h3>
+            <p className="mt-1 text-sm text-slate-400">관리자는 예약을 추가하거나 삭제할 수 있습니다.</p>
+          </div>
+          <button className="inline-flex items-center gap-2 rounded-md bg-blue-700 px-4 py-3 text-sm font-bold text-white hover:bg-cyan-500 hover:text-slate-950" onClick={() => setShowReservationModal(true)}>
+            <Plus size={16} /> 예약 추가
+          </button>
+        </div>
+        <div className="admin-reservation-list">
+          {calendarEvents.map((event) => (
+            <div key={event.id} className={`admin-reservation-row ${isReservationActive(event) ? 'is-live' : ''}`}>
+              <div>
+                <strong>{event.title}</strong>
+                <span>{event.start.slice(0, 10)} · {formatReservationTime(event.start)}{event.end ? ` - ${formatReservationTime(event.end)}` : ''}</span>
+              </div>
+              <button className="reservation-mini-danger" onClick={() => onDeleteReservation(event.id)}>예약 삭제</button>
+            </div>
+          ))}
+        </div>
+      </div>
       <div className="rounded-lg border border-white/10 bg-surface/85 p-6">
         <div className="mb-5 flex items-center gap-3">
           <Download className="text-cyan-300" size={22} />
@@ -1204,6 +1310,17 @@ function AdminPage({ equipmentItems }: { equipmentItems: EquipmentItem[] }) {
           </button>
         ))}
       </div>
+      {showReservationModal && (
+        <ReservationModalV2
+          equipmentItems={equipmentItems}
+          calendarEvents={calendarEvents}
+          selectedEquipmentId={equipmentItems[0]?.id ?? ''}
+          initialDate={getSeoulDateKey()}
+          onClose={() => setShowReservationModal(false)}
+          onConfirm={confirmAdminReservation}
+          onDeleteReservation={onDeleteReservation}
+        />
+      )}
     </section>
   );
 }
@@ -1272,6 +1389,54 @@ function LoginPage({ onAuthenticated }: { onAuthenticated: (role: Role) => void 
   );
 }
 
+function MyPage({
+  equipmentItems,
+  calendarEvents,
+  onCancelReservation
+}: {
+  equipmentItems: EquipmentItem[];
+  calendarEvents: ReservationEvent[];
+  onCancelReservation: (reservationId: string) => void;
+}) {
+  const myReservations = calendarEvents
+    .filter((event) => event.createdBy !== 'ADMIN')
+    .sort((first, second) => first.start.localeCompare(second.start));
+
+  return (
+    <section className="grid gap-5 xl:grid-cols-[1fr_0.65fr]">
+      <div className="rounded-lg border border-white/10 bg-surface/85 p-6">
+        <SectionTitle title="내 예약현황" eyebrow="My Reservations" />
+        <div className="mypage-reservation-list">
+          {myReservations.length > 0 ? (
+            myReservations.map((event) => {
+              const equipmentName = equipmentItems.find((item) => item.id === getEventEquipmentId(event, equipmentItems))?.name ?? event.title.split(' 예약')[0];
+              return (
+                <div key={event.id} className={`mypage-reservation-card ${isReservationActive(event) ? 'is-live' : ''}`}>
+                  <div>
+                    <p>{event.start.slice(0, 10)} · {formatReservationTime(event.start)}{event.end ? ` - ${formatReservationTime(event.end)}` : ''}</p>
+                    <h3>{equipmentName}</h3>
+                    <span>{event.status === 'approved' ? '승인 완료' : '승인 대기'}</span>
+                  </div>
+                  <button onClick={() => onCancelReservation(event.id)}>예약 취소</button>
+                </div>
+              );
+            })
+          ) : (
+            <p className="reservation-empty-state">현재 등록된 예약이 없습니다.</p>
+          )}
+        </div>
+      </div>
+      <div className="rounded-lg border border-white/10 bg-surface/85 p-6">
+        <SectionTitle title="인증정보" eyebrow="Profile" />
+        <div className="grid gap-3 text-sm text-slate-300">
+          <p className="rounded-md bg-white/5 p-4">교육 이수 상태와 장비별 예약 권한을 이 영역에서 표시할 예정입니다.</p>
+          <p className="rounded-md bg-white/5 p-4">예약 취소 기능은 현재 프리뷰 데이터 기준으로 즉시 반영됩니다.</p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function PlaceholderPage({ title }: { title: string }) {
   return (
     <section className="rounded-lg border border-white/10 bg-surface/85 p-8">
@@ -1296,6 +1461,13 @@ export function App() {
       return null;
     }
   });
+  const [reservationEvents, setReservationEvents] = useState<ReservationEvent[]>(() =>
+    events.map((event) => ({
+      ...event,
+      equipmentId: getEventEquipmentId(event, fallbackEquipment),
+      createdBy: 'USER'
+    }))
+  );
 
   function navigate(page: PageKey) {
     setLoading(true);
@@ -1317,6 +1489,14 @@ export function App() {
 
   function deleteEquipment(equipmentId: string) {
     setDeletedEquipmentIds((current) => current.includes(equipmentId) ? current : [...current, equipmentId]);
+  }
+
+  function addReservation(event: ReservationEvent) {
+    setReservationEvents((current) => [...current, event]);
+  }
+
+  function deleteReservation(reservationId: string) {
+    setReservationEvents((current) => current.filter((event) => event.id !== reservationId));
   }
 
   const activeEquipmentItems = equipmentItems.filter((item) => !deletedEquipmentIds.includes(item.id));
@@ -1342,13 +1522,35 @@ export function App() {
             onDeleteEquipment={deleteEquipment}
           />
         )}
-        {activePage === 'reservations' && <ReservationPage equipmentItems={activeEquipmentItems} />}
+        {activePage === 'reservations' && (
+          <ReservationPage
+            equipmentItems={activeEquipmentItems}
+            calendarEvents={reservationEvents}
+            sessionRole={sessionRole}
+            onAddReservation={addReservation}
+            onDeleteReservation={deleteReservation}
+          />
+        )}
         {activePage === 'training' && <TrainingPage equipmentItems={activeEquipmentItems} />}
-        {activePage === 'admin' && <AdminPage equipmentItems={equipmentItems} />}
+        {activePage === 'admin' && (
+          <AdminPage
+            equipmentItems={equipmentItems}
+            calendarEvents={reservationEvents}
+            onAddReservation={addReservation}
+            onDeleteReservation={deleteReservation}
+          />
+        )}
         {activePage === 'login' && <LoginPage onAuthenticated={(role) => setSessionRole(role)} />}
         {activePage === 'facility' && <PlaceholderPage title="시설안내" />}
-        {activePage === 'mypage' && <PlaceholderPage title="마이페이지" />}
+        {activePage === 'mypage' && (
+          <MyPage
+            equipmentItems={activeEquipmentItems}
+            calendarEvents={reservationEvents}
+            onCancelReservation={deleteReservation}
+          />
+        )}
       </main>
     </div>
   );
 }
+
