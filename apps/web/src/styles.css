@@ -78,6 +78,9 @@ select {
 }
 
 .quick-link {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
   transform: translateY(0) scale(1);
 }
 
@@ -96,6 +99,26 @@ select {
     url('https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1800&q=85');
   background-position: center;
   background-size: cover;
+}
+
+.hero-title {
+  display: grid;
+  gap: 0.2rem;
+  letter-spacing: 0;
+  text-shadow: 0 0 28px rgba(34, 211, 238, 0.13), 0 10px 26px rgba(2, 6, 23, 0.5);
+}
+
+.hero-title span {
+  display: block;
+}
+
+.hero-title span:last-child {
+  width: fit-content;
+  background: linear-gradient(90deg, #ffffff 0%, #bfdbfe 44%, #67e8f9 100%);
+  background-clip: text;
+  color: transparent;
+  -webkit-background-clip: text;
+  text-shadow: none;
 }
 
 .brand-mark {
@@ -503,6 +526,28 @@ select {
   color: #ffffff;
 }
 
+.reservation-equipment-button.is-live {
+  border-color: rgba(248, 113, 113, 0.36);
+  box-shadow: inset 3px 0 0 rgba(239, 68, 68, 0.68);
+}
+
+.reservation-equipment-name {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.live-equipment-dot {
+  flex: 0 0 auto;
+  width: 0.58rem;
+  height: 0.58rem;
+  border-radius: 999px;
+  background: #ef4444;
+  box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.72);
+  animation: liveReservationPulse 1.25s ease-out infinite;
+}
+
 .equipment-type-chip {
   display: inline-flex;
   align-items: center;
@@ -702,7 +747,8 @@ select {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  margin-top: 0.55rem;
+  margin-top: 0.65rem;
+  margin-right: 0.85rem;
   color: #fecaca;
   font-size: 0.74rem;
   font-style: normal;
@@ -778,7 +824,10 @@ select {
 }
 
 .reservation-mini-danger {
-  margin-top: 0.65rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.85rem;
   border-radius: 6px;
   border: 1px solid rgba(248, 113, 113, 0.34);
   background: rgba(220, 38, 38, 0.92);

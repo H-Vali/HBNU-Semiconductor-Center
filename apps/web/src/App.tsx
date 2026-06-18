@@ -67,11 +67,10 @@ const menu: Array<{ label: string; page: PageKey; icon: typeof Factory; admin?: 
 ];
 
 const quickLinks: Array<{ label: string; page: PageKey; icon: typeof CalendarDays }> = [
-  { label: '공정접수 및 장비예약', page: 'reservations', icon: CalendarDays },
+  { label: '장비 사용 예약', page: 'reservations', icon: CalendarDays },
   { label: '장비사용자 교육신청', page: 'training', icon: GraduationCap },
   { label: '장비 배치현황', page: 'equipment', icon: Microscope }
 ];
-
 const categoryMeta: Record<EquipmentGroup, { title: string; subtitle: string; image: string; bullets: string[] }> = {
   process: {
     title: '공정',
@@ -281,8 +280,9 @@ function Hero({ onNavigate }: { onNavigate: (page: PageKey) => void }) {
         <div className="flex flex-col justify-between gap-8">
           <div>
             <p className="mb-4 text-base font-extrabold text-cyan-300">N-FACILITY / FAB OPERATION / EQUIPMENT RESERVATION</p>
-            <h2 className="max-w-5xl text-4xl font-extrabold leading-tight text-white lg:text-5xl 2xl:text-6xl">
-              국립한밭대학교 창의융합교육센터 인프라 통합 관리 Web
+            <h2 className="hero-title max-w-5xl text-4xl font-extrabold leading-tight text-white lg:text-5xl 2xl:text-6xl">
+              <span>국립한밭대학교 창의융합교육센터</span>
+              <span>인프라 통합 관리 시스템</span>
             </h2>
             <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-300">
               장비 소개, 교육 인증, 예약 승인, 사용률 분석을 통합해 연구자와 관리자가 같은 데이터를 보고 움직이는 운영 플랫폼입니다.
@@ -897,13 +897,17 @@ function ReservationPage({
             const isSelected = item.id === selectedEquipmentId || (!selectedEquipmentId && index === 0);
             const isProcess = item.group === 'process';
             const GroupIcon = isProcess ? Cpu : Microscope;
+            const isLive = calendarEvents.some((event) => isEventForEquipment(event, item, equipmentItems) && isReservationActive(event));
             return (
               <button
                 key={item.id}
-                className={`reservation-equipment-button ${isSelected ? 'is-selected' : ''}`}
+                className={`reservation-equipment-button ${isSelected ? 'is-selected' : ''} ${isLive ? 'is-live' : ''}`}
                 onClick={() => setSelectedEquipmentId(item.id)}
               >
-                <span className="min-w-0 truncate">{item.name}</span>
+                <span className="reservation-equipment-name">
+                  {isLive && <span className="live-equipment-dot" aria-label="사용중" />}
+                  <span className="min-w-0 truncate">{item.name}</span>
+                </span>
                 <span className={`equipment-type-chip ${isProcess ? 'is-process' : 'is-metrology'}`}>
                   <GroupIcon size={14} />
                   {isProcess ? '공정' : '계측 및 분석'}
