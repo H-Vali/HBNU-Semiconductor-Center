@@ -90,7 +90,8 @@ const menu: Array<{ label: string; page: PageKey; icon: typeof Factory }> = [
 ];
 
 const adminMenu: Array<{ label: string; page: PageKey; icon: typeof ShieldCheck }> = [
-  { label: '관리자', page: 'admin', icon: ShieldCheck }
+  { label: '관리자', page: 'admin', icon: ShieldCheck },
+  { label: '소모품관리', page: 'consumables', icon: PackageCheck }
 ];
 
 const quickLinks: Array<{ label: string; page: PageKey; icon: typeof CalendarDays }> = [
@@ -1919,11 +1920,11 @@ function AdminPage({
         {[
           { title: '사용자관리' },
           { title: '장비관리' },
+          { title: '소모품관리', page: 'consumables' as PageKey, icon: PackageCheck },
           { title: '예약승인/거부' },
           { title: '교육관리' },
           { title: '홈페이지편집' },
           { title: '대시보드 데이터' },
-          { title: '소모품관리', page: 'consumables' as PageKey, icon: PackageCheck },
           { title: '권한관리' },
           { title: '공지사항' },
           { title: '운영 로그' }
