@@ -100,8 +100,8 @@ select {
   gap: 0.2rem;
   margin: 0;
   color: #f3f6fb;
-  font-size: clamp(2rem, 3vw, 3.05rem);
-  font-weight: 500;
+  font-size: clamp(2.45rem, 3.35vw, 3.6rem);
+  font-weight: 800;
   line-height: 1.32;
   letter-spacing: 0;
 }
@@ -122,7 +122,7 @@ select {
 .hero-title em {
   color: #5fd9c9;
   font-style: normal;
-  font-weight: 500;
+  font-weight: 800;
 }
 
 .hero-intro {
@@ -142,6 +142,50 @@ select {
   pointer-events: none;
 }
 
+.hero-hologram-wafer {
+  position: absolute;
+  top: 50%;
+  right: 6%;
+  z-index: 1;
+  width: min(34vw, 31rem);
+  aspect-ratio: 1;
+  transform: translateY(-50%) rotate(-14deg);
+  opacity: 0.24;
+  pointer-events: none;
+}
+
+.hero-hologram-wafer::before,
+.hero-hologram-wafer::after,
+.hero-hologram-wafer-core {
+  position: absolute;
+  border-radius: 50%;
+  content: "";
+}
+
+.hero-hologram-wafer::before {
+  inset: 0;
+  border: 1px solid rgba(95, 217, 201, 0.58);
+  background:
+    repeating-linear-gradient(90deg, transparent 0 28px, rgba(95, 217, 201, 0.18) 29px 30px),
+    repeating-linear-gradient(0deg, transparent 0 28px, rgba(125, 179, 240, 0.12) 29px 30px);
+  mask-image: radial-gradient(circle, #000 66%, transparent 67%);
+}
+
+.hero-hologram-wafer::after {
+  inset: 11%;
+  border: 0.5px solid rgba(125, 179, 240, 0.38);
+  background:
+    linear-gradient(120deg, transparent 35%, rgba(95, 217, 201, 0.2) 48%, transparent 62%),
+    repeating-linear-gradient(90deg, transparent 0 20px, rgba(243, 246, 251, 0.08) 21px 22px);
+  mask-image: radial-gradient(circle, #000 63%, transparent 64%);
+}
+
+.hero-hologram-wafer-core {
+  inset: 38%;
+  border: 1px solid rgba(52, 214, 176, 0.38);
+  background: rgba(95, 217, 201, 0.08);
+}
+
 .hero-intro > * {
   position: relative;
   z-index: 1;
@@ -151,8 +195,8 @@ select {
   margin: 0 0 13px;
   padding-left: 2px;
   color: #5fd9c9;
-  font-size: 0.72rem;
-  font-weight: 500;
+  font-size: 0.82rem;
+  font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -161,8 +205,8 @@ select {
   max-width: 62%;
   margin: 12px 0 20px;
   color: #aab4c4;
-  font-size: 0.86rem;
-  font-weight: 400;
+  font-size: 1rem;
+  font-weight: 500;
   line-height: 1.65;
 }
 
@@ -180,8 +224,8 @@ select {
   min-height: 2.7rem;
   border-radius: 9px;
   padding: 11px 16px;
-  font-size: 0.82rem;
-  font-weight: 500;
+  font-size: 0.94rem;
+  font-weight: 700;
 }
 
 .hero-action-button.is-primary {
@@ -214,8 +258,8 @@ select {
 .hero-section-label {
   margin: 0 0 9px 2px;
   color: #8b96a8;
-  font-size: 0.66rem;
-  font-weight: 400;
+  font-size: 0.76rem;
+  font-weight: 600;
   letter-spacing: 0.04em;
 }
 
@@ -234,24 +278,24 @@ select {
 
 .process-status-card p {
   margin: 0 0 7px;
-  font-size: 0.66rem;
-  font-weight: 500;
+  font-size: 0.78rem;
+  font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
 .process-status-card strong {
   color: #f3f6fb;
-  font-size: 1.2rem;
-  font-weight: 500;
+  font-size: 1.45rem;
+  font-weight: 800;
   line-height: 1;
 }
 
 .process-status-card strong span {
   margin-left: 0.18rem;
   color: #8b96a8;
-  font-size: 0.8rem;
-  font-weight: 400;
+  font-size: 0.9rem;
+  font-weight: 500;
 }
 
 .process-status-card.is-lithography {
@@ -535,7 +579,7 @@ select {
   border-radius: 11px;
   border: 0.5px solid rgba(255, 255, 255, 0.08);
   background: #11192b;
-  padding: 14px;
+  padding: 16px;
 }
 
 .stat-card-heading {
@@ -544,30 +588,30 @@ select {
   gap: 7px;
   margin-bottom: 11px;
   color: #8b96a8;
-  font-size: 0.76rem;
-  font-weight: 400;
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
 .stat-card-value {
   margin: 0;
   color: #f3f6fb;
-  font-size: 1.5rem;
-  font-weight: 500;
+  font-size: 1.9rem;
+  font-weight: 800;
   line-height: 1;
 }
 
 .stat-card-value span {
   margin-left: 0.2rem;
   color: #8b96a8;
-  font-size: 0.82rem;
-  font-weight: 400;
+  font-size: 0.98rem;
+  font-weight: 500;
 }
 
 .stat-card-detail {
   margin: 8px 0 0;
   color: #6b7689;
-  font-size: 0.7rem;
-  font-weight: 400;
+  font-size: 0.82rem;
+  font-weight: 500;
 }
 
 .stat-card-detail.is-trend {
@@ -579,7 +623,7 @@ select {
 
 .stat-progress {
   height: 5px;
-  margin-top: 11px;
+  margin-top: 14px;
   overflow: hidden;
   border-radius: 3px;
   background: rgba(255, 255, 255, 0.08);
@@ -1516,6 +1560,10 @@ select {
 
   .hero-copy {
     max-width: 100%;
+  }
+
+  .hero-hologram-wafer {
+    display: none;
   }
 
   .hero-process-grid,
