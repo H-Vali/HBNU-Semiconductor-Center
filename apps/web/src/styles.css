@@ -2538,6 +2538,25 @@ select {
   color: #062018;
 }
 
+.consumables-summary-action button.is-save-feedback {
+  animation: consumables-save-feedback 1.4s ease forwards;
+}
+
+@keyframes consumables-save-feedback {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  72% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+}
+
 .consumables-toolbar {
   display: flex;
   align-items: center;
