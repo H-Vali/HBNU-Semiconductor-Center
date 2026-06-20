@@ -2576,6 +2576,8 @@ function UserManagementPage({
   const [departmentFilter, setDepartmentFilter] = useState('전체');
   const [labFilter, setLabFilter] = useState('전체');
   const [authFilter, setAuthFilter] = useState('전체');
+  const [pageSize, setPageSize] = useState(20);
+  const [currentPage, setCurrentPage] = useState(1);
   const departments = useMemo(() => ['전체', ...Array.from(new Set(users.map((user) => user.department).filter(Boolean)))], [users]);
   const labs = useMemo(() => ['전체', ...Array.from(new Set(users.map((user) => user.labProfessor).filter(Boolean)))], [users]);
   const authProviders = useMemo(() => ['전체', ...Array.from(new Set(users.map((user) => user.authProvider ?? 'Manual')))], [users]);
@@ -2593,6 +2595,17 @@ function UserManagementPage({
     })
   ), [authFilter, departmentFilter, labFilter, nameFilter, roleFilter, searchTerm, users]);
   const representativeCount = users.filter((user) => user.roleLevel === '대표').length;
+  const totalPages = Math.max(Math.ceil(filteredUsers.length / pageSize), 1);
+  const pageStart = (currentPage - 1) * pageSize;
+  const pageUsers = filteredUsers.slice(pageStart, pageStart + pageSize);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [authFilter, departmentFilter, labFilter, nameFilter, pageSize, roleFilter, searchTerm]);
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, totalPages));
+  }, [totalPages]);
 
   function handleUsersUpload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -2679,6 +2692,14 @@ function UserManagementPage({
             <option key={lab} value={lab}>{lab}</option>
           ))}
         </select>
+        <label className="permission-page-size-control">
+          <span>표시 인원</span>
+          <select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))} aria-label="사용자관리 페이지당 표시 인원">
+            <option value={20}>20명</option>
+            <option value={30}>30명</option>
+            <option value={50}>50명</option>
+          </select>
+        </label>
       </div>
 
       <div className="consumables-table-wrap">
@@ -2745,11 +2766,11 @@ function UserManagementPage({
             </tr>
           </thead>
           <tbody>
-            {filteredUsers.map((user, index) => {
+            {pageUsers.map((user, index) => {
               const labTone = getProfessorTone(user.labProfessor);
               return (
                 <tr key={user.id}>
-                  <td>{index + 1}</td>
+                  <td>{pageStart + index + 1}</td>
                   <td>
                     <input value={user.name} onChange={(event) => onUpdateUser(user.id, { name: event.target.value })} aria-label={`${user.name} 이름`} />
                   </td>
@@ -2793,8 +2814,23 @@ function UserManagementPage({
                 </tr>
               );
             })}
+            {pageUsers.length === 0 && (
+              <tr>
+                <td colSpan={9} className="permission-empty-row">조건에 맞는 사용자가 없습니다.</td>
+              </tr>
+            )}
           </tbody>
         </table>
+      </div>
+      <div className="permission-pagination" aria-label="사용자관리 페이지 이동">
+        <span>{filteredUsers.length === 0 ? '0명' : `${pageStart + 1}-${Math.min(pageStart + pageSize, filteredUsers.length)}명`} / 총 {filteredUsers.length}명</span>
+        <div>
+          <button type="button" onClick={() => setCurrentPage(1)} disabled={currentPage === 1}>처음</button>
+          <button type="button" onClick={() => setCurrentPage((page) => Math.max(page - 1, 1))} disabled={currentPage === 1}>이전</button>
+          <strong>{currentPage} / {totalPages}</strong>
+          <button type="button" onClick={() => setCurrentPage((page) => Math.min(page + 1, totalPages))} disabled={currentPage === totalPages}>다음</button>
+          <button type="button" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}>마지막</button>
+        </div>
       </div>
       {showAddUserModal && (
         <UserAddModal
