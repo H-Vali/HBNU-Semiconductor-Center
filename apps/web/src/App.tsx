@@ -506,11 +506,15 @@ function cloneManagedUsers(items = initialManagedUsers) {
   return items.map((item) => ({ ...item }));
 }
 
+function getPreviewEquipmentPermissionIds() {
+  return ['eq-1', 'eq-2', 'eq-5', 'eq-14', 'eq-16', 'eq-19'];
+}
+
 function createPreviewEquipmentPermissions(): EquipmentPermissionMap {
   const previewUserId = initialManagedUsers[0]?.id;
   if (!previewUserId) return {};
   const previewEquipmentIds = fallbackEquipment
-    .filter((item) => ['eq-1', 'eq-2', 'eq-5', 'eq-14', 'eq-16', 'eq-19'].includes(item.id))
+    .filter((item) => getPreviewEquipmentPermissionIds().includes(item.id))
     .map((item) => item.id);
   return { [previewUserId]: previewEquipmentIds };
 }
@@ -1271,7 +1275,10 @@ function Dashboard({
   onOpenEquipment: (group: EquipmentGroup) => void;
 }) {
   const dashboardUser = managedUsers.find((user) => user.name === sessionUserName) ?? managedUsers[0];
-  const grantedEquipmentIds = dashboardUser ? equipmentPermissions[dashboardUser.id] ?? [] : [];
+  const isPermissionPreviewMode = new URLSearchParams(window.location.search).get('permissionPreview') === 'multi';
+  const grantedEquipmentIds = isPermissionPreviewMode
+    ? getPreviewEquipmentPermissionIds()
+    : dashboardUser ? equipmentPermissions[dashboardUser.id] ?? [] : [];
   const grantedEquipmentItems = equipmentItems.filter((item) => grantedEquipmentIds.includes(item.id));
   return (
     <section className="mt-5 grid gap-5">
