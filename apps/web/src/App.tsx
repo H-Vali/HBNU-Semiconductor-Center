@@ -2175,13 +2175,13 @@ function AdminPage({
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {[
           { title: '사용자관리', page: 'users' as PageKey, icon: UserRound, updatedAt: usersUpdatedAt },
+          { title: '권한관리' },
           { title: '장비관리' },
           { title: '소모품관리', page: 'consumables' as PageKey, icon: PackageCheck, updatedAt: consumablesUpdatedAt },
           { title: '예약승인/거부' },
           { title: '교육관리' },
           { title: '홈페이지편집' },
           { title: '대시보드 데이터' },
-          { title: '권한관리' },
           { title: '공지사항' },
           { title: '운영 로그' }
         ].map((item) => {
