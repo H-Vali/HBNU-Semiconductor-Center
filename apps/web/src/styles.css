@@ -2820,6 +2820,126 @@ select {
   box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.04), 0 0 18px currentColor;
 }
 
+.user-add-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  background: rgba(2, 6, 23, 0.72);
+  padding: 1rem;
+}
+
+.user-add-modal {
+  width: min(44rem, 100%);
+  border-radius: 16px;
+  border: 1px solid rgba(125, 211, 252, 0.18);
+  background: #0b1220;
+  padding: 1.25rem;
+  box-shadow: 0 22px 60px rgba(2, 6, 23, 0.48);
+}
+
+.user-add-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 1rem;
+}
+
+.user-add-modal-head p {
+  color: #5fd9c9;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.user-add-modal-head h3 {
+  margin-top: 0.25rem;
+  color: #f8fafc;
+  font-size: 1.35rem;
+  font-weight: 900;
+}
+
+.user-add-modal-head button {
+  display: inline-grid;
+  width: 2.2rem;
+  height: 2.2rem;
+  place-items: center;
+  border-radius: 9px;
+  border: 1px solid rgba(248, 113, 113, 0.32);
+  background: rgba(127, 29, 29, 0.2);
+  color: #fca5a5;
+  font-size: 1.4rem;
+  font-weight: 900;
+}
+
+.user-add-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+  padding: 1rem 0;
+}
+
+.user-add-modal-grid label {
+  display: grid;
+  gap: 0.4rem;
+  color: #8b96a8;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.user-add-modal-grid label.is-wide {
+  grid-column: 1 / -1;
+}
+
+.user-add-modal-grid input,
+.user-add-modal-grid select {
+  min-height: 2.7rem;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(2, 6, 23, 0.68);
+  padding: 0 0.8rem;
+  color: #f8fafc;
+  font-size: 0.92rem;
+  font-weight: 800;
+  outline: none;
+}
+
+.user-add-modal-grid input:focus,
+.user-add-modal-grid select:focus {
+  border-color: rgba(95, 217, 201, 0.78);
+  box-shadow: 0 0 0 2px rgba(95, 217, 201, 0.12);
+}
+
+.user-add-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+.user-add-modal-actions button {
+  min-height: 2.6rem;
+  border-radius: 9px;
+  padding: 0 1rem;
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+.user-add-modal-actions button.is-cancel {
+  border: 1px solid rgba(248, 113, 113, 0.32);
+  background: rgba(127, 29, 29, 0.2);
+  color: #fca5a5;
+}
+
+.user-add-modal-actions button.is-primary {
+  border: 1px solid rgba(52, 214, 176, 0.78);
+  background: #34d6b0;
+  color: #062018;
+}
+
 .auth-provider-badge {
   display: inline-flex;
   min-width: 4.5rem;
@@ -2888,6 +3008,10 @@ select {
   }
 
   .user-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .user-add-modal-grid {
     grid-template-columns: 1fr;
   }
 }

@@ -2344,20 +2344,128 @@ function MyPage({
   );
 }
 
+function UserAddModal({
+  labs,
+  departments,
+  onClose,
+  onConfirm
+}: {
+  labs: string[];
+  departments: string[];
+  onClose: () => void;
+  onConfirm: (user: Omit<ManagedUser, 'id' | 'index'>) => void;
+}) {
+  const [form, setForm] = useState<Omit<ManagedUser, 'id' | 'index'>>({
+    name: '',
+    roleLevel: '일반',
+    department: departments[0] ?? '',
+    labProfessor: labs[0] ?? '',
+    phone: '',
+    email: '',
+    memo: '',
+    authProvider: 'Manual'
+  });
+
+  function updateField<Key extends keyof typeof form>(key: Key, value: typeof form[Key]) {
+    setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!form.name.trim()) {
+      window.alert('이름을 입력해주세요.');
+      return;
+    }
+    if (!form.email.trim()) {
+      window.alert('이메일을 입력해주세요.');
+      return;
+    }
+    onConfirm({
+      ...form,
+      name: form.name.trim(),
+      department: form.department.trim(),
+      labProfessor: form.labProfessor.trim(),
+      phone: form.phone.trim(),
+      email: form.email.trim(),
+      memo: form.memo.trim()
+    });
+  }
+
+  return (
+    <div className="user-add-modal-backdrop" role="presentation">
+      <form className="user-add-modal" onSubmit={handleSubmit} aria-label="신규 사용자 추가">
+        <div className="user-add-modal-head">
+          <div>
+            <p>User Directory</p>
+            <h3>사용자 추가</h3>
+          </div>
+          <button type="button" onClick={onClose} aria-label="사용자 추가 닫기">×</button>
+        </div>
+        <div className="user-add-modal-grid">
+          <label>
+            이름
+            <input value={form.name} onChange={(event) => updateField('name', event.target.value)} placeholder="이름" autoFocus />
+          </label>
+          <label>
+            ROLE
+            <select value={form.roleLevel} onChange={(event) => updateField('roleLevel', event.target.value === '대표' ? '대표' : '일반')}>
+              <option value="일반">일반</option>
+              <option value="대표">대표</option>
+            </select>
+          </label>
+          <label>
+            소속 학과
+            <input value={form.department} onChange={(event) => updateField('department', event.target.value)} list="user-add-departments" placeholder="소속 학과" />
+            <datalist id="user-add-departments">
+              {departments.map((department) => <option key={department} value={department} />)}
+            </datalist>
+          </label>
+          <label>
+            소속 연구실
+            <input value={form.labProfessor} onChange={(event) => updateField('labProfessor', event.target.value)} list="user-add-labs" placeholder="예: 백근우 교수님" />
+            <datalist id="user-add-labs">
+              {labs.map((lab) => <option key={lab} value={lab} />)}
+            </datalist>
+          </label>
+          <label>
+            연락처
+            <input value={form.phone} onChange={(event) => updateField('phone', event.target.value)} placeholder="010-0000-0000" />
+          </label>
+          <label>
+            이메일
+            <input type="email" value={form.email} onChange={(event) => updateField('email', event.target.value)} placeholder="user@example.com" />
+          </label>
+          <label className="is-wide">
+            메모
+            <input value={form.memo} onChange={(event) => updateField('memo', event.target.value)} placeholder="관리자 메모" />
+          </label>
+        </div>
+        <div className="user-add-modal-actions">
+          <button type="button" className="is-cancel" onClick={onClose}>닫기</button>
+          <button type="submit" className="is-primary">사용자 추가</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 function UserManagementPage({
   users,
+  saveFeedbackPhase,
   onUpdateUser,
   onAddUser,
   onImportUsers,
   onSave
 }: {
   users: ManagedUser[];
+  saveFeedbackPhase: 'idle' | 'feedback' | 'returning';
   onUpdateUser: (id: string, patch: Partial<ManagedUser>) => void;
-  onAddUser: () => void;
+  onAddUser: (user: Omit<ManagedUser, 'id' | 'index'>) => void;
   onImportUsers: (rows: ManagedUser[]) => void;
   onSave: () => void;
 }) {
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
+  const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [nameFilter, setNameFilter] = useState('');
   const [roleFilter, setRoleFilter] = useState('전체');
@@ -2435,13 +2543,18 @@ function UserManagementPage({
         </div>
         <div className="consumables-summary-action">
           <span>데이터 저장</span>
-          <button type="button" className="is-primary" onClick={onSave} aria-label="사용자 데이터 저장">
-            <CheckCircle2 size={18} /> 저장
+          <button
+            type="button"
+            className={`is-primary ${saveFeedbackPhase === 'feedback' ? 'is-save-feedback' : ''} ${saveFeedbackPhase === 'returning' ? 'is-save-returning' : ''}`}
+            onClick={onSave}
+            aria-label="사용자 데이터 저장"
+          >
+            <CheckCircle2 size={18} /> {saveFeedbackPhase === 'feedback' ? '저장완료!' : '저장'}
           </button>
         </div>
         <div className="consumables-summary-action">
           <span>사용자 추가</span>
-          <button type="button" onClick={onAddUser} aria-label="신규 사용자 추가">
+          <button type="button" onClick={() => setShowAddUserModal(true)} aria-label="신규 사용자 추가">
             <Plus size={18} /> 사용자 추가
           </button>
         </div>
@@ -2579,6 +2692,17 @@ function UserManagementPage({
           </tbody>
         </table>
       </div>
+      {showAddUserModal && (
+        <UserAddModal
+          labs={labs.filter((lab) => lab !== '전체')}
+          departments={departments.filter((department) => department !== '전체')}
+          onClose={() => setShowAddUserModal(false)}
+          onConfirm={(user) => {
+            onAddUser(user);
+            setShowAddUserModal(false);
+          }}
+        />
+      )}
     </section>
   );
 }
@@ -2785,6 +2909,8 @@ export function App() {
   const [hasUnsavedConsumables, setHasUnsavedConsumables] = useState(false);
   const [saveFeedbackPhase, setSaveFeedbackPhase] = useState<'idle' | 'feedback' | 'returning'>('idle');
   const saveFeedbackTimers = useRef<number[]>([]);
+  const [userSaveFeedbackPhase, setUserSaveFeedbackPhase] = useState<'idle' | 'feedback' | 'returning'>('idle');
+  const userSaveFeedbackTimers = useRef<number[]>([]);
   const [managedUsers, setManagedUsers] = useState<ManagedUser[]>(() => {
     try {
       const stored = localStorage.getItem('hbnu-managed-users');
@@ -2870,6 +2996,11 @@ export function App() {
     saveFeedbackTimers.current = [];
   }
 
+  function clearUserSaveFeedbackTimers() {
+    userSaveFeedbackTimers.current.forEach((timer) => window.clearTimeout(timer));
+    userSaveFeedbackTimers.current = [];
+  }
+
   function updateConsumable(id: string, patch: Partial<ConsumableItem>) {
     setHasUnsavedConsumables(true);
     clearSaveFeedbackTimers();
@@ -2938,31 +3069,34 @@ export function App() {
   }
 
   function updateManagedUser(id: string, patch: Partial<ManagedUser>) {
+    clearUserSaveFeedbackTimers();
+    setUserSaveFeedbackPhase('idle');
     setManagedUsers((current) => current.map((user) => (
       user.id === id ? { ...user, ...patch } : user
     )));
   }
 
-  function addManagedUser() {
-    setManagedUsers((current) => [
-      ...current,
-      {
-        id: `managed-user-${Date.now()}`,
-        index: current.length + 1,
-        name: '신규 사용자',
-        roleLevel: '일반',
-        department: '',
-        labProfessor: '',
-        phone: '',
-        email: '',
-        memo: '',
-        authProvider: 'Manual'
-      }
-    ]);
+  function addManagedUser(user: Omit<ManagedUser, 'id' | 'index'>) {
+    clearUserSaveFeedbackTimers();
+    setUserSaveFeedbackPhase('idle');
+    setManagedUsers((current) => {
+      const next = [
+        ...current,
+        {
+          ...user,
+          id: `managed-user-${Date.now()}`,
+          index: current.length + 1,
+          authProvider: user.authProvider ?? 'Manual'
+        }
+      ];
+      return next.map((item, index) => ({ ...item, index: index + 1 }));
+    });
   }
 
   function importManagedUsers(rows: ManagedUser[]) {
     if (rows.length === 0) return;
+    clearUserSaveFeedbackTimers();
+    setUserSaveFeedbackPhase('idle');
     setManagedUsers(rows.map((user, index) => ({ ...user, index: index + 1 })));
   }
 
@@ -2973,6 +3107,16 @@ export function App() {
     localStorage.setItem('hbnu-managed-users', JSON.stringify(normalized));
     localStorage.setItem('hbnu-users-updated-at', savedAt);
     setUsersUpdatedAt(savedAt);
+    clearUserSaveFeedbackTimers();
+    setUserSaveFeedbackPhase('idle');
+    window.requestAnimationFrame(() => setUserSaveFeedbackPhase('feedback'));
+    userSaveFeedbackTimers.current = [
+      window.setTimeout(() => setUserSaveFeedbackPhase('returning'), 2600),
+      window.setTimeout(() => {
+        setUserSaveFeedbackPhase('idle');
+        userSaveFeedbackTimers.current = [];
+      }, 3500)
+    ];
   }
 
   function registerAuthenticatedUser(provider: 'Google' | 'Kakao', user: { name?: string; email?: string }) {
@@ -3062,6 +3206,7 @@ export function App() {
           {activePage === 'users' && (
             <UserManagementPage
               users={managedUsers}
+              saveFeedbackPhase={userSaveFeedbackPhase}
               onUpdateUser={updateManagedUser}
               onAddUser={addManagedUser}
               onImportUsers={importManagedUsers}
