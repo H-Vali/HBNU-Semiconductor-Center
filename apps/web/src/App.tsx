@@ -506,6 +506,14 @@ function cloneManagedUsers(items = initialManagedUsers) {
   return items.map((item) => ({ ...item }));
 }
 
+function createPreviewEquipmentPermissions(): EquipmentPermissionMap {
+  const previewUserId = initialManagedUsers[0]?.id;
+  if (!previewUserId) return {};
+  const previewEquipmentIds = fallbackEquipment
+    .filter((item) => ['eq-1', 'eq-2', 'eq-5', 'eq-14', 'eq-16', 'eq-19'].includes(item.id))
+    .map((item) => item.id);
+  return { [previewUserId]: previewEquipmentIds };
+}
 function formatProfessorLab(professor: string) {
   const name = professor.replace(/교수님|교수|Prof\.|Lab/gi, '').trim() || '백근우';
   return `Prof. ${name} Lab`;
@@ -923,9 +931,8 @@ function Hero({
           </div>
           <div className="hero-user-permissions" aria-label="사용자 역할 및 장비 권한">
             <span className={`hero-role-badge ${isLead ? 'is-lead' : 'is-member'}`}>{isAdmin ? 'ADMIN' : userRole}</span>
-            {isAdmin ? (
-              <span className="hero-permission-badge is-admin">전체 장비 접근</span>
-            ) : visiblePermissionItems.length > 0 ? (
+            {isAdmin && <span className="hero-permission-badge is-admin">전체 장비 접근</span>}
+            {visiblePermissionItems.length > 0 ? (
               <>
                 {visiblePermissionItems.map((item) => (
                   <span key={item.id} className={`hero-permission-badge is-${item.group}`}>{item.name}</span>
@@ -3207,9 +3214,12 @@ export function App() {
   const [equipmentPermissions, setEquipmentPermissions] = useState<EquipmentPermissionMap>(() => {
     try {
       const stored = localStorage.getItem('hbnu-equipment-permissions');
-      return stored ? JSON.parse(stored) : {};
+      if (!stored) return createPreviewEquipmentPermissions();
+      const parsed = JSON.parse(stored) as EquipmentPermissionMap;
+      const totalGranted = Object.values(parsed).reduce((sum, equipmentIds) => sum + equipmentIds.length, 0);
+      return totalGranted > 0 ? parsed : createPreviewEquipmentPermissions();
     } catch {
-      return {};
+      return createPreviewEquipmentPermissions();
     }
   });
   const [sessionRole, setSessionRole] = useState<Role | null>(() => {
