@@ -861,12 +861,18 @@ function Hero({
   onNavigate,
   equipmentItems,
   userName,
-  userLab
+  userLab,
+  userRole,
+  grantedEquipmentItems,
+  isAdmin
 }: {
   onNavigate: (page: PageKey) => void;
   equipmentItems: EquipmentItem[];
   userName: string;
   userLab: string;
+  userRole: ManagedUser['roleLevel'];
+  grantedEquipmentItems: EquipmentItem[];
+  isAdmin: boolean;
 }) {
   const processStatusCards = [
     { label: 'Lithography', value: '12', unit: 'lots', tone: 'lithography' },
@@ -874,6 +880,9 @@ function Hero({
     { label: 'Etching', value: '9', unit: 'recipes', tone: 'etching' },
     { label: 'Metrology', value: '41', unit: 'samples', tone: 'metrology' }
   ];
+  const visiblePermissionItems = grantedEquipmentItems.slice(0, 3);
+  const hiddenPermissionCount = Math.max(grantedEquipmentItems.length - visiblePermissionItems.length, 0);
+  const isLead = userRole === '대표';
 
   return (
     <section className="hero-panel relative overflow-hidden">
@@ -911,6 +920,21 @@ function Hero({
             <span style={{ borderColor: `${getProfessorTone(userLab)}66`, backgroundColor: `${getProfessorTone(userLab)}1f`, color: getProfessorTone(userLab) }}>
               {formatProfessorLab(userLab)}
             </span>
+          </div>
+          <div className="hero-user-permissions" aria-label="사용자 역할 및 장비 권한">
+            <span className={`hero-role-badge ${isLead ? 'is-lead' : 'is-member'}`}>{isAdmin ? 'ADMIN' : userRole}</span>
+            {isAdmin ? (
+              <span className="hero-permission-badge is-admin">전체 장비 접근</span>
+            ) : visiblePermissionItems.length > 0 ? (
+              <>
+                {visiblePermissionItems.map((item) => (
+                  <span key={item.id} className={`hero-permission-badge is-${item.group}`}>{item.name}</span>
+                ))}
+                {hiddenPermissionCount > 0 && <span className="hero-permission-badge is-more">+{hiddenPermissionCount}</span>}
+              </>
+            ) : (
+              <span className="hero-permission-badge is-empty">부여된 장비 권한 없음</span>
+            )}
           </div>
           <div className="hero-reservation-list">
             <div className="hero-reservation-row">
@@ -1225,6 +1249,8 @@ function Dashboard({
   calendarEvents,
   managedUsers,
   sessionUserName,
+  sessionRole,
+  equipmentPermissions,
   onNavigate,
   onOpenEquipment
 }: {
@@ -1232,10 +1258,14 @@ function Dashboard({
   calendarEvents: ReservationEvent[];
   managedUsers: ManagedUser[];
   sessionUserName: string;
+  sessionRole: Role | null;
+  equipmentPermissions: EquipmentPermissionMap;
   onNavigate: (page: PageKey) => void;
   onOpenEquipment: (group: EquipmentGroup) => void;
 }) {
   const dashboardUser = managedUsers.find((user) => user.name === sessionUserName) ?? managedUsers[0];
+  const grantedEquipmentIds = dashboardUser ? equipmentPermissions[dashboardUser.id] ?? [] : [];
+  const grantedEquipmentItems = equipmentItems.filter((item) => grantedEquipmentIds.includes(item.id));
   return (
     <section className="mt-5 grid gap-5">
       <Hero
@@ -1243,6 +1273,9 @@ function Dashboard({
         equipmentItems={equipmentItems}
         userName={sessionUserName || 'USER NAME'}
         userLab={dashboardUser?.labProfessor ?? '백근우 교수님'}
+        userRole={dashboardUser?.roleLevel ?? '일반'}
+        grantedEquipmentItems={grantedEquipmentItems}
+        isAdmin={sessionRole === 'ADMIN'}
       />
       <RealtimeEquipmentStatus equipmentItems={equipmentItems} calendarEvents={calendarEvents} />
       <MonthlyUsageChart equipmentItems={equipmentItems} calendarEvents={calendarEvents} />
@@ -3430,6 +3463,8 @@ export function App() {
                 calendarEvents={reservationEvents}
                 managedUsers={managedUsers}
                 sessionUserName={sessionUserName}
+                sessionRole={sessionRole}
+                equipmentPermissions={equipmentPermissions}
                 onNavigate={navigate}
                 onOpenEquipment={openEquipment}
               />

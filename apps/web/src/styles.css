@@ -219,6 +219,69 @@ select {
   font-weight: 700;
 }
 
+.hero-user-permissions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.6rem;
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.08);
+  padding: 0.65rem 0;
+}
+
+.hero-role-badge,
+.hero-permission-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.65rem;
+  border-radius: 999px;
+  border: 0.5px solid rgba(148, 163, 184, 0.42);
+  padding: 0.25rem 0.62rem;
+  color: #cdd5e1;
+  font-size: 0.74rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.hero-role-badge.is-lead {
+  border-color: rgba(248, 113, 113, 0.82);
+  background: rgba(127, 29, 29, 0.28);
+  color: #fecaca;
+}
+
+.hero-role-badge.is-member {
+  border-color: rgba(148, 163, 184, 0.42);
+  background: rgba(15, 23, 42, 0.72);
+  color: #cbd5e1;
+}
+
+.hero-permission-badge.is-process {
+  border-color: rgba(168, 85, 247, 0.5);
+  background: rgba(88, 28, 135, 0.26);
+  color: #d8b4fe;
+}
+
+.hero-permission-badge.is-metrology {
+  border-color: rgba(56, 189, 248, 0.48);
+  background: rgba(12, 74, 110, 0.28);
+  color: #bae6fd;
+}
+
+.hero-permission-badge.is-admin {
+  border-color: rgba(52, 214, 176, 0.56);
+  background: rgba(20, 184, 166, 0.18);
+  color: #99f6e4;
+}
+
+.hero-permission-badge.is-more,
+.hero-permission-badge.is-empty {
+  border-color: rgba(148, 163, 184, 0.34);
+  background: rgba(139, 150, 168, 0.12);
+  color: #aab4c4;
+}
+
 .hero-reservation-list {
   display: grid;
   gap: 0;
