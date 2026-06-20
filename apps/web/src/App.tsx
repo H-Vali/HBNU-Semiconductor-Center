@@ -2823,22 +2823,45 @@ function PermissionManagementPage({
   onSavePermissions: (userId: string, equipmentIds: string[]) => void;
 }) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [nameFilter, setNameFilter] = useState('');
   const [roleFilter, setRoleFilter] = useState('전체');
+  const [departmentFilter, setDepartmentFilter] = useState('전체');
   const [labFilter, setLabFilter] = useState('전체');
+  const [permissionFilter, setPermissionFilter] = useState('전체');
+  const [pageSize, setPageSize] = useState(20);
+  const [currentPage, setCurrentPage] = useState(1);
   const [selectedUser, setSelectedUser] = useState<ManagedUser | null>(null);
+  const departments = useMemo(() => ['전체', ...Array.from(new Set(users.map((user) => user.department).filter(Boolean)))], [users]);
   const labs = useMemo(() => ['전체', ...Array.from(new Set(users.map((user) => user.labProfessor).filter(Boolean)))], [users]);
   const filteredUsers = useMemo(() => (
     users.filter((user) => {
       const keyword = searchTerm.trim().toLowerCase();
+      const nameKeyword = nameFilter.trim().toLowerCase();
       const grantedCount = permissions[user.id]?.length ?? 0;
-      const matchesSearch = !keyword || `${user.name} ${user.department} ${user.labProfessor} ${user.email} ${grantedCount}`.toLowerCase().includes(keyword);
+      const matchesSearch = !keyword || `${user.name} ${user.department} ${user.labProfessor} ${user.email} ${user.phone} ${grantedCount}`.toLowerCase().includes(keyword);
+      const matchesName = !nameKeyword || user.name.toLowerCase().includes(nameKeyword);
       const matchesRole = roleFilter === '전체' || user.roleLevel === roleFilter;
+      const matchesDepartment = departmentFilter === '전체' || user.department === departmentFilter;
       const matchesLab = labFilter === '전체' || user.labProfessor === labFilter;
-      return matchesSearch && matchesRole && matchesLab;
+      const matchesPermission = permissionFilter === '전체'
+        || (permissionFilter === '부여' && grantedCount > 0)
+        || (permissionFilter === '미부여' && grantedCount === 0);
+      return matchesSearch && matchesName && matchesRole && matchesDepartment && matchesLab && matchesPermission;
     })
-  ), [labFilter, permissions, roleFilter, searchTerm, users]);
+  ), [departmentFilter, labFilter, nameFilter, permissionFilter, permissions, roleFilter, searchTerm, users]);
   const grantedUsers = users.filter((user) => (permissions[user.id]?.length ?? 0) > 0).length;
   const totalGranted = users.reduce((sum, user) => sum + (permissions[user.id]?.length ?? 0), 0);
+  const totalPages = Math.max(Math.ceil(filteredUsers.length / pageSize), 1);
+  const pageStart = (currentPage - 1) * pageSize;
+  const pageUsers = filteredUsers.slice(pageStart, pageStart + pageSize);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [departmentFilter, labFilter, nameFilter, pageSize, permissionFilter, roleFilter, searchTerm]);
+
+  useEffect(() => {
+    setCurrentPage((page) => Math.min(page, totalPages));
+  }, [totalPages]);
 
   return (
     <section className="permission-page">
@@ -2846,7 +2869,7 @@ function PermissionManagementPage({
         <div>
           <p className="consumables-eyebrow">Equipment Permission</p>
           <h2>권한 관리</h2>
-          <span>교육 이수 후 사용자별 장비 예약 권한을 개별 부여하고 저장합니다.</span>
+          <span>사용자관리 데이터를 기준으로 장비 예약 권한을 빠르게 조회하고 개별 부여합니다.</span>
         </div>
       </div>
 
@@ -2873,7 +2896,7 @@ function PermissionManagementPage({
         </div>
       </div>
 
-      <div className="consumables-toolbar">
+      <div className="consumables-toolbar permission-toolbar">
         <div className="consumables-search">
           <Search size={17} />
           <input
@@ -2893,24 +2916,125 @@ function PermissionManagementPage({
             <option key={lab} value={lab}>{lab === '전체' ? '전체 연구실' : formatProfessorLab(lab)}</option>
           ))}
         </select>
+        <label className="permission-page-size-control">
+          <span>표시 인원</span>
+          <select value={pageSize} onChange={(event) => setPageSize(Number(event.target.value))} aria-label="페이지당 표시 인원">
+            <option value={20}>20명</option>
+            <option value={30}>30명</option>
+            <option value={50}>50명</option>
+          </select>
+        </label>
       </div>
 
-      <div className="permission-user-grid">
-        {filteredUsers.map((user) => {
-          const grantCount = permissions[user.id]?.length ?? 0;
-          const isLead = user.roleLevel === '대표';
-          return (
-            <button key={user.id} type="button" className="permission-user-card" onClick={() => setSelectedUser(user)} aria-label={`${user.name} 장비 권한 관리`}>
-              <div>
-                <strong>{user.name}</strong>
-                <span className={`permission-role-badge ${isLead ? 'is-lead' : 'is-member'}`}>{user.roleLevel}</span>
-              </div>
-              <p>{user.department}</p>
-              <em>{formatProfessorLab(user.labProfessor)}</em>
-              <small>{grantCount} / {equipmentItems.length} 장비 권한</small>
-            </button>
-          );
-        })}
+      <div className="consumables-table-wrap permission-table-wrap">
+        <table className="consumables-table users-table permission-table">
+          <colgroup>
+            <col className="user-col-index" />
+            <col className="user-col-name" />
+            <col className="user-col-role" />
+            <col className="user-col-department" />
+            <col className="user-col-lab" />
+            <col className="user-col-phone" />
+            <col className="user-col-email" />
+            <col className="permission-col-grants" />
+            <col className="permission-col-action" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th>연번</th>
+              <th>이름</th>
+              <th>ROLE</th>
+              <th>소속 학과</th>
+              <th>소속 연구실</th>
+              <th>연락처</th>
+              <th>이메일</th>
+              <th>권한</th>
+              <th>관리</th>
+            </tr>
+            <tr className="users-table-filter-row">
+              <th />
+              <th>
+                <input value={nameFilter} onChange={(event) => setNameFilter(event.target.value)} placeholder="이름 필터" aria-label="권한관리 이름 필터" />
+              </th>
+              <th>
+                <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)} aria-label="권한관리 ROLE 필터">
+                  <option value="전체">전체</option>
+                  <option value="대표">대표</option>
+                  <option value="일반">일반</option>
+                </select>
+              </th>
+              <th>
+                <select value={departmentFilter} onChange={(event) => setDepartmentFilter(event.target.value)} aria-label="권한관리 학과 필터">
+                  {departments.map((department) => (
+                    <option key={department} value={department}>{department}</option>
+                  ))}
+                </select>
+              </th>
+              <th>
+                <select value={labFilter} onChange={(event) => setLabFilter(event.target.value)} aria-label="권한관리 연구실 필터">
+                  {labs.map((lab) => (
+                    <option key={lab} value={lab}>{lab === '전체' ? '전체' : formatProfessorLab(lab)}</option>
+                  ))}
+                </select>
+              </th>
+              <th />
+              <th />
+              <th>
+                <select value={permissionFilter} onChange={(event) => setPermissionFilter(event.target.value)} aria-label="권한 부여 상태 필터">
+                  <option value="전체">전체</option>
+                  <option value="부여">부여</option>
+                  <option value="미부여">미부여</option>
+                </select>
+              </th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {pageUsers.map((user, index) => {
+              const grantCount = permissions[user.id]?.length ?? 0;
+              const labTone = getProfessorTone(user.labProfessor);
+              const rowIndex = pageStart + index + 1;
+              return (
+                <tr key={user.id} className="permission-table-row" onClick={() => setSelectedUser(user)}>
+                  <td>{rowIndex}</td>
+                  <td><span className="permission-user-pill">{user.name}</span></td>
+                  <td><span className={`permission-role-badge ${user.roleLevel === '대표' ? 'is-lead' : 'is-member'}`}>{user.roleLevel}</span></td>
+                  <td><span className="permission-user-pill is-wide">{user.department}</span></td>
+                  <td>
+                    <span className="user-lab-input permission-lab-pill">
+                      <i style={{ backgroundColor: labTone, color: labTone }} />
+                      <span style={{ borderColor: `${labTone}88`, backgroundColor: `${labTone}22` }}>{formatProfessorLab(user.labProfessor)}</span>
+                    </span>
+                  </td>
+                  <td><span className="permission-user-pill">{user.phone || '-'}</span></td>
+                  <td><span className="permission-user-pill is-email">{user.email || '-'}</span></td>
+                  <td><span className={`permission-grant-count ${grantCount > 0 ? 'is-granted' : 'is-empty'}`}>{grantCount} / {equipmentItems.length}</span></td>
+                  <td>
+                    <button type="button" className="permission-manage-button" onClick={(event) => { event.stopPropagation(); setSelectedUser(user); }}>
+                      권한 관리
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+            {pageUsers.length === 0 && (
+              <tr>
+                <td colSpan={9} className="permission-empty-row">조건에 맞는 사용자가 없습니다.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="permission-pagination" aria-label="권한관리 페이지 이동">
+        <span>{filteredUsers.length === 0 ? '0명' : `${pageStart + 1}-${Math.min(pageStart + pageSize, filteredUsers.length)}명`} / 총 {filteredUsers.length}명</span>
+        <div>
+          <button type="button" onClick={() => setCurrentPage(1)} disabled={currentPage === 1}>처음</button>
+          <button type="button" onClick={() => setCurrentPage((page) => Math.max(page - 1, 1))} disabled={currentPage === 1}>이전</button>
+          <strong>{currentPage} / {totalPages}</strong>
+          <button type="button" onClick={() => setCurrentPage((page) => Math.min(page + 1, totalPages))} disabled={currentPage === totalPages}>다음</button>
+          <button type="button" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}>마지막</button>
+        </div>
       </div>
 
       {selectedUser && (
@@ -2927,7 +3051,6 @@ function PermissionManagementPage({
     </section>
   );
 }
-
 function PermissionModal({
   user,
   equipmentItems,
