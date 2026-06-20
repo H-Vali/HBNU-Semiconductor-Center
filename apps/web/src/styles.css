@@ -2697,8 +2697,9 @@ select {
 
 .permission-modal {
   display: grid;
-  width: min(60rem, calc(100vw - 2rem));
-  max-height: min(48rem, calc(100vh - 2rem));
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  width: min(58rem, calc(100vw - 3rem));
+  max-height: min(44rem, calc(100vh - 3rem));
   overflow: hidden;
   border-radius: 16px;
   border: 1px solid rgba(125, 211, 252, 0.18);
@@ -2706,9 +2707,24 @@ select {
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
 }
 
+.permission-modal .user-add-modal-head {
+  align-items: center;
+  padding: 1.05rem 1.25rem;
+}
+
+.permission-modal .user-add-modal-head h3 {
+  margin-top: 0.25rem;
+  font-size: clamp(1.4rem, 2.2vw, 2rem);
+  line-height: 1.18;
+}
+
+.permission-modal .user-add-modal-head button {
+  flex: 0 0 auto;
+}
+
 .permission-modal-user {
   display: grid;
-  grid-template-columns: auto 1fr 1fr auto;
+  grid-template-columns: auto minmax(8rem, 1fr) minmax(10rem, 1fr) auto;
   align-items: center;
   gap: 0.75rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -2753,8 +2769,32 @@ select {
 .permission-modal-body {
   display: grid;
   gap: 1rem;
+  min-height: 0;
   overflow-y: auto;
   padding: 1rem 1.25rem 1.25rem;
+}
+
+.permission-modal-actions {
+  align-items: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(11, 18, 32, 0.96);
+  padding: 0.9rem 1.25rem 1rem;
+}
+
+.permission-save-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-width: 7.2rem;
+}
+
+.permission-save-button.is-save-feedback {
+  animation: consumables-save-feedback 2.6s ease forwards;
+}
+
+.permission-save-button.is-save-returning {
+  animation: consumables-save-returning 0.9s ease forwards;
 }
 
 .permission-equipment-group {

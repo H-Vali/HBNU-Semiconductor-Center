@@ -2921,7 +2921,6 @@ function PermissionManagementPage({
           onClose={() => setSelectedUser(null)}
           onSave={(equipmentIds) => {
             onSavePermissions(selectedUser.id, equipmentIds);
-            setSelectedUser(null);
           }}
         />
       )}
@@ -2943,11 +2942,22 @@ function PermissionModal({
   onSave: (equipmentIds: string[]) => void;
 }) {
   const [selectedIds, setSelectedIds] = useState(() => new Set(grantedEquipmentIds));
+  const [saveFeedbackPhase, setSaveFeedbackPhase] = useState<'idle' | 'feedback' | 'returning'>('idle');
+  const saveFeedbackTimers = useRef<number[]>([]);
   const processItems = equipmentItems.filter((item) => item.group === 'process');
   const metrologyItems = equipmentItems.filter((item) => item.group === 'metrology');
   const isLead = user.roleLevel === '대표';
 
+  function clearPermissionSaveFeedbackTimers() {
+    saveFeedbackTimers.current.forEach((timer) => window.clearTimeout(timer));
+    saveFeedbackTimers.current = [];
+  }
+
+  useEffect(() => () => clearPermissionSaveFeedbackTimers(), []);
+
   function toggleEquipment(equipmentId: string) {
+    clearPermissionSaveFeedbackTimers();
+    setSaveFeedbackPhase('idle');
     setSelectedIds((current) => {
       const next = new Set(current);
       if (next.has(equipmentId)) {
@@ -2957,6 +2967,20 @@ function PermissionModal({
       }
       return next;
     });
+  }
+
+  function savePermissions() {
+    clearPermissionSaveFeedbackTimers();
+    setSaveFeedbackPhase('idle');
+    onSave(Array.from(selectedIds));
+    window.requestAnimationFrame(() => setSaveFeedbackPhase('feedback'));
+    saveFeedbackTimers.current = [
+      window.setTimeout(() => setSaveFeedbackPhase('returning'), 2600),
+      window.setTimeout(() => {
+        setSaveFeedbackPhase('idle');
+        saveFeedbackTimers.current = [];
+      }, 3500)
+    ];
   }
 
   function renderEquipmentGroup(title: string, items: EquipmentItem[]) {
@@ -3005,9 +3029,15 @@ function PermissionModal({
           {renderEquipmentGroup('공정 장비', processItems)}
           {renderEquipmentGroup('계측 및 분석 장비', metrologyItems)}
         </div>
-        <div className="user-add-modal-actions">
+        <div className="user-add-modal-actions permission-modal-actions">
           <button type="button" className="is-cancel" onClick={onClose}>닫기</button>
-          <button type="button" className="is-primary" onClick={() => onSave(Array.from(selectedIds))}>권한 저장</button>
+          <button
+            type="button"
+            className={`is-primary permission-save-button ${saveFeedbackPhase === 'feedback' ? 'is-save-feedback' : ''} ${saveFeedbackPhase === 'returning' ? 'is-save-returning' : ''}`}
+            onClick={savePermissions}
+          >
+            <CheckCircle2 size={18} /> {saveFeedbackPhase === 'feedback' ? '저장완료!' : '저장'}
+          </button>
         </div>
       </section>
     </div>
