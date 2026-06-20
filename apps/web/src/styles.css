@@ -282,6 +282,18 @@ select {
   color: #aab4c4;
 }
 
+.hero-permission-badge.is-more {
+  cursor: pointer;
+}
+
+.hero-permission-badge.is-more:hover,
+.hero-permission-badge.is-more:focus-visible {
+  border-color: rgba(95, 217, 201, 0.58);
+  background: rgba(20, 184, 166, 0.18);
+  color: #99f6e4;
+  outline: none;
+}
+
 .hero-reservation-list {
   display: grid;
   gap: 0;

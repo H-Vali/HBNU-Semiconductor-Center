@@ -892,8 +892,10 @@ function Hero({
     { label: 'Etching', value: '9', unit: 'recipes', tone: 'etching' },
     { label: 'Metrology', value: '41', unit: 'samples', tone: 'metrology' }
   ];
-  const visiblePermissionItems = grantedEquipmentItems.slice(0, 3);
-  const hiddenPermissionCount = Math.max(grantedEquipmentItems.length - visiblePermissionItems.length, 0);
+  const [showAllPermissions, setShowAllPermissions] = useState(false);
+  const collapsedPermissionItems = grantedEquipmentItems.slice(0, 3);
+  const visiblePermissionItems = showAllPermissions ? grantedEquipmentItems : collapsedPermissionItems;
+  const hiddenPermissionCount = Math.max(grantedEquipmentItems.length - collapsedPermissionItems.length, 0);
   const isLead = userRole === '대표';
 
   return (
@@ -941,7 +943,17 @@ function Hero({
                 {visiblePermissionItems.map((item) => (
                   <span key={item.id} className={`hero-permission-badge is-${item.group}`}>{item.name}</span>
                 ))}
-                {hiddenPermissionCount > 0 && <span className="hero-permission-badge is-more">+{hiddenPermissionCount}</span>}
+                {hiddenPermissionCount > 0 && (
+                  <button
+                    type="button"
+                    className="hero-permission-badge is-more"
+                    onClick={() => setShowAllPermissions((current) => !current)}
+                    aria-expanded={showAllPermissions}
+                    aria-label={showAllPermissions ? '장비 권한 목록 접기' : `숨겨진 장비 권한 ${hiddenPermissionCount}개 모두 보기`}
+                  >
+                    {showAllPermissions ? '접기' : `+${hiddenPermissionCount}`}
+                  </button>
+                )}
               </>
             ) : (
               <span className="hero-permission-badge is-empty">부여된 장비 권한 없음</span>
