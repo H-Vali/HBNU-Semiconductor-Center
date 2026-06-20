@@ -43,7 +43,7 @@ import {
 } from 'lucide-react';
 import { equipment as fallbackEquipment, events, monthlyUsage, type EquipmentGroup, type EquipmentItem } from './data';
 
-type PageKey = 'home' | 'facility' | 'equipment' | 'training' | 'reservations' | 'mypage' | 'admin' | 'users' | 'consumables' | 'login';
+type PageKey = 'home' | 'facility' | 'equipment' | 'training' | 'reservations' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'login';
 type Role = 'USER' | 'ADMIN';
 type UsagePeriod = '24H' | '1W' | '1M';
 type EquipmentRuntimeStatus = 'active' | 'maintenance' | 'idle';
@@ -89,6 +89,7 @@ type ManagedUser = {
   memo: string;
   authProvider?: 'Google' | 'Kakao' | 'Manual';
 };
+type EquipmentPermissionMap = Record<string, string[]>;
 
 const apiUrl = ((import.meta as ImportMeta & { env?: Record<string, string> }).env?.VITE_API_URL) ?? 'http://localhost:4000';
 
@@ -2175,7 +2176,7 @@ function AdminPage({
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {[
           { title: '사용자관리', page: 'users' as PageKey, icon: UserRound, updatedAt: usersUpdatedAt },
-          { title: '권한관리' },
+          { title: '권한관리', page: 'permissions' as PageKey, icon: LockKeyhole },
           { title: '장비관리' },
           { title: '소모품관리', page: 'consumables' as PageKey, icon: PackageCheck, updatedAt: consumablesUpdatedAt },
           { title: '예약승인/거부' },
@@ -2751,6 +2752,208 @@ function UserManagementPage({
   );
 }
 
+function PermissionManagementPage({
+  users,
+  equipmentItems,
+  permissions,
+  onSavePermissions
+}: {
+  users: ManagedUser[];
+  equipmentItems: EquipmentItem[];
+  permissions: EquipmentPermissionMap;
+  onSavePermissions: (userId: string, equipmentIds: string[]) => void;
+}) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState('전체');
+  const [labFilter, setLabFilter] = useState('전체');
+  const [selectedUser, setSelectedUser] = useState<ManagedUser | null>(null);
+  const labs = useMemo(() => ['전체', ...Array.from(new Set(users.map((user) => user.labProfessor).filter(Boolean)))], [users]);
+  const filteredUsers = useMemo(() => (
+    users.filter((user) => {
+      const keyword = searchTerm.trim().toLowerCase();
+      const grantedCount = permissions[user.id]?.length ?? 0;
+      const matchesSearch = !keyword || `${user.name} ${user.department} ${user.labProfessor} ${user.email} ${grantedCount}`.toLowerCase().includes(keyword);
+      const matchesRole = roleFilter === '전체' || user.roleLevel === roleFilter;
+      const matchesLab = labFilter === '전체' || user.labProfessor === labFilter;
+      return matchesSearch && matchesRole && matchesLab;
+    })
+  ), [labFilter, permissions, roleFilter, searchTerm, users]);
+  const grantedUsers = users.filter((user) => (permissions[user.id]?.length ?? 0) > 0).length;
+  const totalGranted = users.reduce((sum, user) => sum + (permissions[user.id]?.length ?? 0), 0);
+
+  return (
+    <section className="permission-page">
+      <div className="consumables-hero">
+        <div>
+          <p className="consumables-eyebrow">Equipment Permission</p>
+          <h2>권한 관리</h2>
+          <span>교육 이수 후 사용자별 장비 예약 권한을 개별 부여하고 저장합니다.</span>
+        </div>
+      </div>
+
+      <div className="permission-summary-grid">
+        <div>
+          <span>관리 사용자</span>
+          <strong>{users.length}</strong>
+          <em>registered users</em>
+        </div>
+        <div>
+          <span>권한 보유자</span>
+          <strong>{grantedUsers}</strong>
+          <em>users with grants</em>
+        </div>
+        <div>
+          <span>총 부여 권한</span>
+          <strong>{totalGranted}</strong>
+          <em>equipment grants</em>
+        </div>
+        <div>
+          <span>보유 장비</span>
+          <strong>{equipmentItems.length}</strong>
+          <em>equipment list</em>
+        </div>
+      </div>
+
+      <div className="consumables-toolbar">
+        <div className="consumables-search">
+          <Search size={17} />
+          <input
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="이름, 학과, 연구실, 이메일 검색"
+            aria-label="권한 사용자 검색"
+          />
+        </div>
+        <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)} aria-label="권한 ROLE 필터">
+          <option value="전체">전체 ROLE</option>
+          <option value="대표">대표</option>
+          <option value="일반">일반</option>
+        </select>
+        <select value={labFilter} onChange={(event) => setLabFilter(event.target.value)} aria-label="권한 연구실 필터">
+          {labs.map((lab) => (
+            <option key={lab} value={lab}>{lab === '전체' ? '전체 연구실' : formatProfessorLab(lab)}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="permission-user-grid">
+        {filteredUsers.map((user) => {
+          const grantCount = permissions[user.id]?.length ?? 0;
+          const isLead = user.roleLevel === '대표';
+          return (
+            <button key={user.id} type="button" className="permission-user-card" onClick={() => setSelectedUser(user)} aria-label={`${user.name} 장비 권한 관리`}>
+              <div>
+                <strong>{user.name}</strong>
+                <span className={`permission-role-badge ${isLead ? 'is-lead' : 'is-member'}`}>{user.roleLevel}</span>
+              </div>
+              <p>{user.department}</p>
+              <em>{formatProfessorLab(user.labProfessor)}</em>
+              <small>{grantCount} / {equipmentItems.length} 장비 권한</small>
+            </button>
+          );
+        })}
+      </div>
+
+      {selectedUser && (
+        <PermissionModal
+          user={selectedUser}
+          equipmentItems={equipmentItems}
+          grantedEquipmentIds={permissions[selectedUser.id] ?? []}
+          onClose={() => setSelectedUser(null)}
+          onSave={(equipmentIds) => {
+            onSavePermissions(selectedUser.id, equipmentIds);
+            setSelectedUser(null);
+          }}
+        />
+      )}
+    </section>
+  );
+}
+
+function PermissionModal({
+  user,
+  equipmentItems,
+  grantedEquipmentIds,
+  onClose,
+  onSave
+}: {
+  user: ManagedUser;
+  equipmentItems: EquipmentItem[];
+  grantedEquipmentIds: string[];
+  onClose: () => void;
+  onSave: (equipmentIds: string[]) => void;
+}) {
+  const [selectedIds, setSelectedIds] = useState(() => new Set(grantedEquipmentIds));
+  const processItems = equipmentItems.filter((item) => item.group === 'process');
+  const metrologyItems = equipmentItems.filter((item) => item.group === 'metrology');
+  const isLead = user.roleLevel === '대표';
+
+  function toggleEquipment(equipmentId: string) {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(equipmentId)) {
+        next.delete(equipmentId);
+      } else {
+        next.add(equipmentId);
+      }
+      return next;
+    });
+  }
+
+  function renderEquipmentGroup(title: string, items: EquipmentItem[]) {
+    return (
+      <div className="permission-equipment-group">
+        <h4>{title}</h4>
+        <div className="permission-equipment-list">
+          {items.map((item) => {
+            const checked = selectedIds.has(item.id);
+            return (
+              <label key={item.id} className={`permission-equipment-item ${checked ? 'is-granted' : ''}`}>
+                <input type="checkbox" checked={checked} onChange={() => toggleEquipment(item.id)} />
+                <span>
+                  <strong>{item.name}</strong>
+                  <em>{item.groupName} · {item.location}</em>
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="user-add-modal-backdrop" role="presentation">
+      <section className="permission-modal" aria-label={`${user.name} 장비 권한 관리`}>
+        <div className="user-add-modal-head">
+          <div>
+            <p>Equipment Permission</p>
+            <h3>{user.name} 권한 부여</h3>
+          </div>
+          <button type="button" onClick={onClose} aria-label="권한 관리 닫기">×</button>
+        </div>
+        <div className="permission-modal-user">
+          <span className={`permission-role-badge ${isLead ? 'is-lead' : 'is-member'}`}>{user.roleLevel}</span>
+          <strong>{user.department}</strong>
+          <em>{formatProfessorLab(user.labProfessor)}</em>
+          <small>{selectedIds.size} / {equipmentItems.length} 장비 권한 선택</small>
+        </div>
+        <div className="permission-modal-toolbar">
+          <button type="button" onClick={() => setSelectedIds(new Set(equipmentItems.map((item) => item.id)))}>전체 부여</button>
+          <button type="button" onClick={() => setSelectedIds(new Set())}>전체 해제</button>
+        </div>
+        <div className="permission-modal-body">
+          {renderEquipmentGroup('공정 장비', processItems)}
+          {renderEquipmentGroup('계측 및 분석 장비', metrologyItems)}
+        </div>
+        <div className="user-add-modal-actions">
+          <button type="button" className="is-cancel" onClick={onClose}>닫기</button>
+          <button type="button" className="is-primary" onClick={() => onSave(Array.from(selectedIds))}>권한 저장</button>
+        </div>
+      </section>
+    </div>
+  );
+}
 function ConsumablesPage({
   month,
   consumables,
@@ -2968,6 +3171,14 @@ export function App() {
   const [usersUpdatedAt, setUsersUpdatedAt] = useState(() => (
     localStorage.getItem('hbnu-users-updated-at') ?? new Date().toISOString()
   ));
+  const [equipmentPermissions, setEquipmentPermissions] = useState<EquipmentPermissionMap>(() => {
+    try {
+      const stored = localStorage.getItem('hbnu-equipment-permissions');
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  });
   const [sessionRole, setSessionRole] = useState<Role | null>(() => {
     const stored = localStorage.getItem('hbnu-session-user');
     if (!stored) return null;
@@ -3163,6 +3374,14 @@ export function App() {
     ];
   }
 
+  function saveEquipmentPermissions(userId: string, equipmentIds: string[]) {
+    setEquipmentPermissions((current) => {
+      const next = { ...current, [userId]: equipmentIds };
+      localStorage.setItem('hbnu-equipment-permissions', JSON.stringify(next));
+      return next;
+    });
+  }
+
   function registerAuthenticatedUser(provider: 'Google' | 'Kakao', user: { name?: string; email?: string }) {
     const savedAt = new Date().toISOString();
     setManagedUsers((current) => {
@@ -3257,6 +3476,14 @@ export function App() {
               onSave={saveManagedUsers}
             />
           )}
+          {activePage === 'permissions' && (
+            <PermissionManagementPage
+              users={managedUsers}
+              equipmentItems={activeEquipmentItems}
+              permissions={equipmentPermissions}
+              onSavePermissions={saveEquipmentPermissions}
+            />
+          )}
           {activePage === 'consumables' && (
             <ConsumablesPage
               month={selectedConsumableMonth}
@@ -3288,4 +3515,3 @@ export function App() {
     </div>
   );
 }
-
