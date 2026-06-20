@@ -2355,6 +2355,10 @@ function UserAddModal({
   onClose: () => void;
   onConfirm: (user: Omit<ManagedUser, 'id' | 'index'>) => void;
 }) {
+  const newDepartmentValue = '__new_department__';
+  const newLabValue = '__new_lab__';
+  const [departmentMode, setDepartmentMode] = useState(departments[0] ? departments[0] : newDepartmentValue);
+  const [labMode, setLabMode] = useState(labs[0] ? labs[0] : newLabValue);
   const [form, setForm] = useState<Omit<ManagedUser, 'id' | 'index'>>({
     name: '',
     roleLevel: '일반',
@@ -2365,6 +2369,8 @@ function UserAddModal({
     memo: '',
     authProvider: 'Manual'
   });
+  const isNewDepartment = departmentMode === newDepartmentValue;
+  const isNewLab = labMode === newLabValue;
 
   function updateField<Key extends keyof typeof form>(key: Key, value: typeof form[Key]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -2378,6 +2384,14 @@ function UserAddModal({
     }
     if (!form.email.trim()) {
       window.alert('이메일을 입력해주세요.');
+      return;
+    }
+    if (!form.department.trim()) {
+      window.alert('소속 학과를 선택하거나 입력해주세요.');
+      return;
+    }
+    if (!form.labProfessor.trim()) {
+      window.alert('소속 연구실을 선택하거나 입력해주세요.');
       return;
     }
     onConfirm({
@@ -2415,17 +2429,47 @@ function UserAddModal({
           </label>
           <label>
             소속 학과
-            <input value={form.department} onChange={(event) => updateField('department', event.target.value)} list="user-add-departments" placeholder="소속 학과" />
-            <datalist id="user-add-departments">
-              {departments.map((department) => <option key={department} value={department} />)}
-            </datalist>
+            <select
+              value={departmentMode}
+              onChange={(event) => {
+                const value = event.target.value;
+                setDepartmentMode(value);
+                updateField('department', value === newDepartmentValue ? '' : value);
+              }}
+            >
+              <option value={newDepartmentValue}>신규 학과 추가</option>
+              {departments.map((department) => <option key={department} value={department}>{department}</option>)}
+            </select>
+            {isNewDepartment && (
+              <input
+                className="user-add-manual-field"
+                value={form.department}
+                onChange={(event) => updateField('department', event.target.value)}
+                placeholder="신규 학과명 입력"
+              />
+            )}
           </label>
           <label>
             소속 연구실
-            <input value={form.labProfessor} onChange={(event) => updateField('labProfessor', event.target.value)} list="user-add-labs" placeholder="예: 백근우 교수님" />
-            <datalist id="user-add-labs">
-              {labs.map((lab) => <option key={lab} value={lab} />)}
-            </datalist>
+            <select
+              value={labMode}
+              onChange={(event) => {
+                const value = event.target.value;
+                setLabMode(value);
+                updateField('labProfessor', value === newLabValue ? '' : value);
+              }}
+            >
+              <option value={newLabValue}>신규 교수 추가</option>
+              {labs.map((lab) => <option key={lab} value={lab}>{lab}</option>)}
+            </select>
+            {isNewLab && (
+              <input
+                className="user-add-manual-field"
+                value={form.labProfessor}
+                onChange={(event) => updateField('labProfessor', event.target.value)}
+                placeholder="예: 백근우 교수님"
+              />
+            )}
           </label>
           <label>
             연락처

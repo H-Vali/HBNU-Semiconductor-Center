@@ -2914,6 +2914,12 @@ select {
   box-shadow: 0 0 0 2px rgba(95, 217, 201, 0.12);
 }
 
+.user-add-modal-grid .user-add-manual-field {
+  margin-top: 0.45rem;
+  border-color: rgba(95, 217, 201, 0.42);
+  background: rgba(20, 184, 166, 0.08);
+}
+
 .user-add-modal-actions {
   display: flex;
   justify-content: flex-end;
