@@ -669,6 +669,50 @@ select {
   color: #ffffff;
 }
 
+.sidebar-dropdown {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.sidebar-dropdown-trigger svg:last-child {
+  justify-self: end;
+  transition: transform 0.3s ease;
+}
+
+.sidebar-dropdown.is-open .sidebar-dropdown-trigger svg:last-child {
+  transform: rotate(180deg);
+}
+
+.sidebar-subnav {
+  display: grid;
+  gap: 0.3rem;
+  margin-left: 1rem;
+  border-left: 1px solid rgba(125, 211, 252, 0.18);
+  padding-left: 0.7rem;
+}
+
+.sidebar-subnav-item {
+  display: grid;
+  grid-template-columns: 1.2rem minmax(0, 1fr);
+  min-height: 2.35rem;
+  align-items: center;
+  gap: 0.55rem;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  padding: 0.48rem 0.65rem;
+  color: #94a3b8;
+  font-size: 0.84rem;
+  font-weight: 850;
+  text-align: left;
+}
+
+.sidebar-subnav-item:hover,
+.sidebar-subnav-item.is-active {
+  border-color: rgba(95, 217, 201, 0.28);
+  background: rgba(20, 184, 166, 0.14);
+  color: #ccfbf1;
+}
+
 .sidebar-admin-block {
   margin-top: 1.15rem;
   border-top: 1px solid rgba(148, 163, 184, 0.16);
@@ -1641,6 +1685,11 @@ select {
 }
 
 @media (max-width: 1180px) {
+  .faq-grid,
+  .qna-compose {
+    grid-template-columns: 1fr;
+  }
+
   .notice-layout {
     grid-template-columns: 1fr;
   }
@@ -2803,6 +2852,205 @@ select {
   color: #94a3b8;
   font-size: 0.82rem;
   font-weight: 650;
+}
+
+.inquiry-page {
+  display: grid;
+  gap: 1.2rem;
+}
+
+.inquiry-hero {
+  background:
+    radial-gradient(circle at top right, rgba(96, 165, 250, 0.14), transparent 34%),
+    rgba(17, 25, 43, 0.88);
+}
+
+.faq-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.faq-card {
+  display: grid;
+  gap: 0.8rem;
+  min-height: 12rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(17, 25, 43, 0.86);
+  padding: 1.15rem;
+}
+
+.faq-card:hover {
+  border-color: rgba(95, 217, 201, 0.32);
+  background: rgba(15, 118, 110, 0.14);
+  transform: translateY(-2px);
+}
+
+.faq-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.faq-card-head span,
+.faq-card-head em {
+  border-radius: 999px;
+  padding: 0.28rem 0.58rem;
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.faq-card-head span {
+  background: rgba(45, 212, 191, 0.14);
+  color: #99f6e4;
+}
+
+.faq-card-head em {
+  background: rgba(59, 130, 246, 0.14);
+  color: #bfdbfe;
+}
+
+.faq-card h3 {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 1.18rem;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.faq-card p {
+  margin: 0;
+  color: #aab4c4;
+  font-size: 0.95rem;
+  font-weight: 650;
+  line-height: 1.7;
+}
+
+.qna-compose {
+  display: grid;
+  grid-template-columns: minmax(10rem, 0.35fr) minmax(0, 1fr) auto;
+  gap: 0.8rem;
+  align-items: end;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(17, 25, 43, 0.86);
+  padding: 1rem;
+}
+
+.qna-compose label {
+  display: grid;
+  gap: 0.4rem;
+  color: #94a3b8;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.qna-compose input {
+  min-height: 2.8rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(2, 6, 23, 0.58);
+  padding: 0 0.85rem;
+  color: #f8fafc;
+  font-weight: 800;
+  outline: none;
+}
+
+.qna-compose input:focus {
+  border-color: rgba(95, 217, 201, 0.7);
+  box-shadow: 0 0 0 2px rgba(95, 217, 201, 0.12);
+}
+
+.qna-compose button {
+  min-height: 2.8rem;
+  border-radius: 10px;
+  background: #2563eb;
+  padding: 0 1rem;
+  color: #ffffff;
+  font-weight: 900;
+}
+
+.qna-compose button:hover {
+  background: #3b82f6;
+  transform: translateY(-1px);
+}
+
+.qna-table-wrap {
+  overflow: auto;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(17, 25, 43, 0.86);
+}
+
+.qna-table {
+  width: 100%;
+  min-width: 46rem;
+  border-collapse: collapse;
+}
+
+.qna-table th,
+.qna-table td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.9rem 1rem;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.qna-table th {
+  color: #7dd3fc;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.qna-table td {
+  color: #dbeafe;
+  font-size: 0.92rem;
+  font-weight: 750;
+}
+
+.qna-table tr:hover td {
+  background: rgba(15, 118, 110, 0.1);
+}
+
+.qna-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(100, 116, 139, 0.14);
+  padding: 0.28rem 0.62rem;
+  color: #cbd5e1;
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.qna-status i {
+  width: 0.52rem;
+  height: 0.52rem;
+  border-radius: 999px;
+  background: #94a3b8;
+  box-shadow: 0 0 12px rgba(148, 163, 184, 0.32);
+}
+
+.qna-status.is-complete {
+  border-color: rgba(34, 197, 94, 0.26);
+  background: rgba(22, 163, 74, 0.14);
+  color: #bbf7d0;
+}
+
+.qna-status.is-complete i {
+  background: #22c55e;
+  box-shadow: 0 0 14px rgba(34, 197, 94, 0.48);
+}
+
+.qna-status.is-pending {
+  color: #cbd5e1;
 }
 
 .consumables-actions {

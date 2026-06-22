@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent, type ReactNode } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent, type ReactNode } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -19,15 +19,18 @@ import {
   BookOpen,
   CalendarDays,
   CheckCircle2,
+  ChevronDown,
   Cpu,
   Download,
   Factory,
   Gauge,
   GraduationCap,
+  HelpCircle,
   LayoutDashboard,
   LockKeyhole,
   LogIn,
   Megaphone,
+  MessageSquare,
   Microscope,
   PackageCheck,
   Plus,
@@ -43,7 +46,7 @@ import {
 } from 'lucide-react';
 import { equipment as fallbackEquipment, events, monthlyUsage, type EquipmentGroup, type EquipmentItem } from './data';
 
-type PageKey = 'home' | 'notice' | 'center' | 'facility' | 'equipment' | 'training' | 'reservations' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'login';
+type PageKey = 'home' | 'notice' | 'center' | 'facility' | 'equipment' | 'training' | 'faq' | 'qna' | 'reservations' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'login';
 type Role = 'USER' | 'ADMIN';
 type UsagePeriod = '24H' | '1W' | '1M';
 type EquipmentRuntimeStatus = 'active' | 'maintenance' | 'idle';
@@ -799,6 +802,13 @@ function useVisitorStats() {
 
 function SidebarNavigation({ activePage, onNavigate }: { activePage: PageKey; onNavigate: (page: PageKey) => void }) {
   const visitorStats = useVisitorStats();
+  const inquiryPages: PageKey[] = ['faq', 'qna'];
+  const [inquiryOpen, setInquiryOpen] = useState(() => inquiryPages.includes(activePage));
+  const inquirySelected = inquiryPages.includes(activePage);
+
+  useEffect(() => {
+    if (inquirySelected) setInquiryOpen(true);
+  }, [inquirySelected]);
 
   return (
     <div className="sidebar-stack">
@@ -809,14 +819,49 @@ function SidebarNavigation({ activePage, onNavigate }: { activePage: PageKey; on
             const Icon = item.icon;
             const selected = activePage === item.page;
             return (
-              <button
-                key={`${item.page}-${item.label}`}
-                className={`sidebar-nav-item ${selected ? 'is-active' : ''}`}
-                onClick={() => onNavigate(item.page)}
-              >
-                <Icon size={18} />
-                <span>{item.label}</span>
-              </button>
+              <Fragment key={`${item.page}-${item.label}`}>
+                <button
+                  className={`sidebar-nav-item ${selected ? 'is-active' : ''}`}
+                  onClick={() => onNavigate(item.page)}
+                >
+                  <Icon size={18} />
+                  <span>{item.label}</span>
+                </button>
+                {item.page === 'training' && (
+                  <div className={`sidebar-dropdown ${inquiryOpen ? 'is-open' : ''}`}>
+                    <button
+                      type="button"
+                      className={`sidebar-nav-item sidebar-dropdown-trigger ${inquirySelected ? 'is-active' : ''}`}
+                      onClick={() => setInquiryOpen((current) => !current)}
+                      aria-expanded={inquiryOpen}
+                    >
+                      <HelpCircle size={18} />
+                      <span>문의사항</span>
+                      <ChevronDown size={16} />
+                    </button>
+                    {inquiryOpen && (
+                      <div className="sidebar-subnav">
+                        <button
+                          type="button"
+                          className={`sidebar-subnav-item ${activePage === 'faq' ? 'is-active' : ''}`}
+                          onClick={() => onNavigate('faq')}
+                        >
+                          <BookOpen size={15} />
+                          <span>자주 묻는 내용</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`sidebar-subnav-item ${activePage === 'qna' ? 'is-active' : ''}`}
+                          onClick={() => onNavigate('qna')}
+                        >
+                          <MessageSquare size={15} />
+                          <span>사용자 Q&amp;A</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </Fragment>
             );
           })}
         </nav>
@@ -3487,6 +3532,182 @@ function NoticePage() {
   );
 }
 
+const faqItems = [
+  {
+    id: 'faq-1',
+    category: '예약',
+    question: '장비 예약은 누가 신청할 수 있나요?',
+    answer: '장비별 교육 인증과 권한 부여가 완료된 사용자가 예약할 수 있습니다. 일부 장비는 관리자 승인 후 예약이 확정됩니다.',
+    updatedAt: '2026.06.22'
+  },
+  {
+    id: 'faq-2',
+    category: '교육',
+    question: '장비사용자 교육 이수 여부는 어디에서 확인하나요?',
+    answer: '마이페이지의 인증정보 영역과 관리자 권한관리 화면에서 교육 이수 및 장비 권한 상태를 확인할 수 있도록 확장 예정입니다.',
+    updatedAt: '2026.06.20'
+  },
+  {
+    id: 'faq-3',
+    category: '운영',
+    question: '예약 취소나 일정 변경은 어떻게 하나요?',
+    answer: '일반 사용자는 마이페이지의 내 예약현황에서 취소 요청을 진행하고, 관리자는 관리자 페이지에서 예약 추가/삭제를 처리할 수 있습니다.',
+    updatedAt: '2026.06.18'
+  },
+  {
+    id: 'faq-4',
+    category: '계정',
+    question: '로그인 후 소속 정보가 다르면 어떻게 수정하나요?',
+    answer: '현재는 관리자 사용자관리 화면에서 소속 학과, 연구실, 메모 정보를 수정할 수 있으며 추후 마이페이지 설정과 연동 예정입니다.',
+    updatedAt: '2026.06.15'
+  }
+];
+
+type QnaItem = {
+  id: string;
+  department: string;
+  title: string;
+  status: '답변대기' | '답변완료';
+  createdAt: string;
+};
+
+const initialQnaItems: QnaItem[] = [
+  { id: 'qna-1', department: '전자공학과', title: 'FE-SEM 교육 인증 후 예약 권한 반영 시점 문의', status: '답변완료', createdAt: '2026.06.21' },
+  { id: 'qna-2', department: '기계공학과', title: 'Thermal Evaporator 야간 사용 가능 여부 문의', status: '답변대기', createdAt: '2026.06.22' },
+  { id: 'qna-3', department: '창의융합학과', title: '교육 신청 후 일정 변경 가능 여부 문의', status: '답변대기', createdAt: '2026.06.22' }
+];
+
+function FaqPage() {
+  return (
+    <section className="inquiry-page">
+      <div className="notice-hero inquiry-hero">
+        <div>
+          <p className="consumables-eyebrow">Frequently Asked Questions</p>
+          <h2>자주 묻는 내용</h2>
+          <span>관리자가 등록한 장비 예약, 교육, 계정 관련 주요 안내를 게시물 형태로 제공합니다.</span>
+        </div>
+        <div className="notice-hero-meta" aria-label="FAQ 요약">
+          <strong>{faqItems.length}</strong>
+          <span>등록 게시물</span>
+          <em>관리자 업로드</em>
+        </div>
+      </div>
+
+      <div className="faq-grid">
+        {faqItems.map((item) => (
+          <article key={item.id} className="faq-card">
+            <div className="faq-card-head">
+              <span>{item.category}</span>
+              <em>{item.updatedAt}</em>
+            </div>
+            <h3>{item.question}</h3>
+            <p>{item.answer}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function QnaPage() {
+  const [qnaItems, setQnaItems] = useState<QnaItem[]>(() => {
+    try {
+      const stored = localStorage.getItem('hbnu-qna-items');
+      return stored ? JSON.parse(stored) : initialQnaItems;
+    } catch {
+      return initialQnaItems;
+    }
+  });
+  const [department, setDepartment] = useState('');
+  const [title, setTitle] = useState('');
+
+  function submitQuestion(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const trimmedDepartment = department.trim();
+    const trimmedTitle = title.trim();
+    if (!trimmedDepartment || !trimmedTitle) {
+      window.alert('소속 학과와 제목을 입력해주세요.');
+      return;
+    }
+
+    const now = new Date();
+    const createdAt = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
+    const nextItems = [
+      {
+        id: `qna-${Date.now()}`,
+        department: trimmedDepartment,
+        title: trimmedTitle,
+        status: '답변대기' as const,
+        createdAt
+      },
+      ...qnaItems
+    ];
+    setQnaItems(nextItems);
+    localStorage.setItem('hbnu-qna-items', JSON.stringify(nextItems));
+    setDepartment('');
+    setTitle('');
+  }
+
+  return (
+    <section className="inquiry-page qna-page">
+      <div className="notice-hero inquiry-hero">
+        <div>
+          <p className="consumables-eyebrow">User Q&amp;A</p>
+          <h2>사용자 Q&amp;A</h2>
+          <span>장비 운영, 예약, 교육 인증 관련 문의를 관리자에게 등록하고 답변 상태를 확인합니다.</span>
+        </div>
+        <div className="notice-hero-meta" aria-label="Q&A 요약">
+          <strong>{qnaItems.length}</strong>
+          <span>등록 문의</span>
+          <em>대기 {qnaItems.filter((item) => item.status === '답변대기').length}건</em>
+        </div>
+      </div>
+
+      <form className="qna-compose" onSubmit={submitQuestion}>
+        <label>
+          소속 학과
+          <input value={department} onChange={(event) => setDepartment(event.target.value)} placeholder="예: 전자공학과" />
+        </label>
+        <label>
+          문의 제목
+          <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="문의 내용을 한 줄로 입력" />
+        </label>
+        <button type="submit">질문 등록</button>
+      </form>
+
+      <div className="qna-table-wrap">
+        <table className="qna-table">
+          <thead>
+            <tr>
+              <th>번호</th>
+              <th>소속(학과)</th>
+              <th>제목</th>
+              <th>답변</th>
+              <th>작성일</th>
+            </tr>
+          </thead>
+          <tbody>
+            {qnaItems.map((item, index) => (
+              <tr key={item.id}>
+                <td>{qnaItems.length - index}</td>
+                <td>{item.department}</td>
+                <td>{item.title}</td>
+                <td>
+                  <span className={`qna-status ${item.status === '답변완료' ? 'is-complete' : 'is-pending'}`}>
+                    <i />
+                    {item.status}
+                  </span>
+                </td>
+                <td>{item.createdAt}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
 function PlaceholderPage({ title }: { title: string }) {
   return (
     <section className="rounded-lg border border-white/10 bg-surface/85 p-8">
@@ -3822,6 +4043,8 @@ export function App() {
             />
           )}
           {activePage === 'training' && <TrainingPage equipmentItems={activeEquipmentItems} />}
+          {activePage === 'faq' && <FaqPage />}
+          {activePage === 'qna' && <QnaPage />}
           {activePage === 'admin' && (
             <AdminPage
               equipmentItems={equipmentItems}
