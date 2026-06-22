@@ -1028,12 +1028,34 @@ function Hero({
             ))}
           </div>
         </div>
-        <div>
-          <p className="hero-section-label">운영 지표</p>
-          <StatGrid equipmentItems={equipmentItems} />
-        </div>
+        <DashboardNoticePanel onNavigate={onNavigate} />
       </div>
     </section>
+  );
+}
+
+function DashboardNoticePanel({ onNavigate }: { onNavigate: (page: PageKey) => void }) {
+  const dashboardNotices = noticeItems.slice(0, 4);
+
+  return (
+    <div className="dashboard-notice-panel">
+      <div className="dashboard-notice-head">
+        <div>
+          <p className="hero-section-label">Notice</p>
+          <h3>공지사항</h3>
+        </div>
+        <button type="button" onClick={() => onNavigate('notice')}>전체 보기</button>
+      </div>
+      <div className="dashboard-notice-list" aria-label="대시보드 공지사항">
+        {dashboardNotices.map((notice) => (
+          <button key={notice.id} type="button" className="dashboard-notice-row" onClick={() => onNavigate('notice')}>
+            <span className="dashboard-notice-category">{notice.category}</span>
+            <strong>{notice.title}</strong>
+            <time>{notice.date}</time>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -1365,10 +1387,8 @@ function EquipmentPage({
   onDeleteEquipment: (equipmentId: string) => void;
 }) {
   const [activeGroup, setActiveGroup] = useState<EquipmentGroup>(initialGroup);
-  const [showUploadModal, setShowUploadModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [planImage, setPlanImage] = useState<string | null>(null);
   const isAdmin = sessionRole === 'ADMIN';
 
   useEffect(() => setActiveGroup(initialGroup), [initialGroup]);
@@ -1384,19 +1404,7 @@ function EquipmentPage({
       <SectionTitle
         title="장비현황"
         eyebrow="Equipment Inventory"
-        action={
-          isAdmin ? (
-            <button
-              className="inline-flex items-center gap-2 rounded-md bg-blue-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-cyan-500 hover:text-slate-950"
-              onClick={() => setShowUploadModal(true)}
-              title="실습실 도면 이미지 업로드"
-            >
-              <Plus size={17} /> 도면 업로드
-            </button>
-          ) : null
-        }
       />
-      <CleanroomPlanSection image={planImage} />
       <EquipmentGateway
         equipmentItems={equipmentItems}
         onOpen={setActiveGroup}
@@ -1443,27 +1451,68 @@ function EquipmentPage({
           </article>
         ))}
       </div>
-      {showUploadModal && <PlanUploadModal onClose={() => setShowUploadModal(false)} onUpload={(image) => { setPlanImage(image); setShowUploadModal(false); }} />}
       {showAddModal && <EquipmentAddModal onClose={() => setShowAddModal(false)} onAdd={(item) => { onAddEquipment(item); setActiveGroup(item.group); setShowAddModal(false); }} />}
       {showDeleteModal && <EquipmentDeleteModal equipmentItems={equipmentItems} onClose={() => setShowDeleteModal(false)} onDelete={(equipmentId) => { onDeleteEquipment(equipmentId); setShowDeleteModal(false); }} />}
     </section>
   );
 }
 
-function CleanroomPlanSection({ image }: { image: string | null }) {
+function FacilityPage({ sessionRole }: { sessionRole: Role | null }) {
+  const [planImage, setPlanImage] = useState<string | null>(null);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const isAdmin = sessionRole === 'ADMIN';
+
   return (
-    <div className="rounded-lg border border-white/10 bg-surface/85 p-5">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-bold uppercase text-cyan-300">Cleanroom Floor Plan</p>
-          <h3 className="mt-1 text-2xl font-extrabold text-white">실습실 도면 3D 배치 공간</h3>
-        </div>
+    <section className="facility-page">
+      <SectionTitle
+        title="시설안내"
+        eyebrow="Facility Layout"
+        action={
+          isAdmin ? (
+            <button
+              className="inline-flex items-center gap-2 rounded-md bg-blue-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-cyan-500 hover:text-slate-950"
+              onClick={() => setShowUploadModal(true)}
+              title="실습실 도면 이미지 업로드"
+            >
+              <Plus size={17} /> 도면 업로드
+            </button>
+          ) : null
+        }
+      />
+
+      <div className="facility-lab-layout">
+        <article className="facility-lab-card is-metrology">
+          <div className="facility-lab-copy">
+            <span>Lab 01</span>
+            <h3>반도체 검사·계측·패키징 실습실</h3>
+            <p>검사, 계측, 분석, 패키징 장비를 한 공간에서 확인할 수 있는 실습실 배치 초안입니다.</p>
+          </div>
+          <CleanroomPlanSection image={null} mode="metrology" />
+        </article>
+
+        <article className="facility-lab-card is-process">
+          <div className="facility-lab-copy">
+            <span>Lab 02</span>
+            <h3>반도체 공정 실습실</h3>
+            <p>노광, 증착, 식각, 열처리 장비를 중심으로 구성한 공정 실습실 배치 초안입니다.</p>
+          </div>
+          <CleanroomPlanSection image={planImage} mode="process" />
+        </article>
       </div>
+
+      {showUploadModal && <PlanUploadModal onClose={() => setShowUploadModal(false)} onUpload={(image) => { setPlanImage(image); setShowUploadModal(false); }} />}
+    </section>
+  );
+}
+
+function CleanroomPlanSection({ image, mode = 'combined' }: { image: string | null; mode?: 'combined' | 'process' | 'metrology' }) {
+  return (
+    <div className={`cleanroom-plan-card is-${mode}`}>
       <div className="cleanroom-plan-space">
         {image ? (
           <img className="cleanroom-plan-image" src={image} alt="업로드된 실습실 도면" />
         ) : (
-          <div className="cleanroom-3d-draft" aria-label="클린룸 3D 도면 가안">
+          <div className={`cleanroom-3d-draft is-${mode}`} aria-label="클린룸 3D 도면 가안">
             <div className="cleanroom-room room-process">
               <strong>Process Zone</strong>
               <span>Lithography / Deposition / Etching</span>
@@ -4023,6 +4072,7 @@ export function App() {
             </>
           )}
           {activePage === 'notice' && <NoticePage />}
+          {activePage === 'facility' && <FacilityPage sessionRole={sessionRole} />}
           {activePage === 'equipment' && (
             <EquipmentPage
               equipmentItems={activeEquipmentItems}
@@ -4093,7 +4143,6 @@ export function App() {
             />
           )}
           {activePage === 'center' && <PlaceholderPage title="센터소개" />}
-          {activePage === 'facility' && <PlaceholderPage title="시설안내" />}
           {activePage === 'mypage' && (
             <MyPage
               equipmentItems={activeEquipmentItems}
