@@ -4407,6 +4407,9 @@ export function App() {
     }
   });
   const [showPenaltyNotice, setShowPenaltyNotice] = useState(false);
+  const [showPreviewPenaltyDemo, setShowPreviewPenaltyDemo] = useState(() => (
+    localStorage.getItem('hbnu-preview-penalty-demo-dismissed') !== 'true'
+  ));
   const sessionUser = getStoredSessionUser();
   const sessionUserName = (() => {
     try {
@@ -4420,6 +4423,21 @@ export function App() {
     () => getActivePenaltyForSession(sessionUser, managedUsers, penaltyRecords),
     [sessionRole, managedUsers, penaltyRecords]
   );
+  const previewPenaltyDemo = useMemo<PenaltyRecord>(() => {
+    const startsAt = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+    return {
+      id: 'preview-penalty-demo',
+      userId: 'preview-demo-user',
+      userName: '프리뷰 사용자',
+      userEmail: 'preview-user@hbnu.local',
+      type: '1주 사용정지',
+      category: '안전관련',
+      reason: '프리뷰 테스트: 안전수칙 미준수로 장비 예약 기능이 1주간 제한된 예시입니다.',
+      startsAt,
+      endsAt: getPenaltyEndsAt('1주 사용정지', startsAt),
+      createdAt: startsAt
+    };
+  }, []);
 
   useEffect(() => {
     if (sessionRole && sessionRole !== 'ADMIN' && activeSessionPenalty) {
@@ -4459,6 +4477,11 @@ export function App() {
 
   function deleteReservation(reservationId: string) {
     setReservationEvents((current) => current.filter((event) => event.id !== reservationId));
+  }
+
+  function dismissPreviewPenaltyDemo() {
+    localStorage.setItem('hbnu-preview-penalty-demo-dismissed', 'true');
+    setShowPreviewPenaltyDemo(false);
   }
 
   function addPenalty(userId: string, type: PenaltyType, category: PenaltyCategory, reason: string) {
@@ -4815,6 +4838,9 @@ export function App() {
       </div>
       {showPenaltyNotice && activeSessionPenalty && (
         <PenaltyNoticeModal penalty={activeSessionPenalty} onClose={() => setShowPenaltyNotice(false)} />
+      )}
+      {showPreviewPenaltyDemo && !activeSessionPenalty && (
+        <PenaltyNoticeModal penalty={previewPenaltyDemo} onClose={dismissPreviewPenaltyDemo} />
       )}
     </div>
   );
