@@ -84,7 +84,7 @@ type ManagedUser = {
   id: string;
   index: number;
   name: string;
-  roleLevel: '대표' | '일반';
+  roleLevel: RoleLevel;
   department: string;
   labProfessor: string;
   phone: string;
@@ -92,6 +92,7 @@ type ManagedUser = {
   memo: string;
   authProvider?: 'Google' | 'Kakao' | 'Manual';
 };
+type RoleLevel = '교원' | '대표' | '일반';
 type EquipmentPermissionMap = Record<string, string[]>;
 
 const apiUrl = ((import.meta as ImportMeta & { env?: Record<string, string> }).env?.VITE_API_URL) ?? 'http://localhost:4000';
@@ -543,6 +544,18 @@ function getProfessorTone(professor: string) {
   return key ? palette[key] : '#5FD9C9';
 }
 
+const roleLevelOptions: RoleLevel[] = ['교원', '대표', '일반'];
+
+function normalizeRoleLevel(value: string): RoleLevel {
+  return roleLevelOptions.includes(value as RoleLevel) ? value as RoleLevel : '일반';
+}
+
+function getRoleToneClass(roleLevel: RoleLevel) {
+  if (roleLevel === '교원') return 'is-faculty';
+  if (roleLevel === '대표') return 'is-lead';
+  return 'is-member';
+}
+
 function downloadUsersExcel(rows: ManagedUser[]) {
   const escapeCell = (value: string | number) => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const headers = ['연번', '이름', 'ROLE', '소속 학과', '소속 연구실', '연락처', '이메일', '메모', '인증'];
@@ -608,7 +621,7 @@ function parseUsersUpload(text: string) {
         id: `uploaded-user-${Date.now()}-${index}`,
         index: Number(row[indexes.index]) || index + 1,
         name: row[indexes.name] || '',
-        roleLevel: row[indexes.roleLevel] === '대표' ? '대표' : '일반',
+        roleLevel: normalizeRoleLevel(row[indexes.roleLevel]),
         department: row[indexes.department] || '',
         labProfessor: row[indexes.labProfessor] || '',
         phone: row[indexes.phone] || '',
@@ -922,7 +935,7 @@ function Hero({
   const collapsedPermissionItems = grantedEquipmentItems.slice(0, 3);
   const visiblePermissionItems = showAllPermissions ? grantedEquipmentItems : collapsedPermissionItems;
   const hiddenPermissionCount = Math.max(grantedEquipmentItems.length - collapsedPermissionItems.length, 0);
-  const isLead = userRole === '대표';
+  const roleToneClass = getRoleToneClass(userRole);
 
   return (
     <section className="hero-panel relative overflow-hidden">
@@ -967,7 +980,7 @@ function Hero({
             </span>
           </div>
           <div className="hero-user-permissions" aria-label="사용자 역할 및 장비 권한">
-            <span className={`hero-role-badge ${isLead ? 'is-lead' : 'is-member'}`}>{isAdmin ? 'ADMIN' : userRole}</span>
+            <span className={`hero-role-badge ${roleToneClass}`}>{isAdmin ? 'ADMIN' : userRole}</span>
             {isAdmin && <span className="hero-permission-badge is-admin">전체 장비 접근</span>}
             {visiblePermissionItems.length > 0 ? (
               <>
@@ -2555,9 +2568,8 @@ function UserAddModal({
           </label>
           <label>
             ROLE
-            <select value={form.roleLevel} onChange={(event) => updateField('roleLevel', event.target.value === '대표' ? '대표' : '일반')}>
-              <option value="일반">일반</option>
-              <option value="대표">대표</option>
+            <select value={form.roleLevel} onChange={(event) => updateField('roleLevel', normalizeRoleLevel(event.target.value))}>
+              {roleLevelOptions.map((role) => <option key={role} value={role}>{role}</option>)}
             </select>
           </label>
           <label>
@@ -2626,6 +2638,142 @@ function UserAddModal({
   );
 }
 
+function UserEditModal({
+  user,
+  labs,
+  departments,
+  onClose,
+  onConfirm
+}: {
+  user: ManagedUser;
+  labs: string[];
+  departments: string[];
+  onClose: () => void;
+  onConfirm: (patch: Partial<ManagedUser>) => void;
+}) {
+  const newDepartmentValue = '__new_department__';
+  const newLabValue = '__new_lab__';
+  const [departmentMode, setDepartmentMode] = useState(departments.includes(user.department) ? user.department : newDepartmentValue);
+  const [labMode, setLabMode] = useState(labs.includes(user.labProfessor) ? user.labProfessor : newLabValue);
+  const [form, setForm] = useState({
+    name: user.name,
+    roleLevel: user.roleLevel,
+    department: user.department,
+    labProfessor: user.labProfessor,
+    phone: user.phone,
+    email: user.email,
+    memo: user.memo
+  });
+  const isNewDepartment = departmentMode === newDepartmentValue;
+  const isNewLab = labMode === newLabValue;
+
+  function updateField<Key extends keyof typeof form>(key: Key, value: typeof form[Key]) {
+    setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!form.name.trim()) {
+      window.alert('이름을 입력해주세요.');
+      return;
+    }
+    if (!form.department.trim()) {
+      window.alert('소속 학과를 선택하거나 입력해주세요.');
+      return;
+    }
+    if (!form.labProfessor.trim()) {
+      window.alert('소속 연구실을 선택하거나 입력해주세요.');
+      return;
+    }
+
+    onConfirm({
+      name: form.name.trim(),
+      roleLevel: form.roleLevel,
+      department: form.department.trim(),
+      labProfessor: form.labProfessor.trim(),
+      phone: form.phone.trim(),
+      email: form.email.trim(),
+      memo: form.memo.trim()
+    });
+  }
+
+  return (
+    <div className="user-add-modal-backdrop" role="presentation">
+      <form className="user-add-modal user-edit-modal" onSubmit={handleSubmit} aria-label={`${user.name} 사용자 정보 편집`}>
+        <div className="user-add-modal-head">
+          <div>
+            <p>User Directory</p>
+            <h3>{user.name} 정보 편집</h3>
+          </div>
+          <button type="button" onClick={onClose} aria-label="사용자 편집 닫기">×</button>
+        </div>
+        <div className="user-add-modal-grid">
+          <label>
+            이름
+            <input value={form.name} onChange={(event) => updateField('name', event.target.value)} autoFocus />
+          </label>
+          <label>
+            ROLE
+            <select value={form.roleLevel} onChange={(event) => updateField('roleLevel', normalizeRoleLevel(event.target.value))}>
+              {roleLevelOptions.map((role) => <option key={role} value={role}>{role}</option>)}
+            </select>
+          </label>
+          <label>
+            소속 학과
+            <select
+              value={departmentMode}
+              onChange={(event) => {
+                const value = event.target.value;
+                setDepartmentMode(value);
+                updateField('department', value === newDepartmentValue ? '' : value);
+              }}
+            >
+              <option value={newDepartmentValue}>신규 학과 추가</option>
+              {departments.map((department) => <option key={department} value={department}>{department}</option>)}
+            </select>
+            {isNewDepartment && (
+              <input className="user-add-manual-field" value={form.department} onChange={(event) => updateField('department', event.target.value)} placeholder="신규 학과명 입력" />
+            )}
+          </label>
+          <label>
+            소속 연구실
+            <select
+              value={labMode}
+              onChange={(event) => {
+                const value = event.target.value;
+                setLabMode(value);
+                updateField('labProfessor', value === newLabValue ? '' : value);
+              }}
+            >
+              <option value={newLabValue}>신규 교수 추가</option>
+              {labs.map((lab) => <option key={lab} value={lab}>{lab}</option>)}
+            </select>
+            {isNewLab && (
+              <input className="user-add-manual-field" value={form.labProfessor} onChange={(event) => updateField('labProfessor', event.target.value)} placeholder="예: 백근우 교수님" />
+            )}
+          </label>
+          <label>
+            연락처
+            <input value={form.phone} onChange={(event) => updateField('phone', event.target.value)} placeholder="010-0000-0000" />
+          </label>
+          <label>
+            이메일
+            <input type="email" value={form.email} onChange={(event) => updateField('email', event.target.value)} placeholder="user@example.com" />
+          </label>
+          <label className="is-wide">
+            메모
+            <input value={form.memo} onChange={(event) => updateField('memo', event.target.value)} placeholder="관리자 메모" />
+          </label>
+        </div>
+        <div className="user-add-modal-actions">
+          <button type="button" className="is-cancel" onClick={onClose}>닫기</button>
+          <button type="submit" className="is-primary">수정 저장</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 function UserManagementPage({
   users,
   saveFeedbackPhase,
@@ -2643,6 +2791,7 @@ function UserManagementPage({
 }) {
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<ManagedUser | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [nameFilter, setNameFilter] = useState('');
   const [roleFilter, setRoleFilter] = useState('전체');
@@ -2668,6 +2817,7 @@ function UserManagementPage({
     })
   ), [authFilter, departmentFilter, labFilter, nameFilter, roleFilter, searchTerm, users]);
   const representativeCount = users.filter((user) => user.roleLevel === '대표').length;
+  const facultyCount = users.filter((user) => user.roleLevel === '교원').length;
   const totalPages = Math.max(Math.ceil(filteredUsers.length / pageSize), 1);
   const pageStart = (currentPage - 1) * pageSize;
   const pageUsers = filteredUsers.slice(pageStart, pageStart + pageSize);
@@ -2722,14 +2872,19 @@ function UserManagementPage({
           <em>registered</em>
         </div>
         <div>
-          <span>대표 사용자</span>
-          <strong>{representativeCount}</strong>
-          <em>lab representatives</em>
+          <span>교원 / 대표학생</span>
+          <strong>{facultyCount} / {representativeCount}</strong>
+          <em>faculty / representatives</em>
         </div>
         <div>
           <span>소속 Lab</span>
           <strong>{Math.max(labs.length - 1, 0)}</strong>
           <em>professor groups</em>
+        </div>
+        <div>
+          <span>대표학생</span>
+          <strong>{representativeCount}</strong>
+          <em>lab representatives</em>
         </div>
         <div className="consumables-summary-action">
           <span>데이터 저장</span>
@@ -2757,8 +2912,7 @@ function UserManagementPage({
         </div>
         <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)} aria-label="대표/일반 필터">
           <option value="전체">전체</option>
-          <option value="대표">대표</option>
-          <option value="일반">일반</option>
+          {roleLevelOptions.map((role) => <option key={role} value={role}>{role}</option>)}
         </select>
         <select value={labFilter} onChange={(event) => setLabFilter(event.target.value)} aria-label="소속 연구실 필터">
           {labs.map((lab) => (
@@ -2808,8 +2962,7 @@ function UserManagementPage({
               <th>
                 <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)} aria-label="ROLE 컬럼 필터">
                   <option value="전체">전체</option>
-                  <option value="대표">대표</option>
-                  <option value="일반">일반</option>
+                  {roleLevelOptions.map((role) => <option key={role} value={role}>{role}</option>)}
                 </select>
               </th>
               <th>
@@ -2841,49 +2994,27 @@ function UserManagementPage({
           <tbody>
             {pageUsers.map((user, index) => {
               const labTone = getProfessorTone(user.labProfessor);
+              const roleToneClass = getRoleToneClass(user.roleLevel);
               return (
-                <tr key={user.id}>
+                <tr key={user.id} className="user-table-row" onClick={() => setEditingUser(user)}>
                   <td>{pageStart + index + 1}</td>
+                  <td><button type="button" className="user-row-name" onClick={() => setEditingUser(user)}>{user.name}</button></td>
                   <td>
-                    <input value={user.name} onChange={(event) => onUpdateUser(user.id, { name: event.target.value })} aria-label={`${user.name} 이름`} />
+                    <span className={`user-role-badge ${roleToneClass}`}>{user.roleLevel}</span>
                   </td>
+                  <td><span className="user-readonly-cell">{user.department}</span></td>
                   <td>
-                    <select
-                      className={`user-role-select is-${user.roleLevel === '대표' ? 'lead' : 'member'}`}
-                      value={user.roleLevel}
-                      onChange={(event) => onUpdateUser(user.id, { roleLevel: event.target.value === '대표' ? '대표' : '일반' })}
-                      aria-label={`${user.name} 대표 여부`}
-                    >
-                      <option value="대표">대표</option>
-                      <option value="일반">일반</option>
-                    </select>
-                  </td>
-                  <td>
-                    <input value={user.department} onChange={(event) => onUpdateUser(user.id, { department: event.target.value })} aria-label={`${user.name} 소속 학과`} />
-                  </td>
-                  <td>
-                    <label className="user-lab-input">
+                    <span className="user-lab-input user-readonly-lab">
                       <i style={{ backgroundColor: labTone, color: labTone }} />
-                      <input
-                        value={user.labProfessor}
-                        onChange={(event) => onUpdateUser(user.id, { labProfessor: event.target.value })}
-                        aria-label={`${user.name} 소속 연구실`}
-                        style={{ borderColor: `${labTone}cc`, backgroundColor: `${labTone}18` }}
-                      />
-                    </label>
+                      <span style={{ borderColor: `${labTone}cc`, backgroundColor: `${labTone}18` }}>{formatProfessorLab(user.labProfessor)}</span>
+                    </span>
                   </td>
-                  <td>
-                    <input value={user.phone} onChange={(event) => onUpdateUser(user.id, { phone: event.target.value })} aria-label={`${user.name} 연락처`} />
-                  </td>
-                  <td>
-                    <input value={user.email} onChange={(event) => onUpdateUser(user.id, { email: event.target.value })} aria-label={`${user.name} 이메일`} />
-                  </td>
+                  <td><span className="user-readonly-cell">{user.phone || '-'}</span></td>
+                  <td><span className="user-readonly-cell is-email">{user.email || '-'}</span></td>
                   <td>
                     <span className={`auth-provider-badge is-${(user.authProvider ?? 'Manual').toLowerCase()}`}>{user.authProvider ?? 'Manual'}</span>
                   </td>
-                  <td>
-                    <input value={user.memo} onChange={(event) => onUpdateUser(user.id, { memo: event.target.value })} aria-label={`${user.name} 메모`} />
-                  </td>
+                  <td><span className="user-readonly-cell is-memo">{user.memo || '-'}</span></td>
                 </tr>
               );
             })}
@@ -2913,6 +3044,19 @@ function UserManagementPage({
           onConfirm={(user) => {
             onAddUser(user);
             setShowAddUserModal(false);
+          }}
+        />
+      )}
+      {editingUser && (
+        <UserEditModal
+          key={editingUser.id}
+          user={editingUser}
+          labs={labs.filter((lab) => lab !== '전체')}
+          departments={departments.filter((department) => department !== '전체')}
+          onClose={() => setEditingUser(null)}
+          onConfirm={(patch) => {
+            onUpdateUser(editingUser.id, patch);
+            setEditingUser(null);
           }}
         />
       )}
@@ -3017,8 +3161,7 @@ function PermissionManagementPage({
         </div>
         <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)} aria-label="권한 ROLE 필터">
           <option value="전체">전체 ROLE</option>
-          <option value="대표">대표</option>
-          <option value="일반">일반</option>
+          {roleLevelOptions.map((role) => <option key={role} value={role}>{role}</option>)}
         </select>
         <select value={labFilter} onChange={(event) => setLabFilter(event.target.value)} aria-label="권한 연구실 필터">
           {labs.map((lab) => (
@@ -3064,8 +3207,7 @@ function PermissionManagementPage({
               <th>
                 <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)} aria-label="권한관리 ROLE 필터">
                   <option value="전체">전체</option>
-                  <option value="대표">대표</option>
-                  <option value="일반">일반</option>
+                  {roleLevelOptions.map((role) => <option key={role} value={role}>{role}</option>)}
                 </select>
               </th>
               <th>
@@ -3101,7 +3243,7 @@ function PermissionManagementPage({
                 <tr key={user.id} className="permission-table-row" onClick={() => setSelectedUser(user)}>
                   <td>{rowIndex}</td>
                   <td><span className="permission-user-pill">{user.name}</span></td>
-                  <td><span className={`permission-role-badge ${user.roleLevel === '대표' ? 'is-lead' : 'is-member'}`}>{user.roleLevel}</span></td>
+                  <td><span className={`permission-role-badge ${getRoleToneClass(user.roleLevel)}`}>{user.roleLevel}</span></td>
                   <td><span className="permission-user-pill is-wide">{user.department}</span></td>
                   <td>
                     <span className="user-lab-input permission-lab-pill">
@@ -3170,7 +3312,7 @@ function PermissionModal({
   const saveFeedbackTimers = useRef<number[]>([]);
   const processItems = equipmentItems.filter((item) => item.group === 'process');
   const metrologyItems = equipmentItems.filter((item) => item.group === 'metrology');
-  const isLead = user.roleLevel === '대표';
+  const roleToneClass = getRoleToneClass(user.roleLevel);
 
   function clearPermissionSaveFeedbackTimers() {
     saveFeedbackTimers.current.forEach((timer) => window.clearTimeout(timer));
@@ -3240,7 +3382,7 @@ function PermissionModal({
           <button type="button" onClick={onClose} aria-label="권한 관리 닫기">×</button>
         </div>
         <div className="permission-modal-user">
-          <span className={`permission-role-badge ${isLead ? 'is-lead' : 'is-member'}`}>{user.roleLevel}</span>
+          <span className={`permission-role-badge ${roleToneClass}`}>{user.roleLevel}</span>
           <strong>{user.department}</strong>
           <em>{formatProfessorLab(user.labProfessor)}</em>
           <small>{selectedIds.size} / {equipmentItems.length} 장비 권한 선택</small>
@@ -4042,11 +4184,18 @@ export function App() {
   }
 
   function updateManagedUser(id: string, patch: Partial<ManagedUser>) {
+    const savedAt = new Date().toISOString();
     clearUserSaveFeedbackTimers();
     setUserSaveFeedbackPhase('idle');
-    setManagedUsers((current) => current.map((user) => (
-      user.id === id ? { ...user, ...patch } : user
-    )));
+    setManagedUsers((current) => {
+      const next = current.map((user) => (
+        user.id === id ? { ...user, ...patch } : user
+      )).map((user, index) => ({ ...user, index: index + 1 }));
+      localStorage.setItem('hbnu-managed-users', JSON.stringify(next));
+      localStorage.setItem('hbnu-users-updated-at', savedAt);
+      return next;
+    });
+    setUsersUpdatedAt(savedAt);
   }
 
   function addManagedUser(user: Omit<ManagedUser, 'id' | 'index'>) {

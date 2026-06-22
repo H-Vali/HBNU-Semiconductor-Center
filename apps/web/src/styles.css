@@ -295,10 +295,16 @@ select {
   white-space: nowrap;
 }
 
-.hero-role-badge.is-lead {
+.hero-role-badge.is-faculty {
   border-color: rgba(248, 113, 113, 0.82);
-  background: rgba(127, 29, 29, 0.28);
+  background: rgba(127, 29, 29, 0.3);
   color: #fecaca;
+}
+
+.hero-role-badge.is-lead {
+  border-color: rgba(251, 191, 36, 0.82);
+  background: rgba(180, 83, 9, 0.24);
+  color: #fde68a;
 }
 
 .hero-role-badge.is-member {
@@ -3543,7 +3549,7 @@ select {
 .user-summary-grid {
   display: grid;
   gap: 0.85rem;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
 .permission-summary-grid {
@@ -3817,10 +3823,16 @@ select {
   font-weight: 900;
 }
 
-.permission-role-badge.is-lead {
+.permission-role-badge.is-faculty {
   border-color: rgba(248, 113, 113, 0.82);
   background: rgba(127, 29, 29, 0.28);
   color: #fecaca;
+}
+
+.permission-role-badge.is-lead {
+  border-color: rgba(251, 191, 36, 0.82);
+  background: rgba(180, 83, 9, 0.24);
+  color: #fde68a;
 }
 
 .permission-role-badge.is-member {
@@ -4235,15 +4247,79 @@ select {
 }
 
 .users-table .user-role-select.is-lead {
-  border-color: rgba(248, 113, 113, 0.78);
-  background: rgba(127, 29, 29, 0.26);
-  color: #fecaca;
+  border-color: rgba(251, 191, 36, 0.82);
+  background: rgba(180, 83, 9, 0.24);
+  color: #fde68a;
 }
 
 .users-table .user-role-select.is-member {
   border-color: rgba(148, 163, 184, 0.42);
   background: rgba(15, 23, 42, 0.72);
   color: #cbd5e1;
+}
+
+.user-table-row {
+  cursor: pointer;
+  transition: background 0.22s ease;
+}
+
+.user-table-row:hover td {
+  background: rgba(14, 116, 144, 0.12);
+}
+
+.user-row-name {
+  color: #f8fafc;
+  font-weight: 900;
+  text-align: left;
+  transition: color 0.22s ease;
+}
+
+.user-row-name:hover {
+  color: #67e8f9;
+}
+
+.user-role-badge {
+  display: inline-flex;
+  min-width: 4rem;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.44);
+  padding: 0.35rem 0.65rem;
+  color: #cbd5e1;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.user-role-badge.is-faculty {
+  border-color: rgba(248, 113, 113, 0.82);
+  background: rgba(127, 29, 29, 0.28);
+  color: #fecaca;
+}
+
+.user-role-badge.is-lead {
+  border-color: rgba(251, 191, 36, 0.82);
+  background: rgba(180, 83, 9, 0.24);
+  color: #fde68a;
+}
+
+.user-role-badge.is-member {
+  border-color: rgba(148, 163, 184, 0.44);
+  background: rgba(15, 23, 42, 0.78);
+}
+
+.user-readonly-cell {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  color: #dbeafe;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-readonly-cell.is-email,
+.user-readonly-cell.is-memo {
+  color: #aab4c4;
+  font-size: 0.86rem;
 }
 
 .consumables-table input[type='number'] {
@@ -4287,6 +4363,20 @@ select {
   flex: 0 0 auto;
   border-radius: 999px;
   box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.04), 0 0 18px currentColor;
+}
+
+.user-readonly-lab > span {
+  display: inline-block;
+  overflow: hidden;
+  max-width: 12rem;
+  border: 1px solid rgba(125, 211, 252, 0.2);
+  border-radius: 8px;
+  padding: 0.38rem 0.62rem;
+  color: #dbeafe;
+  font-size: 0.84rem;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .user-add-modal-backdrop {
