@@ -107,12 +107,12 @@ select {
   position: absolute;
   display: grid;
   place-items: center;
-  opacity: 0.14;
+  opacity: 0.24;
   transform: rotate(-9deg);
   filter:
-    blur(0.2px)
-    drop-shadow(0 0 16px rgba(34, 211, 238, 0.34))
-    drop-shadow(0 0 42px rgba(59, 130, 246, 0.2));
+    saturate(1.12)
+    drop-shadow(0 0 18px rgba(34, 211, 238, 0.42))
+    drop-shadow(0 0 48px rgba(59, 130, 246, 0.28));
 }
 
 .hero-logo-watermark .hanbat-logo-mark {
@@ -121,27 +121,27 @@ select {
 }
 
 .hero-logo-watermark.is-primary {
-  right: 7%;
-  top: 7%;
-  width: clamp(7rem, 12vw, 12.5rem);
-  height: clamp(7rem, 12vw, 12.5rem);
+  left: 42%;
+  top: 3%;
+  width: clamp(9rem, 15vw, 15.5rem);
+  height: clamp(9rem, 15vw, 15.5rem);
 }
 
 .hero-logo-watermark.is-secondary {
-  right: 38%;
-  bottom: -18%;
-  width: clamp(5.5rem, 8.4vw, 9rem);
-  height: clamp(5.5rem, 8.4vw, 9rem);
-  opacity: 0.095;
+  left: 49%;
+  bottom: -8%;
+  width: clamp(6.5rem, 10vw, 10.5rem);
+  height: clamp(6.5rem, 10vw, 10.5rem);
+  opacity: 0.18;
   transform: rotate(13deg);
 }
 
 .hero-logo-watermark.is-tertiary {
-  left: 4%;
-  top: -22%;
-  width: clamp(5rem, 7.5vw, 8rem);
-  height: clamp(5rem, 7.5vw, 8rem);
-  opacity: 0.075;
+  right: 7%;
+  top: 10%;
+  width: clamp(8rem, 13vw, 13.5rem);
+  height: clamp(8rem, 13vw, 13.5rem);
+  opacity: 0.2;
   transform: rotate(18deg);
 }
 
