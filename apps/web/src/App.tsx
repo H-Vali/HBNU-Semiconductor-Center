@@ -856,7 +856,15 @@ function HanbatLogoMark() {
   );
 }
 
-function InstitutionHeader({ onNavigate, sessionRole }: { onNavigate: (page: PageKey) => void; sessionRole: Role | null }) {
+function InstitutionHeader({
+  onNavigate,
+  sessionRole,
+  onPreviewPenaltyTest
+}: {
+  onNavigate: (page: PageKey) => void;
+  sessionRole: Role | null;
+  onPreviewPenaltyTest: () => void;
+}) {
   return (
     <header className="sticky top-0 z-20 border-b border-white/10 bg-slate-950/90 backdrop-blur">
       <div className="mx-auto flex max-w-[1800px] items-center justify-between gap-5 px-5 py-3 2xl:px-8">
@@ -871,6 +879,9 @@ function InstitutionHeader({ onNavigate, sessionRole }: { onNavigate: (page: Pag
         </button>
         <div className="hidden items-center gap-2 md:flex">
           <button className="rounded-md border border-white/15 px-3 py-2 text-sm font-bold text-slate-200 hover:border-cyan-300 hover:text-cyan-200">ENG</button>
+          <button className="rounded-md border border-red-300/40 px-3 py-2 text-sm font-extrabold text-red-100 hover:bg-red-500 hover:text-white" onClick={onPreviewPenaltyTest}>
+            페널티 TEST
+          </button>
           <button className="rounded-md bg-white px-4 py-2 text-sm font-extrabold text-slate-950 hover:bg-cyan-200" onClick={() => onNavigate('login')}>
             {sessionRole ? `${sessionRole} 접속중` : '로그인'}
           </button>
@@ -5027,7 +5038,11 @@ export function App() {
   return (
     <div className="min-h-screen">
       <LoadingOverlay visible={loading} />
-      <InstitutionHeader onNavigate={navigate} sessionRole={sessionRole} />
+      <InstitutionHeader
+        onNavigate={navigate}
+        sessionRole={sessionRole}
+        onPreviewPenaltyTest={() => setShowPreviewPenaltyDemo(true)}
+      />
       <div className="app-shell mx-auto max-w-[1800px] px-4 py-5 lg:px-6 2xl:px-8">
         <SidebarNavigation activePage={activePage} onNavigate={navigate} />
         <main className="app-main">
