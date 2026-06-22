@@ -16,6 +16,8 @@ import {
   YAxis
 } from 'recharts';
 import {
+  AlertTriangle,
+  Ban,
   BookOpen,
   CalendarDays,
   CheckCircle2,
@@ -46,11 +48,13 @@ import {
 } from 'lucide-react';
 import { equipment as fallbackEquipment, events, monthlyUsage, type EquipmentGroup, type EquipmentItem } from './data';
 
-type PageKey = 'home' | 'notice' | 'center' | 'facility' | 'equipment' | 'training' | 'faq' | 'qna' | 'reservations' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'login';
+type PageKey = 'home' | 'notice' | 'center' | 'facility' | 'equipment' | 'training' | 'faq' | 'qna' | 'reservations' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'penalties' | 'login';
 type Role = 'USER' | 'ADMIN';
 type UsagePeriod = '24H' | '1W' | '1M';
 type EquipmentRuntimeStatus = 'active' | 'maintenance' | 'idle';
 type ReservationStatus = 'pending' | 'approved' | 'maintenance' | 'external';
+type PenaltyType = '1주 사용정지' | '2주 사용정지' | '영구정지';
+type PenaltyCategory = '장비활용관련' | '안전관련' | '학생자치기구 관련' | '사고 유발';
 type ReservationForm = {
   equipmentId: string;
   date: string;
@@ -94,6 +98,25 @@ type ManagedUser = {
 };
 type RoleLevel = '교원' | '대표' | '일반';
 type EquipmentPermissionMap = Record<string, string[]>;
+type PenaltyRecord = {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  type: PenaltyType;
+  category: PenaltyCategory;
+  reason: string;
+  startsAt: string;
+  endsAt: string | null;
+  createdAt: string;
+  revokedAt?: string;
+};
+type StoredSessionUser = {
+  id?: string;
+  name?: string;
+  email?: string;
+  role?: Role;
+};
 
 const apiUrl = ((import.meta as ImportMeta & { env?: Record<string, string> }).env?.VITE_API_URL) ?? 'http://localhost:4000';
 
@@ -507,6 +530,63 @@ function formatSeoulDateTime(value: string) {
   }).format(new Date(value));
 }
 
+function formatPenaltyDateTime(value: string | null) {
+  if (!value) return '영구 제한';
+  return formatSeoulDateTime(value);
+}
+
+function getPenaltyEndsAt(type: PenaltyType, startsAt: string) {
+  if (type === '영구정지') return null;
+  const days = type === '1주 사용정지' ? 7 : 14;
+  return new Date(new Date(startsAt).getTime() + days * 24 * 60 * 60 * 1000).toISOString();
+}
+
+function isPenaltyActive(record: PenaltyRecord, now = new Date()) {
+  if (record.revokedAt) return false;
+  if (!record.endsAt) return true;
+  return now.getTime() < new Date(record.endsAt).getTime();
+}
+
+function getPenaltyStatus(record: PenaltyRecord) {
+  if (record.revokedAt) return '해지됨';
+  return isPenaltyActive(record) ? '적용중' : '자동만료';
+}
+
+function formatPenaltyRemaining(record: PenaltyRecord) {
+  if (record.revokedAt) return '관리자 해지 완료';
+  if (!record.endsAt) return '영구정지';
+  const remaining = new Date(record.endsAt).getTime() - Date.now();
+  if (remaining <= 0) return '자동만료';
+  const totalMinutes = Math.ceil(remaining / (1000 * 60));
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes - days * 60 * 24) / 60);
+  const minutes = totalMinutes % 60;
+  if (days > 0) return `${days}일 ${hours}시간 남음`;
+  if (hours > 0) return `${hours}시간 ${minutes}분 남음`;
+  return `${minutes}분 남음`;
+}
+
+function getStoredSessionUser(): StoredSessionUser | null {
+  try {
+    const stored = localStorage.getItem('hbnu-session-user');
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+}
+
+function getActivePenaltyForSession(sessionUser: StoredSessionUser | null, users: ManagedUser[], penalties: PenaltyRecord[]) {
+  if (!sessionUser) return null;
+  const sessionEmail = sessionUser.email?.toLowerCase();
+  const matchedUser = users.find((user) => (
+    (sessionUser.id && user.id === sessionUser.id) ||
+    (sessionEmail && user.email.toLowerCase() === sessionEmail) ||
+    (sessionUser.name && user.name === sessionUser.name)
+  ));
+  if (!matchedUser) return null;
+  return penalties.find((record) => record.userId === matchedUser.id && isPenaltyActive(record)) ?? null;
+}
+
 function cloneManagedUsers(items = initialManagedUsers) {
   return items.map((item) => ({ ...item }));
 }
@@ -545,6 +625,8 @@ function getProfessorTone(professor: string) {
 }
 
 const roleLevelOptions: RoleLevel[] = ['교원', '대표', '일반'];
+const penaltyTypeOptions: PenaltyType[] = ['1주 사용정지', '2주 사용정지', '영구정지'];
+const penaltyCategoryOptions: PenaltyCategory[] = ['장비활용관련', '안전관련', '학생자치기구 관련', '사고 유발'];
 
 function normalizeRoleLevel(value: string): RoleLevel {
   return roleLevelOptions.includes(value as RoleLevel) ? value as RoleLevel : '일반';
@@ -2336,7 +2418,7 @@ function AdminPage({
           { title: '권한관리', page: 'permissions' as PageKey, icon: LockKeyhole },
           { title: '장비관리' },
           { title: '소모품관리', page: 'consumables' as PageKey, icon: PackageCheck, updatedAt: consumablesUpdatedAt },
-          { title: '예약승인/거부' },
+          { title: '페널티 관리', page: 'penalties' as PageKey, icon: Ban },
           { title: '교육관리' },
           { title: '홈페이지편집' },
           { title: '대시보드 데이터' },
@@ -2498,6 +2580,191 @@ function MyPage({
           <p className="rounded-md bg-white/5 p-4">예약 취소 기능은 현재 프리뷰 데이터 기준으로 즉시 반영됩니다.</p>
         </div>
       </div>
+    </section>
+  );
+}
+
+function PenaltyManagementPage({
+  users,
+  penalties,
+  onAddPenalty,
+  onRevokePenalty
+}: {
+  users: ManagedUser[];
+  penalties: PenaltyRecord[];
+  onAddPenalty: (userId: string, type: PenaltyType, category: PenaltyCategory, reason: string) => void;
+  onRevokePenalty: (penaltyId: string) => void;
+}) {
+  const [selectedUserId, setSelectedUserId] = useState(users[0]?.id ?? '');
+  const [type, setType] = useState<PenaltyType>('1주 사용정지');
+  const [category, setCategory] = useState<PenaltyCategory>('장비활용관련');
+  const [reason, setReason] = useState('');
+  const activePenalties = penalties.filter((record) => isPenaltyActive(record));
+  const permanentCount = activePenalties.filter((record) => record.type === '영구정지').length;
+  const temporaryCount = activePenalties.length - permanentCount;
+
+  function submitPenalty(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedUserId || !reason.trim()) return;
+    onAddPenalty(selectedUserId, type, category, reason.trim());
+    setReason('');
+  }
+
+  return (
+    <section className="penalty-page">
+      <div className="penalty-hero">
+        <div>
+          <p>Access Control</p>
+          <h2>페널티 관리</h2>
+          <span>시설 사용 규칙 위반, 안전 사고, 학생자치기구 관련 이슈에 따라 계정별 장비예약 접근을 제한합니다.</span>
+        </div>
+        <div className="penalty-summary-grid">
+          <div>
+            <strong>{activePenalties.length}</strong>
+            <span>적용중</span>
+          </div>
+          <div>
+            <strong>{temporaryCount}</strong>
+            <span>기간 제한</span>
+          </div>
+          <div>
+            <strong>{permanentCount}</strong>
+            <span>영구정지</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="penalty-layout">
+        <form className="penalty-form-card" onSubmit={submitPenalty}>
+          <div>
+            <p>Issue Penalty</p>
+            <h3>사용 제한 부여</h3>
+          </div>
+          <label>
+            대상 사용자
+            <select value={selectedUserId} onChange={(event) => setSelectedUserId(event.target.value)}>
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>{user.name} · {user.department}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            페널티 종류
+            <select value={type} onChange={(event) => setType(event.target.value as PenaltyType)}>
+              {penaltyTypeOptions.map((option) => <option key={option}>{option}</option>)}
+            </select>
+          </label>
+          <label>
+            위반 분류
+            <select value={category} onChange={(event) => setCategory(event.target.value as PenaltyCategory)}>
+              {penaltyCategoryOptions.map((option) => <option key={option}>{option}</option>)}
+            </select>
+          </label>
+          <label className="is-wide">
+            세부 사유
+            <textarea value={reason} onChange={(event) => setReason(event.target.value)} placeholder="예: 장비 사용 후 정리 미흡, 안전수칙 미준수, 사고 유발 등" />
+          </label>
+          <button type="submit" disabled={!selectedUserId || !reason.trim()}>
+            <Ban size={16} /> 페널티 부여
+          </button>
+        </form>
+
+        <div className="penalty-table-card">
+          <div className="penalty-table-head">
+            <div>
+              <p>Penalty Records</p>
+              <h3>페널티 적용 현황</h3>
+            </div>
+            <span>만료 기간 도래 시 자동으로 비활성화됩니다.</span>
+          </div>
+          <div className="penalty-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>사용자</th>
+                  <th>종류</th>
+                  <th>분류</th>
+                  <th>만료</th>
+                  <th>상태</th>
+                  <th>관리</th>
+                </tr>
+              </thead>
+              <tbody>
+                {penalties.length > 0 ? (
+                  penalties.map((record) => {
+                    const active = isPenaltyActive(record);
+                    return (
+                      <tr key={record.id}>
+                        <td>
+                          <strong>{record.userName}</strong>
+                          <span>{record.userEmail}</span>
+                        </td>
+                        <td>{record.type}</td>
+                        <td>{record.category}</td>
+                        <td>
+                          <strong>{formatPenaltyRemaining(record)}</strong>
+                          <span>{formatPenaltyDateTime(record.endsAt)}</span>
+                        </td>
+                        <td><span className={`penalty-status-badge ${active ? 'is-active' : 'is-expired'}`}>{getPenaltyStatus(record)}</span></td>
+                        <td>
+                          <button type="button" disabled={!active} onClick={() => onRevokePenalty(record.id)}>해지</button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="penalty-empty">등록된 페널티가 없습니다.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function PenaltyNoticeModal({
+  penalty,
+  onClose
+}: {
+  penalty: PenaltyRecord;
+  onClose: () => void;
+}) {
+  return (
+    <div className="user-add-modal-backdrop">
+      <div className="penalty-notice-modal">
+        <div className="penalty-notice-icon"><AlertTriangle size={30} /></div>
+        <p>Account Restricted</p>
+        <h3>현재 계정에 사용 제한이 적용되어 있습니다.</h3>
+        <div className="penalty-notice-grid">
+          <span>페널티</span>
+          <strong>{penalty.type}</strong>
+          <span>위반 분류</span>
+          <strong>{penalty.category}</strong>
+          <span>남은 시간</span>
+          <strong>{formatPenaltyRemaining(penalty)}</strong>
+          <span>만료 시각</span>
+          <strong>{formatPenaltyDateTime(penalty.endsAt)}</strong>
+        </div>
+        <div className="penalty-notice-reason">{penalty.reason}</div>
+        <button type="button" onClick={onClose}>확인</button>
+      </div>
+    </div>
+  );
+}
+
+function PenaltyRestrictedPage({ penalty, onAcknowledge }: { penalty: PenaltyRecord; onAcknowledge: () => void }) {
+  return (
+    <section className="penalty-restricted-page">
+      <div className="penalty-notice-icon"><Ban size={32} /></div>
+      <p>Reservation Restricted</p>
+      <h2>장비예약현황 이용이 일시적으로 제한되었습니다.</h2>
+      <span>{penalty.type} · {formatPenaltyRemaining(penalty)}</span>
+      <div className="penalty-notice-reason">{penalty.reason}</div>
+      <button type="button" onClick={onAcknowledge}>페널티 상세 확인</button>
     </section>
   );
 }
@@ -4131,6 +4398,16 @@ export function App() {
     }));
     return [...previewTestReservations, ...baseEvents];
   });
+  const [penaltyRecords, setPenaltyRecords] = useState<PenaltyRecord[]>(() => {
+    try {
+      const stored = localStorage.getItem('hbnu-penalty-records');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [showPenaltyNotice, setShowPenaltyNotice] = useState(false);
+  const sessionUser = getStoredSessionUser();
   const sessionUserName = (() => {
     try {
       const stored = localStorage.getItem('hbnu-session-user');
@@ -4139,8 +4416,22 @@ export function App() {
       return 'USER NAME';
     }
   })();
+  const activeSessionPenalty = useMemo(
+    () => getActivePenaltyForSession(sessionUser, managedUsers, penaltyRecords),
+    [sessionRole, managedUsers, penaltyRecords]
+  );
+
+  useEffect(() => {
+    if (sessionRole && sessionRole !== 'ADMIN' && activeSessionPenalty) {
+      setShowPenaltyNotice(true);
+    }
+  }, [sessionRole, activeSessionPenalty?.id]);
 
   function navigate(page: PageKey) {
+    if (page === 'reservations' && sessionRole !== 'ADMIN' && activeSessionPenalty) {
+      setShowPenaltyNotice(true);
+      return;
+    }
     setLoading(true);
     window.setTimeout(() => {
       setActivePage(page);
@@ -4168,6 +4459,39 @@ export function App() {
 
   function deleteReservation(reservationId: string) {
     setReservationEvents((current) => current.filter((event) => event.id !== reservationId));
+  }
+
+  function addPenalty(userId: string, type: PenaltyType, category: PenaltyCategory, reason: string) {
+    const user = managedUsers.find((item) => item.id === userId);
+    if (!user) return;
+    const startsAt = new Date().toISOString();
+    const nextPenalty: PenaltyRecord = {
+      id: `penalty-${Date.now()}`,
+      userId,
+      userName: user.name,
+      userEmail: user.email,
+      type,
+      category,
+      reason,
+      startsAt,
+      endsAt: getPenaltyEndsAt(type, startsAt),
+      createdAt: startsAt
+    };
+    setPenaltyRecords((current) => {
+      const next = [nextPenalty, ...current];
+      localStorage.setItem('hbnu-penalty-records', JSON.stringify(next));
+      return next;
+    });
+  }
+
+  function revokePenalty(penaltyId: string) {
+    setPenaltyRecords((current) => {
+      const next = current.map((record) => (
+        record.id === penaltyId ? { ...record, revokedAt: new Date().toISOString() } : record
+      ));
+      localStorage.setItem('hbnu-penalty-records', JSON.stringify(next));
+      return next;
+    });
   }
 
   function changeConsumableMonth(month: string) {
@@ -4408,13 +4732,17 @@ export function App() {
             />
           )}
           {activePage === 'reservations' && (
-            <ReservationPage
-              equipmentItems={activeEquipmentItems}
-              calendarEvents={reservationEvents}
-              sessionRole={sessionRole}
-              onAddReservation={addReservation}
-              onDeleteReservation={deleteReservation}
-            />
+            activeSessionPenalty && sessionRole !== 'ADMIN' ? (
+              <PenaltyRestrictedPage penalty={activeSessionPenalty} onAcknowledge={() => setShowPenaltyNotice(true)} />
+            ) : (
+              <ReservationPage
+                equipmentItems={activeEquipmentItems}
+                calendarEvents={reservationEvents}
+                sessionRole={sessionRole}
+                onAddReservation={addReservation}
+                onDeleteReservation={deleteReservation}
+              />
+            )
           )}
           {activePage === 'training' && <TrainingPage equipmentItems={activeEquipmentItems} />}
           {activePage === 'faq' && <FaqPage />}
@@ -4461,6 +4789,14 @@ export function App() {
               onSave={saveConsumables}
             />
           )}
+          {activePage === 'penalties' && (
+            <PenaltyManagementPage
+              users={managedUsers}
+              penalties={penaltyRecords}
+              onAddPenalty={addPenalty}
+              onRevokePenalty={revokePenalty}
+            />
+          )}
           {activePage === 'login' && (
             <LoginPage
               onAuthenticated={(role) => setSessionRole(role)}
@@ -4477,6 +4813,9 @@ export function App() {
           )}
         </main>
       </div>
+      {showPenaltyNotice && activeSessionPenalty && (
+        <PenaltyNoticeModal penalty={activeSessionPenalty} onClose={() => setShowPenaltyNotice(false)} />
+      )}
     </div>
   );
 }
