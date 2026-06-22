@@ -3,6 +3,7 @@ export type EquipmentGroup = 'process' | 'metrology';
 export interface EquipmentItem {
   id: string;
   name: string;
+  model?: string;
   category: string;
   group: EquipmentGroup;
   groupName: string;
@@ -10,6 +11,9 @@ export interface EquipmentItem {
   image: string;
   features: string[];
   condition: string;
+  status?: 'available' | 'unavailable';
+  description?: string;
+  managerId?: string;
   utilization: number;
   usageHours: number;
 }
@@ -50,6 +54,7 @@ export const equipment: EquipmentItem[] = [...processEquipment, ...metrologyEqui
   return {
     id: `eq-${index + 1}`,
     name,
+    model: isProcess ? `HB-P-${String(index + 1).padStart(3, '0')}` : `HB-M-${String(index + 1).padStart(3, '0')}`,
     category: isProcess ? '공정장비' : '측정 및 분석장비',
     group: isProcess ? 'process' : 'metrology',
     groupName: isProcess ? '공정' : '측정 및 분석',
@@ -57,6 +62,8 @@ export const equipment: EquipmentItem[] = [...processEquipment, ...metrologyEqui
     image: `https://images.unsplash.com/photo-1581092160562-40aa08e78837?auto=format&fit=crop&w=900&q=80&ixid=${index}`,
     features: ['예약 캘린더', '교육 인증', '사용 로그'],
     condition: index % 3 === 0 ? '교육 이수 및 관리자 승인 필요' : '교육 이수 후 사용 가능',
+    status: index % 11 === 0 ? 'unavailable' : 'available',
+    description: `${name} 장비 운영 및 교육 관리용 기본 등록 정보입니다.`,
     utilization: 42 + ((index * 7) % 53),
     usageHours: 80 + ((index * 19) % 170)
   };

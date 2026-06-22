@@ -48,13 +48,14 @@ import {
 } from 'lucide-react';
 import { equipment as fallbackEquipment, events, monthlyUsage, type EquipmentGroup, type EquipmentItem } from './data';
 
-type PageKey = 'home' | 'notice' | 'center' | 'facility' | 'equipment' | 'training' | 'faq' | 'qna' | 'reservations' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'penalties' | 'login';
+type PageKey = 'home' | 'notice' | 'center' | 'facility' | 'equipment' | 'training' | 'faq' | 'qna' | 'reservations' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'equipmentAdmin' | 'penalties' | 'login';
 type Role = 'USER' | 'ADMIN';
 type UsagePeriod = '24H' | '1W' | '1M';
 type EquipmentRuntimeStatus = 'active' | 'maintenance' | 'idle';
 type ReservationStatus = 'pending' | 'approved' | 'maintenance' | 'external';
 type PenaltyType = '1주 사용정지' | '2주 사용정지' | '영구정지';
 type PenaltyCategory = '장비활용관련' | '안전관련' | '학생자치기구 관련' | '사고 유발';
+type EquipmentStatus = 'available' | 'unavailable';
 type ReservationForm = {
   equipmentId: string;
   date: string;
@@ -97,6 +98,7 @@ type ManagedUser = {
   authProvider?: 'Google' | 'Kakao' | 'Manual';
 };
 type RoleLevel = '교원' | '대표' | '일반';
+type PermissionRoleLevel = RoleLevel | '담당';
 type EquipmentPermissionMap = Record<string, string[]>;
 type PenaltyRecord = {
   id: string;
@@ -456,6 +458,7 @@ function normalizeEquipment(item: ApiEquipmentItem, index: number): EquipmentIte
   return {
     id: item.id ?? `eq-${index + 1}`,
     name,
+    model: item.model ?? (inferredGroup === 'process' ? `HB-P-${String(index + 1).padStart(3, '0')}` : `HB-M-${String(index + 1).padStart(3, '0')}`),
     category: inferredGroup === 'process' ? '공정장비' : '측정 및 분석장비',
     group: inferredGroup,
     groupName: inferredGroup === 'process' ? '공정' : '측정 및 분석',
@@ -463,13 +466,30 @@ function normalizeEquipment(item: ApiEquipmentItem, index: number): EquipmentIte
     image: item.image ?? item.imageUrl ?? fallbackEquipment[index % fallbackEquipment.length].image,
     features: item.features ?? ['예약 캘린더', '교육 인증', '사용 로그'],
     condition: item.condition ?? item.usageConditions ?? '교육 이수 후 사용 가능',
+    status: item.status ?? 'available',
+    description: item.description ?? `${name} 장비 운영 및 교육 관리용 등록 정보입니다.`,
+    managerId: item.managerId,
     utilization: item.utilization ?? fallbackEquipment[index % fallbackEquipment.length].utilization,
     usageHours: item.usageHours ?? fallbackEquipment[index % fallbackEquipment.length].usageHours
   };
 }
 
+function getEquipmentOverrides(): Record<string, Partial<EquipmentItem>> {
+  try {
+    const stored = localStorage.getItem('hbnu-equipment-overrides');
+    return stored ? JSON.parse(stored) : {};
+  } catch {
+    return {};
+  }
+}
+
+function applyEquipmentOverrides(items: EquipmentItem[]) {
+  const overrides = getEquipmentOverrides();
+  return items.map((item) => ({ ...item, ...(overrides[item.id] ?? {}) }));
+}
+
 function useEquipmentData() {
-  const [items, setItems] = useState<EquipmentItem[]>(fallbackEquipment);
+  const [items, setItems] = useState<EquipmentItem[]>(() => applyEquipmentOverrides(fallbackEquipment));
   const [source, setSource] = useState<'api' | 'fallback'>('fallback');
 
   useEffect(() => {
@@ -481,11 +501,11 @@ function useEquipmentData() {
         return response.json();
       })
       .then((data: ApiEquipmentItem[]) => {
-        setItems(data.map(normalizeEquipment));
+        setItems(applyEquipmentOverrides(data.map(normalizeEquipment)));
         setSource('api');
       })
       .catch(() => {
-        setItems(fallbackEquipment);
+        setItems(applyEquipmentOverrides(fallbackEquipment));
         setSource('fallback');
       });
 
@@ -625,6 +645,7 @@ function getProfessorTone(professor: string) {
 }
 
 const roleLevelOptions: RoleLevel[] = ['교원', '대표', '일반'];
+const permissionRoleOptions: PermissionRoleLevel[] = ['교원', '담당', '대표', '일반'];
 const penaltyTypeOptions: PenaltyType[] = ['1주 사용정지', '2주 사용정지', '영구정지'];
 const penaltyCategoryOptions: PenaltyCategory[] = ['장비활용관련', '안전관련', '학생자치기구 관련', '사고 유발'];
 
@@ -632,8 +653,9 @@ function normalizeRoleLevel(value: string): RoleLevel {
   return roleLevelOptions.includes(value as RoleLevel) ? value as RoleLevel : '일반';
 }
 
-function getRoleToneClass(roleLevel: RoleLevel) {
+function getRoleToneClass(roleLevel: PermissionRoleLevel) {
   if (roleLevel === '교원') return 'is-faculty';
+  if (roleLevel === '담당') return 'is-manager';
   if (roleLevel === '대표') return 'is-lead';
   return 'is-member';
 }
@@ -2416,7 +2438,7 @@ function AdminPage({
         {[
           { title: '사용자관리', page: 'users' as PageKey, icon: UserRound, updatedAt: usersUpdatedAt },
           { title: '권한관리', page: 'permissions' as PageKey, icon: LockKeyhole },
-          { title: '장비관리' },
+          { title: '장비관리', page: 'equipmentAdmin' as PageKey, icon: Wrench },
           { title: '소모품관리', page: 'consumables' as PageKey, icon: PackageCheck, updatedAt: consumablesUpdatedAt },
           { title: '페널티 관리', page: 'penalties' as PageKey, icon: Ban },
           { title: '교육관리' },
@@ -3404,15 +3426,258 @@ function UserManagementPage({
   );
 }
 
+function EquipmentAdminPage({
+  equipmentItems,
+  users,
+  onUpdateEquipment
+}: {
+  equipmentItems: EquipmentItem[];
+  users: ManagedUser[];
+  onUpdateEquipment: (equipmentId: string, patch: Partial<EquipmentItem>) => void;
+}) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [groupFilter, setGroupFilter] = useState<'전체' | EquipmentGroup>('전체');
+  const [statusFilter, setStatusFilter] = useState<'전체' | EquipmentStatus>('전체');
+  const [selectedEquipment, setSelectedEquipment] = useState<EquipmentItem | null>(null);
+  const filteredItems = useMemo(() => (
+    equipmentItems.filter((item) => {
+      const keyword = searchTerm.trim().toLowerCase();
+      const matchesSearch = !keyword || `${item.name} ${item.model ?? ''} ${item.location} ${item.groupName}`.toLowerCase().includes(keyword);
+      const matchesGroup = groupFilter === '전체' || item.group === groupFilter;
+      const matchesStatus = statusFilter === '전체' || (item.status ?? 'available') === statusFilter;
+      return matchesSearch && matchesGroup && matchesStatus;
+    })
+  ), [equipmentItems, groupFilter, searchTerm, statusFilter]);
+  const managerCount = new Set(equipmentItems.map((item) => item.managerId).filter(Boolean)).size;
+
+  return (
+    <section className="equipment-admin-page">
+      <div className="consumables-hero">
+        <div>
+          <p className="consumables-eyebrow">Equipment Management</p>
+          <h2>장비관리</h2>
+          <span>보유 장비의 기본 정보, 상태, 사진, 설명, 담당자를 관리합니다. 담당자 지정 시 권한관리 ROLE과 장비 권한이 자동 반영됩니다.</span>
+        </div>
+      </div>
+
+      <div className="equipment-admin-summary">
+        <div>
+          <span>보유 장비</span>
+          <strong>{equipmentItems.length}</strong>
+        </div>
+        <div>
+          <span>이용가능</span>
+          <strong>{equipmentItems.filter((item) => (item.status ?? 'available') === 'available').length}</strong>
+        </div>
+        <div>
+          <span>이용불가</span>
+          <strong>{equipmentItems.filter((item) => (item.status ?? 'available') === 'unavailable').length}</strong>
+        </div>
+        <div>
+          <span>담당자 배정</span>
+          <strong>{managerCount}</strong>
+        </div>
+      </div>
+
+      <div className="equipment-admin-toolbar">
+        <div className="consumables-search">
+          <Search size={17} />
+          <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="장비명, 모델명, 설치위치 검색" />
+        </div>
+        <select value={groupFilter} onChange={(event) => setGroupFilter(event.target.value as '전체' | EquipmentGroup)}>
+          <option value="전체">전체 분류</option>
+          <option value="process">공정</option>
+          <option value="metrology">계측 및 분석</option>
+        </select>
+        <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as '전체' | EquipmentStatus)}>
+          <option value="전체">전체 상태</option>
+          <option value="available">이용가능</option>
+          <option value="unavailable">이용불가</option>
+        </select>
+      </div>
+
+      <div className="equipment-admin-table-wrap">
+        <table className="equipment-admin-table">
+          <thead>
+            <tr>
+              <th>장비명</th>
+              <th>모델명</th>
+              <th>설치위치</th>
+              <th>장비 분류</th>
+              <th>장비상태</th>
+              <th>담당자</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredItems.map((item) => {
+              const manager = users.find((user) => user.id === item.managerId);
+              return (
+                <tr key={item.id} onClick={() => setSelectedEquipment(item)}>
+                  <td>
+                    <strong>{item.name}</strong>
+                    <span>{item.description ?? item.condition}</span>
+                  </td>
+                  <td>{item.model ?? '-'}</td>
+                  <td>{item.location}</td>
+                  <td><span className={`equipment-admin-group is-${item.group}`}>{item.group === 'process' ? '공정' : '계측 및 분석'}</span></td>
+                  <td><span className={`equipment-admin-status is-${item.status ?? 'available'}`}>{(item.status ?? 'available') === 'available' ? '이용가능' : '이용불가'}</span></td>
+                  <td>{manager ? <span className="equipment-admin-manager">{manager.name}</span> : <span className="equipment-admin-empty">미배정</span>}</td>
+                </tr>
+              );
+            })}
+            {filteredItems.length === 0 && (
+              <tr>
+                <td colSpan={6} className="equipment-admin-empty-row">조건에 맞는 장비가 없습니다.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {selectedEquipment && (
+        <EquipmentEditModal
+          equipment={selectedEquipment}
+          users={users}
+          onClose={() => setSelectedEquipment(null)}
+          onSave={(patch) => {
+            onUpdateEquipment(selectedEquipment.id, patch);
+            setSelectedEquipment(null);
+          }}
+        />
+      )}
+    </section>
+  );
+}
+
+function EquipmentEditModal({
+  equipment,
+  users,
+  onClose,
+  onSave
+}: {
+  equipment: EquipmentItem;
+  users: ManagedUser[];
+  onClose: () => void;
+  onSave: (patch: Partial<EquipmentItem>) => void;
+}) {
+  const [form, setForm] = useState({
+    name: equipment.name,
+    model: equipment.model ?? '',
+    location: equipment.location,
+    group: equipment.group,
+    status: (equipment.status ?? 'available') as EquipmentStatus,
+    image: equipment.image,
+    description: equipment.description ?? '',
+    managerId: equipment.managerId ?? ''
+  });
+  const managerCandidates = users.filter((user) => user.roleLevel === '교원' || user.roleLevel === '대표' || user.roleLevel === '일반');
+
+  function updateField<Key extends keyof typeof form>(key: Key, value: (typeof form)[Key]) {
+    setForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function loadImage(file?: File) {
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = () => updateField('image', String(reader.result));
+    reader.readAsDataURL(file);
+  }
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!form.name.trim() || !form.model.trim() || !form.location.trim()) return;
+    onSave({
+      name: form.name.trim(),
+      model: form.model.trim(),
+      location: form.location.trim(),
+      group: form.group,
+      groupName: form.group === 'process' ? '공정' : '계측 및 분석',
+      category: form.group === 'process' ? '공정장비' : '측정 및 분석장비',
+      status: form.status,
+      image: form.image,
+      description: form.description.trim(),
+      managerId: form.managerId || undefined
+    });
+  }
+
+  return (
+    <div className="user-add-modal-backdrop" role="presentation">
+      <form className="equipment-edit-modal" onSubmit={submit}>
+        <div className="user-add-modal-head">
+          <div>
+            <p>Equipment Editor</p>
+            <h3>{equipment.name} 수정</h3>
+          </div>
+          <button type="button" onClick={onClose} aria-label="장비 수정 닫기">×</button>
+        </div>
+        <div className="equipment-edit-grid">
+          <label>
+            장비명 <em>필수</em>
+            <input value={form.name} onChange={(event) => updateField('name', event.target.value)} required />
+          </label>
+          <label>
+            모델명 <em>필수</em>
+            <input value={form.model} onChange={(event) => updateField('model', event.target.value)} required />
+          </label>
+          <label>
+            설치위치 <em>필수</em>
+            <input value={form.location} onChange={(event) => updateField('location', event.target.value)} required />
+          </label>
+          <label>
+            장비 분류 <em>필수</em>
+            <select value={form.group} onChange={(event) => updateField('group', event.target.value as EquipmentGroup)}>
+              <option value="process">공정</option>
+              <option value="metrology">계측 및 분석</option>
+            </select>
+          </label>
+          <label>
+            장비상태
+            <select value={form.status} onChange={(event) => updateField('status', event.target.value as EquipmentStatus)}>
+              <option value="available">이용가능</option>
+              <option value="unavailable">이용불가</option>
+            </select>
+          </label>
+          <label>
+            담당자
+            <select value={form.managerId} onChange={(event) => updateField('managerId', event.target.value)}>
+              <option value="">담당자 미배정</option>
+              {managerCandidates.map((user) => (
+                <option key={user.id} value={user.id}>{user.name} · {user.department}</option>
+              ))}
+            </select>
+          </label>
+          <label className="is-wide">
+            장비 설명 <span>선택 사항</span>
+            <textarea value={form.description} onChange={(event) => updateField('description', event.target.value)} placeholder="장비 용도, 교육 조건, 주의사항 등을 입력하세요." />
+          </label>
+          <label className="equipment-image-upload is-wide" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); loadImage(event.dataTransfer.files?.[0]); }}>
+            <UploadCloud size={26} />
+            <strong>장비 사진 업로드</strong>
+            <span>선택 사항 · 파일 선택 또는 드래그 앤 드롭</span>
+            <input type="file" accept="image/*" onChange={(event) => loadImage(event.target.files?.[0])} />
+          </label>
+          {form.image && <img className="equipment-edit-preview is-wide" src={form.image} alt={`${form.name} 미리보기`} />}
+        </div>
+        <div className="user-add-modal-actions">
+          <button type="button" className="is-cancel" onClick={onClose}>취소</button>
+          <button type="submit" className="is-primary">저장</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 function PermissionManagementPage({
   users,
   equipmentItems,
   permissions,
+  managerUserIds,
   onSavePermissions
 }: {
   users: ManagedUser[];
   equipmentItems: EquipmentItem[];
   permissions: EquipmentPermissionMap;
+  managerUserIds: Set<string>;
   onSavePermissions: (userId: string, equipmentIds: string[]) => void;
 }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -3428,12 +3693,13 @@ function PermissionManagementPage({
   const labs = useMemo(() => ['전체', ...Array.from(new Set(users.map((user) => user.labProfessor).filter(Boolean)))], [users]);
   const filteredUsers = useMemo(() => (
     users.filter((user) => {
+      const effectiveRole: PermissionRoleLevel = managerUserIds.has(user.id) ? '담당' : user.roleLevel;
       const keyword = searchTerm.trim().toLowerCase();
       const nameKeyword = nameFilter.trim().toLowerCase();
       const grantedCount = permissions[user.id]?.length ?? 0;
-      const matchesSearch = !keyword || `${user.name} ${user.department} ${user.labProfessor} ${grantedCount}`.toLowerCase().includes(keyword);
+      const matchesSearch = !keyword || `${user.name} ${user.department} ${user.labProfessor} ${effectiveRole} ${grantedCount}`.toLowerCase().includes(keyword);
       const matchesName = !nameKeyword || user.name.toLowerCase().includes(nameKeyword);
-      const matchesRole = roleFilter === '전체' || user.roleLevel === roleFilter;
+      const matchesRole = roleFilter === '전체' || effectiveRole === roleFilter;
       const matchesDepartment = departmentFilter === '전체' || user.department === departmentFilter;
       const matchesLab = labFilter === '전체' || user.labProfessor === labFilter;
       const matchesPermission = permissionFilter === '전체'
@@ -3441,7 +3707,7 @@ function PermissionManagementPage({
         || (permissionFilter === '미부여' && grantedCount === 0);
       return matchesSearch && matchesName && matchesRole && matchesDepartment && matchesLab && matchesPermission;
     })
-  ), [departmentFilter, labFilter, nameFilter, permissionFilter, permissions, roleFilter, searchTerm, users]);
+  ), [departmentFilter, labFilter, managerUserIds, nameFilter, permissionFilter, permissions, roleFilter, searchTerm, users]);
   const grantedUsers = users.filter((user) => (permissions[user.id]?.length ?? 0) > 0).length;
   const totalGranted = users.reduce((sum, user) => sum + (permissions[user.id]?.length ?? 0), 0);
   const totalPages = Math.max(Math.ceil(filteredUsers.length / pageSize), 1);
@@ -3501,7 +3767,7 @@ function PermissionManagementPage({
         </div>
         <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)} aria-label="권한 ROLE 필터">
           <option value="전체">전체 ROLE</option>
-          {roleLevelOptions.map((role) => <option key={role} value={role}>{role}</option>)}
+          {permissionRoleOptions.map((role) => <option key={role} value={role}>{role}</option>)}
         </select>
         <select value={labFilter} onChange={(event) => setLabFilter(event.target.value)} aria-label="권한 연구실 필터">
           {labs.map((lab) => (
@@ -3547,7 +3813,7 @@ function PermissionManagementPage({
               <th>
                 <select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)} aria-label="권한관리 ROLE 필터">
                   <option value="전체">전체</option>
-                  {roleLevelOptions.map((role) => <option key={role} value={role}>{role}</option>)}
+                  {permissionRoleOptions.map((role) => <option key={role} value={role}>{role}</option>)}
                 </select>
               </th>
               <th>
@@ -3579,11 +3845,12 @@ function PermissionManagementPage({
               const grantCount = permissions[user.id]?.length ?? 0;
               const labTone = getProfessorTone(user.labProfessor);
               const rowIndex = pageStart + index + 1;
+              const effectiveRole: PermissionRoleLevel = managerUserIds.has(user.id) ? '담당' : user.roleLevel;
               return (
                 <tr key={user.id} className="permission-table-row" onClick={() => setSelectedUser(user)}>
                   <td>{rowIndex}</td>
                   <td><span className="permission-user-pill">{user.name}</span></td>
-                  <td><span className={`permission-role-badge ${getRoleToneClass(user.roleLevel)}`}>{user.roleLevel}</span></td>
+                  <td><span className={`permission-role-badge ${getRoleToneClass(effectiveRole)}`}>{effectiveRole}</span></td>
                   <td><span className="permission-user-pill is-wide">{user.department}</span></td>
                   <td>
                     <span className="user-lab-input permission-lab-pill">
@@ -3624,6 +3891,7 @@ function PermissionManagementPage({
         <PermissionModal
           user={selectedUser}
           equipmentItems={equipmentItems}
+          effectiveRole={managerUserIds.has(selectedUser.id) ? '담당' : selectedUser.roleLevel}
           grantedEquipmentIds={permissions[selectedUser.id] ?? []}
           onClose={() => setSelectedUser(null)}
           onSave={(equipmentIds) => {
@@ -3637,12 +3905,14 @@ function PermissionManagementPage({
 function PermissionModal({
   user,
   equipmentItems,
+  effectiveRole,
   grantedEquipmentIds,
   onClose,
   onSave
 }: {
   user: ManagedUser;
   equipmentItems: EquipmentItem[];
+  effectiveRole: PermissionRoleLevel;
   grantedEquipmentIds: string[];
   onClose: () => void;
   onSave: (equipmentIds: string[]) => void;
@@ -3652,7 +3922,7 @@ function PermissionModal({
   const saveFeedbackTimers = useRef<number[]>([]);
   const processItems = equipmentItems.filter((item) => item.group === 'process');
   const metrologyItems = equipmentItems.filter((item) => item.group === 'metrology');
-  const roleToneClass = getRoleToneClass(user.roleLevel);
+  const roleToneClass = getRoleToneClass(effectiveRole);
 
   function clearPermissionSaveFeedbackTimers() {
     saveFeedbackTimers.current.forEach((timer) => window.clearTimeout(timer));
@@ -3722,7 +3992,7 @@ function PermissionModal({
           <button type="button" onClick={onClose} aria-label="권한 관리 닫기">×</button>
         </div>
         <div className="permission-modal-user">
-          <span className={`permission-role-badge ${roleToneClass}`}>{user.roleLevel}</span>
+          <span className={`permission-role-badge ${roleToneClass}`}>{effectiveRole}</span>
           <strong>{user.department}</strong>
           <em>{formatProfessorLab(user.labProfessor)}</em>
           <small>{selectedIds.size} / {equipmentItems.length} 장비 권한 선택</small>
@@ -4471,6 +4741,38 @@ export function App() {
     setDeletedEquipmentIds((current) => current.includes(equipmentId) ? current : [...current, equipmentId]);
   }
 
+  function updateEquipment(equipmentId: string, patch: Partial<EquipmentItem>) {
+    setEquipmentItems((current) => {
+      const next = current.map((item) => (
+        item.id === equipmentId ? { ...item, ...patch } : item
+      ));
+      const currentOverrides = getEquipmentOverrides();
+      localStorage.setItem('hbnu-equipment-overrides', JSON.stringify({
+        ...currentOverrides,
+        [equipmentId]: { ...(currentOverrides[equipmentId] ?? {}), ...patch }
+      }));
+      return next;
+    });
+    if ('managerId' in patch) {
+      setEquipmentPermissions((current) => {
+        const next: EquipmentPermissionMap = Object.fromEntries(
+          Object.entries(current).map(([userId, equipmentIds]) => [
+            userId,
+            equipmentIds.filter((id) => id !== equipmentId)
+          ])
+        );
+        if (patch.managerId) {
+          const currentManagerIds = next[patch.managerId] ?? [];
+          next[patch.managerId] = currentManagerIds.includes(equipmentId)
+            ? currentManagerIds
+            : [...currentManagerIds, equipmentId];
+        }
+        localStorage.setItem('hbnu-equipment-permissions', JSON.stringify(next));
+        return next;
+      });
+    }
+  }
+
   function addReservation(event: ReservationEvent) {
     setReservationEvents((current) => [...current, event]);
   }
@@ -4720,6 +5022,7 @@ export function App() {
 
   const activeEquipmentItems = equipmentItems.filter((item) => !deletedEquipmentIds.includes(item.id));
   const activeConsumables = monthlyConsumables[selectedConsumableMonth] ?? cloneConsumables();
+  const managerUserIds = useMemo(() => new Set(activeEquipmentItems.map((item) => item.managerId).filter(Boolean) as string[]), [activeEquipmentItems]);
 
   return (
     <div className="min-h-screen">
@@ -4797,7 +5100,15 @@ export function App() {
               users={managedUsers}
               equipmentItems={activeEquipmentItems}
               permissions={equipmentPermissions}
+              managerUserIds={managerUserIds}
               onSavePermissions={saveEquipmentPermissions}
+            />
+          )}
+          {activePage === 'equipmentAdmin' && (
+            <EquipmentAdminPage
+              equipmentItems={activeEquipmentItems}
+              users={managedUsers}
+              onUpdateEquipment={updateEquipment}
             />
           )}
           {activePage === 'consumables' && (
