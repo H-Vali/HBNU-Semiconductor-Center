@@ -2643,13 +2643,15 @@ function UserEditModal({
   labs,
   departments,
   onClose,
-  onConfirm
+  onConfirm,
+  onRequestDelete
 }: {
   user: ManagedUser;
   labs: string[];
   departments: string[];
   onClose: () => void;
   onConfirm: (patch: Partial<ManagedUser>) => void;
+  onRequestDelete: (user: ManagedUser) => void;
 }) {
   const newDepartmentValue = '__new_department__';
   const newLabValue = '__new_lab__';
@@ -2766,10 +2768,52 @@ function UserEditModal({
           </label>
         </div>
         <div className="user-add-modal-actions">
+          <button type="button" className="is-danger-secondary" onClick={() => onRequestDelete(user)}>사용자 삭제</button>
+          <span className="user-modal-action-spacer" />
           <button type="button" className="is-cancel" onClick={onClose}>닫기</button>
           <button type="submit" className="is-primary">수정 저장</button>
         </div>
       </form>
+    </div>
+  );
+}
+
+function UserDeleteConfirmModal({
+  user,
+  onCancel,
+  onConfirm
+}: {
+  user: ManagedUser;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const [confirmName, setConfirmName] = useState('');
+  const canDelete = confirmName.trim() === user.name;
+
+  return (
+    <div className="user-add-modal-backdrop" role="presentation">
+      <section className="user-delete-modal" role="dialog" aria-modal="true" aria-label={`${user.name} 사용자 삭제 확인`}>
+        <div className="user-delete-modal-head">
+          <p>User Directory</p>
+          <h3>사용자 삭제 확인</h3>
+        </div>
+        <div className="user-delete-target">
+          <strong>{user.name}</strong>
+          <span>{user.department} · {formatProfessorLab(user.labProfessor)}</span>
+          <em>{user.roleLevel}</em>
+        </div>
+        <p className="user-delete-warning">
+          이 작업은 사용자 목록과 장비 권한 매핑에서 해당 사용자를 제거합니다. 삭제하려면 아래 입력칸에 사용자 이름을 그대로 입력해주세요.
+        </p>
+        <label className="user-delete-confirm-field">
+          사용자 이름 확인
+          <input value={confirmName} onChange={(event) => setConfirmName(event.target.value)} placeholder={user.name} autoFocus />
+        </label>
+        <div className="user-add-modal-actions">
+          <button type="button" className="is-cancel" onClick={onCancel}>삭제 취소</button>
+          <button type="button" className="is-danger" disabled={!canDelete} onClick={onConfirm}>삭제 확정</button>
+        </div>
+      </section>
     </div>
   );
 }
@@ -2779,6 +2823,7 @@ function UserManagementPage({
   saveFeedbackPhase,
   onUpdateUser,
   onAddUser,
+  onDeleteUser,
   onImportUsers,
   onSave
 }: {
@@ -2786,12 +2831,14 @@ function UserManagementPage({
   saveFeedbackPhase: 'idle' | 'feedback' | 'returning';
   onUpdateUser: (id: string, patch: Partial<ManagedUser>) => void;
   onAddUser: (user: Omit<ManagedUser, 'id' | 'index'>) => void;
+  onDeleteUser: (id: string) => void;
   onImportUsers: (rows: ManagedUser[]) => void;
   onSave: () => void;
 }) {
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState<ManagedUser | null>(null);
+  const [deleteTargetUser, setDeleteTargetUser] = useState<ManagedUser | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [nameFilter, setNameFilter] = useState('');
   const [roleFilter, setRoleFilter] = useState('전체');
@@ -3057,6 +3104,20 @@ function UserManagementPage({
           onConfirm={(patch) => {
             onUpdateUser(editingUser.id, patch);
             setEditingUser(null);
+          }}
+          onRequestDelete={(user) => {
+            setEditingUser(null);
+            setDeleteTargetUser(user);
+          }}
+        />
+      )}
+      {deleteTargetUser && (
+        <UserDeleteConfirmModal
+          user={deleteTargetUser}
+          onCancel={() => setDeleteTargetUser(null)}
+          onConfirm={() => {
+            onDeleteUser(deleteTargetUser.id);
+            setDeleteTargetUser(null);
           }}
         />
       )}
@@ -4215,6 +4276,24 @@ export function App() {
     });
   }
 
+  function deleteManagedUser(id: string) {
+    const savedAt = new Date().toISOString();
+    clearUserSaveFeedbackTimers();
+    setUserSaveFeedbackPhase('idle');
+    setManagedUsers((current) => {
+      const next = current.filter((user) => user.id !== id).map((user, index) => ({ ...user, index: index + 1 }));
+      localStorage.setItem('hbnu-managed-users', JSON.stringify(next));
+      localStorage.setItem('hbnu-users-updated-at', savedAt);
+      return next;
+    });
+    setEquipmentPermissions((current) => {
+      const { [id]: _deletedUserPermissions, ...next } = current;
+      localStorage.setItem('hbnu-equipment-permissions', JSON.stringify(next));
+      return next;
+    });
+    setUsersUpdatedAt(savedAt);
+  }
+
   function importManagedUsers(rows: ManagedUser[]) {
     if (rows.length === 0) return;
     clearUserSaveFeedbackTimers();
@@ -4345,6 +4424,7 @@ export function App() {
               saveFeedbackPhase={userSaveFeedbackPhase}
               onUpdateUser={updateManagedUser}
               onAddUser={addManagedUser}
+              onDeleteUser={deleteManagedUser}
               onImportUsers={importManagedUsers}
               onSave={saveManagedUsers}
             />
