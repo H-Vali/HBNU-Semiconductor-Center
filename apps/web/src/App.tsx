@@ -887,12 +887,12 @@ function Hero({
 
   return (
     <section className="hero-panel relative overflow-hidden">
-      <div className="hero-logo-watermarks" aria-hidden="true">
-        <span className="hero-logo-watermark is-primary"><HanbatLogoMark /></span>
-        <span className="hero-logo-watermark is-secondary"><HanbatLogoMark /></span>
-        <span className="hero-logo-watermark is-tertiary"><HanbatLogoMark /></span>
-      </div>
       <div className="hero-intro">
+        <div className="hero-logo-watermarks" aria-hidden="true">
+          <span className="hero-logo-watermark is-primary"><HanbatLogoMark /></span>
+          <span className="hero-logo-watermark is-secondary"><HanbatLogoMark /></span>
+          <span className="hero-logo-watermark is-tertiary"><HanbatLogoMark /></span>
+        </div>
         <div className="hero-intro-copy">
           <p className="hero-breadcrumb">N-FACILITY · FAB OPERATION · EQUIPMENT RESERVATION</p>
           <h2 className="hero-title">

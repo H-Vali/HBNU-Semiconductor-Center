@@ -107,7 +107,7 @@ select {
   position: absolute;
   display: grid;
   place-items: center;
-  opacity: 0.085;
+  opacity: 0.14;
   transform: rotate(-9deg);
   filter:
     blur(0.2px)
@@ -121,27 +121,27 @@ select {
 }
 
 .hero-logo-watermark.is-primary {
-  right: 8%;
-  top: 10%;
+  right: 7%;
+  top: 7%;
   width: clamp(7rem, 12vw, 12.5rem);
   height: clamp(7rem, 12vw, 12.5rem);
 }
 
 .hero-logo-watermark.is-secondary {
-  right: 34%;
-  bottom: -22%;
+  right: 38%;
+  bottom: -18%;
   width: clamp(5.5rem, 8.4vw, 9rem);
   height: clamp(5.5rem, 8.4vw, 9rem);
-  opacity: 0.055;
+  opacity: 0.095;
   transform: rotate(13deg);
 }
 
 .hero-logo-watermark.is-tertiary {
   left: 4%;
-  top: -28%;
+  top: -22%;
   width: clamp(5rem, 7.5vw, 8rem);
   height: clamp(5rem, 7.5vw, 8rem);
-  opacity: 0.045;
+  opacity: 0.075;
   transform: rotate(18deg);
 }
 
@@ -191,7 +191,7 @@ select {
   content: none;
 }
 
-.hero-intro > * {
+.hero-intro > :not(.hero-logo-watermarks) {
   position: relative;
   z-index: 1;
 }
