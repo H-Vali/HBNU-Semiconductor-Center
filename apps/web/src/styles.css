@@ -481,27 +481,60 @@ select {
 .brand-mark {
   position: relative;
   display: grid;
-  width: 3.25rem;
-  height: 3.25rem;
+  width: 3.55rem;
+  height: 3.55rem;
   place-items: center;
-  border-radius: 50%;
-  border: 1px solid rgba(125, 211, 252, 0.38);
-  background: rgba(34, 211, 238, 0.1);
+  border-radius: 14px;
+  border: 1px solid rgba(125, 211, 252, 0.48);
+  background:
+    radial-gradient(circle at 30% 20%, rgba(94, 234, 212, 0.24), transparent 32%),
+    linear-gradient(145deg, rgba(15, 23, 42, 0.92), rgba(8, 13, 28, 0.98));
   color: #bae6fd;
-  box-shadow: 0 0 28px rgba(34, 211, 238, 0.16);
+  box-shadow:
+    inset 0 0 18px rgba(34, 211, 238, 0.18),
+    0 0 18px rgba(34, 211, 238, 0.22),
+    0 0 42px rgba(59, 130, 246, 0.16);
+  overflow: hidden;
+}
+
+.brand-mark::before {
+  content: "";
+  position: absolute;
+  inset: 0.22rem;
+  border-radius: 10px;
+  border: 1px solid rgba(191, 219, 254, 0.16);
+  box-shadow: inset 0 0 18px rgba(14, 165, 233, 0.12);
 }
 
 .brand-mark::after {
   content: "";
   position: absolute;
-  right: 0.15rem;
-  top: 0.15rem;
+  right: 0.22rem;
+  top: 0.22rem;
   width: 0.72rem;
   height: 0.72rem;
   border-radius: 999px;
   background: #5eead4;
   box-shadow: 0 0 0 0 rgba(94, 234, 212, 0.8);
   animation: activePulse 1.7s ease-out infinite;
+}
+
+.brand-mark:hover {
+  border-color: rgba(103, 232, 249, 0.82);
+  box-shadow:
+    inset 0 0 22px rgba(34, 211, 238, 0.24),
+    0 0 24px rgba(34, 211, 238, 0.36),
+    0 0 58px rgba(59, 130, 246, 0.24);
+}
+
+.hanbat-logo-mark {
+  position: relative;
+  z-index: 1;
+  width: 2.35rem;
+  height: 2.35rem;
+  filter:
+    drop-shadow(0 0 5px rgba(34, 211, 238, 0.52))
+    drop-shadow(0 0 12px rgba(96, 165, 250, 0.3));
 }
 
 .app-shell {

@@ -19,7 +19,6 @@ import {
   BookOpen,
   CalendarDays,
   CheckCircle2,
-  CircuitBoard,
   Cpu,
   Download,
   Factory,
@@ -712,13 +711,24 @@ function LoadingOverlay({ visible }: { visible: boolean }) {
   );
 }
 
+function HanbatLogoMark() {
+  return (
+    <svg className="hanbat-logo-mark" viewBox="0 0 44 44" aria-hidden="true">
+      <path d="M37.2764 10.8181L26.4746 13.7129L32.79 37.2859L43.5917 34.3911L37.2764 10.8181Z" fill="#22d3ee" />
+      <path d="M29.8935 26.4825L6.32422 32.7988L9.21854 43.6023L32.7878 37.2859L29.8935 26.4825Z" fill="#3b82f6" />
+      <path d="M34.3779 0.00005L10.8086 6.31641L13.7029 17.1198L37.2722 10.8035L34.3779 0.00005Z" fill="#f5b942" />
+      <path d="M10.8086 6.32454L0 9.2207L6.31629 32.7934L17.1249 29.8973L10.8086 6.32454Z" fill="#fb7185" />
+    </svg>
+  );
+}
+
 function InstitutionHeader({ onNavigate, sessionRole }: { onNavigate: (page: PageKey) => void; sessionRole: Role | null }) {
   return (
     <header className="sticky top-0 z-20 border-b border-white/10 bg-slate-950/90 backdrop-blur">
       <div className="mx-auto flex max-w-[1800px] items-center justify-between gap-5 px-5 py-3 2xl:px-8">
         <button className="flex items-center gap-3 text-left" onClick={() => onNavigate('home')}>
           <div className="brand-mark">
-            <CircuitBoard size={26} />
+            <HanbatLogoMark />
           </div>
           <div>
             <p className="text-xs font-bold text-cyan-300">HBNU SEMICONDUCTOR CENTER</p>
