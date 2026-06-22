@@ -760,7 +760,7 @@ select {
 
 .sidebar-dropdown {
   display: grid;
-  gap: 0.35rem;
+  gap: 0;
 }
 
 .sidebar-dropdown-trigger svg:last-child {
@@ -775,9 +775,21 @@ select {
 .sidebar-subnav {
   display: grid;
   gap: 0.3rem;
+  max-height: 0;
   margin-left: 1rem;
   border-left: 1px solid rgba(125, 211, 252, 0.18);
+  opacity: 0;
+  overflow: hidden;
   padding-left: 0.7rem;
+  transform: translateY(-0.35rem);
+  transition: max-height 0.34s ease, opacity 0.24s ease, padding-top 0.34s ease, transform 0.34s ease;
+}
+
+.sidebar-dropdown.is-open .sidebar-subnav {
+  max-height: 7rem;
+  opacity: 1;
+  padding-top: 0.35rem;
+  transform: translateY(0);
 }
 
 .sidebar-subnav-item {
@@ -3049,6 +3061,106 @@ select {
   gap: 1rem;
 }
 
+.faq-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(17, 25, 43, 0.86);
+  padding: 0.85rem;
+}
+
+.faq-filter-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.65rem;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(2, 6, 23, 0.36);
+  padding: 0 0.8rem;
+  color: #cbd5e1;
+  font-weight: 900;
+  transition: all 0.3s ease;
+}
+
+.faq-filter-button em {
+  min-width: 1.4rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.12rem 0.42rem;
+  color: #f8fafc;
+  font-size: 0.72rem;
+  font-style: normal;
+  text-align: center;
+}
+
+.faq-filter-button.is-active,
+.faq-filter-button:hover {
+  transform: translateY(-2px);
+}
+
+.faq-filter-button.is-all {
+  color: #bfdbfe;
+}
+
+.faq-filter-button.is-all.is-active,
+.faq-filter-button.is-all:hover {
+  border-color: rgba(96, 165, 250, 0.46);
+  background: rgba(37, 99, 235, 0.18);
+}
+
+.faq-filter-button.is-reservation {
+  color: #67e8f9;
+}
+
+.faq-filter-button.is-reservation.is-active,
+.faq-filter-button.is-reservation:hover {
+  border-color: rgba(34, 211, 238, 0.46);
+  background: rgba(8, 145, 178, 0.18);
+}
+
+.faq-filter-button.is-equipment {
+  color: #c4b5fd;
+}
+
+.faq-filter-button.is-equipment.is-active,
+.faq-filter-button.is-equipment:hover {
+  border-color: rgba(167, 139, 250, 0.5);
+  background: rgba(124, 58, 237, 0.18);
+}
+
+.faq-filter-button.is-training {
+  color: #86efac;
+}
+
+.faq-filter-button.is-training.is-active,
+.faq-filter-button.is-training:hover {
+  border-color: rgba(74, 222, 128, 0.46);
+  background: rgba(22, 163, 74, 0.16);
+}
+
+.faq-filter-button.is-operation {
+  color: #fbbf24;
+}
+
+.faq-filter-button.is-operation.is-active,
+.faq-filter-button.is-operation:hover {
+  border-color: rgba(251, 191, 36, 0.45);
+  background: rgba(180, 83, 9, 0.16);
+}
+
+.faq-filter-button.is-account {
+  color: #f9a8d4;
+}
+
+.faq-filter-button.is-account.is-active,
+.faq-filter-button.is-account:hover {
+  border-color: rgba(244, 114, 182, 0.46);
+  background: rgba(190, 24, 93, 0.16);
+}
+
 .faq-card {
   display: grid;
   gap: 0.8rem;
@@ -3081,9 +3193,35 @@ select {
   font-weight: 900;
 }
 
-.faq-card-head span {
+.faq-category-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.faq-card-head .faq-category-pill.is-reservation {
   background: rgba(45, 212, 191, 0.14);
   color: #99f6e4;
+}
+
+.faq-card-head .faq-category-pill.is-equipment {
+  background: rgba(124, 58, 237, 0.14);
+  color: #ddd6fe;
+}
+
+.faq-card-head .faq-category-pill.is-training {
+  background: rgba(22, 163, 74, 0.14);
+  color: #bbf7d0;
+}
+
+.faq-card-head .faq-category-pill.is-operation {
+  background: rgba(180, 83, 9, 0.14);
+  color: #fde68a;
+}
+
+.faq-card-head .faq-category-pill.is-account {
+  background: rgba(190, 24, 93, 0.14);
+  color: #fbcfe8;
 }
 
 .faq-card-head em {
@@ -3109,7 +3247,7 @@ select {
 
 .qna-compose {
   display: grid;
-  grid-template-columns: minmax(10rem, 0.35fr) minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.8rem;
   align-items: end;
   border-radius: 16px;
@@ -3127,17 +3265,30 @@ select {
 }
 
 .qna-compose input {
+  width: 100%;
   min-height: 2.8rem;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(2, 6, 23, 0.58);
-  padding: 0 0.85rem;
+  border: 0;
+  background: transparent;
+  padding: 0;
   color: #f8fafc;
   font-weight: 800;
   outline: none;
 }
 
-.qna-compose input:focus {
+.qna-search-field {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 2.8rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(2, 6, 23, 0.58);
+  padding: 0 0.85rem;
+  color: #7dd3fc;
+}
+
+.qna-search-field:focus-within {
   border-color: rgba(95, 217, 201, 0.7);
   box-shadow: 0 0 0 2px rgba(95, 217, 201, 0.12);
 }
@@ -3229,6 +3380,95 @@ select {
 
 .qna-status.is-pending {
   color: #cbd5e1;
+}
+
+.qna-modal {
+  display: grid;
+  gap: 1rem;
+  width: min(42rem, calc(100vw - 2rem));
+  border-radius: 16px;
+  border: 1px solid rgba(125, 211, 252, 0.24);
+  background:
+    radial-gradient(circle at top right, rgba(34, 211, 238, 0.12), transparent 32%),
+    #111927;
+  padding: 1.35rem;
+  box-shadow: 0 28px 70px rgba(2, 6, 23, 0.48);
+}
+
+.qna-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.qna-modal-head p {
+  margin: 0 0 0.2rem;
+  color: #67e8f9;
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.qna-modal-head h3 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 1.55rem;
+  font-weight: 950;
+}
+
+.qna-modal-close,
+.qna-modal-cancel {
+  border-radius: 8px;
+  border: 1px solid rgba(248, 113, 113, 0.38);
+  background: rgba(127, 29, 29, 0.72);
+  color: #fee2e2;
+  padding: 0.7rem 1rem;
+  font-weight: 900;
+  transition: all 0.3s ease;
+}
+
+.qna-modal-close:hover,
+.qna-modal-cancel:hover {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.reservation-label textarea {
+  min-height: 10rem;
+  resize: vertical;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(2, 6, 23, 0.58);
+  padding: 0.85rem;
+  color: #f8fafc;
+  font-weight: 800;
+  outline: none;
+}
+
+.reservation-label textarea:focus {
+  border-color: rgba(95, 217, 201, 0.7);
+  box-shadow: 0 0 0 2px rgba(95, 217, 201, 0.12);
+}
+
+.qna-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.7rem;
+}
+
+.qna-modal-submit {
+  border-radius: 8px;
+  background: #2563eb;
+  padding: 0.7rem 1.2rem;
+  color: #ffffff;
+  font-weight: 950;
+  transition: all 0.3s ease;
+}
+
+.qna-modal-submit:hover {
+  background: #3b82f6;
+  transform: translateY(-1px);
 }
 
 .consumables-actions {

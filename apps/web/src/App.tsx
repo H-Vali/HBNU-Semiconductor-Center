@@ -839,26 +839,24 @@ function SidebarNavigation({ activePage, onNavigate }: { activePage: PageKey; on
                       <span>문의사항</span>
                       <ChevronDown size={16} />
                     </button>
-                    {inquiryOpen && (
-                      <div className="sidebar-subnav">
-                        <button
-                          type="button"
-                          className={`sidebar-subnav-item ${activePage === 'faq' ? 'is-active' : ''}`}
-                          onClick={() => onNavigate('faq')}
-                        >
-                          <BookOpen size={15} />
-                          <span>자주 묻는 내용</span>
-                        </button>
-                        <button
-                          type="button"
-                          className={`sidebar-subnav-item ${activePage === 'qna' ? 'is-active' : ''}`}
-                          onClick={() => onNavigate('qna')}
-                        >
-                          <MessageSquare size={15} />
-                          <span>사용자 Q&amp;A</span>
-                        </button>
-                      </div>
-                    )}
+                    <div className="sidebar-subnav" aria-hidden={!inquiryOpen}>
+                      <button
+                        type="button"
+                        className={`sidebar-subnav-item ${activePage === 'faq' ? 'is-active' : ''}`}
+                        onClick={() => onNavigate('faq')}
+                      >
+                        <BookOpen size={15} />
+                        <span>자주 묻는 내용</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`sidebar-subnav-item ${activePage === 'qna' ? 'is-active' : ''}`}
+                        onClick={() => onNavigate('qna')}
+                      >
+                        <MessageSquare size={15} />
+                        <span>사용자 Q&amp;A</span>
+                      </button>
+                    </div>
                   </div>
                 )}
               </Fragment>
@@ -3581,7 +3579,25 @@ function NoticePage() {
   );
 }
 
-const faqItems = [
+type FaqCategory = '예약' | '장비' | '교육' | '운영' | '계정';
+
+const faqCategoryMeta: Record<FaqCategory, { icon: typeof CalendarDays; tone: string }> = {
+  예약: { icon: CalendarDays, tone: 'reservation' },
+  장비: { icon: Wrench, tone: 'equipment' },
+  교육: { icon: GraduationCap, tone: 'training' },
+  운영: { icon: Factory, tone: 'operation' },
+  계정: { icon: UserRound, tone: 'account' }
+};
+
+const faqCategories: Array<FaqCategory | '전체'> = ['전체', '예약', '장비', '교육', '운영', '계정'];
+
+const faqItems: Array<{
+  id: string;
+  category: FaqCategory;
+  question: string;
+  answer: string;
+  updatedAt: string;
+}> = [
   {
     id: 'faq-1',
     category: '예약',
@@ -3591,20 +3607,27 @@ const faqItems = [
   },
   {
     id: 'faq-2',
+    category: '장비',
+    question: '장비별 사용 가능 여부는 어디에서 확인하나요?',
+    answer: '장비현황에서 장비별 교육 인증, 사용 조건, 위치 정보를 확인하고 장비예약현황에서 실시간 예약 상태를 함께 확인할 수 있습니다.',
+    updatedAt: '2026.06.21'
+  },
+  {
+    id: 'faq-3',
     category: '교육',
     question: '장비사용자 교육 이수 여부는 어디에서 확인하나요?',
     answer: '마이페이지의 인증정보 영역과 관리자 권한관리 화면에서 교육 이수 및 장비 권한 상태를 확인할 수 있도록 확장 예정입니다.',
     updatedAt: '2026.06.20'
   },
   {
-    id: 'faq-3',
+    id: 'faq-4',
     category: '운영',
     question: '예약 취소나 일정 변경은 어떻게 하나요?',
     answer: '일반 사용자는 마이페이지의 내 예약현황에서 취소 요청을 진행하고, 관리자는 관리자 페이지에서 예약 추가/삭제를 처리할 수 있습니다.',
     updatedAt: '2026.06.18'
   },
   {
-    id: 'faq-4',
+    id: 'faq-5',
     category: '계정',
     question: '로그인 후 소속 정보가 다르면 어떻게 수정하나요?',
     answer: '현재는 관리자 사용자관리 화면에서 소속 학과, 연구실, 메모 정보를 수정할 수 있으며 추후 마이페이지 설정과 연동 예정입니다.',
@@ -3616,17 +3639,21 @@ type QnaItem = {
   id: string;
   department: string;
   title: string;
+  content?: string;
   status: '답변대기' | '답변완료';
   createdAt: string;
 };
 
 const initialQnaItems: QnaItem[] = [
-  { id: 'qna-1', department: '전자공학과', title: 'FE-SEM 교육 인증 후 예약 권한 반영 시점 문의', status: '답변완료', createdAt: '2026.06.21' },
-  { id: 'qna-2', department: '기계공학과', title: 'Thermal Evaporator 야간 사용 가능 여부 문의', status: '답변대기', createdAt: '2026.06.22' },
-  { id: 'qna-3', department: '창의융합학과', title: '교육 신청 후 일정 변경 가능 여부 문의', status: '답변대기', createdAt: '2026.06.22' }
+  { id: 'qna-1', department: '전자공학과', title: 'FE-SEM 교육 인증 후 예약 권한 반영 시점 문의', content: '교육 이수 후 장비 예약 가능 권한이 언제 반영되는지 확인 부탁드립니다.', status: '답변완료', createdAt: '2026.06.21' },
+  { id: 'qna-2', department: '기계공학과', title: 'Thermal Evaporator 야간 사용 가능 여부 문의', content: '야간 시간대에도 담당자 승인 후 장비 사용이 가능한지 문의드립니다.', status: '답변대기', createdAt: '2026.06.22' },
+  { id: 'qna-3', department: '창의융합학과', title: '교육 신청 후 일정 변경 가능 여부 문의', content: '교육 신청 후 개인 일정으로 인해 교육 일정을 변경할 수 있는지 알고 싶습니다.', status: '답변대기', createdAt: '2026.06.22' }
 ];
 
 function FaqPage() {
+  const [activeCategory, setActiveCategory] = useState<FaqCategory | '전체'>('전체');
+  const visibleFaqItems = activeCategory === '전체' ? faqItems : faqItems.filter((item) => item.category === activeCategory);
+
   return (
     <section className="inquiry-page">
       <div className="notice-hero inquiry-hero">
@@ -3642,19 +3669,88 @@ function FaqPage() {
         </div>
       </div>
 
+      <div className="faq-filter-bar" aria-label="FAQ 분류 필터">
+        {faqCategories.map((category) => {
+          const meta = category === '전체' ? null : faqCategoryMeta[category];
+          const Icon = meta?.icon ?? LayoutDashboard;
+          const count = category === '전체' ? faqItems.length : faqItems.filter((item) => item.category === category).length;
+          return (
+            <button
+              key={category}
+              type="button"
+              className={`faq-filter-button ${category !== '전체' ? `is-${meta?.tone}` : 'is-all'} ${activeCategory === category ? 'is-active' : ''}`}
+              onClick={() => setActiveCategory(category)}
+            >
+              <Icon size={17} />
+              <span>{category}</span>
+              <em>{count}</em>
+            </button>
+          );
+        })}
+      </div>
+
       <div className="faq-grid">
-        {faqItems.map((item) => (
+        {visibleFaqItems.map((item) => {
+          const meta = faqCategoryMeta[item.category];
+          const Icon = meta.icon;
+          return (
           <article key={item.id} className="faq-card">
             <div className="faq-card-head">
-              <span>{item.category}</span>
+              <span className={`faq-category-pill is-${meta.tone}`}><Icon size={14} />{item.category}</span>
               <em>{item.updatedAt}</em>
             </div>
             <h3>{item.question}</h3>
             <p>{item.answer}</p>
           </article>
-        ))}
+          );
+        })}
       </div>
     </section>
+  );
+}
+
+function QnaCreateModal({
+  onClose,
+  onSubmit
+}: {
+  onClose: () => void;
+  onSubmit: (question: { department: string; title: string; content: string }) => void;
+}) {
+  const [department, setDepartment] = useState('');
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+
+  function submitQuestion(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const trimmedDepartment = department.trim();
+    const trimmedTitle = title.trim();
+    const trimmedContent = content.trim();
+    if (!trimmedDepartment || !trimmedTitle || !trimmedContent) {
+      window.alert('소속 학과, 제목, 문의 내용을 모두 입력해주세요.');
+      return;
+    }
+    onSubmit({ department: trimmedDepartment, title: trimmedTitle, content: trimmedContent });
+  }
+
+  return (
+    <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
+      <form className="qna-modal" role="dialog" aria-modal="true" aria-label="질문 등록" onSubmit={submitQuestion} onMouseDown={(event) => event.stopPropagation()}>
+        <div className="qna-modal-head">
+          <div>
+            <p>User Q&amp;A</p>
+            <h3>질문 등록</h3>
+          </div>
+          <button type="button" className="qna-modal-close" onClick={onClose}>닫기</button>
+        </div>
+        <label className="reservation-label">소속 학과<input value={department} onChange={(event) => setDepartment(event.target.value)} placeholder="예: 전자공학과" /></label>
+        <label className="reservation-label">문의 제목<input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="문의 제목을 입력" /></label>
+        <label className="reservation-label">문의 내용<textarea value={content} onChange={(event) => setContent(event.target.value)} placeholder="관리자에게 전달할 문의 내용을 입력하세요." /></label>
+        <div className="qna-modal-actions">
+          <button type="button" className="qna-modal-cancel" onClick={onClose}>취소</button>
+          <button type="submit" className="qna-modal-submit">등록</button>
+        </div>
+      </form>
+    </div>
   );
 }
 
@@ -3667,25 +3763,18 @@ function QnaPage() {
       return initialQnaItems;
     }
   });
-  const [department, setDepartment] = useState('');
-  const [title, setTitle] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
-  function submitQuestion(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const trimmedDepartment = department.trim();
-    const trimmedTitle = title.trim();
-    if (!trimmedDepartment || !trimmedTitle) {
-      window.alert('소속 학과와 제목을 입력해주세요.');
-      return;
-    }
-
+  function addQuestion(question: { department: string; title: string; content: string }) {
     const now = new Date();
     const createdAt = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
     const nextItems = [
       {
         id: `qna-${Date.now()}`,
-        department: trimmedDepartment,
-        title: trimmedTitle,
+        department: question.department,
+        title: question.title,
+        content: question.content,
         status: '답변대기' as const,
         createdAt
       },
@@ -3693,9 +3782,17 @@ function QnaPage() {
     ];
     setQnaItems(nextItems);
     localStorage.setItem('hbnu-qna-items', JSON.stringify(nextItems));
-    setDepartment('');
-    setTitle('');
+    setShowCreateModal(false);
   }
+
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const visibleQnaItems = normalizedSearch
+    ? qnaItems.filter((item) => (
+      item.department.toLowerCase().includes(normalizedSearch)
+      || item.title.toLowerCase().includes(normalizedSearch)
+      || (item.content ?? '').toLowerCase().includes(normalizedSearch)
+    ))
+    : qnaItems;
 
   return (
     <section className="inquiry-page qna-page">
@@ -3712,17 +3809,16 @@ function QnaPage() {
         </div>
       </div>
 
-      <form className="qna-compose" onSubmit={submitQuestion}>
+      <div className="qna-compose">
         <label>
-          소속 학과
-          <input value={department} onChange={(event) => setDepartment(event.target.value)} placeholder="예: 전자공학과" />
+          문의내용 검색
+          <span className="qna-search-field">
+            <Search size={17} />
+            <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="소속, 제목, 문의내용 검색" />
+          </span>
         </label>
-        <label>
-          문의 제목
-          <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="문의 내용을 한 줄로 입력" />
-        </label>
-        <button type="submit">질문 등록</button>
-      </form>
+        <button type="button" onClick={() => setShowCreateModal(true)}>질문 등록</button>
+      </div>
 
       <div className="qna-table-wrap">
         <table className="qna-table">
@@ -3736,9 +3832,9 @@ function QnaPage() {
             </tr>
           </thead>
           <tbody>
-            {qnaItems.map((item, index) => (
+            {visibleQnaItems.map((item, index) => (
               <tr key={item.id}>
-                <td>{qnaItems.length - index}</td>
+                <td>{visibleQnaItems.length - index}</td>
                 <td>{item.department}</td>
                 <td>{item.title}</td>
                 <td>
@@ -3753,6 +3849,7 @@ function QnaPage() {
           </tbody>
         </table>
       </div>
+      {showCreateModal && <QnaCreateModal onClose={() => setShowCreateModal(false)} onSubmit={addQuestion} />}
     </section>
   );
 }
