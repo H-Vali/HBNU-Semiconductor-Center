@@ -336,6 +336,10 @@ function getRuntimeStatusLabel(status: EquipmentRuntimeStatus) {
   return '대기';
 }
 
+function isEquipmentAvailable(item: EquipmentItem | undefined) {
+  return (item?.status ?? 'available') === 'available';
+}
+
 function toLocalReservationDateTime(date: Date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -658,6 +662,10 @@ function getRoleToneClass(roleLevel: PermissionRoleLevel) {
   if (roleLevel === '담당') return 'is-manager';
   if (roleLevel === '대표') return 'is-lead';
   return 'is-member';
+}
+
+function getPermissionRoleLevels(user: ManagedUser, managerUserIds: Set<string>): PermissionRoleLevel[] {
+  return managerUserIds.has(user.id) ? [user.roleLevel, '담당'] : [user.roleLevel];
 }
 
 function formatPhoneNumber(value: string) {
@@ -1239,7 +1247,7 @@ function RealtimeEquipmentStatus({
   const statusItems = equipmentItems.map((item) => {
     const maintenanceEvent = calendarEvents.find((event) => isMaintenanceReservation(event) && isEventForEquipment(event, item, equipmentItems) && isReservationActive(event));
     const activeEvent = calendarEvents.find((event) => !isMaintenanceReservation(event) && isEventForEquipment(event, item, equipmentItems) && isReservationActive(event));
-    const status: EquipmentRuntimeStatus = maintenanceEvent ? 'maintenance' : activeEvent ? 'active' : 'idle';
+    const status: EquipmentRuntimeStatus = !isEquipmentAvailable(item) || maintenanceEvent ? 'maintenance' : activeEvent ? 'active' : 'idle';
     return {
       item,
       activeEvent: maintenanceEvent ?? activeEvent,
@@ -1297,7 +1305,7 @@ function RealtimeEquipmentStatus({
                 {status === 'active'
                   ? `${formatReservationTime(activeEvent?.start)} - ${formatReservationTime(activeEvent?.end)} ${activeEvent && isExternalReservation(activeEvent) ? '외부 사용' : '종료'}`
                   : status === 'maintenance'
-                    ? `${formatReservationTime(activeEvent?.start)} - ${formatReservationTime(activeEvent?.end)} 점검`
+                    ? activeEvent ? `${formatReservationTime(activeEvent.start)} - ${formatReservationTime(activeEvent.end)} 점검` : '장비 이용불가'
                     : '현재 예약 없음'}
               </span>
             </article>
@@ -1566,7 +1574,10 @@ function EquipmentPage({
                   <p className="text-xs font-bold uppercase text-cyan-300">{item.category}</p>
                   <h3 className="mt-1 text-xl font-bold text-white">{item.name}</h3>
                 </div>
-                <span className="rounded-md bg-blue-500/20 px-2 py-1 text-xs font-bold text-blue-200">{item.location}</span>
+                <div className="grid justify-items-end gap-1">
+                  <span className="rounded-md bg-blue-500/20 px-2 py-1 text-xs font-bold text-blue-200">{item.location}</span>
+                  <span className={`equipment-admin-status is-${item.status ?? 'available'}`}>{isEquipmentAvailable(item) ? '이용가능' : '예약불가'}</span>
+                </div>
               </div>
               <p className="mb-4 text-sm text-slate-300">{item.condition}</p>
               <div className="flex flex-wrap gap-2">
@@ -1826,6 +1837,8 @@ function ReservationPage({
   const [searchTerm, setSearchTerm] = useState('');
   const [groupFilter, setGroupFilter] = useState<'all' | EquipmentGroup>('all');
   const selectedEquipment = selectedEquipmentId === allEquipmentId ? undefined : equipmentItems.find((item) => item.id === selectedEquipmentId);
+  const selectedEquipmentAvailable = selectedEquipmentId === allEquipmentId || isEquipmentAvailable(selectedEquipment);
+  const firstAvailableEquipmentId = equipmentItems.find(isEquipmentAvailable)?.id ?? '';
   const todayKey = getSeoulDateKey();
   const isAllLive = calendarEvents.some((event) => isReservationActive(event));
   const filteredEquipmentItems = useMemo(() => {
@@ -1839,7 +1852,7 @@ function ReservationPage({
 
   function confirmReservation(form: ReservationForm) {
     const equipment = equipmentItems.find((item) => item.id === form.equipmentId);
-    if (!equipment) return;
+    if (!equipment || !isEquipmentAvailable(equipment)) return;
 
     const purpose = form.purpose.trim() ? ` - ${form.purpose.trim()}` : '';
     onAddReservation({
@@ -1855,6 +1868,7 @@ function ReservationPage({
     setShowReservationModal(false);
   }
   function openReservation(date = getSeoulDateKey()) {
+    if (!selectedEquipmentAvailable) return;
     setReservationDate(date);
     setShowReservationModal(true);
   }
@@ -1901,19 +1915,21 @@ function ReservationPage({
             const isProcess = item.group === 'process';
             const GroupIcon = isProcess ? Cpu : Microscope;
             const isLive = calendarEvents.some((event) => isEventForEquipment(event, item, equipmentItems) && isReservationActive(event));
+            const isUnavailable = !isEquipmentAvailable(item);
             return (
               <button
                 key={item.id}
-                className={`reservation-equipment-button ${isSelected ? 'is-selected' : ''} ${isLive ? 'is-live' : ''}`}
+                className={`reservation-equipment-button ${isSelected ? 'is-selected' : ''} ${isLive ? 'is-live' : ''} ${isUnavailable ? 'is-unavailable' : ''}`}
                 onClick={() => setSelectedEquipmentId(item.id)}
               >
                 <span className="reservation-equipment-name">
-                  {isLive && <span className="live-equipment-dot" aria-label="사용중" />}
+                  {isLive && !isUnavailable && <span className="live-equipment-dot" aria-label="사용중" />}
+                  {isUnavailable && <span className="maintenance-equipment-dot" aria-label="이용불가" />}
                   <span className="min-w-0 truncate">{item.name}</span>
                 </span>
-                <span className={`equipment-type-chip ${isProcess ? 'is-process' : 'is-metrology'}`}>
+                <span className={`equipment-type-chip ${isUnavailable ? 'is-unavailable' : isProcess ? 'is-process' : 'is-metrology'}`}>
                   <GroupIcon size={14} />
-                  {isProcess ? '공정' : '계측 및 분석'}
+                  {isUnavailable ? '예약불가' : isProcess ? '공정' : '계측 및 분석'}
                 </span>
               </button>
             );
@@ -1933,14 +1949,18 @@ function ReservationPage({
                 내 예약 보기
               </button>
               <button
-                className="inline-flex items-center gap-2 rounded-md bg-blue-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-cyan-500 hover:text-slate-950"
+                className="inline-flex items-center gap-2 rounded-md bg-blue-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-cyan-500 hover:text-slate-950 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
                 onClick={() => openReservation()}
+                disabled={!selectedEquipmentAvailable || !firstAvailableEquipmentId}
               >
                 <Plus size={16} /> 장비예약
               </button>
             </div>
           }
         />
+        {!selectedEquipmentAvailable && (
+          <p className="reservation-warning mb-4">현재 선택한 장비는 이용불가 상태입니다. 장비관리에서 이용가능으로 전환 후 예약할 수 있습니다.</p>
+        )}
         <SeoulClock />
         <FullCalendar
           plugins={[dayGridPlugin, interactionPlugin]}
@@ -1963,7 +1983,7 @@ function ReservationPage({
         <ReservationModalV2
           equipmentItems={equipmentItems}
           calendarEvents={calendarEvents}
-          selectedEquipmentId={selectedEquipment?.id ?? equipmentItems[0]?.id ?? ''}
+          selectedEquipmentId={selectedEquipmentAvailable ? selectedEquipment?.id ?? firstAvailableEquipmentId : firstAvailableEquipmentId}
           initialDate={reservationDate}
           onClose={() => setShowReservationModal(false)}
           onConfirm={confirmReservation}
@@ -1989,8 +2009,9 @@ function ReservationModal({
   onClose: () => void;
   onConfirm: (form: ReservationForm) => void;
 }) {
+  const availableEquipmentItems = equipmentItems.filter(isEquipmentAvailable);
   const [form, setForm] = useState({
-    equipmentId: selectedEquipmentId || equipmentItems[0]?.id || '',
+    equipmentId: isEquipmentAvailable(equipmentItems.find((item) => item.id === selectedEquipmentId)) ? selectedEquipmentId : availableEquipmentItems[0]?.id || '',
     date: initialDate,
     startTime: '09:00',
     endTime: '10:00',
@@ -2000,6 +2021,7 @@ function ReservationModal({
 
   function submit(event: FormEvent) {
     event.preventDefault();
+    if (!isEquipmentAvailable(equipmentItems.find((item) => item.id === form.equipmentId))) return;
     onConfirm(form);
   }
 
@@ -2058,7 +2080,7 @@ function ReservationModal({
         </label>
         <div className="mt-6 flex justify-end gap-3">
           <button type="button" className="rounded-md border border-red-300/35 px-5 py-3 font-bold text-red-100 hover:border-red-300 hover:bg-red-500/20 hover:text-white" onClick={onClose}>취소</button>
-          <button type="submit" className="rounded-md bg-cyan-300 px-5 py-3 font-extrabold text-slate-950 shadow-[0_0_28px_rgba(34,211,238,0.24)] hover:bg-white">예약 확정</button>
+          <button type="submit" className="rounded-md bg-cyan-300 px-5 py-3 font-extrabold text-slate-950 shadow-[0_0_28px_rgba(34,211,238,0.24)] hover:bg-white disabled:cursor-not-allowed disabled:opacity-40" disabled={!isEquipmentAvailable(equipmentItems.find((item) => item.id === form.equipmentId))}>예약 확정</button>
         </div>
       </form>
     </div>
@@ -2086,8 +2108,9 @@ function ReservationModalV2({
   allowMaintenanceReservation?: boolean;
   titleSuffix?: string;
 }) {
+  const availableEquipmentItems = equipmentItems.filter(isEquipmentAvailable);
   const [form, setForm] = useState({
-    equipmentId: selectedEquipmentId || equipmentItems[0]?.id || '',
+    equipmentId: isEquipmentAvailable(equipmentItems.find((item) => item.id === selectedEquipmentId)) ? selectedEquipmentId : availableEquipmentItems[0]?.id || '',
     date: initialDate,
     startTime: '09:00',
     endTime: '10:00',
@@ -2095,6 +2118,8 @@ function ReservationModalV2({
     reservationType: 'use' as 'use' | 'maintenance',
     userType: 'internal' as 'internal' | 'external'
   });
+  const selectedModalEquipment = equipmentItems.find((item) => item.id === form.equipmentId);
+  const selectedModalEquipmentAvailable = isEquipmentAvailable(selectedModalEquipment);
 
   const sameEquipmentReservations = calendarEvents.filter((event) => {
     const eventEquipmentId = getEventEquipmentId(event, equipmentItems);
@@ -2116,7 +2141,7 @@ function ReservationModalV2({
   const reservationsForDate = calendarEvents
     .filter((event) => event.start.slice(0, 10) === form.date && getEventEquipmentId(event, equipmentItems) === form.equipmentId)
     .sort((first, second) => first.start.localeCompare(second.start));
-  const canSubmit = availableStartTimes.includes(form.startTime) && endTimes.includes(form.endTime);
+  const canSubmit = selectedModalEquipmentAvailable && availableStartTimes.includes(form.startTime) && endTimes.includes(form.endTime);
 
   function updateStartTime(nextStart: string) {
     setForm((current) => {
@@ -2164,7 +2189,7 @@ function ReservationModalV2({
               장비
               <select value={form.equipmentId} onChange={(event) => setForm((current) => ({ ...current, equipmentId: event.target.value }))}>
                 {equipmentItems.map((item) => (
-                  <option key={item.id} value={item.id}>{item.name}</option>
+                  <option key={item.id} value={item.id} disabled={!isEquipmentAvailable(item)}>{item.name}{!isEquipmentAvailable(item) ? ' (예약불가)' : ''}</option>
                 ))}
               </select>
             </label>
@@ -2212,7 +2237,8 @@ function ReservationModalV2({
               예약 목적
               <input value={form.purpose} onChange={(event) => setForm((current) => ({ ...current, purpose: event.target.value }))} placeholder="예: 박막 증착 공정" />
             </label>
-            {!canSubmit && <p className="reservation-warning">이미 예약된 시간입니다. 다른 시간을 선택해주세요.</p>}
+            {!selectedModalEquipmentAvailable && <p className="reservation-warning">이용불가 장비는 예약할 수 없습니다.</p>}
+            {selectedModalEquipmentAvailable && !canSubmit && <p className="reservation-warning">이미 예약된 시간입니다. 다른 시간을 선택해주세요.</p>}
           </div>
         </div>
         <div className="mt-6 flex justify-end gap-3">
@@ -3704,13 +3730,13 @@ function PermissionManagementPage({
   const labs = useMemo(() => ['전체', ...Array.from(new Set(users.map((user) => user.labProfessor).filter(Boolean)))], [users]);
   const filteredUsers = useMemo(() => (
     users.filter((user) => {
-      const effectiveRole: PermissionRoleLevel = managerUserIds.has(user.id) ? '담당' : user.roleLevel;
+      const effectiveRoles = getPermissionRoleLevels(user, managerUserIds);
       const keyword = searchTerm.trim().toLowerCase();
       const nameKeyword = nameFilter.trim().toLowerCase();
       const grantedCount = permissions[user.id]?.length ?? 0;
-      const matchesSearch = !keyword || `${user.name} ${user.department} ${user.labProfessor} ${effectiveRole} ${grantedCount}`.toLowerCase().includes(keyword);
+      const matchesSearch = !keyword || `${user.name} ${user.department} ${user.labProfessor} ${effectiveRoles.join(' ')} ${grantedCount}`.toLowerCase().includes(keyword);
       const matchesName = !nameKeyword || user.name.toLowerCase().includes(nameKeyword);
-      const matchesRole = roleFilter === '전체' || effectiveRole === roleFilter;
+      const matchesRole = roleFilter === '전체' || effectiveRoles.includes(roleFilter as PermissionRoleLevel);
       const matchesDepartment = departmentFilter === '전체' || user.department === departmentFilter;
       const matchesLab = labFilter === '전체' || user.labProfessor === labFilter;
       const matchesPermission = permissionFilter === '전체'
@@ -3856,12 +3882,18 @@ function PermissionManagementPage({
               const grantCount = permissions[user.id]?.length ?? 0;
               const labTone = getProfessorTone(user.labProfessor);
               const rowIndex = pageStart + index + 1;
-              const effectiveRole: PermissionRoleLevel = managerUserIds.has(user.id) ? '담당' : user.roleLevel;
+              const effectiveRoles = getPermissionRoleLevels(user, managerUserIds);
               return (
                 <tr key={user.id} className="permission-table-row" onClick={() => setSelectedUser(user)}>
                   <td>{rowIndex}</td>
                   <td><span className="permission-user-pill">{user.name}</span></td>
-                  <td><span className={`permission-role-badge ${getRoleToneClass(effectiveRole)}`}>{effectiveRole}</span></td>
+                  <td>
+                    <span className="permission-role-stack">
+                      {effectiveRoles.map((role) => (
+                        <span key={role} className={`permission-role-badge ${getRoleToneClass(role)}`}>{role}</span>
+                      ))}
+                    </span>
+                  </td>
                   <td><span className="permission-user-pill is-wide">{user.department}</span></td>
                   <td>
                     <span className="user-lab-input permission-lab-pill">
@@ -3902,7 +3934,7 @@ function PermissionManagementPage({
         <PermissionModal
           user={selectedUser}
           equipmentItems={equipmentItems}
-          effectiveRole={managerUserIds.has(selectedUser.id) ? '담당' : selectedUser.roleLevel}
+          effectiveRoles={getPermissionRoleLevels(selectedUser, managerUserIds)}
           grantedEquipmentIds={permissions[selectedUser.id] ?? []}
           onClose={() => setSelectedUser(null)}
           onSave={(equipmentIds) => {
@@ -3916,14 +3948,14 @@ function PermissionManagementPage({
 function PermissionModal({
   user,
   equipmentItems,
-  effectiveRole,
+  effectiveRoles,
   grantedEquipmentIds,
   onClose,
   onSave
 }: {
   user: ManagedUser;
   equipmentItems: EquipmentItem[];
-  effectiveRole: PermissionRoleLevel;
+  effectiveRoles: PermissionRoleLevel[];
   grantedEquipmentIds: string[];
   onClose: () => void;
   onSave: (equipmentIds: string[]) => void;
@@ -3933,7 +3965,6 @@ function PermissionModal({
   const saveFeedbackTimers = useRef<number[]>([]);
   const processItems = equipmentItems.filter((item) => item.group === 'process');
   const metrologyItems = equipmentItems.filter((item) => item.group === 'metrology');
-  const roleToneClass = getRoleToneClass(effectiveRole);
 
   function clearPermissionSaveFeedbackTimers() {
     saveFeedbackTimers.current.forEach((timer) => window.clearTimeout(timer));
@@ -4003,7 +4034,11 @@ function PermissionModal({
           <button type="button" onClick={onClose} aria-label="권한 관리 닫기">×</button>
         </div>
         <div className="permission-modal-user">
-          <span className={`permission-role-badge ${roleToneClass}`}>{effectiveRole}</span>
+          <span className="permission-role-stack">
+            {effectiveRoles.map((role) => (
+              <span key={role} className={`permission-role-badge ${getRoleToneClass(role)}`}>{role}</span>
+            ))}
+          </span>
           <strong>{user.department}</strong>
           <em>{formatProfessorLab(user.labProfessor)}</em>
           <small>{selectedIds.size} / {equipmentItems.length} 장비 권한 선택</small>
