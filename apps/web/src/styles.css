@@ -1641,6 +1641,14 @@ select {
 }
 
 @media (max-width: 1180px) {
+  .notice-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .notice-detail-panel {
+    position: static;
+  }
+
   .app-shell {
     grid-template-columns: 1fr;
   }
@@ -1733,6 +1741,25 @@ select {
 }
 
 @media (max-width: 640px) {
+  .notice-hero,
+  .notice-toolbar {
+    display: grid;
+  }
+
+  .notice-hero-meta {
+    justify-items: start;
+    width: 100%;
+  }
+
+  .notice-row {
+    grid-template-columns: 2.2rem minmax(0, 1fr);
+  }
+
+  .notice-row-side {
+    grid-column: 2;
+    justify-items: start;
+  }
+
   .visitor-counter-card {
     grid-template-columns: 1fr;
   }
@@ -2461,7 +2488,13 @@ select {
   gap: 1.2rem;
 }
 
+.notice-page {
+  display: grid;
+  gap: 1.2rem;
+}
+
 .consumables-hero,
+.notice-hero,
 .consumables-summary-grid > div,
 .user-summary-grid > div,
 .consumables-toolbar,
@@ -2479,6 +2512,18 @@ select {
   padding: 1.5rem;
 }
 
+.notice-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.2rem;
+  border-radius: 16px;
+  padding: 1.5rem;
+  background:
+    radial-gradient(circle at top right, rgba(95, 217, 201, 0.14), transparent 34%),
+    rgba(17, 25, 43, 0.88);
+}
+
 .consumables-eyebrow {
   color: #5fd9c9;
   font-size: 0.78rem;
@@ -2494,12 +2539,270 @@ select {
   font-weight: 900;
 }
 
+.notice-hero h2 {
+  margin-top: 0.35rem;
+  color: #f8fafc;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  font-weight: 900;
+}
+
 .consumables-hero span {
   display: block;
   margin-top: 0.65rem;
   color: #9fb0c8;
   font-size: 1rem;
   font-weight: 600;
+}
+
+.notice-hero > div:first-child > span {
+  display: block;
+  margin-top: 0.65rem;
+  color: #9fb0c8;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.notice-hero-meta {
+  display: grid;
+  min-width: 10.5rem;
+  justify-items: end;
+  gap: 0.18rem;
+  border-radius: 14px;
+  border: 1px solid rgba(95, 217, 201, 0.18);
+  background: rgba(2, 6, 23, 0.34);
+  padding: 1rem;
+}
+
+.notice-hero-meta strong {
+  color: #f8fafc;
+  font-size: 2rem;
+  font-weight: 900;
+}
+
+.notice-hero-meta span,
+.notice-hero-meta em {
+  color: #9fb0c8;
+  font-size: 0.8rem;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.notice-hero-meta em {
+  color: #5fd9c9;
+}
+
+.notice-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(22rem, 0.75fr);
+  gap: 1.2rem;
+  align-items: start;
+}
+
+.notice-list-panel,
+.notice-detail-panel {
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(17, 25, 43, 0.86);
+  padding: 1rem;
+}
+
+.notice-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin-bottom: 0.9rem;
+}
+
+.notice-search-placeholder {
+  display: inline-flex;
+  min-height: 2.75rem;
+  flex: 1;
+  align-items: center;
+  gap: 0.55rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(2, 6, 23, 0.46);
+  padding: 0 0.9rem;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  font-weight: 750;
+}
+
+.notice-toolbar button {
+  min-height: 2.75rem;
+  border-radius: 10px;
+  background: rgba(45, 212, 191, 0.16);
+  padding: 0 0.95rem;
+  color: #99f6e4;
+  font-weight: 900;
+}
+
+.notice-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.notice-row {
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.9rem;
+  border-radius: 13px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 42, 0.7);
+  padding: 0.95rem;
+  color: #dbeafe;
+  text-align: left;
+}
+
+.notice-row:hover,
+.notice-row.is-selected {
+  border-color: rgba(95, 217, 201, 0.38);
+  background: rgba(15, 118, 110, 0.18);
+  transform: translateY(-1px);
+}
+
+.notice-index {
+  color: #67e8f9;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.notice-row-main {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.notice-row-title {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: #f8fafc;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.notice-row-title em {
+  border-radius: 999px;
+  background: rgba(248, 113, 113, 0.16);
+  padding: 0.16rem 0.45rem;
+  color: #fecaca;
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.notice-row-summary {
+  overflow: hidden;
+  color: #94a3b8;
+  font-size: 0.86rem;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notice-row-side {
+  display: grid;
+  justify-items: end;
+  gap: 0.3rem;
+  color: #94a3b8;
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+.notice-row-side strong {
+  border-radius: 7px;
+  background: rgba(59, 130, 246, 0.16);
+  padding: 0.2rem 0.45rem;
+  color: #bfdbfe;
+  font-size: 0.72rem;
+}
+
+.notice-detail-panel {
+  position: sticky;
+  top: 5.6rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.notice-detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.notice-detail-head span,
+.notice-detail-head em {
+  border-radius: 999px;
+  padding: 0.32rem 0.62rem;
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.notice-detail-head span {
+  background: rgba(45, 212, 191, 0.14);
+  color: #99f6e4;
+}
+
+.notice-detail-head em {
+  background: rgba(248, 113, 113, 0.16);
+  color: #fecaca;
+}
+
+.notice-detail-panel h3 {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 1.55rem;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.notice-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  color: #94a3b8;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.notice-detail-panel p {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 0.98rem;
+  font-weight: 600;
+  line-height: 1.8;
+}
+
+.notice-attachment-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  border-radius: 13px;
+  border: 1px solid rgba(125, 211, 252, 0.14);
+  background: rgba(2, 6, 23, 0.34);
+  padding: 0.9rem;
+  color: #bae6fd;
+}
+
+.notice-attachment-box div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.notice-attachment-box strong {
+  color: #f8fafc;
+  font-size: 0.9rem;
+}
+
+.notice-attachment-box span {
+  color: #94a3b8;
+  font-size: 0.82rem;
+  font-weight: 650;
 }
 
 .consumables-actions {

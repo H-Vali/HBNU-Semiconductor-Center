@@ -27,6 +27,7 @@ import {
   LayoutDashboard,
   LockKeyhole,
   LogIn,
+  Megaphone,
   Microscope,
   PackageCheck,
   Plus,
@@ -42,7 +43,7 @@ import {
 } from 'lucide-react';
 import { equipment as fallbackEquipment, events, monthlyUsage, type EquipmentGroup, type EquipmentItem } from './data';
 
-type PageKey = 'home' | 'center' | 'facility' | 'equipment' | 'training' | 'reservations' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'login';
+type PageKey = 'home' | 'notice' | 'center' | 'facility' | 'equipment' | 'training' | 'reservations' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'login';
 type Role = 'USER' | 'ADMIN';
 type UsagePeriod = '24H' | '1W' | '1M';
 type EquipmentRuntimeStatus = 'active' | 'maintenance' | 'idle';
@@ -93,6 +94,7 @@ type EquipmentPermissionMap = Record<string, string[]>;
 const apiUrl = ((import.meta as ImportMeta & { env?: Record<string, string> }).env?.VITE_API_URL) ?? 'http://localhost:4000';
 
 const menu: Array<{ label: string; page: PageKey; icon: typeof Factory }> = [
+  { label: '공지사항', page: 'notice', icon: Megaphone },
   { label: '센터소개', page: 'center', icon: Factory },
   { label: '시설안내', page: 'facility', icon: LayoutDashboard },
   { label: '장비현황', page: 'equipment', icon: Wrench },
@@ -3358,6 +3360,133 @@ function ConsumablesPage({
   );
 }
 
+const noticeItems = [
+  {
+    id: 'notice-1',
+    category: '운영',
+    title: '2026년 6월 장비 공동활용 플랫폼 시범 운영 안내',
+    date: '2026.06.22',
+    author: '창의융합교육센터',
+    views: 184,
+    pinned: true,
+    summary: '장비예약현황, 교육신청, 권한관리 기능을 중심으로 플랫폼 시범 운영을 시작합니다.',
+    body: '시범 운영 기간 동안 장비 예약 및 교육 신청 이력은 플랫폼 기준으로 관리됩니다. 이용자는 예약 전 장비별 교육 인증 상태와 사용 가능 시간을 확인해주시기 바랍니다.'
+  },
+  {
+    id: 'notice-2',
+    category: '예약',
+    title: '장비 예약 승인 및 취소 기준 안내',
+    date: '2026.06.20',
+    author: '장비운영팀',
+    views: 96,
+    pinned: true,
+    summary: '관리자 승인 대상 장비와 사용자 직접 예약 가능 장비의 운영 기준을 안내합니다.',
+    body: '장비별 사용 조건에 따라 예약 승인 절차가 다를 수 있습니다. 예약 취소가 필요한 경우 마이페이지의 내 예약현황에서 취소 요청을 진행해주세요.'
+  },
+  {
+    id: 'notice-3',
+    category: '교육',
+    title: '장비사용자 교육 신청 및 인증 절차 안내',
+    date: '2026.06.18',
+    author: '교육담당자',
+    views: 73,
+    pinned: false,
+    summary: '장비 사용 전 필수 교육 신청 방법과 교육완료 인증 절차를 안내합니다.',
+    body: '교육 신청 후 담당자 확인을 거쳐 교육 일정이 확정됩니다. 교육 완료 후 인증 상태가 반영되면 해당 장비의 예약 권한 부여 여부를 확인할 수 있습니다.'
+  },
+  {
+    id: 'notice-4',
+    category: '점검',
+    title: '클린룸 및 주요 공정 장비 정기 점검 예정',
+    date: '2026.06.15',
+    author: '시설관리팀',
+    views: 58,
+    pinned: false,
+    summary: '정기 점검 시간에는 일부 장비 예약이 제한될 수 있습니다.',
+    body: '점검 일정은 장비예약현황 캘린더에 순차 반영됩니다. 점검 시간과 중복되는 예약은 담당자 확인 후 조정될 수 있습니다.'
+  }
+];
+
+function NoticePage() {
+  const [selectedNoticeId, setSelectedNoticeId] = useState(noticeItems[0]?.id ?? '');
+  const selectedNotice = noticeItems.find((notice) => notice.id === selectedNoticeId) ?? noticeItems[0];
+  const pinnedCount = noticeItems.filter((notice) => notice.pinned).length;
+
+  return (
+    <section className="notice-page">
+      <div className="notice-hero">
+        <div>
+          <p className="consumables-eyebrow">Notice Board</p>
+          <h2>공지사항</h2>
+          <span>센터 운영, 장비 예약, 교육 인증 관련 주요 공지를 한 곳에서 확인합니다.</span>
+        </div>
+        <div className="notice-hero-meta" aria-label="공지사항 요약">
+          <strong>{noticeItems.length}</strong>
+          <span>등록 공지</span>
+          <em>중요 {pinnedCount}건</em>
+        </div>
+      </div>
+
+      <div className="notice-layout">
+        <div className="notice-list-panel">
+          <div className="notice-toolbar">
+            <div className="notice-search-placeholder">
+              <Search size={17} />
+              <span>제목, 내용, 분류 검색</span>
+            </div>
+            <button type="button">전체 공지</button>
+          </div>
+
+          <div className="notice-list" aria-label="공지사항 목록">
+            {noticeItems.map((notice, index) => (
+              <button
+                key={notice.id}
+                type="button"
+                className={`notice-row ${selectedNotice.id === notice.id ? 'is-selected' : ''}`}
+                onClick={() => setSelectedNoticeId(notice.id)}
+              >
+                <span className="notice-index">{String(index + 1).padStart(2, '0')}</span>
+                <span className="notice-row-main">
+                  <span className="notice-row-title">
+                    {notice.pinned && <em>중요</em>}
+                    {notice.title}
+                  </span>
+                  <span className="notice-row-summary">{notice.summary}</span>
+                </span>
+                <span className="notice-row-side">
+                  <strong>{notice.category}</strong>
+                  <span>{notice.date}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <article className="notice-detail-panel">
+          <div className="notice-detail-head">
+            <span>{selectedNotice.category}</span>
+            {selectedNotice.pinned && <em>상단 고정</em>}
+          </div>
+          <h3>{selectedNotice.title}</h3>
+          <div className="notice-detail-meta">
+            <span>작성자 {selectedNotice.author}</span>
+            <span>등록일 {selectedNotice.date}</span>
+            <span>조회 {selectedNotice.views}</span>
+          </div>
+          <p>{selectedNotice.body}</p>
+          <div className="notice-attachment-box">
+            <BookOpen size={18} />
+            <div>
+              <strong>첨부 및 관련 자료</strong>
+              <span>첨부파일, PDF, 교육자료 링크는 추후 관리자 페이지에서 연동 예정입니다.</span>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+  );
+}
+
 function PlaceholderPage({ title }: { title: string }) {
   return (
     <section className="rounded-lg border border-white/10 bg-surface/85 p-8">
@@ -3672,6 +3801,7 @@ export function App() {
               />
             </>
           )}
+          {activePage === 'notice' && <NoticePage />}
           {activePage === 'equipment' && (
             <EquipmentPage
               equipmentItems={activeEquipmentItems}
