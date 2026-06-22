@@ -556,6 +556,18 @@ function getRoleToneClass(roleLevel: RoleLevel) {
   return 'is-member';
 }
 
+function formatPhoneNumber(value: string) {
+  const digits = value.replace(/\D/g, '').slice(0, 11);
+  if (digits.length <= 3) return digits;
+  if (digits.startsWith('02')) {
+    if (digits.length <= 5) return `${digits.slice(0, 2)}-${digits.slice(2)}`;
+    if (digits.length <= 9) return `${digits.slice(0, 2)}-${digits.slice(2, digits.length - 4)}-${digits.slice(-4)}`;
+    return `${digits.slice(0, 2)}-${digits.slice(2, 6)}-${digits.slice(6)}`;
+  }
+  if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+}
+
 function downloadUsersExcel(rows: ManagedUser[]) {
   const escapeCell = (value: string | number) => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   const headers = ['연번', '이름', 'ROLE', '소속 학과', '소속 연구실', '연락처', '이메일', '메모', '인증'];
@@ -624,7 +636,7 @@ function parseUsersUpload(text: string) {
         roleLevel: normalizeRoleLevel(row[indexes.roleLevel]),
         department: row[indexes.department] || '',
         labProfessor: row[indexes.labProfessor] || '',
-        phone: row[indexes.phone] || '',
+        phone: formatPhoneNumber(row[indexes.phone] || ''),
         email: row[indexes.email] || '',
         memo: row[indexes.memo] || '',
         authProvider: (['Google', 'Kakao', 'Manual'].includes(authProvider) ? authProvider : 'Manual') as ManagedUser['authProvider']
@@ -2545,7 +2557,7 @@ function UserAddModal({
       name: form.name.trim(),
       department: form.department.trim(),
       labProfessor: form.labProfessor.trim(),
-      phone: form.phone.trim(),
+      phone: formatPhoneNumber(form.phone),
       email: form.email.trim(),
       memo: form.memo.trim()
     });
@@ -2618,7 +2630,7 @@ function UserAddModal({
           </label>
           <label>
             연락처
-            <input value={form.phone} onChange={(event) => updateField('phone', event.target.value)} placeholder="010-0000-0000" />
+            <input inputMode="numeric" value={form.phone} onChange={(event) => updateField('phone', formatPhoneNumber(event.target.value))} placeholder="010-0000-0000" />
           </label>
           <label>
             이메일
@@ -2693,7 +2705,7 @@ function UserEditModal({
       roleLevel: form.roleLevel,
       department: form.department.trim(),
       labProfessor: form.labProfessor.trim(),
-      phone: form.phone.trim(),
+      phone: formatPhoneNumber(form.phone),
       email: form.email.trim(),
       memo: form.memo.trim()
     });
@@ -2756,7 +2768,7 @@ function UserEditModal({
           </label>
           <label>
             연락처
-            <input value={form.phone} onChange={(event) => updateField('phone', event.target.value)} placeholder="010-0000-0000" />
+            <input inputMode="numeric" value={form.phone} onChange={(event) => updateField('phone', formatPhoneNumber(event.target.value))} placeholder="010-0000-0000" />
           </label>
           <label>
             이메일
