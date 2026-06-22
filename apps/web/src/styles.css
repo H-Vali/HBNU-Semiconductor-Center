@@ -2761,6 +2761,200 @@ select {
   gap: 1.2rem;
 }
 
+.manager-permission-page {
+  display: grid;
+  gap: 1.2rem;
+}
+
+.manager-permission-layout {
+  display: grid;
+  grid-template-columns: minmax(18rem, 0.34fr) minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.manager-equipment-panel,
+.manager-grant-panel,
+.manager-permission-empty {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.86);
+  padding: 1.15rem;
+}
+
+.manager-panel-head {
+  margin-bottom: 0.9rem;
+}
+
+.manager-panel-head.is-compact {
+  margin: 1.2rem 0 0.7rem;
+}
+
+.manager-panel-head p,
+.manager-permission-empty p {
+  color: #5fd9c9;
+  font-size: 0.74rem;
+  font-weight: 950;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.manager-panel-head h3,
+.manager-permission-empty h2 {
+  margin-top: 0.3rem;
+  color: #f8fafc;
+  font-size: 1.3rem;
+  font-weight: 950;
+}
+
+.manager-equipment-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.manager-equipment-button {
+  display: grid;
+  gap: 0.28rem;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 11px;
+  background: rgba(2, 6, 23, 0.42);
+  padding: 0.9rem;
+  text-align: left;
+  transition: all 0.3s ease;
+}
+
+.manager-equipment-button:hover,
+.manager-equipment-button.is-selected {
+  border-color: rgba(95, 217, 201, 0.48);
+  background: rgba(20, 184, 166, 0.14);
+}
+
+.manager-equipment-button strong {
+  color: #ffffff;
+  font-size: 0.98rem;
+  font-weight: 950;
+}
+
+.manager-equipment-button span {
+  color: #94a3b8;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.manager-equipment-button em {
+  width: fit-content;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.22);
+  padding: 0.25rem 0.55rem;
+  color: #bfdbfe;
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.manager-grant-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.manager-grant-form label {
+  display: grid;
+  gap: 0.4rem;
+  color: #94a3b8;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.manager-grant-form select {
+  min-height: 2.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(2, 6, 23, 0.72);
+  padding: 0 0.85rem;
+  color: #f8fafc;
+  font-weight: 850;
+  outline: none;
+}
+
+.manager-grant-form button {
+  display: inline-flex;
+  min-height: 2.8rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border-radius: 10px;
+  background: #34d6b0;
+  padding: 0 1rem;
+  color: #062018;
+  font-weight: 950;
+  transition: all 0.3s ease;
+}
+
+.manager-grant-form button:disabled {
+  cursor: not-allowed;
+  background: rgba(100, 116, 139, 0.28);
+  color: #94a3b8;
+}
+
+.manager-grant-form button:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(52, 214, 176, 0.22);
+}
+
+.manager-granted-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.manager-granted-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 11px;
+  background: rgba(2, 6, 23, 0.42);
+  padding: 0.85rem;
+}
+
+.manager-granted-row strong,
+.manager-granted-row span {
+  display: block;
+}
+
+.manager-granted-row strong {
+  color: #f8fafc;
+  font-size: 0.96rem;
+  font-weight: 950;
+}
+
+.manager-granted-row span {
+  margin-top: 0.2rem;
+  color: #94a3b8;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.manager-permission-empty {
+  display: grid;
+  min-height: 24rem;
+  place-items: center;
+  align-content: center;
+  text-align: center;
+}
+
+.manager-permission-empty svg {
+  margin-bottom: 1rem;
+  color: #5fd9c9;
+}
+
+.manager-permission-empty span {
+  max-width: 34rem;
+  color: #cbd5e1;
+  font-size: 0.92rem;
+}
+
 .equipment-admin-page {
   display: grid;
   gap: 1rem;
@@ -5314,6 +5508,11 @@ select {
     grid-template-columns: 1fr;
   }
 
+  .manager-permission-layout,
+  .manager-grant-form {
+    grid-template-columns: 1fr;
+  }
+
   .permission-pagination {
     align-items: flex-start;
     flex-direction: column;
@@ -5352,6 +5551,11 @@ select {
 
   .equipment-edit-grid {
     grid-template-columns: 1fr;
+  }
+
+  .manager-granted-row {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .user-add-modal-grid {

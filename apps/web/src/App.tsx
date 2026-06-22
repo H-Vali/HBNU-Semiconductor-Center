@@ -48,7 +48,7 @@ import {
 } from 'lucide-react';
 import { equipment as fallbackEquipment, events, monthlyUsage, type EquipmentGroup, type EquipmentItem } from './data';
 
-type PageKey = 'home' | 'notice' | 'center' | 'facility' | 'equipment' | 'training' | 'faq' | 'qna' | 'reservations' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'equipmentAdmin' | 'penalties' | 'login';
+type PageKey = 'home' | 'notice' | 'center' | 'facility' | 'equipment' | 'training' | 'faq' | 'qna' | 'reservations' | 'managerPermissions' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'equipmentAdmin' | 'penalties' | 'login';
 type Role = 'USER' | 'ADMIN';
 type UsagePeriod = '24H' | '1W' | '1M';
 type EquipmentRuntimeStatus = 'active' | 'maintenance' | 'idle';
@@ -127,7 +127,7 @@ const menu: Array<{ label: string; page: PageKey; icon: typeof Factory }> = [
   { label: '센터소개', page: 'center', icon: Factory },
   { label: '시설안내', page: 'facility', icon: LayoutDashboard },
   { label: '장비현황', page: 'equipment', icon: Wrench },
-  { label: '장비예약현황', page: 'reservations', icon: CalendarDays },
+  { label: '장비예약관리', page: 'reservations', icon: CalendarDays },
   { label: '교육신청', page: 'training', icon: GraduationCap },
   { label: '마이페이지', page: 'mypage', icon: UserRound }
 ];
@@ -599,14 +599,19 @@ function getStoredSessionUser(): StoredSessionUser | null {
   }
 }
 
-function getActivePenaltyForSession(sessionUser: StoredSessionUser | null, users: ManagedUser[], penalties: PenaltyRecord[]) {
+function getManagedUserForSession(sessionUser: StoredSessionUser | null, users: ManagedUser[]) {
   if (!sessionUser) return null;
   const sessionEmail = sessionUser.email?.toLowerCase();
-  const matchedUser = users.find((user) => (
+  return users.find((user) => (
     (sessionUser.id && user.id === sessionUser.id) ||
     (sessionEmail && user.email.toLowerCase() === sessionEmail) ||
     (sessionUser.name && user.name === sessionUser.name)
-  ));
+  )) ?? null;
+}
+
+function getActivePenaltyForSession(sessionUser: StoredSessionUser | null, users: ManagedUser[], penalties: PenaltyRecord[]) {
+  if (!sessionUser) return null;
+  const matchedUser = getManagedUserForSession(sessionUser, users);
   if (!matchedUser) return null;
   return penalties.find((record) => record.userId === matchedUser.id && isPenaltyActive(record)) ?? null;
 }
@@ -948,15 +953,30 @@ function useVisitorStats() {
   return visitorStats;
 }
 
-function SidebarNavigation({ activePage, onNavigate }: { activePage: PageKey; onNavigate: (page: PageKey) => void }) {
+function SidebarNavigation({
+  activePage,
+  onNavigate,
+  canManageAssignedPermissions
+}: {
+  activePage: PageKey;
+  onNavigate: (page: PageKey) => void;
+  canManageAssignedPermissions: boolean;
+}) {
   const visitorStats = useVisitorStats();
   const inquiryPages: PageKey[] = ['faq', 'qna'];
+  const reservationPages: PageKey[] = ['reservations', 'managerPermissions'];
   const [inquiryOpen, setInquiryOpen] = useState(() => inquiryPages.includes(activePage));
+  const [reservationOpen, setReservationOpen] = useState(() => reservationPages.includes(activePage));
   const inquirySelected = inquiryPages.includes(activePage);
+  const reservationSelected = reservationPages.includes(activePage);
 
   useEffect(() => {
     if (inquirySelected) setInquiryOpen(true);
   }, [inquirySelected]);
+
+  useEffect(() => {
+    if (reservationSelected) setReservationOpen(true);
+  }, [reservationSelected]);
 
   return (
     <div className="sidebar-stack">
@@ -965,16 +985,36 @@ function SidebarNavigation({ activePage, onNavigate }: { activePage: PageKey; on
         <nav className="sidebar-nav">
           {menu.map((item) => {
             const Icon = item.icon;
-            const selected = activePage === item.page;
+            const selected = item.page === 'reservations' ? reservationSelected : activePage === item.page;
             return (
               <Fragment key={`${item.page}-${item.label}`}>
                 <button
                   className={`sidebar-nav-item ${selected ? 'is-active' : ''}`}
-                  onClick={() => onNavigate(item.page)}
+                  onClick={() => {
+                    if (item.page === 'reservations' && canManageAssignedPermissions) {
+                      setReservationOpen((current) => !current);
+                    }
+                    onNavigate(item.page);
+                  }}
                 >
                   <Icon size={18} />
                   <span>{item.label}</span>
+                  {item.page === 'reservations' && canManageAssignedPermissions && <ChevronDown size={16} />}
                 </button>
+                {item.page === 'reservations' && canManageAssignedPermissions && (
+                  <div className={`sidebar-dropdown ${reservationOpen ? 'is-open' : ''}`}>
+                    <div className="sidebar-subnav" aria-hidden={!reservationOpen}>
+                      <button
+                        type="button"
+                        className={`sidebar-subnav-item ${activePage === 'managerPermissions' ? 'is-active' : ''}`}
+                        onClick={() => onNavigate('managerPermissions')}
+                      >
+                        <LockKeyhole size={15} />
+                        <span>사용권한부여(담당)</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
                 {item.page === 'training' && (
                   <div className={`sidebar-dropdown ${inquiryOpen ? 'is-open' : ''}`}>
                     <button
@@ -3704,6 +3744,148 @@ function EquipmentEditModal({
   );
 }
 
+function ManagerPermissionGrantPage({
+  users,
+  equipmentItems,
+  permissions,
+  currentUser,
+  sessionRole,
+  onGrantPermission
+}: {
+  users: ManagedUser[];
+  equipmentItems: EquipmentItem[];
+  permissions: EquipmentPermissionMap;
+  currentUser: ManagedUser | null;
+  sessionRole: Role | null;
+  onGrantPermission: (userId: string, equipmentId: string) => void;
+}) {
+  const manageableEquipment = useMemo(() => (
+    sessionRole === 'ADMIN'
+      ? equipmentItems
+      : currentUser
+        ? equipmentItems.filter((item) => item.managerId === currentUser.id)
+        : []
+  ), [currentUser, equipmentItems, sessionRole]);
+  const [selectedEquipmentId, setSelectedEquipmentId] = useState(manageableEquipment[0]?.id ?? '');
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const selectedEquipment = manageableEquipment.find((item) => item.id === selectedEquipmentId) ?? manageableEquipment[0];
+
+  useEffect(() => {
+    if (!selectedEquipmentId && manageableEquipment[0]) {
+      setSelectedEquipmentId(manageableEquipment[0].id);
+    }
+    if (selectedEquipmentId && !manageableEquipment.some((item) => item.id === selectedEquipmentId)) {
+      setSelectedEquipmentId(manageableEquipment[0]?.id ?? '');
+    }
+  }, [manageableEquipment, selectedEquipmentId]);
+
+  const grantedUsers = selectedEquipment
+    ? users.filter((user) => permissions[user.id]?.includes(selectedEquipment.id))
+    : [];
+  const grantableUsers = selectedEquipment
+    ? users.filter((user) => !permissions[user.id]?.includes(selectedEquipment.id))
+    : [];
+
+  function grantPermission(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedEquipment || !selectedUserId) return;
+    onGrantPermission(selectedUserId, selectedEquipment.id);
+    setSelectedUserId('');
+  }
+
+  if (manageableEquipment.length === 0) {
+    return (
+      <section className="manager-permission-page">
+        <div className="manager-permission-empty">
+          <LockKeyhole size={32} />
+          <p>Assigned Permission</p>
+          <h2>사용권한을 부여할 담당 장비가 없습니다.</h2>
+          <span>관리자가 장비관리에서 담당자로 배정하면 이 메뉴에서 해당 장비 권한을 부여할 수 있습니다.</span>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="manager-permission-page">
+      <div className="consumables-hero">
+        <div>
+          <p className="consumables-eyebrow">Assigned Permission</p>
+          <h2>사용권한부여(담당)</h2>
+          <span>담당 장비에 한하여 사용자에게 장비 사용 권한을 추가할 수 있습니다. 권한 삭제는 관리자 권한관리에서만 가능합니다.</span>
+        </div>
+      </div>
+
+      <div className="manager-permission-layout">
+        <aside className="manager-equipment-panel">
+          <div className="manager-panel-head">
+            <p>Managed Equipment</p>
+            <h3>담당 장비</h3>
+          </div>
+          <div className="manager-equipment-list">
+            {manageableEquipment.map((item) => {
+              const grantedCount = users.filter((user) => permissions[user.id]?.includes(item.id)).length;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`manager-equipment-button ${selectedEquipment?.id === item.id ? 'is-selected' : ''}`}
+                  onClick={() => setSelectedEquipmentId(item.id)}
+                >
+                  <strong>{item.name}</strong>
+                  <span>{item.groupName} · {item.location}</span>
+                  <em>{grantedCount}명 권한 보유</em>
+                </button>
+              );
+            })}
+          </div>
+        </aside>
+
+        <div className="manager-grant-panel">
+          <div className="manager-panel-head">
+            <p>Grant Permission</p>
+            <h3>{selectedEquipment?.name ?? '장비'} 사용권한</h3>
+          </div>
+          <form className="manager-grant-form" onSubmit={grantPermission}>
+            <label>
+              권한 부여 대상
+              <select value={selectedUserId} onChange={(event) => setSelectedUserId(event.target.value)}>
+                <option value="">사용자 선택</option>
+                {grantableUsers.map((user) => (
+                  <option key={user.id} value={user.id}>{user.name} · {user.department}</option>
+                ))}
+              </select>
+            </label>
+            <button type="submit" disabled={!selectedUserId}>
+              <Plus size={16} /> 권한 부여
+            </button>
+          </form>
+
+          <div className="manager-granted-list">
+            <div className="manager-panel-head is-compact">
+              <p>Granted Users</p>
+              <h3>권한 보유 사용자</h3>
+            </div>
+            {grantedUsers.length > 0 ? (
+              grantedUsers.map((user) => (
+                <div key={user.id} className="manager-granted-row">
+                  <div>
+                    <strong>{user.name}</strong>
+                    <span>{user.department} · {formatProfessorLab(user.labProfessor)}</span>
+                  </div>
+                  <span className="permission-grant-count is-granted">부여됨</span>
+                </div>
+              ))
+            ) : (
+              <p className="permission-empty-row">아직 권한이 부여된 사용자가 없습니다.</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function PermissionManagementPage({
   users,
   equipmentItems,
@@ -5069,6 +5251,25 @@ export function App() {
   const activeEquipmentItems = equipmentItems.filter((item) => !deletedEquipmentIds.includes(item.id));
   const activeConsumables = monthlyConsumables[selectedConsumableMonth] ?? cloneConsumables();
   const managerUserIds = useMemo(() => new Set(activeEquipmentItems.map((item) => item.managerId).filter(Boolean) as string[]), [activeEquipmentItems]);
+  const currentManagedUser = useMemo(
+    () => getManagedUserForSession(sessionUser, managedUsers),
+    [sessionRole, sessionUser?.id, sessionUser?.email, sessionUser?.name, managedUsers]
+  );
+  const canManageAssignedPermissions = sessionRole === 'ADMIN' || Boolean(currentManagedUser && managerUserIds.has(currentManagedUser.id));
+
+  function grantAssignedEquipmentPermission(userId: string, equipmentId: string) {
+    setEquipmentPermissions((current) => {
+      const currentUserPermissions = current[userId] ?? [];
+      const next = {
+        ...current,
+        [userId]: currentUserPermissions.includes(equipmentId)
+          ? currentUserPermissions
+          : [...currentUserPermissions, equipmentId]
+      };
+      localStorage.setItem('hbnu-equipment-permissions', JSON.stringify(next));
+      return next;
+    });
+  }
 
   return (
     <div className="min-h-screen">
@@ -5079,7 +5280,7 @@ export function App() {
         onPreviewPenaltyTest={() => setShowPreviewPenaltyDemo(true)}
       />
       <div className="app-shell mx-auto max-w-[1800px] px-4 py-5 lg:px-6 2xl:px-8">
-        <SidebarNavigation activePage={activePage} onNavigate={navigate} />
+        <SidebarNavigation activePage={activePage} onNavigate={navigate} canManageAssignedPermissions={canManageAssignedPermissions} />
         <main className="app-main">
           {activePage === 'home' && (
             <>
@@ -5153,6 +5354,20 @@ export function App() {
               managerUserIds={managerUserIds}
               onSavePermissions={saveEquipmentPermissions}
             />
+          )}
+          {activePage === 'managerPermissions' && (
+            canManageAssignedPermissions ? (
+              <ManagerPermissionGrantPage
+                users={managedUsers}
+                equipmentItems={activeEquipmentItems}
+                permissions={equipmentPermissions}
+                currentUser={currentManagedUser}
+                sessionRole={sessionRole}
+                onGrantPermission={grantAssignedEquipmentPermission}
+              />
+            ) : (
+              <PlaceholderPage title="접근 권한이 없습니다" />
+            )
           )}
           {activePage === 'equipmentAdmin' && (
             <EquipmentAdminPage
