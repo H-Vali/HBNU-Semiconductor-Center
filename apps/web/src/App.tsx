@@ -918,12 +918,6 @@ function Hero({
   grantedEquipmentItems: EquipmentItem[];
   isAdmin: boolean;
 }) {
-  const processStatusCards = [
-    { label: 'Lithography', value: '12', unit: 'lots', tone: 'lithography' },
-    { label: 'Deposition', value: '18', unit: 'runs', tone: 'deposition' },
-    { label: 'Etching', value: '9', unit: 'recipes', tone: 'etching' },
-    { label: 'Metrology', value: '41', unit: 'samples', tone: 'metrology' }
-  ];
   const [showAllPermissions, setShowAllPermissions] = useState(false);
   const collapsedPermissionItems = grantedEquipmentItems.slice(0, 3);
   const visiblePermissionItems = showAllPermissions ? grantedEquipmentItems : collapsedPermissionItems;
@@ -1016,15 +1010,8 @@ function Hero({
       </div>
       <div className="hero-metrics-panel">
         <div>
-          <p className="hero-section-label">금주 공정 현황</p>
-          <div className="hero-process-grid">
-            {processStatusCards.map((item) => (
-              <div key={item.label} className={`process-status-card is-${item.tone}`}>
-                <p>{item.label}</p>
-                <strong>{item.value}<span>{item.unit}</span></strong>
-              </div>
-            ))}
-          </div>
+          <p className="hero-section-label">운영 지표</p>
+          <StatGrid equipmentItems={equipmentItems} />
         </div>
         <DashboardNoticePanel onNavigate={onNavigate} />
       </div>
