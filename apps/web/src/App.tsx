@@ -2851,7 +2851,7 @@ function PermissionManagementPage({
       const keyword = searchTerm.trim().toLowerCase();
       const nameKeyword = nameFilter.trim().toLowerCase();
       const grantedCount = permissions[user.id]?.length ?? 0;
-      const matchesSearch = !keyword || `${user.name} ${user.department} ${user.labProfessor} ${user.email} ${user.phone} ${grantedCount}`.toLowerCase().includes(keyword);
+      const matchesSearch = !keyword || `${user.name} ${user.department} ${user.labProfessor} ${grantedCount}`.toLowerCase().includes(keyword);
       const matchesName = !nameKeyword || user.name.toLowerCase().includes(nameKeyword);
       const matchesRole = roleFilter === '전체' || user.roleLevel === roleFilter;
       const matchesDepartment = departmentFilter === '전체' || user.department === departmentFilter;
@@ -2915,7 +2915,7 @@ function PermissionManagementPage({
           <input
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder="이름, 학과, 연구실, 이메일 검색"
+            placeholder="이름, 학과, 연구실 검색"
             aria-label="권한 사용자 검색"
           />
         </div>
@@ -2947,8 +2947,6 @@ function PermissionManagementPage({
             <col className="user-col-role" />
             <col className="user-col-department" />
             <col className="user-col-lab" />
-            <col className="user-col-phone" />
-            <col className="user-col-email" />
             <col className="permission-col-grants" />
             <col className="permission-col-action" />
           </colgroup>
@@ -2959,8 +2957,6 @@ function PermissionManagementPage({
               <th>ROLE</th>
               <th>소속 학과</th>
               <th>소속 연구실</th>
-              <th>연락처</th>
-              <th>이메일</th>
               <th>권한</th>
               <th>관리</th>
             </tr>
@@ -2990,8 +2986,6 @@ function PermissionManagementPage({
                   ))}
                 </select>
               </th>
-              <th />
-              <th />
               <th>
                 <select value={permissionFilter} onChange={(event) => setPermissionFilter(event.target.value)} aria-label="권한 부여 상태 필터">
                   <option value="전체">전체</option>
@@ -3019,8 +3013,6 @@ function PermissionManagementPage({
                       <span style={{ borderColor: `${labTone}88`, backgroundColor: `${labTone}22` }}>{formatProfessorLab(user.labProfessor)}</span>
                     </span>
                   </td>
-                  <td><span className="permission-user-pill">{user.phone || '-'}</span></td>
-                  <td><span className="permission-user-pill is-email">{user.email || '-'}</span></td>
                   <td><span className={`permission-grant-count ${grantCount > 0 ? 'is-granted' : 'is-empty'}`}>{grantCount} / {equipmentItems.length}</span></td>
                   <td>
                     <button type="button" className="permission-manage-button" onClick={(event) => { event.stopPropagation(); setSelectedUser(user); }}>
@@ -3032,7 +3024,7 @@ function PermissionManagementPage({
             })}
             {pageUsers.length === 0 && (
               <tr>
-                <td colSpan={9} className="permission-empty-row">조건에 맞는 사용자가 없습니다.</td>
+                <td colSpan={7} className="permission-empty-row">조건에 맞는 사용자가 없습니다.</td>
               </tr>
             )}
           </tbody>
