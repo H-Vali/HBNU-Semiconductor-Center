@@ -43,7 +43,7 @@ import {
 } from 'lucide-react';
 import { equipment as fallbackEquipment, events, monthlyUsage, type EquipmentGroup, type EquipmentItem } from './data';
 
-type PageKey = 'home' | 'facility' | 'equipment' | 'training' | 'reservations' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'login';
+type PageKey = 'home' | 'center' | 'facility' | 'equipment' | 'training' | 'reservations' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'login';
 type Role = 'USER' | 'ADMIN';
 type UsagePeriod = '24H' | '1W' | '1M';
 type EquipmentRuntimeStatus = 'active' | 'maintenance' | 'idle';
@@ -94,7 +94,7 @@ type EquipmentPermissionMap = Record<string, string[]>;
 const apiUrl = ((import.meta as ImportMeta & { env?: Record<string, string> }).env?.VITE_API_URL) ?? 'http://localhost:4000';
 
 const menu: Array<{ label: string; page: PageKey; icon: typeof Factory }> = [
-  { label: '센터소개', page: 'facility', icon: Factory },
+  { label: '센터소개', page: 'center', icon: Factory },
   { label: '시설안내', page: 'facility', icon: LayoutDashboard },
   { label: '장비현황', page: 'equipment', icon: Wrench },
   { label: '장비예약현황', page: 'reservations', icon: CalendarDays },
@@ -725,7 +725,6 @@ function InstitutionHeader({ onNavigate, sessionRole }: { onNavigate: (page: Pag
             <h1 className="text-lg font-extrabold text-white sm:text-xl">반도체 장비 공동활용 플랫폼</h1>
           </div>
         </button>
-        <PartnerLogoStrip />
         <div className="hidden items-center gap-2 md:flex">
           <button className="rounded-md border border-white/15 px-3 py-2 text-sm font-bold text-slate-200 hover:border-cyan-300 hover:text-cyan-200">ENG</button>
           <button className="rounded-md bg-white px-4 py-2 text-sm font-extrabold text-slate-950 hover:bg-cyan-200" onClick={() => onNavigate('login')}>
@@ -734,28 +733,6 @@ function InstitutionHeader({ onNavigate, sessionRole }: { onNavigate: (page: Pag
         </div>
       </div>
     </header>
-  );
-}
-
-function PartnerLogoStrip() {
-  const baseUrl = ((import.meta as ImportMeta & { env?: Record<string, string> }).env?.BASE_URL) ?? '/';
-  const assetBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
-  const partners = [
-    { id: 'hanbat', name: '국립한밭대학교', src: `${assetBase}partners/hanbat-national-university.svg` },
-    { id: 'daejeon', name: '대전광역시', src: `${assetBase}partners/daejeon-metropolitan-city.svg` },
-    { id: 'djtp', name: '대전테크노파크', src: `${assetBase}partners/daejeon-technopark.svg` }
-  ];
-
-  return (
-    <div className="partner-logo-strip" aria-label="협업 기관">
-      <div className="partner-logo-list">
-        {partners.map((partner) => (
-          <div key={partner.name} className={`partner-logo-card partner-logo-card-${partner.id}`}>
-            <img src={partner.src} alt={`${partner.name} 로고`} />
-          </div>
-        ))}
-      </div>
-    </div>
   );
 }
 
@@ -3755,6 +3732,7 @@ export function App() {
               onRegisterUser={registerAuthenticatedUser}
             />
           )}
+          {activePage === 'center' && <PlaceholderPage title="센터소개" />}
           {activePage === 'facility' && <PlaceholderPage title="시설안내" />}
           {activePage === 'mypage' && (
             <MyPage
