@@ -6004,6 +6004,9 @@ type QnaItem = {
   content?: string;
   status: '답변대기' | '답변완료';
   createdAt: string;
+  answer?: string;
+  answeredAt?: string;
+  answeredBy?: string;
 };
 
 const initialQnaItems: QnaItem[] = [
@@ -6116,7 +6119,9 @@ function QnaCreateModal({
   );
 }
 
-function QnaPage() {
+const QNA_PAGE_SIZE = 5;
+
+function QnaPage({ sessionRole }: { sessionRole: Role | null }) {
   const [qnaItems, setQnaItems] = useState<QnaItem[]>(() => {
     try {
       const stored = localStorage.getItem('hbnu-qna-items');
@@ -6127,34 +6132,112 @@ function QnaPage() {
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedQnaId, setSelectedQnaId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [answerDraft, setAnswerDraft] = useState('');
+  const [answerSavePhase, setAnswerSavePhase] = useState<'idle' | 'saved' | 'returning'>('idle');
+  const answerSaveTimers = useRef<number[]>([]);
+  const isAdmin = sessionRole === 'ADMIN';
+
+  useEffect(() => () => {
+    answerSaveTimers.current.forEach((timer) => window.clearTimeout(timer));
+  }, []);
+
+  function persistQnaItems(nextItems: QnaItem[]) {
+    setQnaItems(nextItems);
+    localStorage.setItem('hbnu-qna-items', JSON.stringify(nextItems));
+  }
 
   function addQuestion(question: { department: string; title: string; content: string }) {
     const now = new Date();
     const createdAt = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
+    const newQuestion: QnaItem = {
+      id: `qna-${Date.now()}`,
+      department: question.department,
+      title: question.title,
+      content: question.content,
+      status: '답변대기',
+      createdAt
+    };
     const nextItems = [
-      {
-        id: `qna-${Date.now()}`,
-        department: question.department,
-        title: question.title,
-        content: question.content,
-        status: '답변대기' as const,
-        createdAt
-      },
+      newQuestion,
       ...qnaItems
     ];
-    setQnaItems(nextItems);
-    localStorage.setItem('hbnu-qna-items', JSON.stringify(nextItems));
+    persistQnaItems(nextItems);
+    setSelectedQnaId(newQuestion.id);
+    setCurrentPage(1);
     setShowCreateModal(false);
   }
 
   const normalizedSearch = searchTerm.trim().toLowerCase();
-  const visibleQnaItems = normalizedSearch
-    ? qnaItems.filter((item) => (
+  const visibleQnaItems = useMemo(() => (
+    normalizedSearch
+      ? qnaItems.filter((item) => (
       item.department.toLowerCase().includes(normalizedSearch)
       || item.title.toLowerCase().includes(normalizedSearch)
       || (item.content ?? '').toLowerCase().includes(normalizedSearch)
+      || (item.answer ?? '').toLowerCase().includes(normalizedSearch)
     ))
-    : qnaItems;
+      : qnaItems
+  ), [normalizedSearch, qnaItems]);
+  const totalPages = Math.max(1, Math.ceil(visibleQnaItems.length / QNA_PAGE_SIZE));
+  const pageStartIndex = (currentPage - 1) * QNA_PAGE_SIZE;
+  const pagedQnaItems = visibleQnaItems.slice(pageStartIndex, pageStartIndex + QNA_PAGE_SIZE);
+  const selectedQna = qnaItems.find((item) => item.id === selectedQnaId) ?? null;
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
+
+  useEffect(() => {
+    if (!visibleQnaItems.length) {
+      setSelectedQnaId(null);
+      return;
+    }
+    if (!selectedQnaId || !visibleQnaItems.some((item) => item.id === selectedQnaId)) {
+      setSelectedQnaId(visibleQnaItems[0].id);
+    }
+  }, [selectedQnaId, visibleQnaItems]);
+
+  useEffect(() => {
+    setAnswerDraft(selectedQna?.answer ?? '');
+    setAnswerSavePhase('idle');
+    answerSaveTimers.current.forEach((timer) => window.clearTimeout(timer));
+    answerSaveTimers.current = [];
+  }, [selectedQna?.id]);
+
+  function updateSearchTerm(value: string) {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  }
+
+  function saveAnswer() {
+    if (!isAdmin || !selectedQna) return;
+    const trimmedAnswer = answerDraft.trim();
+    if (!trimmedAnswer) {
+      window.alert('답변 내용을 입력해주세요.');
+      return;
+    }
+    const answeredAt = formatSeoulDateTime(new Date().toISOString());
+    const nextItems = qnaItems.map((item) => (
+      item.id === selectedQna.id
+        ? {
+          ...item,
+          answer: trimmedAnswer,
+          answeredAt,
+          answeredBy: '관리자',
+          status: '답변완료' as const
+        }
+        : item
+    ));
+    persistQnaItems(nextItems);
+    answerSaveTimers.current.forEach((timer) => window.clearTimeout(timer));
+    answerSaveTimers.current = [
+      window.setTimeout(() => setAnswerSavePhase('returning'), 1200),
+      window.setTimeout(() => setAnswerSavePhase('idle'), 1900)
+    ];
+    setAnswerSavePhase('saved');
+  }
 
   return (
     <section className="inquiry-page qna-page">
@@ -6176,7 +6259,7 @@ function QnaPage() {
           문의내용 검색
           <span className="qna-search-field">
             <Search size={17} />
-            <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="소속, 제목, 문의내용 검색" />
+            <input value={searchTerm} onChange={(event) => updateSearchTerm(event.target.value)} placeholder="소속, 제목, 문의내용, 답변 검색" />
           </span>
         </label>
         <button type="button" onClick={() => setShowCreateModal(true)}>질문 등록</button>
@@ -6194,9 +6277,20 @@ function QnaPage() {
             </tr>
           </thead>
           <tbody>
-            {visibleQnaItems.map((item, index) => (
-              <tr key={item.id}>
-                <td>{visibleQnaItems.length - index}</td>
+            {pagedQnaItems.map((item, index) => (
+              <tr
+                key={item.id}
+                className={`qna-table-row ${selectedQnaId === item.id ? 'is-selected' : ''}`}
+                tabIndex={0}
+                onClick={() => setSelectedQnaId(item.id)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    setSelectedQnaId(item.id);
+                  }
+                }}
+              >
+                <td>{visibleQnaItems.length - (pageStartIndex + index)}</td>
                 <td>{item.department}</td>
                 <td>{item.title}</td>
                 <td>
@@ -6208,8 +6302,95 @@ function QnaPage() {
                 <td>{item.createdAt}</td>
               </tr>
             ))}
+            {!pagedQnaItems.length && (
+              <tr>
+                <td colSpan={5} className="qna-empty-row">검색 조건에 맞는 문의가 없습니다.</td>
+              </tr>
+            )}
           </tbody>
         </table>
+      </div>
+      {visibleQnaItems.length > QNA_PAGE_SIZE && (
+        <div className="permission-pagination qna-pagination" aria-label="문의사항 페이지 이동">
+          <span>페이지 <strong>{currentPage}</strong> / {totalPages} · 총 {visibleQnaItems.length}건</span>
+          <div>
+            <button type="button" onClick={() => setCurrentPage(1)} disabled={currentPage === 1}>처음</button>
+            <button type="button" onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={currentPage === 1}>이전</button>
+            {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+              <button
+                key={page}
+                type="button"
+                className={currentPage === page ? 'is-active' : ''}
+                onClick={() => setCurrentPage(page)}
+                aria-current={currentPage === page ? 'page' : undefined}
+              >
+                {page}
+              </button>
+            ))}
+            <button type="button" onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} disabled={currentPage === totalPages}>다음</button>
+            <button type="button" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}>마지막</button>
+          </div>
+        </div>
+      )}
+      <div className="qna-detail-panel" aria-live="polite">
+        {selectedQna ? (
+          <>
+            <div className="qna-detail-head">
+              <div>
+                <p>SELECTED QUESTION</p>
+                <h3>{selectedQna.title}</h3>
+              </div>
+              <span className={`qna-status ${selectedQna.status === '답변완료' ? 'is-complete' : 'is-pending'}`}>
+                <i />
+                {selectedQna.status}
+              </span>
+            </div>
+            <div className="qna-detail-meta">
+              <span>소속 <strong>{selectedQna.department}</strong></span>
+              <span>작성일 <strong>{selectedQna.createdAt}</strong></span>
+              {selectedQna.answeredAt && <span>답변일 <strong>{selectedQna.answeredAt}</strong></span>}
+            </div>
+            <div className="qna-detail-content">
+              <strong>문의내용</strong>
+              <p>{selectedQna.content}</p>
+            </div>
+            <div className="qna-answer-section">
+              <div className="qna-answer-head">
+                <h4>관리자 답변</h4>
+                <span>{selectedQna.answeredBy ? `${selectedQna.answeredBy} · ${selectedQna.answeredAt ?? ''}` : '답변 대기'}</span>
+              </div>
+              {isAdmin ? (
+                <>
+                  <textarea
+                    value={answerDraft}
+                    onChange={(event) => setAnswerDraft(event.target.value)}
+                    placeholder="문의에 대한 관리자 답변을 입력하세요."
+                    aria-label="관리자 답변 입력"
+                  />
+                  <div className="qna-answer-actions">
+                    <button
+                      type="button"
+                      className={`qna-answer-save is-${answerSavePhase}`}
+                      onClick={saveAnswer}
+                    >
+                      <CheckCircle2 size={17} />
+                      {answerSavePhase === 'saved' ? '답변완료!' : '답변완료'}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <p className={`qna-answer-readonly ${selectedQna.answer ? 'has-answer' : ''}`}>
+                  {selectedQna.answer ?? '관리자 답변이 등록되면 이 영역에서 확인할 수 있습니다.'}
+                </p>
+              )}
+            </div>
+          </>
+        ) : (
+          <div className="qna-detail-empty">
+            <MessageSquare size={22} />
+            <span>문의를 선택하면 하단에서 상세내용과 답변 상태를 확인할 수 있습니다.</span>
+          </div>
+        )}
       </div>
       {showCreateModal && <QnaCreateModal onClose={() => setShowCreateModal(false)} onSubmit={addQuestion} />}
     </section>
@@ -6837,7 +7018,7 @@ export function App() {
             )
           )}
           {activePage === 'faq' && <FaqPage />}
-          {activePage === 'qna' && <QnaPage />}
+          {activePage === 'qna' && <QnaPage sessionRole={sessionRole} />}
           {activePage === 'admin' && (
             <AdminPage
               equipmentItems={equipmentItems}
