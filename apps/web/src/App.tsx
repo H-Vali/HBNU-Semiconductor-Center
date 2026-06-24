@@ -52,7 +52,7 @@ import {
 } from 'lucide-react';
 import { equipment as fallbackEquipment, events, monthlyUsage, type EquipmentGroup, type EquipmentItem } from './data';
 
-type PageKey = 'home' | 'notice' | 'operationNotice' | 'meetingNotice' | 'center' | 'facility' | 'equipment' | 'training' | 'trainingManagement' | 'faq' | 'qna' | 'reservations' | 'managerPermissions' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'equipmentAdmin' | 'penalties' | 'login';
+type PageKey = 'home' | 'notice' | 'operationNotice' | 'meetingNotice' | 'center' | 'facility' | 'equipment' | 'training' | 'trainingManagement' | 'faq' | 'qna' | 'reservations' | 'managerPermissions' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'equipmentAdmin' | 'penalties' | 'noticeAdmin' | 'login';
 type Role = 'USER' | 'ADMIN';
 type UsagePeriod = '24H' | '1W' | '1M';
 type EquipmentRuntimeStatus = 'active' | 'maintenance' | 'idle';
@@ -2830,7 +2830,7 @@ function AdminPage({
             <button
               key={item.title}
               className="rounded-lg border border-white/10 bg-surface/85 p-6 text-left text-lg font-extrabold text-white hover:border-cyan-300 hover:bg-blue-500/20"
-              onClick={() => item.page && onNavigate(item.page)}
+              onClick={() => item.title.includes('怨듭') || item.title.includes('공지') ? onNavigate('noticeAdmin') : item.page && onNavigate(item.page)}
             >
               <span className="inline-flex items-center gap-2">
                 {Icon && <Icon size={20} className="text-cyan-300" />}
@@ -5419,6 +5419,183 @@ function NoticePage({
 
 type FaqCategory = '예약' | '장비' | '교육' | '운영' | '계정';
 
+type NoticeItem = (typeof noticeItems)[number];
+type NoticeBoardKey = 'operation' | 'meeting';
+
+const noticeBoardMeta: Record<NoticeBoardKey, { label: string; category: string; storageKey: string }> = {
+  operation: { label: '운영공지', category: '운영', storageKey: 'hbnu-operation-notices' },
+  meeting: { label: '회의공지', category: '회의', storageKey: 'hbnu-meeting-notices' }
+};
+
+function formatNoticeDate(dateKey = getSeoulDateKey()) {
+  return dateKey.replace(/-/g, '.');
+}
+
+function NoticeAdminPage({
+  operationItems,
+  meetingItems,
+  onAddNotice,
+  onUpdateNotice,
+  onDeleteNotice
+}: {
+  operationItems: NoticeItem[];
+  meetingItems: NoticeItem[];
+  onAddNotice: (board: NoticeBoardKey, item: NoticeItem) => void;
+  onUpdateNotice: (board: NoticeBoardKey, noticeId: string, patch: Partial<NoticeItem>) => void;
+  onDeleteNotice: (board: NoticeBoardKey, noticeId: string) => void;
+}) {
+  const [activeBoard, setActiveBoard] = useState<NoticeBoardKey>('operation');
+  const [selectedNoticeId, setSelectedNoticeId] = useState('');
+  const [showEditor, setShowEditor] = useState(false);
+  const items = activeBoard === 'operation' ? operationItems : meetingItems;
+  const selectedNotice = items.find((item) => item.id === selectedNoticeId) ?? items[0];
+  const meta = noticeBoardMeta[activeBoard];
+
+  useEffect(() => {
+    if (items[0] && !items.some((item) => item.id === selectedNoticeId)) {
+      setSelectedNoticeId(items[0].id);
+    }
+  }, [items, selectedNoticeId]);
+
+  function submitNotice(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const title = String(form.get('title') ?? '').trim();
+    const summary = String(form.get('summary') ?? '').trim();
+    const body = String(form.get('body') ?? '').trim();
+    if (!title || !summary || !body) return;
+    const item: NoticeItem = {
+      id: `${activeBoard}-notice-${Date.now()}`,
+      category: String(form.get('category') ?? meta.category).trim() || meta.category,
+      title,
+      date: formatNoticeDate(String(form.get('date') ?? getSeoulDateKey())),
+      author: String(form.get('author') ?? '관리자').trim() || '관리자',
+      views: 0,
+      pinned: form.get('pinned') === 'on',
+      summary,
+      body
+    };
+    onAddNotice(activeBoard, item);
+    setSelectedNoticeId(item.id);
+    setShowEditor(false);
+  }
+
+  return (
+    <section className="notice-admin-page">
+      <div className="notice-admin-hero">
+        <div>
+          <p className="consumables-eyebrow">Notice CMS</p>
+          <h2>공지사항 관리</h2>
+          <span>운영공지와 회의공지를 분리해 게시물을 등록하고 관리합니다.</span>
+        </div>
+        <button type="button" onClick={() => setShowEditor(true)}>
+          <Plus size={17} /> 새 공지 등록
+        </button>
+      </div>
+
+      <div className="notice-admin-tabs" role="tablist" aria-label="공지 구분">
+        {(Object.keys(noticeBoardMeta) as NoticeBoardKey[]).map((board) => (
+          <button
+            key={board}
+            type="button"
+            className={activeBoard === board ? 'is-active' : ''}
+            onClick={() => {
+              setActiveBoard(board);
+              setSelectedNoticeId('');
+            }}
+          >
+            {noticeBoardMeta[board].label}
+            <span>{board === 'operation' ? operationItems.length : meetingItems.length}</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="notice-admin-layout">
+        <div className="notice-admin-list">
+          <div className="notice-admin-list-head">
+            <div>
+              <p>{meta.label}</p>
+              <h3>게시물 목록</h3>
+            </div>
+            <span>{items.length}건</span>
+          </div>
+          {items.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={`notice-admin-row ${selectedNotice?.id === item.id ? 'is-selected' : ''}`}
+              onClick={() => setSelectedNoticeId(item.id)}
+            >
+              <span>
+                {item.pinned && <em>중요</em>}
+                {item.title}
+              </span>
+              <small>{item.date} · {item.author}</small>
+            </button>
+          ))}
+          {items.length === 0 && <p className="notice-admin-empty">등록된 공지가 없습니다.</p>}
+        </div>
+
+        <div className="notice-admin-editor">
+          {selectedNotice ? (
+            <>
+              <div className="notice-admin-editor-head">
+                <div>
+                  <p>Selected Notice</p>
+                  <h3>{selectedNotice.title}</h3>
+                </div>
+                <button type="button" className="is-danger" onClick={() => onDeleteNotice(activeBoard, selectedNotice.id)}>
+                  <Trash2 size={16} /> 삭제
+                </button>
+              </div>
+              <div className="notice-admin-form-grid">
+                <label>분류<input value={selectedNotice.category} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { category: event.target.value })} /></label>
+                <label>작성자<input value={selectedNotice.author} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { author: event.target.value })} /></label>
+                <label>등록일<input value={selectedNotice.date} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { date: event.target.value })} /></label>
+                <label className="notice-admin-check"><input type="checkbox" checked={selectedNotice.pinned} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { pinned: event.target.checked })} /> 상단 고정</label>
+                <label className="is-wide">제목<input value={selectedNotice.title} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { title: event.target.value })} /></label>
+                <label className="is-wide">요약<input value={selectedNotice.summary} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { summary: event.target.value })} /></label>
+                <label className="is-wide">본문<textarea value={selectedNotice.body} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { body: event.target.value })} /></label>
+              </div>
+            </>
+          ) : (
+            <p className="notice-admin-empty">왼쪽에서 공지를 선택하거나 새 공지를 등록하세요.</p>
+          )}
+        </div>
+      </div>
+
+      {showEditor && (
+        <div className="modal-backdrop" onMouseDown={() => setShowEditor(false)}>
+          <form className="notice-create-modal" onSubmit={submitNotice} onMouseDown={(event) => event.stopPropagation()}>
+            <div className="notice-admin-editor-head">
+              <div>
+                <p>{meta.label}</p>
+                <h3>새 공지 등록</h3>
+              </div>
+              <button type="button" className="is-danger" onClick={() => setShowEditor(false)}>
+                <X size={16} /> 닫기
+              </button>
+            </div>
+            <div className="notice-admin-form-grid">
+              <label>분류<input name="category" defaultValue={meta.category} /></label>
+              <label>작성자<input name="author" defaultValue="관리자" /></label>
+              <label>등록일<input name="date" type="date" defaultValue={getSeoulDateKey()} /></label>
+              <label className="notice-admin-check"><input name="pinned" type="checkbox" /> 상단 고정</label>
+              <label className="is-wide">제목<input name="title" required placeholder={`${meta.label} 제목 입력`} /></label>
+              <label className="is-wide">요약<input name="summary" required placeholder="목록에 노출될 요약 문구" /></label>
+              <label className="is-wide">본문<textarea name="body" required placeholder="공지 내용을 입력하세요." /></label>
+            </div>
+            <div className="notice-create-actions">
+              <button type="button" onClick={() => setShowEditor(false)}>취소</button>
+              <button type="submit" className="is-primary">등록</button>
+            </div>
+          </form>
+        </div>
+      )}
+    </section>
+  );
+}
+
 const faqCategoryMeta: Record<FaqCategory, { icon: typeof CalendarDays; tone: string }> = {
   예약: { icon: CalendarDays, tone: 'reservation' },
   장비: { icon: Wrench, tone: 'equipment' },
@@ -5737,6 +5914,22 @@ export function App() {
   const [usersUpdatedAt, setUsersUpdatedAt] = useState(() => (
     localStorage.getItem('hbnu-users-updated-at') ?? new Date().toISOString()
   ));
+  const [managedOperationNotices, setManagedOperationNotices] = useState<NoticeItem[]>(() => {
+    try {
+      const stored = localStorage.getItem(noticeBoardMeta.operation.storageKey);
+      return stored ? JSON.parse(stored) : operationNoticeItems;
+    } catch {
+      return operationNoticeItems;
+    }
+  });
+  const [managedMeetingNotices, setManagedMeetingNotices] = useState<NoticeItem[]>(() => {
+    try {
+      const stored = localStorage.getItem(noticeBoardMeta.meeting.storageKey);
+      return stored ? JSON.parse(stored) : meetingNoticeItems;
+    } catch {
+      return meetingNoticeItems;
+    }
+  });
   const [equipmentPermissions, setEquipmentPermissions] = useState<EquipmentPermissionMap>(() => {
     try {
       const stored = localStorage.getItem('hbnu-equipment-permissions');
@@ -5891,6 +6084,30 @@ export function App() {
         return next;
       });
     }
+  }
+
+  function updateNoticeBoard(board: NoticeBoardKey, updater: (items: NoticeItem[]) => NoticeItem[]) {
+    const setItems = board === 'operation' ? setManagedOperationNotices : setManagedMeetingNotices;
+    const storageKey = noticeBoardMeta[board].storageKey;
+    setItems((current) => {
+      const next = updater(current);
+      localStorage.setItem(storageKey, JSON.stringify(next));
+      return next;
+    });
+  }
+
+  function addNotice(board: NoticeBoardKey, item: NoticeItem) {
+    updateNoticeBoard(board, (current) => [item, ...current]);
+  }
+
+  function updateNotice(board: NoticeBoardKey, noticeId: string, patch: Partial<NoticeItem>) {
+    updateNoticeBoard(board, (current) => current.map((item) => (
+      item.id === noticeId ? { ...item, ...patch } : item
+    )));
+  }
+
+  function deleteNotice(board: NoticeBoardKey, noticeId: string) {
+    updateNoticeBoard(board, (current) => current.filter((item) => item.id !== noticeId));
   }
 
   function addReservation(event: ReservationEvent) {
@@ -6199,12 +6416,12 @@ export function App() {
               />
             </>
           )}
-          {activePage === 'notice' && <NoticePage />}
+          {activePage === 'notice' && <NoticePage items={[...managedOperationNotices, ...managedMeetingNotices]} />}
           {activePage === 'operationNotice' && (
             <NoticePage
               title="운영공지"
               description="센터 운영, 장비 사용 기준, 안전 점검과 관련한 공지를 확인합니다."
-              items={operationNoticeItems}
+              items={managedOperationNotices}
               filterLabel="운영공지"
             />
           )}
@@ -6212,7 +6429,7 @@ export function App() {
             <NoticePage
               title="회의공지"
               description="장비 담당자 회의, 학생 대표 회의, 운영 협의 관련 공지를 확인합니다."
-              items={meetingNoticeItems}
+              items={managedMeetingNotices}
               filterLabel="회의공지"
             />
           )}
@@ -6328,6 +6545,15 @@ export function App() {
               penalties={penaltyRecords}
               onAddPenalty={addPenalty}
               onRevokePenalty={revokePenalty}
+            />
+          )}
+          {activePage === 'noticeAdmin' && (
+            <NoticeAdminPage
+              operationItems={managedOperationNotices}
+              meetingItems={managedMeetingNotices}
+              onAddNotice={addNotice}
+              onUpdateNotice={updateNotice}
+              onDeleteNotice={deleteNotice}
             />
           )}
           {activePage === 'login' && (
