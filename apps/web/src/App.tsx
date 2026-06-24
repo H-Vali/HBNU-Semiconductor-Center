@@ -1698,18 +1698,13 @@ function AutoRotatingEquipmentStatus({
     if (transitionTimeoutRef.current) {
       window.clearTimeout(transitionTimeoutRef.current);
     }
-    if (reducedMotion) {
-      updateView();
-      setRotationCycle((cycle) => cycle + 1);
-      return;
-    }
     setListTransitioning(true);
     transitionTimeoutRef.current = window.setTimeout(() => {
       updateView();
       setRotationCycle((cycle) => cycle + 1);
       setListTransitioning(false);
       transitionTimeoutRef.current = null;
-    }, 180);
+    }, reducedMotion ? 180 : 320);
   };
   const selectSlide = (index: number) => {
     changeStatusView(() => {

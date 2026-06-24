@@ -1317,13 +1317,16 @@ select {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
-  animation: autoStatusGridIn 0.24s ease both;
-  transition: opacity 0.18s ease, transform 0.18s ease;
+  animation: autoStatusGridIn 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition:
+    opacity 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, transform;
 }
 
 .auto-status-grid.is-fading-out {
   opacity: 0;
-  transform: translateY(5px);
+  transform: translateY(8px) scale(0.985);
   animation: none;
 }
 
@@ -1430,7 +1433,7 @@ select {
 @keyframes autoStatusGridIn {
   from {
     opacity: 0;
-    transform: translateY(5px);
+    transform: translateY(8px) scale(0.985);
   }
 
   to {
@@ -1446,8 +1449,22 @@ select {
   }
 
   .auto-status-grid {
-    animation: none;
-    transition: none;
+    animation: autoStatusReducedGridIn 0.2s ease both;
+    transition: opacity 0.18s ease;
+  }
+
+  .auto-status-grid.is-fading-out {
+    transform: none;
+  }
+}
+
+@keyframes autoStatusReducedGridIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
   }
 }
 
