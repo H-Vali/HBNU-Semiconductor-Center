@@ -57,7 +57,7 @@ type Role = 'USER' | 'ADMIN';
 type UsagePeriod = '24H' | '1W' | '1M';
 type EquipmentRuntimeStatus = 'active' | 'maintenance' | 'idle';
 type ReservationStatus = 'pending' | 'approved' | 'maintenance' | 'external';
-type PenaltyType = '1주 사용정지' | '2주 사용정지' | '영구정지';
+type PenaltyType = '1주 사용정지' | '2주 사용정지' | '1개월 정지' | '영구정지';
 type PenaltyCategory = '장비활용관련' | '안전관련' | '학생자치기구 관련' | '사고 유발';
 type EquipmentStatus = 'available' | 'unavailable';
 type ReservationForm = {
@@ -576,8 +576,14 @@ function formatPenaltyDateTime(value: string | null) {
 
 function getPenaltyEndsAt(type: PenaltyType, startsAt: string) {
   if (type === '영구정지') return null;
-  const days = type === '1주 사용정지' ? 7 : 14;
-  return new Date(new Date(startsAt).getTime() + days * 24 * 60 * 60 * 1000).toISOString();
+  const end = new Date(startsAt);
+  if (type === '1개월 정지') {
+    end.setMonth(end.getMonth() + 1);
+  } else {
+    const days = type === '1주 사용정지' ? 7 : 14;
+    end.setDate(end.getDate() + days);
+  }
+  return end.toISOString();
 }
 
 function isPenaltyActive(record: PenaltyRecord, now = new Date()) {
@@ -683,7 +689,7 @@ function getProfessorTone(professor: string) {
 
 const roleLevelOptions: RoleLevel[] = ['교원', '대표', '일반'];
 const permissionRoleOptions: PermissionRoleLevel[] = ['교원', '담당', '대표', '일반'];
-const penaltyTypeOptions: PenaltyType[] = ['1주 사용정지', '2주 사용정지', '영구정지'];
+const penaltyTypeOptions: PenaltyType[] = ['1주 사용정지', '2주 사용정지', '1개월 정지', '영구정지'];
 const penaltyCategoryOptions: PenaltyCategory[] = ['장비활용관련', '안전관련', '학생자치기구 관련', '사고 유발'];
 
 function normalizeRoleLevel(value: string): RoleLevel {
