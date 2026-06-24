@@ -1267,7 +1267,7 @@ function Hero({
               <span>인프라 <em>통합 관리</em> 시스템</span>
           </h2>
           <p className="hero-copy">
-            장비 소개, 교육 인증, 예약 승인, 사용률 분석을 통합해 연구자와 관리자가 같은 데이터를 보고 움직이는 운영 플랫폼입니다.
+            장비 소개·교육 인증·예약 승인·사용률 분석을 통합한 운영 플랫폼입니다.
           </p>
         </div>
         <div className="hero-action-group">
