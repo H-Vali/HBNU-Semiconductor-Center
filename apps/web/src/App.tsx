@@ -1707,9 +1707,9 @@ function Dashboard({
         grantedEquipmentItems={grantedEquipmentItems}
         isAdmin={sessionRole === 'ADMIN'}
       />
+      <EquipmentGateway equipmentItems={equipmentItems} onOpen={onOpenEquipment} />
       <RealtimeEquipmentStatus equipmentItems={equipmentItems} calendarEvents={calendarEvents} />
       <MonthlyUsageChart equipmentItems={equipmentItems} calendarEvents={calendarEvents} />
-      <EquipmentGateway equipmentItems={equipmentItems} onOpen={onOpenEquipment} />
     </section>
   );
 }

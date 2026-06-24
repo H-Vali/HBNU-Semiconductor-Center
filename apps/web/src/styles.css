@@ -1406,7 +1406,7 @@ select {
 .eq-inventory {
   display: grid;
   gap: 13px;
-  margin-top: 1.25rem;
+  margin-top: 0;
   color: #cdd5e1;
 }
 
@@ -1418,19 +1418,19 @@ select {
 }
 
 .eq-eyebrow {
-  margin: 0 0 3px;
-  color: #5fd9c9;
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  margin: 0;
+  color: #5eead4;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0;
 }
 
 .eq-title {
-  margin: 0;
-  color: #f3f6fb;
-  font-size: 15px;
-  font-weight: 500;
+  margin: 0.25rem 0 0;
+  color: #ffffff;
+  font-size: 1.5rem;
+  font-weight: 800;
+  line-height: 1.25;
 }
 
 .eq-grid {
