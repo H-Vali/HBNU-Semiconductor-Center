@@ -1591,15 +1591,12 @@ function MonthlyUsageChart({
 
 function AutoRotatingEquipmentStatus({
   equipmentItems,
-  calendarEvents,
-  onOpenEquipment
+  calendarEvents
 }: {
   equipmentItems: EquipmentItem[];
   calendarEvents: ReservationEvent[];
-  onOpenEquipment: (group: EquipmentGroup) => void;
 }) {
-  const groups = useMemo(() => Object.keys(categoryMeta) as EquipmentGroup[], []);
-  const [activeGroup, setActiveGroup] = useState<EquipmentGroup>('process');
+  const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const [rotationCycle, setRotationCycle] = useState(0);
   const [paused, setPaused] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -1620,10 +1617,42 @@ function AutoRotatingEquipmentStatus({
   const activeCount = statusItems.filter((entry) => entry.status === 'active').length;
   const maintenanceCount = statusItems.filter((entry) => entry.status === 'maintenance').length;
   const idleCount = Math.max(statusItems.length - activeCount - maintenanceCount, 0);
-  const activeGroupItems = statusItems.filter((entry) => entry.item.group === activeGroup).slice(0, 8);
-  const activeCategoryAccent = `rgb(${equipmentCategoryCardMeta[activeGroup].accent})`;
-  const selectGroup = (group: EquipmentGroup) => {
-    setActiveGroup(group);
+  const equipmentSlides = useMemo(() => {
+    const processItems = statusItems.filter((entry) => entry.item.group === 'process');
+    const metrologyItems = statusItems.filter((entry) => entry.item.group === 'metrology');
+    return [
+      {
+        id: 'process',
+        group: 'process' as EquipmentGroup,
+        title: '공정',
+        count: processItems.length,
+        icon: equipmentCategoryCardMeta.process.icon,
+        accent: `rgb(${equipmentCategoryCardMeta.process.accent})`,
+        items: processItems.slice(0, 8)
+      },
+      {
+        id: 'metrology-a',
+        group: 'metrology' as EquipmentGroup,
+        title: '검사·계측·패키징',
+        count: metrologyItems.slice(0, 8).length,
+        icon: equipmentCategoryCardMeta.metrology.icon,
+        accent: `rgb(${equipmentCategoryCardMeta.metrology.accent})`,
+        items: metrologyItems.slice(0, 8)
+      },
+      {
+        id: 'metrology-b',
+        group: 'metrology' as EquipmentGroup,
+        title: '검사·계측·패키징',
+        count: metrologyItems.slice(8).length,
+        icon: equipmentCategoryCardMeta.metrology.icon,
+        accent: `rgb(${equipmentCategoryCardMeta.metrology.accent})`,
+        items: metrologyItems.slice(8)
+      }
+    ];
+  }, [statusItems]);
+  const activeSlide = equipmentSlides[activeSlideIndex] ?? equipmentSlides[0];
+  const selectSlide = (index: number) => {
+    setActiveSlideIndex(index);
     setRotationCycle((cycle) => cycle + 1);
   };
 
@@ -1643,11 +1672,11 @@ function AutoRotatingEquipmentStatus({
   useEffect(() => {
     if (paused || reducedMotion) return undefined;
     const timer = window.setInterval(() => {
-      setActiveGroup((current) => groups[(groups.indexOf(current) + 1) % groups.length]);
+      setActiveSlideIndex((current) => (current + 1) % equipmentSlides.length);
       setRotationCycle((cycle) => cycle + 1);
     }, durationMs);
     return () => window.clearInterval(timer);
-  }, [groups, paused, reducedMotion]);
+  }, [equipmentSlides.length, paused, reducedMotion]);
 
   return (
     <section
@@ -1655,7 +1684,7 @@ function AutoRotatingEquipmentStatus({
       aria-labelledby="auto-equipment-status-title"
       style={{
         '--auto-status-duration': `${durationMs}ms`,
-        '--auto-status-accent': activeCategoryAccent
+        '--auto-status-accent': activeSlide.accent
       } as CSSProperties}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
@@ -1677,35 +1706,34 @@ function AutoRotatingEquipmentStatus({
         </div>
       </div>
       <div className="auto-status-tabs" role="tablist" aria-label="장비 카테고리">
-        {groups.map((group) => {
-          const meta = categoryMeta[group];
-          const cardMeta = equipmentCategoryCardMeta[group];
-          const Icon = cardMeta.icon;
-          const isActive = activeGroup === group;
-          const count = equipmentItems.filter((item) => item.group === group).length;
+        {equipmentSlides.map((slide, index) => {
+          const Icon = slide.icon;
+          const isActive = activeSlideIndex === index;
           return (
             <button
-              key={group}
+              key={slide.id}
               type="button"
               role="tab"
               aria-selected={isActive}
+              aria-label={`${slide.title} ${slide.count}종`}
               className={`auto-status-tab ${isActive ? 'is-active' : ''}`}
-              onClick={() => selectGroup(group)}
+              style={{ '--auto-status-tab-accent': slide.accent } as CSSProperties}
+              onClick={() => selectSlide(index)}
             >
               <span className="auto-status-tab-label">
                 <Icon size={16} strokeWidth={1.8} aria-hidden="true" />
-                {meta.title}
-                <em>{count}종</em>
+                {slide.title}
+                <em>{slide.count}종</em>
               </span>
               <span className="auto-status-progress" aria-hidden="true">
-                {isActive && <span key={`${group}-${rotationCycle}`} />}
+                {isActive && <span key={`${slide.id}-${rotationCycle}`} />}
               </span>
             </button>
           );
         })}
       </div>
-      <div className="auto-status-grid" role="tabpanel" aria-label={`${categoryMeta[activeGroup].title} 장비 상태`}>
-        {activeGroupItems.map(({ item, activeEvent, status }) => {
+      <div className="auto-status-grid" role="tabpanel" aria-label={`${activeSlide.title} ${activeSlide.count}종 장비 상태`}>
+        {activeSlide.items.map(({ item, activeEvent, status }) => {
           const accent = status === 'active' ? '#34d6b0' : status === 'maintenance' ? '#f5b942' : '#3a4456';
           const message = status === 'active'
             ? `~${formatReservationTime(activeEvent?.end)} 종료`
@@ -1713,11 +1741,9 @@ function AutoRotatingEquipmentStatus({
               ? activeEvent ? `~${formatReservationTime(activeEvent.end)} 점검` : '점검중'
               : '예약 가능 →';
           return (
-            <button
+            <article
               key={item.id}
-              type="button"
               className={`auto-status-cell is-${status}`}
-              onClick={() => onOpenEquipment(item.group)}
               aria-label={`${item.name} ${getRuntimeStatusLabel(status)}`}
             >
               <span className="auto-status-bar" style={{ background: accent }} />
@@ -1729,13 +1755,10 @@ function AutoRotatingEquipmentStatus({
                 <strong>{item.name}</strong>
                 <small>{message}</small>
               </span>
-            </button>
+            </article>
           );
         })}
       </div>
-      <button type="button" className="auto-status-link" onClick={() => onOpenEquipment(activeGroup)}>
-        {categoryMeta[activeGroup].title} {equipmentItems.filter((item) => item.group === activeGroup).length}종 전체 보기 →
-      </button>
     </section>
   );
 }
@@ -1829,8 +1852,7 @@ function Dashboard({
   sessionUserName,
   sessionRole,
   equipmentPermissions,
-  onNavigate,
-  onOpenEquipment
+  onNavigate
 }: {
   equipmentItems: EquipmentItem[];
   calendarEvents: ReservationEvent[];
@@ -1839,7 +1861,6 @@ function Dashboard({
   sessionRole: Role | null;
   equipmentPermissions: EquipmentPermissionMap;
   onNavigate: (page: PageKey) => void;
-  onOpenEquipment: (group: EquipmentGroup) => void;
 }) {
   const dashboardUser = managedUsers.find((user) => user.name === sessionUserName) ?? managedUsers[0];
   const isPermissionPreviewMode = new URLSearchParams(window.location.search).get('permissionPreview') === 'multi';
@@ -1861,7 +1882,6 @@ function Dashboard({
       <AutoRotatingEquipmentStatus
         equipmentItems={equipmentItems}
         calendarEvents={calendarEvents}
-        onOpenEquipment={onOpenEquipment}
       />
       <MonthlyUsageChart equipmentItems={equipmentItems} calendarEvents={calendarEvents} />
     </section>
@@ -6686,7 +6706,6 @@ export function App() {
                 sessionRole={sessionRole}
                 equipmentPermissions={equipmentPermissions}
                 onNavigate={navigate}
-                onOpenEquipment={openEquipment}
               />
             </>
           )}
