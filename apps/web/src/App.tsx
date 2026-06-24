@@ -1638,7 +1638,7 @@ function EquipmentGateway({
               <div className="eq-head">
                 <div className="eq-head-left">
                   <span className="eq-icon" aria-hidden="true">
-                    <Icon size={20} strokeWidth={1.6} />
+                    <Icon size={24} strokeWidth={1.7} />
                   </span>
                   <div>
                     <div className="eq-cat">{meta.title}</div>
