@@ -2864,10 +2864,7 @@ function AdminPage({
           { title: '소모품관리', page: 'consumables' as PageKey, icon: PackageCheck, updatedAt: consumablesUpdatedAt },
           { title: '페널티 관리', page: 'penalties' as PageKey, icon: Ban },
           { title: '교육관리' },
-          { title: '홈페이지편집' },
-          { title: '대시보드 데이터' },
-          { title: '공지사항' },
-          { title: '운영 로그' }
+          { title: '공지사항' }
         ].map((item) => {
           const Icon = item.icon;
           return (
