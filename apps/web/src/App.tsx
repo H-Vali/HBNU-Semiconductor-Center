@@ -2767,12 +2767,12 @@ function AdminPage({
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {[
           { title: '사용자관리', page: 'users' as PageKey, icon: UserRound, updatedAt: usersUpdatedAt },
-          { title: '권한관리', page: 'permissions' as PageKey, icon: LockKeyhole },
           { title: '장비관리', page: 'equipmentAdmin' as PageKey, icon: Wrench },
+          { title: '공지사항' },
+          { title: '권한관리', page: 'permissions' as PageKey, icon: LockKeyhole },
           { title: '소모품관리', page: 'consumables' as PageKey, icon: PackageCheck, updatedAt: consumablesUpdatedAt },
           { title: '페널티 관리', page: 'penalties' as PageKey, icon: Ban },
-          { title: '교육관리' },
-          { title: '공지사항' }
+          { title: '교육관리' }
         ].map((item) => {
           const Icon = item.icon;
           return (
