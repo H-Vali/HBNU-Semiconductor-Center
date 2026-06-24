@@ -1639,7 +1639,9 @@ function AutoRotatingEquipmentStatus({
   const transitionTimeoutRef = useRef<number | null>(null);
   const activeSlideIndexRef = useRef(activeSlideIndex);
   const activePageIndexRef = useRef(activePageIndex);
-  const durationMs = 3500;
+  const rotationIntervalMs = 4200;
+  const transitionDelayMs = reducedMotion ? 180 : 460;
+  const progressDurationMs = Math.max(rotationIntervalMs - transitionDelayMs, 1000);
 
   const statusItems = useMemo(() => equipmentItems.map((item) => {
     const maintenanceEvent = calendarEvents.find((event) => isMaintenanceReservation(event) && isEventForEquipment(event, item, equipmentItems) && isReservationActive(event));
@@ -1704,7 +1706,7 @@ function AutoRotatingEquipmentStatus({
       setRotationCycle((cycle) => cycle + 1);
       setListTransitioning(false);
       transitionTimeoutRef.current = null;
-    }, reducedMotion ? 180 : 320);
+    }, transitionDelayMs);
   };
   const selectSlide = (index: number) => {
     changeStatusView(() => {
@@ -1745,16 +1747,16 @@ function AutoRotatingEquipmentStatus({
           applyStatusView((currentSlideIndex + 1) % equipmentSlides.length, 0);
         }
       });
-    }, durationMs);
+    }, rotationIntervalMs);
     return () => window.clearInterval(timer);
-  }, [equipmentSlides, paused, reducedMotion]);
+  }, [equipmentSlides, paused, rotationIntervalMs, transitionDelayMs]);
 
   return (
     <section
       className={`auto-equipment-status ${paused ? 'is-paused' : ''}`}
       aria-labelledby="auto-equipment-status-title"
       style={{
-        '--auto-status-duration': `${durationMs}ms`,
+        '--auto-status-duration': `${progressDurationMs}ms`,
         '--auto-status-accent': activeSlide.accent
       } as CSSProperties}
       onMouseEnter={() => setPaused(true)}
