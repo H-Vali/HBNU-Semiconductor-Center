@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ChangeEvent, type DragEvent, type FormEvent, type ReactNode } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -1604,36 +1604,66 @@ function EquipmentGateway({
   };
 
   return (
-    <section className="mt-5" id="장비목록요약">
-      <SectionTitle title="장비 목록" eyebrow="Equipment Inventory" action={action} />
-      <div className="grid gap-5 lg:grid-cols-2">
+    <section className="eq-inventory" id="장비목록요약" aria-labelledby="eq-inventory-title">
+      <div className="eq-inventory-head">
+        <div>
+          <p className="eq-eyebrow">Equipment Inventory</p>
+          <h2 id="eq-inventory-title" className="eq-title">장비 목록</h2>
+        </div>
+        {action}
+      </div>
+      <div className="eq-grid">
         {(Object.keys(categoryMeta) as EquipmentGroup[]).map((group) => {
           const meta = categoryMeta[group];
+          const cardMeta = equipmentCategoryCardMeta[group];
+          const Icon = cardMeta.icon;
+          const count = grouped[group].length;
+          const cardStyle = {
+            '--accent': cardMeta.accent,
+            '--head-bg': cardMeta.headBg
+          } as CSSProperties;
+
           return (
-            <button key={group} className="facility-tab compact overflow-hidden rounded-lg border border-white/10 bg-surface/85 text-left hover:border-cyan-300/70" onClick={() => onOpen(group)}>
-              <div className="relative h-56 overflow-hidden">
-                <img className="h-full w-full object-cover" src={meta.image} alt={meta.title} />
-                <div className="absolute inset-x-0 bottom-0 bg-blue-950/80 px-6 py-4">
-                  <h3 className="text-2xl font-extrabold text-white">{meta.title}</h3>
-                  <p className="mt-1 text-sm font-semibold text-cyan-100">{meta.subtitle}</p>
-                </div>
-              </div>
-              <div className="p-6">
-                <div className="mb-4 h-0.5 w-8 bg-blue-500" />
-                <div className="mb-4 flex items-end justify-between">
+            <a
+              key={group}
+              className="eq-card"
+              style={cardStyle}
+              href={cardMeta.href}
+              aria-label={`${meta.title} 장비 현황 보기, 등록 ${count}종`}
+              onClick={(event) => {
+                event.preventDefault();
+                onOpen(group);
+              }}
+            >
+              <div className="eq-head">
+                <div className="eq-head-left">
+                  <span className="eq-icon" aria-hidden="true">
+                    <Icon size={20} strokeWidth={1.6} />
+                  </span>
                   <div>
-                    <p className="text-sm font-bold text-slate-400">등록 장비</p>
-                    <p className="mt-1 text-3xl font-extrabold text-white">{grouped[group].length}종</p>
+                    <div className="eq-cat">{meta.title}</div>
+                    <div className="eq-desc">{meta.subtitle}</div>
                   </div>
-                  <span className="rounded-md bg-white/10 px-3 py-1 text-sm font-bold text-cyan-200">보기</span>
                 </div>
-                <ul className="grid gap-2 text-sm text-slate-300">
-                  {meta.bullets.map((bullet) => (
-                    <li key={bullet} className="flex gap-2"><span className="text-slate-500">•</span>{bullet}</li>
-                  ))}
-                </ul>
+                <div className="eq-count">
+                  <div className="eq-count-label">등록 장비</div>
+                  <div className="eq-count-num">{count}종</div>
+                </div>
               </div>
-            </button>
+              <div className="eq-body">
+                <div className="eq-tags">
+                  {meta.bullets.map((bullet) => (
+                    <span key={bullet} className="eq-tag">{bullet}</span>
+                  ))}
+                </div>
+                <div className="eq-cta">
+                  장비 현황 보기
+                  <svg className="eq-arrow" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M5 12h14M13 6l6 6-6 6" />
+                  </svg>
+                </div>
+              </div>
+            </a>
           );
         })}
       </div>
@@ -5119,6 +5149,26 @@ type NoticeAttachment = {
   type: string;
   dataUrl: string;
   uploadedAt: string;
+};
+
+const equipmentCategoryCardMeta: Record<EquipmentGroup, {
+  accent: string;
+  headBg: string;
+  href: string;
+  icon: typeof Cpu;
+}> = {
+  process: {
+    accent: '125,179,240',
+    headBg: '#16263F',
+    href: '/equipment?category=process',
+    icon: Cpu
+  },
+  metrology: {
+    accent: '82,224,176',
+    headBg: '#10322C',
+    href: '/equipment?category=metrology',
+    icon: Microscope
+  }
 };
 
 const noticeCategoryOptions = ['운영', '예약', '교육', '점검'] as const;
