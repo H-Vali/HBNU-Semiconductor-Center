@@ -133,7 +133,7 @@ const menu: Array<{ label: string; page: PageKey; icon: typeof Factory }> = [
   { label: '센터소개', page: 'center', icon: Factory },
   { label: '시설안내', page: 'facility', icon: LayoutDashboard },
   { label: '장비현황', page: 'equipment', icon: Wrench },
-  { label: '장비예약관리', page: 'reservations', icon: CalendarDays },
+  { label: '장비사용예약', page: 'reservations', icon: CalendarDays },
   { label: '교육신청', page: 'training', icon: GraduationCap },
   { label: '마이페이지', page: 'mypage', icon: UserRound }
 ];
@@ -1156,14 +1156,24 @@ function SidebarNavigation({
                   setReservationOpen((current) => !current);
                 },
                 children: (
-                  <button
-                    type="button"
-                    className={`sidebar-subnav-item ${activePage === 'managerPermissions' ? 'is-active' : ''}`}
-                    onClick={() => onNavigate('managerPermissions')}
-                  >
-                    <LockKeyhole size={15} />
-                    <span>사용권한부여(담당)</span>
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      className={`sidebar-subnav-item ${activePage === 'reservations' ? 'is-active' : ''}`}
+                      onClick={() => onNavigate('reservations')}
+                    >
+                      <CalendarDays size={15} />
+                      <span>장비사용예약</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`sidebar-subnav-item ${activePage === 'managerPermissions' ? 'is-active' : ''}`}
+                      onClick={() => onNavigate('managerPermissions')}
+                    >
+                      <LockKeyhole size={15} />
+                      <span>사용권한부여(담당)</span>
+                    </button>
+                  </>
                 )
               })
             : renderNavButton(reservationItem, activePage === 'reservations')}
