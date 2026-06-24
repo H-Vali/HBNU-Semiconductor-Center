@@ -5128,6 +5128,7 @@ type NoticeItem = {
   date: string;
   author: string;
   views: number;
+  important?: boolean;
   pinned: boolean;
   summary: string;
   body: string;
@@ -5231,6 +5232,17 @@ const meetingNoticeItems: NoticeItem[] = [
   }
 ];
 
+function isImportantNotice(notice: NoticeItem) {
+  return notice.important ?? notice.pinned;
+}
+
+function normalizeNoticeItems(items: NoticeItem[]) {
+  return items.map((item) => ({
+    ...item,
+    important: item.important ?? item.pinned
+  }));
+}
+
 function NoticePage({
   title = '공지사항',
   description = '센터 운영, 장비 예약, 교육 인증 관련 주요 공지를 한 곳에서 확인합니다.',
@@ -5239,12 +5251,12 @@ function NoticePage({
 }: {
   title?: string;
   description?: string;
-  items?: typeof noticeItems;
+  items?: NoticeItem[];
   filterLabel?: string;
 }) {
   const [selectedNoticeId, setSelectedNoticeId] = useState(items[0]?.id ?? '');
   const selectedNotice = items.find((notice) => notice.id === selectedNoticeId) ?? items[0];
-  const pinnedCount = items.filter((notice) => notice.pinned).length;
+  const importantCount = items.filter(isImportantNotice).length;
 
   useEffect(() => {
     if (items[0] && !items.some((notice) => notice.id === selectedNoticeId)) {
@@ -5263,7 +5275,7 @@ function NoticePage({
         <div className="notice-hero-meta" aria-label="공지사항 요약">
           <strong>{items.length}</strong>
           <span>등록 공지</span>
-          <em>중요 {pinnedCount}건</em>
+          <em>중요 {importantCount}건</em>
         </div>
       </div>
 
@@ -5288,7 +5300,7 @@ function NoticePage({
                 <span className="notice-index">{String(index + 1).padStart(2, '0')}</span>
                 <span className="notice-row-main">
                   <span className="notice-row-title">
-                    {notice.pinned && <em>중요</em>}
+                    {isImportantNotice(notice) && <em>중요</em>}
                     {notice.title}
                   </span>
                   <span className="notice-row-summary">{notice.summary}</span>
@@ -5305,6 +5317,7 @@ function NoticePage({
         <article className="notice-detail-panel">
           <div className="notice-detail-head">
             <span>{selectedNotice.category}</span>
+            {isImportantNotice(selectedNotice) && <em>중요 공지</em>}
             {selectedNotice.pinned && <em>상단 고정</em>}
           </div>
           <h3>{selectedNotice.title}</h3>
@@ -5418,6 +5431,7 @@ function NoticeAdminPage({
       date: formatNoticeDate(String(form.get('date') ?? getSeoulDateKey())),
       author: String(form.get('author') ?? '관리자').trim() || '관리자',
       views: 0,
+      important: form.get('important') === 'on',
       pinned: form.get('pinned') === 'on',
       summary,
       body,
@@ -5492,7 +5506,7 @@ function NoticeAdminPage({
               onClick={() => setSelectedNoticeId(item.id)}
             >
               <span>
-                {item.pinned && <em>중요</em>}
+                {isImportantNotice(item) && <em>중요</em>}
                 {item.title}
               </span>
               <small>{item.date} · {item.author}</small>
@@ -5517,7 +5531,10 @@ function NoticeAdminPage({
                 <label>분류<input value={selectedNotice.category} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { category: event.target.value })} /></label>
                 <label>작성자<input value={selectedNotice.author} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { author: event.target.value })} /></label>
                 <label>등록일<input value={selectedNotice.date} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { date: event.target.value })} /></label>
-                <label className="notice-admin-check"><input type="checkbox" checked={selectedNotice.pinned} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { pinned: event.target.checked })} /> 상단 고정</label>
+                <div className="notice-admin-check-stack">
+                  <label className="notice-admin-check"><input type="checkbox" checked={isImportantNotice(selectedNotice)} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { important: event.target.checked })} /> 중요 공지</label>
+                  <label className="notice-admin-check"><input type="checkbox" checked={selectedNotice.pinned} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { pinned: event.target.checked })} /> 상단 고정</label>
+                </div>
                 <label className="is-wide">제목<input value={selectedNotice.title} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { title: event.target.value })} /></label>
                 <label className="is-wide">요약<input value={selectedNotice.summary} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { summary: event.target.value })} /></label>
                 <label className="is-wide">본문<textarea value={selectedNotice.body} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { body: event.target.value })} /></label>
@@ -5585,7 +5602,10 @@ function NoticeAdminPage({
               <label>분류<input name="category" defaultValue={meta.category} /></label>
               <label>작성자<input name="author" defaultValue="관리자" /></label>
               <label>등록일<input name="date" type="date" defaultValue={getSeoulDateKey()} /></label>
-              <label className="notice-admin-check"><input name="pinned" type="checkbox" /> 상단 고정</label>
+              <div className="notice-admin-check-stack">
+                <label className="notice-admin-check"><input name="important" type="checkbox" /> 중요 공지</label>
+                <label className="notice-admin-check"><input name="pinned" type="checkbox" /> 상단 고정</label>
+              </div>
               <label className="is-wide">제목<input name="title" required placeholder={`${meta.label} 제목 입력`} /></label>
               <label className="is-wide">요약<input name="summary" required placeholder="목록에 노출될 요약 문구" /></label>
               <label className="is-wide">본문<textarea name="body" required placeholder="공지 내용을 입력하세요." /></label>
@@ -5927,17 +5947,17 @@ export function App() {
   const [managedOperationNotices, setManagedOperationNotices] = useState<NoticeItem[]>(() => {
     try {
       const stored = localStorage.getItem(noticeBoardMeta.operation.storageKey);
-      return stored ? JSON.parse(stored) : operationNoticeItems;
+      return stored ? normalizeNoticeItems(JSON.parse(stored) as NoticeItem[]) : normalizeNoticeItems(operationNoticeItems);
     } catch {
-      return operationNoticeItems;
+      return normalizeNoticeItems(operationNoticeItems);
     }
   });
   const [managedMeetingNotices, setManagedMeetingNotices] = useState<NoticeItem[]>(() => {
     try {
       const stored = localStorage.getItem(noticeBoardMeta.meeting.storageKey);
-      return stored ? JSON.parse(stored) : meetingNoticeItems;
+      return stored ? normalizeNoticeItems(JSON.parse(stored) as NoticeItem[]) : normalizeNoticeItems(meetingNoticeItems);
     } catch {
-      return meetingNoticeItems;
+      return normalizeNoticeItems(meetingNoticeItems);
     }
   });
   const [equipmentPermissions, setEquipmentPermissions] = useState<EquipmentPermissionMap>(() => {
@@ -6122,7 +6142,7 @@ export function App() {
     const setItems = board === 'operation' ? setManagedOperationNotices : setManagedMeetingNotices;
     const storageKey = noticeBoardMeta[board].storageKey;
     setItems((current) => {
-      const next = updater(current);
+      const next = normalizeNoticeItems(updater(current));
       localStorage.setItem(storageKey, JSON.stringify(next));
       return next;
     });

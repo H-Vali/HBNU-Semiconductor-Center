@@ -4442,6 +4442,12 @@ select {
   align-items: center;
 }
 
+.notice-admin-check-stack {
+  display: grid;
+  align-content: end;
+  gap: 0.48rem;
+}
+
 .notice-admin-check input {
   width: 1rem;
   height: 1rem;
