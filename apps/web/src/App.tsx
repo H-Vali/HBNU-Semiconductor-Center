@@ -51,6 +51,10 @@ import {
   X
 } from 'lucide-react';
 import { equipment as fallbackEquipment, events, monthlyUsage, type EquipmentGroup, type EquipmentItem } from './data';
+import { STORAGE_KEYS } from './appStorage';
+import { initialConsumablesData, initialManagedUsersData } from './mockData';
+import { NoticeAdminPage, NoticePage, getNoticeCategoryTone, meetingNoticeItems, normalizeNoticeItems, noticeBoardMeta, noticeItems, operationNoticeItems, type NoticeBoardKey, type NoticeItem } from './pages/NoticePages';
+import { FaqPage, QnaPage } from './pages/InquiryPages';
 
 type PageKey = 'home' | 'notice' | 'operationNotice' | 'meetingNotice' | 'center' | 'facility' | 'equipment' | 'training' | 'trainingManagement' | 'faq' | 'qna' | 'reservations' | 'managerPermissions' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'equipmentAdmin' | 'penalties' | 'noticeAdmin' | 'login';
 type Role = 'USER' | 'ADMIN';
@@ -156,114 +160,8 @@ const MY_PAGE_ROLE_META: Record<MyPageRole, { label: string; tone: string; icon:
   manager: { label: '담당', tone: 'blue', icon: KeyRound },
   general: { label: '일반', tone: 'gray', icon: UserRound }
 };
-const initialManagedUsers: ManagedUser[] = [
-  { id: 'user-1', index: 1, name: '김동인', roleLevel: '대표', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-9772-5939', email: 'shehdshehd1123@gmail.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-2', index: 2, name: '길가영', roleLevel: '일반', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-6595-3930', email: 'gilgayeong2@gmail.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-3', index: 3, name: '최진영', roleLevel: '일반', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-4558-3205', email: 'lucy3205@gmail.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-4', index: 4, name: '정재웅', roleLevel: '일반', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-7166-2296', email: 'greadex2296@gmail.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-5', index: 5, name: '박형규', roleLevel: '일반', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-5660-2425', email: '0518phg@gmail.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-6', index: 6, name: '배유진', roleLevel: '일반', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-5291-6172', email: 'yoojin.bae23@gmail.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-7', index: 7, name: '김빈섭', roleLevel: '일반', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-9923-4322', email: 'doo4322@gmail.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-8', index: 8, name: '이수민', roleLevel: '일반', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-2933-2815', email: 'leesuminn23@gmail.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-9', index: 9, name: '허승혁', roleLevel: '일반', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-9643-4117', email: 'heoseunghyeok0@gmail.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-10', index: 10, name: '천도현', roleLevel: '일반', department: '전자공학과', labProfessor: '김민회 교수님', phone: '010-5588-2490', email: 'cheondohyun99@gmail.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-11', index: 11, name: '김세형', roleLevel: '일반', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-8357-8849', email: 'kimsehyung1009@gmail.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-12', index: 12, name: '이현준', roleLevel: '일반', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-4266-5253', email: 'hyeonjunlee917@gmail.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-13', index: 13, name: '김택균', roleLevel: '대표', department: '기계공학과', labProfessor: '노진성 교수님', phone: '010-4066-1760', email: 'kimtk1346@gmail.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-14', index: 14, name: '이동규', roleLevel: '일반', department: '기계공학과', labProfessor: '노진성 교수님', phone: '010-4878-3369', email: 'bestcubist@naver.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-15', index: 15, name: '박준우', roleLevel: '일반', department: '기계공학과', labProfessor: '노진성 교수님', phone: '010-7487-5220', email: 'pjw981121@gmail.com', memo: '1학기 회의 참석 어려움(매주 화요일 19~22시 야간대 수업)', authProvider: 'Manual' },
-  { id: 'user-16', index: 16, name: '강정민', roleLevel: '일반', department: '기계공학과', labProfessor: '노진성 교수님', phone: '010-5024-7735', email: 'Scipio.kang@gmail.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-17', index: 17, name: 'Chu Duc Thanh', roleLevel: '일반', department: '기계공학과', labProfessor: '노진성 교수님', phone: '010-5801-2310', email: 'chuducthanh972310@gmail.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-18', index: 18, name: 'Ngoc Tram Pham Le', roleLevel: '일반', department: '기계공학과', labProfessor: '노진성 교수님', phone: '010-7989-7771', email: 'ngoctram9128@outlook.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-19', index: 19, name: 'Truong Dang Thanh', roleLevel: '일반', department: '기계공학과', labProfessor: '노진성 교수님', phone: '010-8837-3979', email: 'michaeldangvn@gmail.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-20', index: 20, name: 'To Thi Tu Linh', roleLevel: '일반', department: '기계공학과', labProfessor: '노진성 교수님', phone: '010-3336-7762', email: 'tothitulinhche98@gmail.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-21', index: 21, name: '김서현', roleLevel: '대표', department: '창의융합학과', labProfessor: '이재현 교수님', phone: '010-6286-9373', email: 'kshg0419@naver.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-22', index: 22, name: '이승진', roleLevel: '대표', department: '전자공학과', labProfessor: '전승배 교수님', phone: '010-4036-9815', email: '20201706@edu.hanbat.ac.kr', memo: '', authProvider: 'Manual' },
-  { id: 'user-23', index: 23, name: '정우성', roleLevel: '일반', department: '지능형나노반도체학과', labProfessor: '전승배 교수님', phone: '010-2343-8349', email: 'dntjd1972@naver.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-24', index: 24, name: '윤진언', roleLevel: '일반', department: '전자공학과', labProfessor: '전승배 교수님', phone: '010-2559-4804', email: '20211074@edu.hanbat.ac.kr', memo: '', authProvider: 'Manual' },
-  { id: 'user-25', index: 25, name: '노우용', roleLevel: '일반', department: '전자공학과', labProfessor: '전승배 교수님', phone: '010-7550-5669', email: '20221167@edu.hanbat.ac.kr', memo: '', authProvider: 'Manual' },
-  { id: 'user-26', index: 26, name: '박준성', roleLevel: '일반', department: '전자공학과', labProfessor: '전승배 교수님', phone: '010-5635-5915', email: 'qn0esnuj@naver.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-27', index: 27, name: '정재영', roleLevel: '일반', department: '화학생명공학과', labProfessor: '전승배 교수님', phone: '010-2251-5596', email: 'jaeyoung0921@gmail.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-28', index: 28, name: '김재윤', roleLevel: '일반', department: '전자공학과', labProfessor: '전승배 교수님', phone: '010-9149-8203', email: 'jaeyun12245@gmail.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-29', index: 29, name: '한의정', roleLevel: '일반', department: '전자공학과', labProfessor: '전승배 교수님', phone: '010-5611-5441', email: 'eui_jeong@naver.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-30', index: 30, name: '권준형', roleLevel: '대표', department: '지능형나노반도체학과', labProfessor: '최윤석 교수님', phone: '010-7590-0288', email: 'tmzkdlxka@naver.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-31', index: 31, name: '성유진', roleLevel: '일반', department: '지능형나노반도체학과', labProfessor: '최윤석 교수님', phone: '010-9950-7504', email: 'dbwls010211@naver.com', memo: '5월 이후 회사 출근 (회의 및 청소 참여 어려움)', authProvider: 'Manual' },
-  { id: 'user-32', index: 32, name: '권아현', roleLevel: '일반', department: '지능형나노반도체학과', labProfessor: '최윤석 교수님', phone: '010-5426-0458', email: 'kah0458@naver.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-33', index: 33, name: '김보혜', roleLevel: '일반', department: '지능형나노반도체학과', labProfessor: '최윤석 교수님', phone: '010-7166-6290', email: 'qhgP6290@gmail.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-34', index: 34, name: '안현식', roleLevel: '일반', department: '전자공학과', labProfessor: '최윤석 교수님', phone: '010-9436-9445', email: 'princass123@naver.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-35', index: 35, name: '임성민', roleLevel: '일반', department: '전자공학과', labProfessor: '최윤석 교수님', phone: '010-4870-5202', email: 'seongmin625@naver.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-36', index: 36, name: '이예규', roleLevel: '대표', department: '기계공학과', labProfessor: '하지환 교수님', phone: '010-5437-9475', email: '20204012@edu.hanbat.ac.kr', memo: '', authProvider: 'Manual' },
-  { id: 'user-37', index: 37, name: '이철희', roleLevel: '일반', department: '기계공학과', labProfessor: '하지환 교수님', phone: '010-4447-0447', email: '20224015@edu.hanbat.ac.kr', memo: '', authProvider: 'Manual' },
-  { id: 'user-38', index: 38, name: '이민규', roleLevel: '일반', department: '기계공학과', labProfessor: '하지환 교수님', phone: '010-9473-2498', email: '20211394@edu.hanbat.ac.kr', memo: '', authProvider: 'Manual' },
-  { id: 'user-39', index: 39, name: '신우빈', roleLevel: '일반', department: '기계공학과', labProfessor: '하지환 교수님', phone: '010-4772-3721', email: 'ssshinwoovin@gmail.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-40', index: 40, name: '정진호', roleLevel: '일반', department: '기계공학과', labProfessor: '하지환 교수님', phone: '010-9568-1713', email: '607jinho@gmail.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-41', index: 41, name: '빙성윤', roleLevel: '일반', department: '기계공학과', labProfessor: '하지환 교수님', phone: '010-8572-1565', email: 'smartbing2001@gmail.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-42', index: 42, name: '이우진', roleLevel: '일반', department: '기계공학과', labProfessor: '하지환 교수님', phone: '010-4137-4829', email: 'wjin03274@gmail.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-43', index: 43, name: '정예림', roleLevel: '일반', department: '신소재공학과', labProfessor: '하지환 교수님', phone: '010-5449-2175', email: 'jungyerim0713@gmail.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-44', index: 44, name: '이원섭', roleLevel: '대표', department: '창의융합학과', labProfessor: '정우익 교수님', phone: '010-8741-7849', email: 'hahaman767@gmail.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-45', index: 45, name: '김동혁', roleLevel: '일반', department: '창의융합학과', labProfessor: '정우익 교수님', phone: '010-2655-3001', email: 'kdhy3001@gmail.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-46', index: 46, name: '이리안', roleLevel: '일반', department: '창의융합학과', labProfessor: '정우익 교수님', phone: '010-6631-6162', email: 'comonlra@naver.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-47', index: 47, name: '임경민', roleLevel: '일반', department: '창의융합학과', labProfessor: '정우익 교수님', phone: '010-8871-9415', email: 'dlariddlas@gmail.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-48', index: 48, name: '손민진', roleLevel: '일반', department: '창의융합학과', labProfessor: '정우익 교수님', phone: '010-3072-4154', email: '20232713@edu.hanbat.ac.kr', memo: '', authProvider: 'Manual' },
-  { id: 'user-49', index: 49, name: '구연우', roleLevel: '일반', department: '창의융합학과', labProfessor: '정우익 교수님', phone: '010-8625-3711', email: '20242742@edu.hanbat.ac.kr', memo: '', authProvider: 'Manual' },
-  { id: 'user-50', index: 50, name: '박보미', roleLevel: '일반', department: '창의융합학과', labProfessor: '정우익 교수님', phone: '010-8321-1844', email: '20244099@edu.hanbat.ac.kr', memo: '', authProvider: 'Manual' },
-  { id: 'user-51', index: 51, name: '최진규', roleLevel: '대표', department: '전자공학과', labProfessor: '구치완 교수님', phone: '010-7217-3034', email: '30231153@edu.hanbat.ac.kr', memo: '', authProvider: 'Manual' },
-  { id: 'user-52', index: 52, name: '김정태', roleLevel: '일반', department: '전자공학과', labProfessor: '구치완 교수님', phone: '010-3070-3019', email: 'jeotae@edu.hanbat.ac.kr', memo: '', authProvider: 'Manual' },
-  { id: 'user-53', index: 53, name: '구자성', roleLevel: '대표', department: '전자공학과', labProfessor: '백근우 교수님', phone: '010-3103-2501', email: 'koo020716@naver.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-54', index: 54, name: '이동현', roleLevel: '일반', department: '전자공학과', labProfessor: '백근우 교수님', phone: '010-6434-8551', email: 'ddadda05@naver.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-55', index: 55, name: '이유경', roleLevel: '일반', department: '전자공학과', labProfessor: '백근우 교수님', phone: '010-5585-5698', email: 'dbsdb8389@naver.com', memo: '', authProvider: 'Manual' },
-  { id: 'user-56', index: 56, name: '최민용', roleLevel: '일반', department: '전자공학과', labProfessor: '백근우 교수님', phone: '010-2315-4255', email: 'cjh103741@naver.com', memo: '', authProvider: 'Manual' }
-];
-
-const initialConsumables: ConsumableItem[] = [
-  { id: 'supply-1', category: '단순소모품', name: '클린 마스크', unit: 'BOX 기준', monthStart: 36, current: 27, minimum: 20, note: 'BOX 기준' },
-  { id: 'supply-2', category: '단순소모품', name: '라텍스 장갑 (L)', unit: 'BOX 기준', monthStart: 11, current: 17, minimum: 10, note: 'BOX 기준' },
-  { id: 'supply-3', category: '단순소모품', name: '라텍스 장갑 (M)', unit: 'BOX 기준', monthStart: 5, current: 19, minimum: 10, note: 'BOX 기준' },
-  { id: 'supply-4', category: '단순소모품', name: '라텍스 장갑 (S)', unit: 'BOX 기준', monthStart: 16, current: 22, minimum: 20, note: 'BOX 기준' },
-  { id: 'supply-5', category: '단순소모품', name: 'PVC 장갑 (L)', unit: 'BOX 기준', monthStart: 14, current: 24, minimum: 20, note: 'BOX 기준' },
-  { id: 'supply-6', category: '단순소모품', name: 'PVC 장갑 (M)', unit: 'BOX 기준', monthStart: 12, current: 22, minimum: 20, note: 'BOX 기준' },
-  { id: 'supply-7', category: '단순소모품', name: 'PVC 장갑 (S)', unit: 'BOX 기준', monthStart: 2, current: 22, minimum: 20, note: 'BOX 기준' },
-  { id: 'supply-8', category: '단순소모품', name: '클린룸 sticky mat', unit: '개', monthStart: 37, current: 36, minimum: 20, note: '개' },
-  { id: 'supply-9', category: '단순소모품', name: '킴테크 와이퍼', unit: 'BOX 기준', monthStart: 80, current: 75, minimum: 20, note: 'BOX 기준' },
-  { id: 'supply-10', category: '단순소모품', name: '알루미늄 호일', unit: '개', monthStart: 69, current: 68, minimum: 20, note: '개' },
-  { id: 'supply-11', category: '단순소모품', name: '무진천', unit: '신규주문 필요', monthStart: 0, current: 10, minimum: 10, note: '신규주문 필요' },
-  { id: 'supply-12', category: '단순소모품', name: '폐액통', unit: '통', monthStart: 8, current: 21, minimum: 20, note: '2,4주차 수요일 오전' },
-  { id: 'supply-13', category: '가스', name: 'N2 gas', unit: '봄베 압력', monthStart: 5.5, current: 12, minimum: 10, note: 'main gas 봄베 regulator 압력 기준' },
-  { id: 'supply-14', category: '가스', name: 'O2 gas', unit: '봄베 압력', monthStart: 9.5, current: 9, minimum: 10, note: 'main gas 봄베 regulator 압력 기준' },
-  { id: 'supply-15', category: '가스', name: 'Ar gas', unit: '봄베 압력', monthStart: 6, current: 6.5, minimum: 10, note: 'main gas 봄베 regulator 압력 기준' },
-  { id: 'supply-16', category: '가스', name: 'CF4 gas', unit: '봄베 압력', monthStart: 8, current: 8, minimum: 10, note: 'main gas 봄베 regulator 압력 기준' },
-  { id: 'supply-17', category: '가스', name: 'CHF3 gas', unit: '봄베 압력', monthStart: 4, current: 4, minimum: 5, note: 'main gas 봄베 regulator 압력 기준' },
-  { id: 'supply-18', category: 'White room 용액 (산)', name: '황산', unit: '병', monthStart: 2, current: 2, minimum: 5, note: '2병 이하일 때는 분수로 기록' },
-  { id: 'supply-19', category: 'White room 용액 (산)', name: '질산', unit: '병', monthStart: 2, current: 2, minimum: 5, note: '2병 이하일 때는 분수로 기록' },
-  { id: 'supply-20', category: 'White room 용액 (산)', name: '과산화수소', unit: '병', monthStart: 3, current: 3, minimum: 5, note: '2병 이하일 때는 분수로 기록' },
-  { id: 'supply-21', category: 'White room 용액 (산)', name: 'BOE', unit: '병', monthStart: 4, current: 4, minimum: 5, note: '2병 이하일 때는 분수로 기록' },
-  { id: 'supply-22', category: 'Yellow room 용액 (유기, 염기)', name: '아세톤', unit: '병', monthStart: 1, current: 4, minimum: 5, note: '2병 이하일 때는 분수로 기록' },
-  { id: 'supply-23', category: 'Yellow room 용액 (유기, 염기)', name: 'IPA (이소프로판올)', unit: '병', monthStart: 2, current: 4, minimum: 5, note: '2병 이하일 때는 분수로 기록' },
-  { id: 'supply-24', category: 'Yellow room 용액 (유기, 염기)', name: 'AZ300MIF', unit: '병', monthStart: 1, current: 1, minimum: 5, note: '1병 이하일 때는 분수로 기록' },
-  { id: 'supply-25', category: 'Yellow room 용액 (유기, 염기)', name: 'AZ GXR601-14cp', unit: '병', monthStart: 1, current: 1, minimum: 5, note: '1병 이하일 때는 분수로 기록' },
-  { id: 'supply-26', category: 'Yellow room 용액 (유기, 염기)', name: 'NR9-1000 PY', unit: '병', monthStart: 2, current: 3, minimum: 5, note: '1병 이하일 때는 분수로 기록' },
-  { id: 'supply-27', category: 'Yellow room 용액 (유기, 염기)', name: 'RD6', unit: '병', monthStart: 4, current: 4, minimum: 5, note: '1병 이하일 때는 분수로 기록' },
-  { id: 'supply-28', category: 'Yellow room 용액 (유기, 염기)', name: 'AZ 5214 E', unit: '병', monthStart: 1, current: 1, minimum: 5, note: '1병 이하일 때는 분수로 기록' },
-  { id: 'supply-29', category: 'Yellow room 용액 (유기, 염기)', name: 'AZ AD promoter-K', unit: '병', monthStart: 1, current: 1, minimum: 5, note: '1병 이하일 때는 분수로 기록' },
-  { id: 'supply-30', category: '폐기스티커', name: '할로겐폐유기용제', unit: 'EA', monthStart: 33, current: 32, minimum: 20, note: '' },
-  { id: 'supply-31', category: '폐기스티커', name: '비할로겐폐유기용제', unit: 'EA', monthStart: 22, current: 50, minimum: 20, note: '' },
-  { id: 'supply-32', category: '폐기스티커', name: '폐시약병', unit: 'EA', monthStart: 38, current: 29, minimum: 20, note: '' },
-  { id: 'supply-33', category: '폐기스티커', name: '기타폐기물', unit: 'EA', monthStart: 6, current: 50, minimum: 20, note: '' },
-  { id: 'supply-34', category: '폐기스티커', name: '폐시약', unit: 'EA', monthStart: 22, current: 22, minimum: 20, note: '' },
-  { id: 'supply-35', category: '폐기스티커', name: '폐유독물(액상)', unit: 'EA', monthStart: 14, current: 14, minimum: 10, note: '' },
-  { id: 'supply-36', category: '폐기스티커', name: '폐산', unit: 'EA', monthStart: 35, current: 34, minimum: 20, note: '' },
-  { id: 'supply-37', category: '폐기스티커', name: '할로겐유기용제', unit: 'EA', monthStart: 28, current: 28, minimum: 20, note: '' },
-  { id: 'supply-38', category: '폐기스티커', name: '폐유기용제(고상)', unit: 'EA', monthStart: 14, current: 14, minimum: 10, note: '' },
-  { id: 'supply-39', category: '장비 내 소모품', name: 'miniSEM 필라멘트', unit: '교체 일자', monthStart: 0, current: 0, minimum: 5, note: '26년 5월 / 여분 4개' },
-  { id: 'supply-40', category: '장비 내 소모품', name: 'miniSEM 코팅 물질(PT Target)', unit: '교체 일자', monthStart: 0, current: 0, minimum: 5, note: '25년 12월 / 재고 여분 있음' },
-  { id: 'supply-41', category: '장비 내 소모품', name: 'ALD TMA 소스', unit: '교체 일자', monthStart: 0, current: 0, minimum: 5, note: '24년 5월 / 소스 소진 시 파형 확인' },
-  { id: 'supply-42', category: '장비 내 소모품', name: 'ALD TEMAHf 소스', unit: '교체 일자', monthStart: 0, current: 0, minimum: 5, note: '24년 5월 / 소스 소진 시 파형 확인' },
-  { id: 'supply-43', category: '장비 내 소모품', name: 'MASK aligner UV lamp', unit: '교체 일자', monthStart: 0, current: 0, minimum: 5, note: '24년 2월 / UV intensity 확인 필요' },
-  { id: 'supply-44', category: '장비 내 소모품', name: '클린부스 헤파필터', unit: '교체 일자', monthStart: 0, current: 0, minimum: 5, note: '25년 8월 / 보통 1년 주기 교체' },
-  { id: 'supply-45', category: '장비 내 소모품', name: '시약장 필터', unit: '교체 일자', monthStart: 0, current: 0, minimum: 5, note: '25년 9월 / 교체 알림이 뜸' },
-  { id: 'supply-46', category: '장비 내 소모품', name: '공기정화장치필터', unit: '교체 일자', monthStart: 0, current: 0, minimum: 5, note: '25년 11월 / 보통 1년 주기 교체' },
-  { id: 'supply-47', category: '장비 내 소모품', name: '초순수제조장치필터', unit: '교체 일자', monthStart: 0, current: 0, minimum: 5, note: '26년 5월 / 4개월 주기 교체' }
-];
+const initialManagedUsers = initialManagedUsersData as ManagedUser[];
+const initialConsumables = initialConsumablesData as ConsumableItem[];
 
 const categoryMeta: Record<EquipmentGroup, { title: string; subtitle: string; image: string; bullets: string[] }> = {
   process: {
@@ -495,7 +393,7 @@ function normalizeEquipment(item: ApiEquipmentItem, index: number): EquipmentIte
 
 function getEquipmentOverrides(): Record<string, Partial<EquipmentItem>> {
   try {
-    const stored = localStorage.getItem('hbnu-equipment-overrides');
+    const stored = localStorage.getItem(STORAGE_KEYS.equipmentOverrides);
     return stored ? JSON.parse(stored) : {};
   } catch {
     return {};
@@ -613,7 +511,7 @@ function formatPenaltyRemaining(record: PenaltyRecord) {
 
 function getStoredSessionUser(): StoredSessionUser | null {
   try {
-    const stored = localStorage.getItem('hbnu-session-user');
+    const stored = localStorage.getItem(STORAGE_KEYS.sessionUser);
     return stored ? JSON.parse(stored) : null;
   } catch {
     return null;
@@ -1851,38 +1749,6 @@ function AutoRotatingEquipmentStatus({
           );
         })}
       </div>
-      <div
-        key={`${activeSlide.id}-${rotationCycle}`}
-        className="auto-status-grid-legacy"
-        role="tabpanel"
-        aria-label={`${activeSlide.title} ${activeSlide.count}종 장비 상태`}
-      >
-        {activeSlide.items.map(({ item, activeEvent, status }) => {
-          const accent = status === 'active' ? '#34d6b0' : status === 'maintenance' ? '#f5b942' : '#3a4456';
-          const message = status === 'active'
-            ? `~${formatReservationTime(activeEvent?.end)} 종료`
-            : status === 'maintenance'
-              ? activeEvent ? `~${formatReservationTime(activeEvent.end)} 점검` : '점검중'
-              : '예약 가능 →';
-          return (
-            <article
-              key={item.id}
-              className={`auto-status-cell is-${status}`}
-              aria-label={`${item.name} ${getRuntimeStatusLabel(status)}`}
-            >
-              <span className="auto-status-bar" style={{ background: accent }} />
-              <span className="auto-status-copy">
-                <span className="auto-status-cell-top">
-                  <span className="auto-status-category">{getRealtimeCategoryLabel(item)}</span>
-                </span>
-                <span className={`runtime-status-badge is-${status}`}>{getRuntimeStatusLabel(status)}</span>
-                <strong>{item.name}</strong>
-                <small>{message}</small>
-              </span>
-            </article>
-          );
-        })}
-      </div>
     </section>
   );
 }
@@ -3096,15 +2962,15 @@ function LoginPage({
       });
       if (!response.ok) throw new Error('auth unavailable');
       const data = await response.json();
-      localStorage.setItem('hbnu-session-token', data.token);
-      localStorage.setItem('hbnu-session-user', JSON.stringify(data.user));
+      localStorage.setItem(STORAGE_KEYS.sessionToken, data.token);
+      localStorage.setItem(STORAGE_KEYS.sessionUser, JSON.stringify(data.user));
       onRegisterUser(provider, data.user);
       onAuthenticated(data.user.role);
       setMessage(`${provider} 인증이 완료되었습니다.`);
     } catch {
       const fallbackUser = { name: role === 'ADMIN' ? '관리자' : 'USER NAME', email: `${provider.toLowerCase()}-preview@hbnu.local`, role };
-      localStorage.setItem('hbnu-session-token', `preview-${provider.toLowerCase()}-${role}`);
-      localStorage.setItem('hbnu-session-user', JSON.stringify(fallbackUser));
+      localStorage.setItem(STORAGE_KEYS.sessionToken, `preview-${provider.toLowerCase()}-${role}`);
+      localStorage.setItem(STORAGE_KEYS.sessionUser, JSON.stringify(fallbackUser));
       onRegisterUser(provider, fallbackUser);
       onAuthenticated(role);
       setMessage(`${provider} 프리뷰 인증이 완료되었습니다. API 연결 시 실제 OAuth 콜백으로 교체됩니다.`);
@@ -5440,15 +5306,6 @@ function ConsumablesPage({
   );
 }
 
-type NoticeAttachment = {
-  id: string;
-  name: string;
-  size: number;
-  type: string;
-  dataUrl: string;
-  uploadedAt: string;
-};
-
 const equipmentCategoryCardMeta: Record<EquipmentGroup, {
   accent: string;
   headBg: string;
@@ -5469,982 +5326,6 @@ const equipmentCategoryCardMeta: Record<EquipmentGroup, {
   }
 };
 
-const noticeCategoryOptions = ['운영', '예약', '교육', '점검'] as const;
-type NoticeCategory = (typeof noticeCategoryOptions)[number];
-
-type NoticeItem = {
-  id: string;
-  category: NoticeCategory;
-  title: string;
-  date: string;
-  author: string;
-  views: number;
-  important?: boolean;
-  pinned: boolean;
-  summary: string;
-  body: string;
-  attachments?: NoticeAttachment[];
-};
-
-function normalizeNoticeCategory(category: unknown): NoticeCategory {
-  return noticeCategoryOptions.includes(category as NoticeCategory) ? category as NoticeCategory : '운영';
-}
-
-function getNoticeCategoryTone(category: NoticeCategory) {
-  return {
-    운영: 'is-operation',
-    예약: 'is-reservation',
-    교육: 'is-training',
-    점검: 'is-maintenance'
-  }[category];
-}
-
-const noticeItems: NoticeItem[] = [
-  {
-    id: 'notice-1',
-    category: '운영',
-    title: '2026년 6월 장비 공동활용 플랫폼 시범 운영 안내',
-    date: '2026.06.22',
-    author: '창의융합교육센터',
-    views: 184,
-    pinned: true,
-    summary: '장비예약현황, 교육신청, 권한관리 기능을 중심으로 플랫폼 시범 운영을 시작합니다.',
-    body: '시범 운영 기간 동안 장비 예약 및 교육 신청 이력은 플랫폼 기준으로 관리됩니다. 이용자는 예약 전 장비별 교육 인증 상태와 사용 가능 시간을 확인해주시기 바랍니다.'
-  },
-  {
-    id: 'notice-2',
-    category: '예약',
-    title: '장비 예약 승인 및 취소 기준 안내',
-    date: '2026.06.20',
-    author: '장비운영팀',
-    views: 96,
-    pinned: true,
-    summary: '관리자 승인 대상 장비와 사용자 직접 예약 가능 장비의 운영 기준을 안내합니다.',
-    body: '장비별 사용 조건에 따라 예약 승인 절차가 다를 수 있습니다. 예약 취소가 필요한 경우 마이페이지의 내 예약현황에서 취소 요청을 진행해주세요.'
-  },
-  {
-    id: 'notice-3',
-    category: '교육',
-    title: '장비사용자 교육 신청 및 인증 절차 안내',
-    date: '2026.06.18',
-    author: '교육담당자',
-    views: 73,
-    pinned: false,
-    summary: '장비 사용 전 필수 교육 신청 방법과 교육완료 인증 절차를 안내합니다.',
-    body: '교육 신청 후 담당자 확인을 거쳐 교육 일정이 확정됩니다. 교육 완료 후 인증 상태가 반영되면 해당 장비의 예약 권한 부여 여부를 확인할 수 있습니다.'
-  },
-  {
-    id: 'notice-4',
-    category: '점검',
-    title: '클린룸 및 주요 공정 장비 정기 점검 예정',
-    date: '2026.06.15',
-    author: '시설관리팀',
-    views: 58,
-    pinned: false,
-    summary: '정기 점검 시간에는 일부 장비 예약이 제한될 수 있습니다.',
-    body: '점검 일정은 장비예약현황 캘린더에 순차 반영됩니다. 점검 시간과 중복되는 예약은 담당자 확인 후 조정될 수 있습니다.'
-  }
-];
-
-const operationNoticeItems: NoticeItem[] = [
-  {
-    id: 'operation-notice-1',
-    category: '운영',
-    title: '공정동 장비 공동활용 운영 시간 안내',
-    date: '2026.06.24',
-    author: '창의융합교육센터',
-    views: 42,
-    pinned: true,
-    summary: '장비 공동활용 플랫폼 운영 시간과 예약 확인 기준을 안내합니다.',
-    body: '장비 공동활용 운영 시간은 평일 기준으로 관리되며, 담당 장비별 교육 이수 및 예약 승인 상태에 따라 사용 가능 여부가 달라질 수 있습니다. 세부 운영 시간은 장비별 담당자 안내를 확인해 주세요.'
-  },
-  {
-    id: 'operation-notice-2',
-    category: '운영',
-    title: '장비 사용 전 안전 점검 체크리스트 적용 안내',
-    date: '2026.06.21',
-    author: '시설운영팀',
-    views: 31,
-    pinned: false,
-    summary: '장비 예약 및 사용 전 안전 점검 항목을 확인하도록 운영 절차를 정비합니다.',
-    body: '사용자는 장비 사용 전 장비 상태, 소모품 잔량, 주변 정리 상태를 확인해야 합니다. 이상이 발견될 경우 담당자에게 즉시 공유하고 임의로 장비를 가동하지 않습니다.'
-  }
-];
-
-const meetingNoticeItems: NoticeItem[] = [
-  {
-    id: 'meeting-notice-1',
-    category: '운영',
-    title: '6월 장비 담당자 운영 회의 일정 안내',
-    date: '2026.06.23',
-    author: '창의융합교육센터',
-    views: 27,
-    pinned: true,
-    summary: '장비 담당자 대상 운영 회의 일정과 주요 안건을 안내합니다.',
-    body: '6월 장비 담당자 운영 회의에서는 교육신청 처리 절차, 장비 사용권한 부여 기준, 점검중 장비 표시 방식, 예약 관리 개선 사항을 논의할 예정입니다.'
-  },
-  {
-    id: 'meeting-notice-2',
-    category: '운영',
-    title: '학생 대표 회의 안건 접수 안내',
-    date: '2026.06.19',
-    author: '운영지원팀',
-    views: 18,
-    pinned: false,
-    summary: '장비 사용 교육 및 예약 운영 개선과 관련한 학생 대표 회의 안건을 접수합니다.',
-    body: '학생 대표는 장비 사용 과정에서 발생하는 불편 사항, 교육 이수 절차 개선 의견, 예약 캘린더 사용성 관련 의견을 취합해 운영지원팀에 제출할 수 있습니다.'
-  }
-];
-
-function isImportantNotice(notice: NoticeItem) {
-  return notice.important ?? notice.pinned;
-}
-
-function normalizeNoticeItems(items: NoticeItem[]) {
-  return items.map((item) => ({
-    ...item,
-    category: normalizeNoticeCategory(item.category),
-    important: item.important ?? item.pinned
-  }));
-}
-
-function NoticePage({
-  title = '공지사항',
-  description = '센터 운영, 장비 예약, 교육 인증 관련 주요 공지를 한 곳에서 확인합니다.',
-  items = noticeItems,
-  filterLabel = '전체 공지'
-}: {
-  title?: string;
-  description?: string;
-  items?: NoticeItem[];
-  filterLabel?: string;
-}) {
-  const [selectedNoticeId, setSelectedNoticeId] = useState(items[0]?.id ?? '');
-  const selectedNotice = items.find((notice) => notice.id === selectedNoticeId) ?? items[0];
-  const importantCount = items.filter(isImportantNotice).length;
-
-  useEffect(() => {
-    if (items[0] && !items.some((notice) => notice.id === selectedNoticeId)) {
-      setSelectedNoticeId(items[0].id);
-    }
-  }, [items, selectedNoticeId]);
-
-  return (
-    <section className="notice-page">
-      <div className="notice-hero">
-        <div>
-          <p className="consumables-eyebrow">Notice Board</p>
-          <h2>{title}</h2>
-          <span>{description}</span>
-        </div>
-        <div className="notice-hero-meta" aria-label="공지사항 요약">
-          <strong>{items.length}</strong>
-          <span>등록 공지</span>
-          <em>중요 {importantCount}건</em>
-        </div>
-      </div>
-
-      <div className="notice-layout">
-        <div className="notice-list-panel">
-          <div className="notice-toolbar">
-            <div className="notice-search-placeholder">
-              <Search size={17} />
-              <span>제목, 내용, 분류 검색</span>
-            </div>
-            <button type="button">{filterLabel}</button>
-          </div>
-
-          <div className="notice-list" aria-label="공지사항 목록">
-            {items.map((notice, index) => (
-              <button
-                key={notice.id}
-                type="button"
-                className={`notice-row ${selectedNotice.id === notice.id ? 'is-selected' : ''}`}
-                onClick={() => setSelectedNoticeId(notice.id)}
-              >
-                <span className="notice-index">{String(index + 1).padStart(2, '0')}</span>
-                <span className="notice-row-main">
-                  <span className="notice-row-title">
-                    {isImportantNotice(notice) && <em>중요</em>}
-                    {notice.title}
-                  </span>
-                  <span className="notice-row-summary">{notice.summary}</span>
-                </span>
-                <span className="notice-row-side">
-                  <strong className={`notice-category-badge ${getNoticeCategoryTone(notice.category)}`}>{notice.category}</strong>
-                  <span>{notice.date}</span>
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <article className="notice-detail-panel">
-          <div className="notice-detail-head">
-            <span className={`notice-category-badge ${getNoticeCategoryTone(selectedNotice.category)}`}>{selectedNotice.category}</span>
-            {isImportantNotice(selectedNotice) && <em>중요 공지</em>}
-            {selectedNotice.pinned && <em>상단 고정</em>}
-          </div>
-          <h3>{selectedNotice.title}</h3>
-          <div className="notice-detail-meta">
-            <span>작성자 {selectedNotice.author}</span>
-            <span>등록일 {selectedNotice.date}</span>
-            <span>조회 {selectedNotice.views}</span>
-          </div>
-          <p>{selectedNotice.body}</p>
-          <div className="notice-attachment-box">
-            <BookOpen size={18} />
-            <div>
-              <strong>첨부 및 관련 자료</strong>
-              {(selectedNotice.attachments?.length ?? 0) > 0 ? (
-                <ul className="notice-attachment-list">
-                  {selectedNotice.attachments?.map((attachment) => (
-                    <li key={attachment.id}>
-                      <a href={attachment.dataUrl} download={attachment.name}>{attachment.name}</a>
-                      <span>{formatFileSize(attachment.size)}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <span>등록된 첨부파일이 없습니다.</span>
-              )}
-            </div>
-          </div>
-        </article>
-      </div>
-    </section>
-  );
-}
-
-type FaqCategory = '예약' | '장비' | '교육' | '운영' | '계정';
-
-type NoticeBoardKey = 'operation' | 'meeting';
-
-const noticeBoardMeta: Record<NoticeBoardKey, { label: string; category: NoticeCategory; storageKey: string }> = {
-  operation: { label: '운영공지', category: '운영', storageKey: 'hbnu-operation-notices' },
-  meeting: { label: '회의공지', category: '운영', storageKey: 'hbnu-meeting-notices' }
-};
-
-function formatNoticeDate(dateKey = getSeoulDateKey()) {
-  return dateKey.replace(/-/g, '.');
-}
-
-function formatFileSize(size: number) {
-  if (size < 1024) return `${size} B`;
-  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
-  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function readNoticeAttachments(files: FileList | null): Promise<NoticeAttachment[]> {
-  if (!files?.length) return Promise.resolve([]);
-  const uploadedAt = new Date().toISOString();
-  return Promise.all(Array.from(files).map((file, index) => new Promise<NoticeAttachment>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve({
-      id: `notice-attachment-${Date.now()}-${index}`,
-      name: file.name,
-      size: file.size,
-      type: file.type || 'application/octet-stream',
-      dataUrl: String(reader.result ?? ''),
-      uploadedAt
-    });
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  })));
-}
-
-function NoticeAdminPage({
-  operationItems,
-  meetingItems,
-  onAddNotice,
-  onUpdateNotice,
-  onDeleteNotice
-}: {
-  operationItems: NoticeItem[];
-  meetingItems: NoticeItem[];
-  onAddNotice: (board: NoticeBoardKey, item: NoticeItem) => void;
-  onUpdateNotice: (board: NoticeBoardKey, noticeId: string, patch: Partial<NoticeItem>) => void;
-  onDeleteNotice: (board: NoticeBoardKey, noticeId: string) => void;
-}) {
-  const [activeBoard, setActiveBoard] = useState<NoticeBoardKey>('operation');
-  const [selectedNoticeId, setSelectedNoticeId] = useState('');
-  const [showEditor, setShowEditor] = useState(false);
-  const items = activeBoard === 'operation' ? operationItems : meetingItems;
-  const selectedNotice = items.find((item) => item.id === selectedNoticeId) ?? items[0];
-  const meta = noticeBoardMeta[activeBoard];
-
-  useEffect(() => {
-    if (items[0] && !items.some((item) => item.id === selectedNoticeId)) {
-      setSelectedNoticeId(items[0].id);
-    }
-  }, [items, selectedNoticeId]);
-
-  async function submitNotice(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const formElement = event.currentTarget;
-    const form = new FormData(formElement);
-    const title = String(form.get('title') ?? '').trim();
-    const summary = String(form.get('summary') ?? '').trim();
-    const body = String(form.get('body') ?? '').trim();
-    if (!title || !summary || !body) return;
-    const fileInput = formElement.elements.namedItem('attachments') as HTMLInputElement | null;
-    const attachments = await readNoticeAttachments(fileInput?.files ?? null);
-    const item: NoticeItem = {
-      id: `${activeBoard}-notice-${Date.now()}`,
-      category: normalizeNoticeCategory(form.get('category') ?? meta.category),
-      title,
-      date: formatNoticeDate(String(form.get('date') ?? getSeoulDateKey())),
-      author: String(form.get('author') ?? '관리자').trim() || '관리자',
-      views: 0,
-      important: form.get('important') === 'on',
-      pinned: form.get('pinned') === 'on',
-      summary,
-      body,
-      attachments
-    };
-    onAddNotice(activeBoard, item);
-    setSelectedNoticeId(item.id);
-    setShowEditor(false);
-  }
-
-  async function addAttachments(event: ChangeEvent<HTMLInputElement>) {
-    if (!selectedNotice) return;
-    const attachments = await readNoticeAttachments(event.target.files);
-    event.target.value = '';
-    if (!attachments.length) return;
-    onUpdateNotice(activeBoard, selectedNotice.id, {
-      attachments: [...(selectedNotice.attachments ?? []), ...attachments]
-    });
-  }
-
-  function removeAttachment(attachmentId: string) {
-    if (!selectedNotice) return;
-    onUpdateNotice(activeBoard, selectedNotice.id, {
-      attachments: (selectedNotice.attachments ?? []).filter((attachment) => attachment.id !== attachmentId)
-    });
-  }
-
-  return (
-    <section className="notice-admin-page">
-      <div className="notice-admin-hero">
-        <div>
-          <p className="consumables-eyebrow">Notice CMS</p>
-          <h2>공지사항 관리</h2>
-          <span>운영공지와 회의공지를 분리해 게시물을 등록하고 관리합니다.</span>
-        </div>
-        <button type="button" onClick={() => setShowEditor(true)}>
-          <Plus size={17} /> 새 공지 등록
-        </button>
-      </div>
-
-      <div className="notice-admin-tabs" role="tablist" aria-label="공지 구분">
-        {(Object.keys(noticeBoardMeta) as NoticeBoardKey[]).map((board) => (
-          <button
-            key={board}
-            type="button"
-            className={activeBoard === board ? 'is-active' : ''}
-            onClick={() => {
-              setActiveBoard(board);
-              setSelectedNoticeId('');
-            }}
-          >
-            {noticeBoardMeta[board].label}
-            <span>{board === 'operation' ? operationItems.length : meetingItems.length}</span>
-          </button>
-        ))}
-      </div>
-
-      <div className="notice-admin-layout">
-        <div className="notice-admin-list">
-          <div className="notice-admin-list-head">
-            <div>
-              <p>{meta.label}</p>
-              <h3>게시물 목록</h3>
-            </div>
-            <span>{items.length}건</span>
-          </div>
-          {items.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={`notice-admin-row ${selectedNotice?.id === item.id ? 'is-selected' : ''}`}
-              onClick={() => setSelectedNoticeId(item.id)}
-            >
-              <span>
-                {isImportantNotice(item) && <em>중요</em>}
-                {item.title}
-              </span>
-              <small>{item.date} · {item.author}</small>
-            </button>
-          ))}
-          {items.length === 0 && <p className="notice-admin-empty">등록된 공지가 없습니다.</p>}
-        </div>
-
-        <div className="notice-admin-editor">
-          {selectedNotice ? (
-            <>
-              <div className="notice-admin-editor-head">
-                <div>
-                  <p>Selected Notice</p>
-                  <h3>{selectedNotice.title}</h3>
-                </div>
-                <button type="button" className="is-danger" onClick={() => onDeleteNotice(activeBoard, selectedNotice.id)}>
-                  <Trash2 size={16} /> 삭제
-                </button>
-              </div>
-              <div className="notice-admin-form-grid">
-                <label>분류<select value={selectedNotice.category} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { category: normalizeNoticeCategory(event.target.value) })}>{noticeCategoryOptions.map((category) => <option key={category} value={category}>{category}</option>)}</select></label>
-                <label>작성자<input value={selectedNotice.author} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { author: event.target.value })} /></label>
-                <label>등록일<input value={selectedNotice.date} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { date: event.target.value })} /></label>
-                <div className="notice-admin-check-stack">
-                  <label className="notice-admin-check"><input type="checkbox" checked={isImportantNotice(selectedNotice)} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { important: event.target.checked })} /> 중요 공지</label>
-                  <label className="notice-admin-check"><input type="checkbox" checked={selectedNotice.pinned} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { pinned: event.target.checked })} /> 상단 고정</label>
-                </div>
-                <label className="is-wide">제목<input value={selectedNotice.title} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { title: event.target.value })} /></label>
-                <label className="is-wide">요약<input value={selectedNotice.summary} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { summary: event.target.value })} /></label>
-                <label className="is-wide">본문<textarea value={selectedNotice.body} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { body: event.target.value })} /></label>
-                <div className="notice-admin-attachments is-wide">
-                  <div className="notice-admin-attachment-head">
-                    <div>
-                      <strong>첨부파일</strong>
-                      <span>{selectedNotice.attachments?.length ?? 0}개 등록</span>
-                    </div>
-                    <label className="notice-file-upload">
-                      <UploadCloud size={16} />
-                      파일 첨부
-                      <input
-                        type="file"
-                        multiple
-                        onChange={addAttachments}
-                        aria-label="공지사항 첨부파일 추가"
-                      />
-                    </label>
-                  </div>
-                  {(selectedNotice.attachments?.length ?? 0) > 0 ? (
-                    <ul className="notice-admin-attachment-list">
-                      {selectedNotice.attachments?.map((attachment) => (
-                        <li key={attachment.id}>
-                          <div>
-                            <strong>{attachment.name}</strong>
-                            <span>{formatFileSize(attachment.size)} · {attachment.type || 'file'}</span>
-                          </div>
-                          <div className="notice-admin-attachment-actions">
-                            <a href={attachment.dataUrl} download={attachment.name} aria-label={`${attachment.name} 다운로드`}>
-                              <Download size={15} />
-                            </a>
-                            <button type="button" onClick={() => removeAttachment(attachment.id)} aria-label={`${attachment.name} 첨부 삭제`}>
-                              <Trash2 size={15} />
-                            </button>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="notice-admin-attachment-empty">첨부된 파일이 없습니다.</p>
-                  )}
-                </div>
-              </div>
-            </>
-          ) : (
-            <p className="notice-admin-empty">왼쪽에서 공지를 선택하거나 새 공지를 등록하세요.</p>
-          )}
-        </div>
-      </div>
-
-      {showEditor && (
-        <div className="modal-backdrop" onMouseDown={() => setShowEditor(false)}>
-          <form className="notice-create-modal" onSubmit={submitNotice} onMouseDown={(event) => event.stopPropagation()}>
-            <div className="notice-admin-editor-head">
-              <div>
-                <p>{meta.label}</p>
-                <h3>새 공지 등록</h3>
-              </div>
-              <button type="button" className="is-danger" onClick={() => setShowEditor(false)}>
-                <X size={16} /> 닫기
-              </button>
-            </div>
-            <div className="notice-admin-form-grid">
-              <label>분류<select name="category" defaultValue={meta.category}>{noticeCategoryOptions.map((category) => <option key={category} value={category}>{category}</option>)}</select></label>
-              <label>작성자<input name="author" defaultValue="관리자" /></label>
-              <label>등록일<input name="date" type="date" defaultValue={getSeoulDateKey()} /></label>
-              <div className="notice-admin-check-stack">
-                <label className="notice-admin-check"><input name="important" type="checkbox" /> 중요 공지</label>
-                <label className="notice-admin-check"><input name="pinned" type="checkbox" /> 상단 고정</label>
-              </div>
-              <label className="is-wide">제목<input name="title" required placeholder={`${meta.label} 제목 입력`} /></label>
-              <label className="is-wide">요약<input name="summary" required placeholder="목록에 노출될 요약 문구" /></label>
-              <label className="is-wide">본문<textarea name="body" required placeholder="공지 내용을 입력하세요." /></label>
-              <label className="notice-create-file is-wide">
-                첨부파일
-                <input name="attachments" type="file" multiple />
-                <span>PDF, Word, Excel, 이미지 등 공지 관련 파일을 함께 등록할 수 있습니다.</span>
-              </label>
-            </div>
-            <div className="notice-create-actions">
-              <button type="button" onClick={() => setShowEditor(false)}>취소</button>
-              <button type="submit" className="is-primary">등록</button>
-            </div>
-          </form>
-        </div>
-      )}
-    </section>
-  );
-}
-
-const faqCategoryMeta: Record<FaqCategory, { icon: typeof CalendarDays; tone: string }> = {
-  예약: { icon: CalendarDays, tone: 'reservation' },
-  장비: { icon: Wrench, tone: 'equipment' },
-  교육: { icon: GraduationCap, tone: 'training' },
-  운영: { icon: Factory, tone: 'operation' },
-  계정: { icon: UserRound, tone: 'account' }
-};
-
-const faqCategories: Array<FaqCategory | '전체'> = ['전체', '예약', '장비', '교육', '운영', '계정'];
-
-const faqItems: Array<{
-  id: string;
-  category: FaqCategory;
-  question: string;
-  answer: string;
-  updatedAt: string;
-}> = [
-  {
-    id: 'faq-1',
-    category: '예약',
-    question: '장비 예약은 누가 신청할 수 있나요?',
-    answer: '장비별 교육 인증과 권한 부여가 완료된 사용자가 예약할 수 있습니다. 일부 장비는 관리자 승인 후 예약이 확정됩니다.',
-    updatedAt: '2026.06.22'
-  },
-  {
-    id: 'faq-2',
-    category: '장비',
-    question: '장비별 사용 가능 여부는 어디에서 확인하나요?',
-    answer: '장비현황에서 장비별 교육 인증, 사용 조건, 위치 정보를 확인하고 장비예약현황에서 실시간 예약 상태를 함께 확인할 수 있습니다.',
-    updatedAt: '2026.06.21'
-  },
-  {
-    id: 'faq-3',
-    category: '교육',
-    question: '장비사용자 교육 이수 여부는 어디에서 확인하나요?',
-    answer: '마이페이지의 인증정보 영역과 관리자 권한관리 화면에서 교육 이수 및 장비 권한 상태를 확인할 수 있도록 확장 예정입니다.',
-    updatedAt: '2026.06.20'
-  },
-  {
-    id: 'faq-4',
-    category: '운영',
-    question: '예약 취소나 일정 변경은 어떻게 하나요?',
-    answer: '일반 사용자는 마이페이지의 내 예약현황에서 취소 요청을 진행하고, 관리자는 관리자 페이지에서 예약 추가/삭제를 처리할 수 있습니다.',
-    updatedAt: '2026.06.18'
-  },
-  {
-    id: 'faq-5',
-    category: '계정',
-    question: '로그인 후 소속 정보가 다르면 어떻게 수정하나요?',
-    answer: '현재는 관리자 사용자관리 화면에서 소속 학과, 연구실, 메모 정보를 수정할 수 있으며 추후 마이페이지 설정과 연동 예정입니다.',
-    updatedAt: '2026.06.15'
-  }
-];
-
-type QnaItem = {
-  id: string;
-  department: string;
-  title: string;
-  content?: string;
-  status: '답변대기' | '답변완료';
-  createdAt: string;
-  answer?: string;
-  answeredAt?: string;
-  answeredBy?: string;
-};
-
-const initialQnaItems: QnaItem[] = [
-  { id: 'qna-1', department: '전자공학과', title: 'mini SEM 교육 인증 후 예약 권한 반영 시점 문의', content: '교육 이수 후 장비 예약 가능 권한이 언제 반영되는지 확인 부탁드립니다.', status: '답변완료', createdAt: '2026.06.21' },
-  { id: 'qna-2', department: '기계공학과', title: 'Ebeam Evaporator 야간 사용 가능 여부 문의', content: '야간 시간대에도 담당자 승인 후 장비 사용이 가능한지 문의드립니다.', status: '답변대기', createdAt: '2026.06.22' },
-  { id: 'qna-3', department: '창의융합학과', title: '교육 신청 후 일정 변경 가능 여부 문의', content: '교육 신청 후 개인 일정으로 인해 교육 일정을 변경할 수 있는지 알고 싶습니다.', status: '답변대기', createdAt: '2026.06.22' }
-];
-
-function FaqPage() {
-  const [activeCategory, setActiveCategory] = useState<FaqCategory | '전체'>('전체');
-  const visibleFaqItems = activeCategory === '전체' ? faqItems : faqItems.filter((item) => item.category === activeCategory);
-
-  return (
-    <section className="inquiry-page">
-      <div className="notice-hero inquiry-hero">
-        <div>
-          <p className="consumables-eyebrow">Frequently Asked Questions</p>
-          <h2>자주 묻는 내용</h2>
-          <span>관리자가 등록한 장비 예약, 교육, 계정 관련 주요 안내를 게시물 형태로 제공합니다.</span>
-        </div>
-        <div className="notice-hero-meta" aria-label="FAQ 요약">
-          <strong>{faqItems.length}</strong>
-          <span>등록 게시물</span>
-          <em>관리자 업로드</em>
-        </div>
-      </div>
-
-      <div className="faq-filter-bar" aria-label="FAQ 분류 필터">
-        {faqCategories.map((category) => {
-          const meta = category === '전체' ? null : faqCategoryMeta[category];
-          const Icon = meta?.icon ?? LayoutDashboard;
-          const count = category === '전체' ? faqItems.length : faqItems.filter((item) => item.category === category).length;
-          return (
-            <button
-              key={category}
-              type="button"
-              className={`faq-filter-button ${category !== '전체' ? `is-${meta?.tone}` : 'is-all'} ${activeCategory === category ? 'is-active' : ''}`}
-              onClick={() => setActiveCategory(category)}
-            >
-              <Icon size={17} />
-              <span>{category}</span>
-              <em>{count}</em>
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="faq-grid">
-        {visibleFaqItems.map((item) => {
-          const meta = faqCategoryMeta[item.category];
-          const Icon = meta.icon;
-          return (
-          <article key={item.id} className="faq-card">
-            <div className="faq-card-head">
-              <span className={`faq-category-pill is-${meta.tone}`}><Icon size={14} />{item.category}</span>
-              <em>{item.updatedAt}</em>
-            </div>
-            <h3>{item.question}</h3>
-            <p>{item.answer}</p>
-          </article>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
-function QnaCreateModal({
-  onClose,
-  onSubmit
-}: {
-  onClose: () => void;
-  onSubmit: (question: { department: string; title: string; content: string }) => void;
-}) {
-  const [department, setDepartment] = useState('');
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-
-  function submitQuestion(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const trimmedDepartment = department.trim();
-    const trimmedTitle = title.trim();
-    const trimmedContent = content.trim();
-    if (!trimmedDepartment || !trimmedTitle || !trimmedContent) {
-      window.alert('소속 학과, 제목, 문의 내용을 모두 입력해주세요.');
-      return;
-    }
-    onSubmit({ department: trimmedDepartment, title: trimmedTitle, content: trimmedContent });
-  }
-
-  return (
-    <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
-      <form className="qna-modal" role="dialog" aria-modal="true" aria-label="질문 등록" onSubmit={submitQuestion} onMouseDown={(event) => event.stopPropagation()}>
-        <div className="qna-modal-head">
-          <div>
-            <p>User Q&amp;A</p>
-            <h3>질문 등록</h3>
-          </div>
-          <button type="button" className="qna-modal-close" onClick={onClose}>닫기</button>
-        </div>
-        <label className="reservation-label">소속 학과<input value={department} onChange={(event) => setDepartment(event.target.value)} placeholder="예: 전자공학과" /></label>
-        <label className="reservation-label">문의 제목<input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="문의 제목을 입력" /></label>
-        <label className="reservation-label">문의 내용<textarea value={content} onChange={(event) => setContent(event.target.value)} placeholder="관리자에게 전달할 문의 내용을 입력하세요." /></label>
-        <div className="qna-modal-actions">
-          <button type="button" className="qna-modal-cancel" onClick={onClose}>취소</button>
-          <button type="submit" className="qna-modal-submit">등록</button>
-        </div>
-      </form>
-    </div>
-  );
-}
-
-const QNA_PAGE_SIZE = 5;
-
-function QnaPage({ sessionRole }: { sessionRole: Role | null }) {
-  const [qnaItems, setQnaItems] = useState<QnaItem[]>(() => {
-    try {
-      const stored = localStorage.getItem('hbnu-qna-items');
-      return stored ? JSON.parse(stored) : initialQnaItems;
-    } catch {
-      return initialQnaItems;
-    }
-  });
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedQnaId, setSelectedQnaId] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [answerDraft, setAnswerDraft] = useState('');
-  const [answerSavePhase, setAnswerSavePhase] = useState<'idle' | 'saved' | 'returning'>('idle');
-  const answerSaveTimers = useRef<number[]>([]);
-  const isAdmin = sessionRole === 'ADMIN';
-
-  useEffect(() => () => {
-    answerSaveTimers.current.forEach((timer) => window.clearTimeout(timer));
-  }, []);
-
-  function persistQnaItems(nextItems: QnaItem[]) {
-    setQnaItems(nextItems);
-    localStorage.setItem('hbnu-qna-items', JSON.stringify(nextItems));
-  }
-
-  function addQuestion(question: { department: string; title: string; content: string }) {
-    const now = new Date();
-    const createdAt = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
-    const newQuestion: QnaItem = {
-      id: `qna-${Date.now()}`,
-      department: question.department,
-      title: question.title,
-      content: question.content,
-      status: '답변대기',
-      createdAt
-    };
-    const nextItems = [
-      newQuestion,
-      ...qnaItems
-    ];
-    persistQnaItems(nextItems);
-    setSelectedQnaId(newQuestion.id);
-    setCurrentPage(1);
-    setShowCreateModal(false);
-  }
-
-  const normalizedSearch = searchTerm.trim().toLowerCase();
-  const visibleQnaItems = useMemo(() => (
-    normalizedSearch
-      ? qnaItems.filter((item) => (
-      item.department.toLowerCase().includes(normalizedSearch)
-      || item.title.toLowerCase().includes(normalizedSearch)
-      || (item.content ?? '').toLowerCase().includes(normalizedSearch)
-      || (item.answer ?? '').toLowerCase().includes(normalizedSearch)
-    ))
-      : qnaItems
-  ), [normalizedSearch, qnaItems]);
-  const totalPages = Math.max(1, Math.ceil(visibleQnaItems.length / QNA_PAGE_SIZE));
-  const pageStartIndex = (currentPage - 1) * QNA_PAGE_SIZE;
-  const pagedQnaItems = visibleQnaItems.slice(pageStartIndex, pageStartIndex + QNA_PAGE_SIZE);
-  const selectedQna = qnaItems.find((item) => item.id === selectedQnaId) ?? null;
-
-  useEffect(() => {
-    if (currentPage > totalPages) setCurrentPage(totalPages);
-  }, [currentPage, totalPages]);
-
-  useEffect(() => {
-    if (!visibleQnaItems.length) {
-      setSelectedQnaId(null);
-      return;
-    }
-    if (!selectedQnaId || !visibleQnaItems.some((item) => item.id === selectedQnaId)) {
-      setSelectedQnaId(visibleQnaItems[0].id);
-    }
-  }, [selectedQnaId, visibleQnaItems]);
-
-  useEffect(() => {
-    setAnswerDraft(selectedQna?.answer ?? '');
-    setAnswerSavePhase('idle');
-    answerSaveTimers.current.forEach((timer) => window.clearTimeout(timer));
-    answerSaveTimers.current = [];
-  }, [selectedQna?.id]);
-
-  function updateSearchTerm(value: string) {
-    setSearchTerm(value);
-    setCurrentPage(1);
-  }
-
-  function saveAnswer() {
-    if (!isAdmin || !selectedQna) return;
-    const trimmedAnswer = answerDraft.trim();
-    if (!trimmedAnswer) {
-      window.alert('답변 내용을 입력해주세요.');
-      return;
-    }
-    const answeredAt = formatSeoulDateTime(new Date().toISOString());
-    const nextItems = qnaItems.map((item) => (
-      item.id === selectedQna.id
-        ? {
-          ...item,
-          answer: trimmedAnswer,
-          answeredAt,
-          answeredBy: '관리자',
-          status: '답변완료' as const
-        }
-        : item
-    ));
-    persistQnaItems(nextItems);
-    answerSaveTimers.current.forEach((timer) => window.clearTimeout(timer));
-    answerSaveTimers.current = [
-      window.setTimeout(() => setAnswerSavePhase('returning'), 1200),
-      window.setTimeout(() => setAnswerSavePhase('idle'), 1900)
-    ];
-    setAnswerSavePhase('saved');
-  }
-
-  return (
-    <section className="inquiry-page qna-page">
-      <div className="notice-hero inquiry-hero">
-        <div>
-          <p className="consumables-eyebrow">User Q&amp;A</p>
-          <h2>사용자 Q&amp;A</h2>
-          <span>장비 운영, 예약, 교육 인증 관련 문의를 관리자에게 등록하고 답변 상태를 확인합니다.</span>
-        </div>
-        <div className="notice-hero-meta" aria-label="Q&A 요약">
-          <strong>{qnaItems.length}</strong>
-          <span>등록 문의</span>
-          <em>대기 {qnaItems.filter((item) => item.status === '답변대기').length}건</em>
-        </div>
-      </div>
-
-      <div className="qna-compose">
-        <label>
-          문의내용 검색
-          <span className="qna-search-field">
-            <Search size={17} />
-            <input value={searchTerm} onChange={(event) => updateSearchTerm(event.target.value)} placeholder="소속, 제목, 문의내용, 답변 검색" />
-          </span>
-        </label>
-        <button type="button" onClick={() => setShowCreateModal(true)}>질문 등록</button>
-      </div>
-
-      <div className="qna-table-wrap">
-        <table className="qna-table">
-          <thead>
-            <tr>
-              <th>번호</th>
-              <th>소속(학과)</th>
-              <th>제목</th>
-              <th>답변</th>
-              <th>작성일</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pagedQnaItems.map((item, index) => (
-              <tr
-                key={item.id}
-                className={`qna-table-row ${selectedQnaId === item.id ? 'is-selected' : ''}`}
-                tabIndex={0}
-                onClick={() => setSelectedQnaId(item.id)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    setSelectedQnaId(item.id);
-                  }
-                }}
-              >
-                <td>{visibleQnaItems.length - (pageStartIndex + index)}</td>
-                <td>{item.department}</td>
-                <td>{item.title}</td>
-                <td>
-                  <span className={`qna-status ${item.status === '답변완료' ? 'is-complete' : 'is-pending'}`}>
-                    <i />
-                    {item.status}
-                  </span>
-                </td>
-                <td>{item.createdAt}</td>
-              </tr>
-            ))}
-            {!pagedQnaItems.length && (
-              <tr>
-                <td colSpan={5} className="qna-empty-row">검색 조건에 맞는 문의가 없습니다.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-      {visibleQnaItems.length > QNA_PAGE_SIZE && (
-        <div className="permission-pagination qna-pagination" aria-label="문의사항 페이지 이동">
-          <span>페이지 <strong>{currentPage}</strong> / {totalPages} · 총 {visibleQnaItems.length}건</span>
-          <div>
-            <button type="button" onClick={() => setCurrentPage(1)} disabled={currentPage === 1}>처음</button>
-            <button type="button" onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={currentPage === 1}>이전</button>
-            {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
-              <button
-                key={page}
-                type="button"
-                className={currentPage === page ? 'is-active' : ''}
-                onClick={() => setCurrentPage(page)}
-                aria-current={currentPage === page ? 'page' : undefined}
-              >
-                {page}
-              </button>
-            ))}
-            <button type="button" onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} disabled={currentPage === totalPages}>다음</button>
-            <button type="button" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}>마지막</button>
-          </div>
-        </div>
-      )}
-      <div className="qna-detail-panel" aria-live="polite">
-        {selectedQna ? (
-          <>
-            <div className="qna-detail-head">
-              <div>
-                <p>SELECTED QUESTION</p>
-                <h3>{selectedQna.title}</h3>
-              </div>
-              <span className={`qna-status ${selectedQna.status === '답변완료' ? 'is-complete' : 'is-pending'}`}>
-                <i />
-                {selectedQna.status}
-              </span>
-            </div>
-            <div className="qna-detail-meta">
-              <span>소속 <strong>{selectedQna.department}</strong></span>
-              <span>작성일 <strong>{selectedQna.createdAt}</strong></span>
-              {selectedQna.answeredAt && <span>답변일 <strong>{selectedQna.answeredAt}</strong></span>}
-            </div>
-            <div className="qna-detail-content">
-              <strong>문의내용</strong>
-              <p>{selectedQna.content}</p>
-            </div>
-            <div className="qna-answer-section">
-              <div className="qna-answer-head">
-                <h4>관리자 답변</h4>
-                <span>{selectedQna.answeredBy ? `${selectedQna.answeredBy} · ${selectedQna.answeredAt ?? ''}` : '답변 대기'}</span>
-              </div>
-              {isAdmin ? (
-                <>
-                  <textarea
-                    value={answerDraft}
-                    onChange={(event) => setAnswerDraft(event.target.value)}
-                    placeholder="문의에 대한 관리자 답변을 입력하세요."
-                    aria-label="관리자 답변 입력"
-                  />
-                  <div className="qna-answer-actions">
-                    <button
-                      type="button"
-                      className={`qna-answer-save is-${answerSavePhase}`}
-                      onClick={saveAnswer}
-                    >
-                      <CheckCircle2 size={17} />
-                      {answerSavePhase === 'saved' ? '답변완료!' : '답변완료'}
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <p className={`qna-answer-readonly ${selectedQna.answer ? 'has-answer' : ''}`}>
-                  {selectedQna.answer ?? '관리자 답변이 등록되면 이 영역에서 확인할 수 있습니다.'}
-                </p>
-              )}
-            </div>
-          </>
-        ) : (
-          <div className="qna-detail-empty">
-            <MessageSquare size={22} />
-            <span>문의를 선택하면 하단에서 상세내용과 답변 상태를 확인할 수 있습니다.</span>
-          </div>
-        )}
-      </div>
-      {showCreateModal && <QnaCreateModal onClose={() => setShowCreateModal(false)} onSubmit={addQuestion} />}
-    </section>
-  );
-}
-
 function PlaceholderPage({ title }: { title: string }) {
   return (
     <section className="rounded-lg border border-white/10 bg-surface/85 p-8">
@@ -6463,14 +5344,14 @@ export function App() {
   const [selectedConsumableMonth, setSelectedConsumableMonth] = useState('2026-06');
   const [monthlyConsumables, setMonthlyConsumables] = useState<Record<string, ConsumableItem[]>>(() => {
     try {
-      const stored = localStorage.getItem('hbnu-consumables-monthly-data');
+      const stored = localStorage.getItem(STORAGE_KEYS.consumablesMonthlyData);
       return stored ? JSON.parse(stored) : { '2026-06': cloneConsumables() };
     } catch {
       return { '2026-06': cloneConsumables() };
     }
   });
   const [consumablesUpdatedAt, setConsumablesUpdatedAt] = useState(() => (
-    localStorage.getItem('hbnu-consumables-updated-at') ?? new Date().toISOString()
+    localStorage.getItem(STORAGE_KEYS.consumablesUpdatedAt) ?? new Date().toISOString()
   ));
   const [hasUnsavedConsumables, setHasUnsavedConsumables] = useState(false);
   const [saveFeedbackPhase, setSaveFeedbackPhase] = useState<'idle' | 'feedback' | 'returning'>('idle');
@@ -6479,7 +5360,7 @@ export function App() {
   const userSaveFeedbackTimers = useRef<number[]>([]);
   const [managedUsers, setManagedUsers] = useState<ManagedUser[]>(() => {
     try {
-      const stored = localStorage.getItem('hbnu-managed-users');
+      const stored = localStorage.getItem(STORAGE_KEYS.managedUsers);
       if (!stored) return cloneManagedUsers();
       const parsed = JSON.parse(stored) as ManagedUser[];
       return parsed.length >= initialManagedUsers.length ? parsed : cloneManagedUsers();
@@ -6488,7 +5369,7 @@ export function App() {
     }
   });
   const [usersUpdatedAt, setUsersUpdatedAt] = useState(() => (
-    localStorage.getItem('hbnu-users-updated-at') ?? new Date().toISOString()
+    localStorage.getItem(STORAGE_KEYS.usersUpdatedAt) ?? new Date().toISOString()
   ));
   const [managedOperationNotices, setManagedOperationNotices] = useState<NoticeItem[]>(() => {
     try {
@@ -6508,7 +5389,7 @@ export function App() {
   });
   const [equipmentPermissions, setEquipmentPermissions] = useState<EquipmentPermissionMap>(() => {
     try {
-      const stored = localStorage.getItem('hbnu-equipment-permissions');
+      const stored = localStorage.getItem(STORAGE_KEYS.equipmentPermissions);
       if (!stored) return createPreviewEquipmentPermissions();
       const parsed = JSON.parse(stored) as EquipmentPermissionMap;
       const totalGranted = Object.values(parsed).reduce((sum, equipmentIds) => sum + equipmentIds.length, 0);
@@ -6519,17 +5400,17 @@ export function App() {
   });
   const [equipmentPermissionGrantMeta, setEquipmentPermissionGrantMeta] = useState<EquipmentPermissionGrantMetaMap>(() => {
     try {
-      const stored = localStorage.getItem('hbnu-equipment-permission-grant-meta');
+      const stored = localStorage.getItem(STORAGE_KEYS.equipmentPermissionGrantMeta);
       if (stored) return JSON.parse(stored) as EquipmentPermissionGrantMetaMap;
       const initialMeta = createPermissionGrantMetaFromPermissions(equipmentPermissions);
-      localStorage.setItem('hbnu-equipment-permission-grant-meta', JSON.stringify(initialMeta));
+      localStorage.setItem(STORAGE_KEYS.equipmentPermissionGrantMeta, JSON.stringify(initialMeta));
       return initialMeta;
     } catch {
       return createPermissionGrantMetaFromPermissions(equipmentPermissions);
     }
   });
   const [sessionRole, setSessionRole] = useState<Role | null>(() => {
-    const stored = localStorage.getItem('hbnu-session-user');
+    const stored = localStorage.getItem(STORAGE_KEYS.sessionUser);
     if (!stored) return null;
     try {
       return JSON.parse(stored).role ?? null;
@@ -6549,7 +5430,7 @@ export function App() {
   });
   const [penaltyRecords, setPenaltyRecords] = useState<PenaltyRecord[]>(() => {
     try {
-      const stored = localStorage.getItem('hbnu-penalty-records');
+      const stored = localStorage.getItem(STORAGE_KEYS.penaltyRecords);
       return stored ? JSON.parse(stored) : [];
     } catch {
       return [];
@@ -6557,12 +5438,12 @@ export function App() {
   });
   const [showPenaltyNotice, setShowPenaltyNotice] = useState(false);
   const [showPreviewPenaltyDemo, setShowPreviewPenaltyDemo] = useState(() => (
-    localStorage.getItem('hbnu-preview-penalty-demo-dismissed') !== 'true'
+    localStorage.getItem(STORAGE_KEYS.previewPenaltyDemoDismissed) !== 'true'
   ));
   const sessionUser = getStoredSessionUser();
   const sessionUserName = (() => {
     try {
-      const stored = localStorage.getItem('hbnu-session-user');
+      const stored = localStorage.getItem(STORAGE_KEYS.sessionUser);
       return stored ? JSON.parse(stored).name ?? 'USER NAME' : 'USER NAME';
     } catch {
       return 'USER NAME';
@@ -6623,8 +5504,8 @@ export function App() {
           role: 'ADMIN'
         };
 
-    localStorage.setItem('hbnu-session-token', `preview-switch-${nextRole.toLowerCase()}`);
-    localStorage.setItem('hbnu-session-user', JSON.stringify(nextSessionUser));
+    localStorage.setItem(STORAGE_KEYS.sessionToken, `preview-switch-${nextRole.toLowerCase()}`);
+    localStorage.setItem(STORAGE_KEYS.sessionUser, JSON.stringify(nextSessionUser));
     setSessionRole(nextRole);
     navigate('home');
   }
@@ -6648,7 +5529,7 @@ export function App() {
         item.id === equipmentId ? { ...item, ...patch } : item
       ));
       const currentOverrides = getEquipmentOverrides();
-      localStorage.setItem('hbnu-equipment-overrides', JSON.stringify({
+      localStorage.setItem(STORAGE_KEYS.equipmentOverrides, JSON.stringify({
         ...currentOverrides,
         [equipmentId]: { ...(currentOverrides[equipmentId] ?? {}), ...patch }
       }));
@@ -6668,7 +5549,7 @@ export function App() {
             ? currentManagerIds
             : [...currentManagerIds, equipmentId];
         }
-        localStorage.setItem('hbnu-equipment-permissions', JSON.stringify(next));
+        localStorage.setItem(STORAGE_KEYS.equipmentPermissions, JSON.stringify(next));
         return next;
       });
       setEquipmentPermissionGrantMeta((current) => {
@@ -6678,7 +5559,7 @@ export function App() {
         if (patch.managerId) {
           next[getPermissionGrantKey(patch.managerId, equipmentId)] = { grantedAt: new Date().toISOString() };
         }
-        localStorage.setItem('hbnu-equipment-permission-grant-meta', JSON.stringify(next));
+        localStorage.setItem(STORAGE_KEYS.equipmentPermissionGrantMeta, JSON.stringify(next));
         return next;
       });
     }
@@ -6717,7 +5598,7 @@ export function App() {
   }
 
   function dismissPreviewPenaltyDemo() {
-    localStorage.setItem('hbnu-preview-penalty-demo-dismissed', 'true');
+    localStorage.setItem(STORAGE_KEYS.previewPenaltyDemoDismissed, 'true');
     setShowPreviewPenaltyDemo(false);
   }
 
@@ -6739,7 +5620,7 @@ export function App() {
     };
     setPenaltyRecords((current) => {
       const next = [nextPenalty, ...current];
-      localStorage.setItem('hbnu-penalty-records', JSON.stringify(next));
+      localStorage.setItem(STORAGE_KEYS.penaltyRecords, JSON.stringify(next));
       return next;
     });
   }
@@ -6749,7 +5630,7 @@ export function App() {
       const next = current.map((record) => (
         record.id === penaltyId ? { ...record, revokedAt: new Date().toISOString() } : record
       ));
-      localStorage.setItem('hbnu-penalty-records', JSON.stringify(next));
+      localStorage.setItem(STORAGE_KEYS.penaltyRecords, JSON.stringify(next));
       return next;
     });
   }
@@ -6824,8 +5705,8 @@ export function App() {
 
   function saveConsumables() {
     const savedAt = new Date().toISOString();
-    localStorage.setItem('hbnu-consumables-monthly-data', JSON.stringify(monthlyConsumables));
-    localStorage.setItem('hbnu-consumables-updated-at', savedAt);
+    localStorage.setItem(STORAGE_KEYS.consumablesMonthlyData, JSON.stringify(monthlyConsumables));
+    localStorage.setItem(STORAGE_KEYS.consumablesUpdatedAt, savedAt);
     setConsumablesUpdatedAt(savedAt);
     setHasUnsavedConsumables(false);
     clearSaveFeedbackTimers();
@@ -6848,8 +5729,8 @@ export function App() {
       const next = current.map((user) => (
         user.id === id ? { ...user, ...patch } : user
       )).map((user, index) => ({ ...user, index: index + 1 }));
-      localStorage.setItem('hbnu-managed-users', JSON.stringify(next));
-      localStorage.setItem('hbnu-users-updated-at', savedAt);
+      localStorage.setItem(STORAGE_KEYS.managedUsers, JSON.stringify(next));
+      localStorage.setItem(STORAGE_KEYS.usersUpdatedAt, savedAt);
       return next;
     });
     setUsersUpdatedAt(savedAt);
@@ -6878,13 +5759,13 @@ export function App() {
     setUserSaveFeedbackPhase('idle');
     setManagedUsers((current) => {
       const next = current.filter((user) => user.id !== id).map((user, index) => ({ ...user, index: index + 1 }));
-      localStorage.setItem('hbnu-managed-users', JSON.stringify(next));
-      localStorage.setItem('hbnu-users-updated-at', savedAt);
+      localStorage.setItem(STORAGE_KEYS.managedUsers, JSON.stringify(next));
+      localStorage.setItem(STORAGE_KEYS.usersUpdatedAt, savedAt);
       return next;
     });
     setEquipmentPermissions((current) => {
       const { [id]: _deletedUserPermissions, ...next } = current;
-      localStorage.setItem('hbnu-equipment-permissions', JSON.stringify(next));
+      localStorage.setItem(STORAGE_KEYS.equipmentPermissions, JSON.stringify(next));
       return next;
     });
     setUsersUpdatedAt(savedAt);
@@ -6901,8 +5782,8 @@ export function App() {
     const savedAt = new Date().toISOString();
     const normalized = managedUsers.map((user, index) => ({ ...user, index: index + 1 }));
     setManagedUsers(normalized);
-    localStorage.setItem('hbnu-managed-users', JSON.stringify(normalized));
-    localStorage.setItem('hbnu-users-updated-at', savedAt);
+    localStorage.setItem(STORAGE_KEYS.managedUsers, JSON.stringify(normalized));
+    localStorage.setItem(STORAGE_KEYS.usersUpdatedAt, savedAt);
     setUsersUpdatedAt(savedAt);
     clearUserSaveFeedbackTimers();
     setUserSaveFeedbackPhase('idle');
@@ -6919,7 +5800,7 @@ export function App() {
   function saveEquipmentPermissions(userId: string, equipmentIds: string[]) {
     setEquipmentPermissions((current) => {
       const next = { ...current, [userId]: equipmentIds };
-      localStorage.setItem('hbnu-equipment-permissions', JSON.stringify(next));
+      localStorage.setItem(STORAGE_KEYS.equipmentPermissions, JSON.stringify(next));
       return next;
     });
   }
@@ -6948,10 +5829,10 @@ export function App() {
             }
           ];
       const normalized = next.map((item, index) => ({ ...item, index: index + 1 }));
-      localStorage.setItem('hbnu-managed-users', JSON.stringify(normalized));
+      localStorage.setItem(STORAGE_KEYS.managedUsers, JSON.stringify(normalized));
       return normalized;
     });
-    localStorage.setItem('hbnu-users-updated-at', savedAt);
+    localStorage.setItem(STORAGE_KEYS.usersUpdatedAt, savedAt);
     setUsersUpdatedAt(savedAt);
   }
 
@@ -6974,14 +5855,14 @@ export function App() {
           ? currentUserPermissions
           : [...currentUserPermissions, equipmentId]
       };
-      localStorage.setItem('hbnu-equipment-permissions', JSON.stringify(next));
+      localStorage.setItem(STORAGE_KEYS.equipmentPermissions, JSON.stringify(next));
       if (!alreadyGranted) {
         setEquipmentPermissionGrantMeta((currentMeta) => {
           const nextMeta = {
             ...currentMeta,
             [getPermissionGrantKey(userId, equipmentId)]: { grantedAt: new Date().toISOString() }
           };
-          localStorage.setItem('hbnu-equipment-permission-grant-meta', JSON.stringify(nextMeta));
+          localStorage.setItem(STORAGE_KEYS.equipmentPermissionGrantMeta, JSON.stringify(nextMeta));
           return nextMeta;
         });
       }

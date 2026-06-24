@@ -1345,10 +1345,6 @@ select {
   pointer-events: auto;
 }
 
-.auto-status-grid-legacy {
-  display: none;
-}
-
 .auto-status-cell {
   position: relative;
   display: flex;
