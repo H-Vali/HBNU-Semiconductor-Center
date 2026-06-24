@@ -1737,7 +1737,7 @@ function AutoRotatingEquipmentStatus({
   }, []);
 
   useEffect(() => {
-    if (paused || reducedMotion) return undefined;
+    if (paused) return undefined;
     const timer = window.setInterval(() => {
       changeStatusView(() => {
         const currentSlideIndex = activeSlideIndexRef.current;
