@@ -2902,6 +2902,54 @@ select {
   box-shadow: 0 12px 28px rgba(52, 214, 176, 0.22);
 }
 
+.manager-grant-confirm-modal {
+  width: min(34rem, calc(100vw - 2rem));
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at top right, rgba(52, 214, 176, 0.16), transparent 34%),
+    #0b1220;
+  box-shadow: 0 28px 80px rgba(2, 6, 23, 0.68);
+  padding: 1.2rem;
+}
+
+.manager-grant-confirm-body {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem 0 1.15rem;
+  color: #cbd5e1;
+  font-weight: 750;
+  line-height: 1.6;
+}
+
+.manager-grant-confirm-grid {
+  display: grid;
+  gap: 0.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 14px;
+  background: rgba(2, 6, 23, 0.46);
+  padding: 1rem;
+}
+
+.manager-grant-confirm-grid div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.manager-grant-confirm-grid span {
+  color: #94a3b8;
+  font-size: 0.76rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.manager-grant-confirm-grid strong {
+  color: #f8fafc;
+  text-align: right;
+}
+
 .manager-granted-list {
   display: grid;
   gap: 0.65rem;

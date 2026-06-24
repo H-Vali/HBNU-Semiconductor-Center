@@ -44,7 +44,8 @@ import {
   TrendingUp,
   UploadCloud,
   UserRound,
-  Wrench
+  Wrench,
+  X
 } from 'lucide-react';
 import { equipment as fallbackEquipment, events, monthlyUsage, type EquipmentGroup, type EquipmentItem } from './data';
 
@@ -3768,6 +3769,7 @@ function ManagerPermissionGrantPage({
   ), [currentUser, equipmentItems, sessionRole]);
   const [selectedEquipmentId, setSelectedEquipmentId] = useState(manageableEquipment[0]?.id ?? '');
   const [selectedUserId, setSelectedUserId] = useState('');
+  const [pendingGrant, setPendingGrant] = useState<{ user: ManagedUser; equipment: EquipmentItem } | null>(null);
   const selectedEquipment = manageableEquipment.find((item) => item.id === selectedEquipmentId) ?? manageableEquipment[0];
 
   useEffect(() => {
@@ -3786,11 +3788,19 @@ function ManagerPermissionGrantPage({
     ? users.filter((user) => !permissions[user.id]?.includes(selectedEquipment.id))
     : [];
 
-  function grantPermission(event: FormEvent<HTMLFormElement>) {
+  function requestGrantPermission(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selectedEquipment || !selectedUserId) return;
-    onGrantPermission(selectedUserId, selectedEquipment.id);
+    const targetUser = users.find((user) => user.id === selectedUserId);
+    if (!targetUser) return;
+    setPendingGrant({ user: targetUser, equipment: selectedEquipment });
+  }
+
+  function confirmGrantPermission() {
+    if (!pendingGrant) return;
+    onGrantPermission(pendingGrant.user.id, pendingGrant.equipment.id);
     setSelectedUserId('');
+    setPendingGrant(null);
   }
 
   if (manageableEquipment.length === 0) {
@@ -3846,7 +3856,7 @@ function ManagerPermissionGrantPage({
             <p>Grant Permission</p>
             <h3>{selectedEquipment?.name ?? '장비'} 사용권한</h3>
           </div>
-          <form className="manager-grant-form" onSubmit={grantPermission}>
+          <form className="manager-grant-form" onSubmit={requestGrantPermission}>
             <label>
               권한 부여 대상
               <select value={selectedUserId} onChange={(event) => setSelectedUserId(event.target.value)}>
@@ -3882,6 +3892,46 @@ function ManagerPermissionGrantPage({
           </div>
         </div>
       </div>
+      {pendingGrant && (
+        <div className="user-add-modal-backdrop" role="presentation">
+          <section className="manager-grant-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="manager-grant-confirm-title">
+            <div className="user-add-modal-head">
+              <div>
+                <p>Permission Confirm</p>
+                <h3 id="manager-grant-confirm-title">사용권한 부여 확인</h3>
+              </div>
+              <button type="button" onClick={() => setPendingGrant(null)} aria-label="닫기">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="manager-grant-confirm-body">
+              <p>아래 사용자에게 담당 장비 사용권한을 부여합니다. 권한 삭제는 관리자 권한관리에서만 가능합니다.</p>
+              <div className="manager-grant-confirm-grid">
+                <div>
+                  <span>사용자</span>
+                  <strong>{pendingGrant.user.name}</strong>
+                </div>
+                <div>
+                  <span>소속</span>
+                  <strong>{pendingGrant.user.department}</strong>
+                </div>
+                <div>
+                  <span>장비</span>
+                  <strong>{pendingGrant.equipment.name}</strong>
+                </div>
+                <div>
+                  <span>설치 위치</span>
+                  <strong>{pendingGrant.equipment.location}</strong>
+                </div>
+              </div>
+            </div>
+            <div className="user-add-modal-actions">
+              <button type="button" className="is-cancel" onClick={() => setPendingGrant(null)}>취소</button>
+              <button type="button" className="is-primary" onClick={confirmGrantPermission}>권한 부여 확정</button>
+            </div>
+          </section>
+        </div>
+      )}
     </section>
   );
 }
