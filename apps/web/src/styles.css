@@ -614,6 +614,34 @@ select {
   font-weight: 900;
 }
 
+.dashboard-notice-category.is-operation,
+.notice-category-badge.is-operation {
+  border-color: rgba(45, 212, 191, 0.2);
+  background: rgba(20, 184, 166, 0.18);
+  color: #99f6e4;
+}
+
+.dashboard-notice-category.is-reservation,
+.notice-category-badge.is-reservation {
+  border-color: rgba(96, 165, 250, 0.22);
+  background: rgba(37, 99, 235, 0.2);
+  color: #bfdbfe;
+}
+
+.dashboard-notice-category.is-training,
+.notice-category-badge.is-training {
+  border-color: rgba(167, 139, 250, 0.22);
+  background: rgba(124, 58, 237, 0.2);
+  color: #ddd6fe;
+}
+
+.dashboard-notice-category.is-maintenance,
+.notice-category-badge.is-maintenance {
+  border-color: rgba(251, 191, 36, 0.25);
+  background: rgba(180, 83, 9, 0.22);
+  color: #fde68a;
+}
+
 .dashboard-notice-row strong {
   overflow: hidden;
   color: #f8fafc;
@@ -4099,12 +4127,15 @@ select {
   font-weight: 750;
 }
 
-.notice-row-side strong {
+.notice-row-side strong,
+.notice-category-badge {
   border-radius: 7px;
   background: rgba(59, 130, 246, 0.16);
+  border: 1px solid transparent;
   padding: 0.2rem 0.45rem;
   color: #bfdbfe;
   font-size: 0.72rem;
+  font-weight: 900;
 }
 
 .notice-detail-panel {
@@ -4420,6 +4451,7 @@ select {
 }
 
 .notice-admin-form-grid input,
+.notice-admin-form-grid select,
 .notice-admin-form-grid textarea {
   width: 100%;
   border-radius: 10px;
@@ -4428,6 +4460,14 @@ select {
   padding: 0.82rem;
   color: #f8fafc;
   font-weight: 850;
+}
+
+.notice-admin-form-grid select {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, #7dd3fc 50%), linear-gradient(135deg, #7dd3fc 50%, transparent 50%);
+  background-position: calc(100% - 1rem) 50%, calc(100% - 0.65rem) 50%;
+  background-repeat: no-repeat;
+  background-size: 0.35rem 0.35rem, 0.35rem 0.35rem;
 }
 
 .notice-admin-form-grid textarea {

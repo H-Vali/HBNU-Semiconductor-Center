@@ -1362,7 +1362,7 @@ function DashboardNoticePanel({ onNavigate }: { onNavigate: (page: PageKey) => v
       <div className="dashboard-notice-list" aria-label="대시보드 공지사항">
         {dashboardNotices.map((notice) => (
           <button key={notice.id} type="button" className="dashboard-notice-row" onClick={() => onNavigate('notice')}>
-            <span className="dashboard-notice-category">{notice.category}</span>
+            <span className={`dashboard-notice-category ${getNoticeCategoryTone(notice.category)}`}>{notice.category}</span>
             <strong>{notice.title}</strong>
             <time>{notice.date}</time>
           </button>
@@ -5121,9 +5121,12 @@ type NoticeAttachment = {
   uploadedAt: string;
 };
 
+const noticeCategoryOptions = ['운영', '예약', '교육', '점검'] as const;
+type NoticeCategory = (typeof noticeCategoryOptions)[number];
+
 type NoticeItem = {
   id: string;
-  category: string;
+  category: NoticeCategory;
   title: string;
   date: string;
   author: string;
@@ -5134,6 +5137,19 @@ type NoticeItem = {
   body: string;
   attachments?: NoticeAttachment[];
 };
+
+function normalizeNoticeCategory(category: unknown): NoticeCategory {
+  return noticeCategoryOptions.includes(category as NoticeCategory) ? category as NoticeCategory : '운영';
+}
+
+function getNoticeCategoryTone(category: NoticeCategory) {
+  return {
+    운영: 'is-operation',
+    예약: 'is-reservation',
+    교육: 'is-training',
+    점검: 'is-maintenance'
+  }[category];
+}
 
 const noticeItems: NoticeItem[] = [
   {
@@ -5210,7 +5226,7 @@ const operationNoticeItems: NoticeItem[] = [
 const meetingNoticeItems: NoticeItem[] = [
   {
     id: 'meeting-notice-1',
-    category: '회의',
+    category: '운영',
     title: '6월 장비 담당자 운영 회의 일정 안내',
     date: '2026.06.23',
     author: '창의융합교육센터',
@@ -5221,7 +5237,7 @@ const meetingNoticeItems: NoticeItem[] = [
   },
   {
     id: 'meeting-notice-2',
-    category: '회의',
+    category: '운영',
     title: '학생 대표 회의 안건 접수 안내',
     date: '2026.06.19',
     author: '운영지원팀',
@@ -5239,6 +5255,7 @@ function isImportantNotice(notice: NoticeItem) {
 function normalizeNoticeItems(items: NoticeItem[]) {
   return items.map((item) => ({
     ...item,
+    category: normalizeNoticeCategory(item.category),
     important: item.important ?? item.pinned
   }));
 }
@@ -5306,7 +5323,7 @@ function NoticePage({
                   <span className="notice-row-summary">{notice.summary}</span>
                 </span>
                 <span className="notice-row-side">
-                  <strong>{notice.category}</strong>
+                  <strong className={`notice-category-badge ${getNoticeCategoryTone(notice.category)}`}>{notice.category}</strong>
                   <span>{notice.date}</span>
                 </span>
               </button>
@@ -5316,7 +5333,7 @@ function NoticePage({
 
         <article className="notice-detail-panel">
           <div className="notice-detail-head">
-            <span>{selectedNotice.category}</span>
+            <span className={`notice-category-badge ${getNoticeCategoryTone(selectedNotice.category)}`}>{selectedNotice.category}</span>
             {isImportantNotice(selectedNotice) && <em>중요 공지</em>}
             {selectedNotice.pinned && <em>상단 고정</em>}
           </div>
@@ -5355,9 +5372,9 @@ type FaqCategory = '예약' | '장비' | '교육' | '운영' | '계정';
 
 type NoticeBoardKey = 'operation' | 'meeting';
 
-const noticeBoardMeta: Record<NoticeBoardKey, { label: string; category: string; storageKey: string }> = {
+const noticeBoardMeta: Record<NoticeBoardKey, { label: string; category: NoticeCategory; storageKey: string }> = {
   operation: { label: '운영공지', category: '운영', storageKey: 'hbnu-operation-notices' },
-  meeting: { label: '회의공지', category: '회의', storageKey: 'hbnu-meeting-notices' }
+  meeting: { label: '회의공지', category: '운영', storageKey: 'hbnu-meeting-notices' }
 };
 
 function formatNoticeDate(dateKey = getSeoulDateKey()) {
@@ -5426,7 +5443,7 @@ function NoticeAdminPage({
     const attachments = await readNoticeAttachments(fileInput?.files ?? null);
     const item: NoticeItem = {
       id: `${activeBoard}-notice-${Date.now()}`,
-      category: String(form.get('category') ?? meta.category).trim() || meta.category,
+      category: normalizeNoticeCategory(form.get('category') ?? meta.category),
       title,
       date: formatNoticeDate(String(form.get('date') ?? getSeoulDateKey())),
       author: String(form.get('author') ?? '관리자').trim() || '관리자',
@@ -5528,7 +5545,7 @@ function NoticeAdminPage({
                 </button>
               </div>
               <div className="notice-admin-form-grid">
-                <label>분류<input value={selectedNotice.category} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { category: event.target.value })} /></label>
+                <label>분류<select value={selectedNotice.category} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { category: normalizeNoticeCategory(event.target.value) })}>{noticeCategoryOptions.map((category) => <option key={category} value={category}>{category}</option>)}</select></label>
                 <label>작성자<input value={selectedNotice.author} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { author: event.target.value })} /></label>
                 <label>등록일<input value={selectedNotice.date} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { date: event.target.value })} /></label>
                 <div className="notice-admin-check-stack">
@@ -5599,7 +5616,7 @@ function NoticeAdminPage({
               </button>
             </div>
             <div className="notice-admin-form-grid">
-              <label>분류<input name="category" defaultValue={meta.category} /></label>
+              <label>분류<select name="category" defaultValue={meta.category}>{noticeCategoryOptions.map((category) => <option key={category} value={category}>{category}</option>)}</select></label>
               <label>작성자<input name="author" defaultValue="관리자" /></label>
               <label>등록일<input name="date" type="date" defaultValue={getSeoulDateKey()} /></label>
               <div className="notice-admin-check-stack">
