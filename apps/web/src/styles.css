@@ -2511,6 +2511,376 @@ select {
   background: #ef4444;
 }
 
+.mypage-shell {
+  display: grid;
+  gap: 1rem;
+}
+
+.mypage-profile-card,
+.mypage-reservation-panel,
+.mypage-training-panel {
+  border: 0.5px solid rgba(148, 163, 184, 0.24);
+  border-radius: 14px;
+  background:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(11, 18, 32, 0.88)),
+    rgba(11, 18, 32, 0.9);
+  padding: 1.15rem 1.25rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.mypage-profile-head,
+.mypage-panel-head,
+.mypage-reservation-row,
+.mypage-penalty-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.mypage-profile-main {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.mypage-avatar {
+  display: grid;
+  width: 3rem;
+  height: 3rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #34d6b0, #38bdf8);
+  color: #031a22;
+  font-size: 1.18rem;
+  font-weight: 950;
+  box-shadow: 0 0 26px rgba(52, 214, 176, 0.28);
+}
+
+.mypage-profile-main h2,
+.mypage-panel-head h2,
+.mypage-reservation-group h3 {
+  margin: 0;
+  color: #f8fafc;
+  font-weight: 950;
+}
+
+.mypage-profile-main h2 {
+  font-size: 1rem;
+}
+
+.mypage-profile-main p,
+.mypage-panel-head p,
+.mypage-panel-head span {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.mypage-panel-head p {
+  color: #5eead4;
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.mypage-auth-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid rgba(52, 214, 176, 0.28);
+  border-radius: 999px;
+  background: rgba(20, 184, 166, 0.12);
+  padding: 0.42rem 0.7rem;
+  color: #99f6e4;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.mypage-role-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.mypage-role-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.38rem;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 9px;
+  background: rgba(15, 23, 42, 0.78);
+  padding: 5px 11px;
+  color: #94a3b8;
+  font-size: 0.78rem;
+  font-weight: 900;
+  transition: all 0.3s ease;
+}
+
+.mypage-role-chip.is-muted {
+  opacity: 0.48;
+}
+
+.mypage-role-chip.is-owned.is-purple {
+  border-color: rgba(181, 108, 255, 0.45);
+  background: rgba(181, 108, 255, 0.16);
+  color: #d8b4fe;
+}
+
+.mypage-role-chip.is-owned.is-red {
+  border-color: rgba(248, 113, 113, 0.45);
+  background: rgba(248, 113, 113, 0.15);
+  color: #fca5a5;
+}
+
+.mypage-role-chip.is-owned.is-amber {
+  border-color: rgba(245, 158, 11, 0.45);
+  background: rgba(245, 158, 11, 0.16);
+  color: #fcd34d;
+}
+
+.mypage-role-chip.is-owned.is-blue {
+  border-color: rgba(96, 165, 250, 0.45);
+  background: rgba(37, 99, 235, 0.18);
+  color: #93c5fd;
+}
+
+.mypage-role-chip.is-owned.is-gray {
+  border-color: rgba(148, 163, 184, 0.36);
+  background: rgba(148, 163, 184, 0.14);
+  color: #cbd5e1;
+}
+
+.mypage-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.mypage-summary-grid div {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.72);
+  padding: 0.85rem;
+}
+
+.mypage-summary-grid span {
+  display: block;
+  color: #94a3b8;
+  font-size: 0.76rem;
+  font-weight: 850;
+}
+
+.mypage-summary-grid strong {
+  display: block;
+  margin-top: 0.25rem;
+  color: #f8fafc;
+  font-size: 1.44rem;
+  font-weight: 950;
+}
+
+.mypage-filter-tabs {
+  display: inline-flex;
+  border-radius: 999px;
+  background: rgba(2, 6, 23, 0.48);
+  padding: 0.22rem;
+}
+
+.mypage-filter-tabs button {
+  min-width: 3.8rem;
+  border-radius: 999px;
+  padding: 0.42rem 0.75rem;
+  color: #94a3b8;
+  font-size: 0.78rem;
+  font-weight: 900;
+  transition: all 0.3s ease;
+}
+
+.mypage-filter-tabs button.is-active {
+  background: rgba(52, 214, 176, 0.18);
+  color: #99f6e4;
+}
+
+.mypage-reservation-groups {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 1rem;
+}
+
+.mypage-reservation-group {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.mypage-reservation-group h3 {
+  font-size: 0.95rem;
+}
+
+.mypage-reservation-row {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(2, 6, 23, 0.42);
+  padding: 0.78rem 0.85rem;
+}
+
+.mypage-reservation-row.is-past {
+  opacity: 0.72;
+}
+
+.mypage-reservation-row p {
+  margin: 0 0 0.2rem;
+  color: #93c5fd;
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.mypage-reservation-row h3 {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 0.94rem;
+  font-weight: 950;
+}
+
+.mypage-secondary-action,
+.mypage-neutral-action,
+.mypage-empty-state button {
+  display: inline-flex;
+  min-height: 2.2rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border: 1px solid rgba(148, 163, 184, 0.26);
+  border-radius: 9px;
+  background: rgba(30, 41, 59, 0.72);
+  padding: 0 0.75rem;
+  color: #cbd5e1;
+  font-size: 0.78rem;
+  font-weight: 900;
+  transition: all 0.3s ease;
+}
+
+.mypage-secondary-action:not(:disabled):hover,
+.mypage-neutral-action:hover,
+.mypage-empty-state button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(52, 214, 176, 0.36);
+  color: #99f6e4;
+}
+
+.mypage-secondary-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.mypage-empty-state,
+.mypage-group-empty {
+  border: 1px dashed rgba(148, 163, 184, 0.22);
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.42);
+  padding: 1rem;
+  color: #94a3b8;
+  font-weight: 800;
+}
+
+.mypage-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.mypage-training-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+.mypage-training-item {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 11px;
+  background: rgba(2, 6, 23, 0.42);
+  padding: 0.75rem;
+}
+
+.mypage-training-item strong {
+  min-width: 0;
+  color: #f8fafc;
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+.mypage-training-badge,
+.mypage-penalty-badge {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 0.32rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 950;
+}
+
+.mypage-training-badge.is-complete,
+.mypage-penalty-badge.is-good {
+  border: 1px solid rgba(52, 214, 176, 0.42);
+  background: rgba(20, 184, 166, 0.15);
+  color: #99f6e4;
+}
+
+.mypage-training-badge.is-needed,
+.mypage-penalty-badge.is-warning {
+  border: 1px solid rgba(245, 158, 11, 0.42);
+  background: rgba(245, 158, 11, 0.14);
+  color: #fcd34d;
+}
+
+.mypage-penalty-badge.is-danger {
+  border: 1px solid rgba(248, 113, 113, 0.48);
+  background: rgba(127, 29, 29, 0.24);
+  color: #fca5a5;
+}
+
+.mypage-penalty-row {
+  margin-top: 1rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+  padding-top: 1rem;
+}
+
+.mypage-penalty-row > div {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: #cbd5e1;
+  font-weight: 900;
+}
+
+.mypage-cancel-modal {
+  width: min(31rem, calc(100vw - 2rem));
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 16px;
+  background: #0b1220;
+  box-shadow: 0 28px 80px rgba(2, 6, 23, 0.68);
+  padding: 1.15rem;
+}
+
+.mypage-cancel-copy {
+  margin: 0;
+  padding: 1rem 0 1.15rem;
+  color: #cbd5e1;
+  font-weight: 750;
+  line-height: 1.6;
+}
+
 @media (max-width: 760px) {
   .admin-reservation-manager {
     grid-template-columns: 1fr;

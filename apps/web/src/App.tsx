@@ -28,6 +28,7 @@ import {
   Gauge,
   GraduationCap,
   HelpCircle,
+  KeyRound,
   LayoutDashboard,
   LockKeyhole,
   LogIn,
@@ -36,9 +37,11 @@ import {
   Microscope,
   PackageCheck,
   Plus,
+  School,
   Search,
   ShieldCheck,
   SlidersHorizontal,
+  Star,
   Trash2,
   TrendingDown,
   TrendingUp,
@@ -100,6 +103,7 @@ type ManagedUser = {
 };
 type RoleLevel = '교원' | '대표' | '일반';
 type PermissionRoleLevel = RoleLevel | '담당';
+type MyPageRole = 'admin' | 'faculty' | 'representative' | 'manager' | 'general';
 type EquipmentPermissionMap = Record<string, string[]>;
 type EquipmentPermissionGrantMetaMap = Record<string, { grantedAt: string }>;
 type PenaltyRecord = {
@@ -143,6 +147,15 @@ const quickLinks: Array<{ label: string; page: PageKey; icon: typeof CalendarDay
   { label: '장비사용자 교육신청', page: 'training', icon: GraduationCap },
   { label: '장비 배치현황', page: 'equipment', icon: Microscope }
 ];
+
+const MY_PAGE_ROLE_ORDER: MyPageRole[] = ['admin', 'faculty', 'representative', 'manager', 'general'];
+const MY_PAGE_ROLE_META: Record<MyPageRole, { label: string; tone: string; icon: typeof ShieldCheck }> = {
+  admin: { label: '관리자', tone: 'purple', icon: ShieldCheck },
+  faculty: { label: '교원', tone: 'red', icon: School },
+  representative: { label: '대표', tone: 'amber', icon: Star },
+  manager: { label: '담당', tone: 'blue', icon: KeyRound },
+  general: { label: '일반', tone: 'gray', icon: UserRound }
+};
 const initialManagedUsers: ManagedUser[] = [
   { id: 'user-1', index: 1, name: '김동인', roleLevel: '대표', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-9772-5939', email: 'shehdshehd1123@gmail.com', memo: '', authProvider: 'Manual' },
   { id: 'user-2', index: 2, name: '길가영', roleLevel: '일반', department: '창의융합학과', labProfessor: '김민회 교수님', phone: '010-6595-3930', email: 'gilgayeong2@gmail.com', memo: '', authProvider: 'Manual' },
@@ -686,6 +699,36 @@ function getRoleToneClass(roleLevel: PermissionRoleLevel) {
 
 function getPermissionRoleLevels(user: ManagedUser, managerUserIds: Set<string>): PermissionRoleLevel[] {
   return managerUserIds.has(user.id) ? [user.roleLevel, '담당'] : [user.roleLevel];
+}
+
+function getMyPageRoles(user: ManagedUser | null, sessionRole: Role | null, managerUserIds: Set<string>): MyPageRole[] {
+  const roles = new Set<MyPageRole>();
+  if (sessionRole === 'ADMIN') roles.add('admin');
+  if (user?.roleLevel === '교원') roles.add('faculty');
+  if (user?.roleLevel === '대표') roles.add('representative');
+  if (user && managerUserIds.has(user.id)) roles.add('manager');
+  if (!user || user.roleLevel === '일반') roles.add('general');
+  return Array.from(roles);
+}
+
+function getAuthProviderLabel(provider: ManagedUser['authProvider'] | undefined) {
+  if (provider === 'Google') return 'google 연동';
+  if (provider === 'Kakao') return 'kakao 연동';
+  return 'manual 계정';
+}
+
+function formatMyPageReservationDate(start: string, end?: string) {
+  const startDate = new Date(start);
+  const endDate = end ? new Date(end) : null;
+  const date = new Intl.DateTimeFormat('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    month: '2-digit',
+    day: '2-digit',
+    weekday: 'short'
+  }).format(startDate);
+  const startTime = formatReservationTime(start);
+  const endTime = endDate ? formatReservationTime(endDate.toISOString()) : '';
+  return `${date} · ${startTime}${endTime ? ` - ${endTime}` : ''}`;
 }
 
 function formatPhoneNumber(value: string) {
@@ -2694,6 +2737,244 @@ function MyPage({
           <p className="rounded-md bg-white/5 p-4">예약 취소 기능은 현재 프리뷰 데이터 기준으로 즉시 반영됩니다.</p>
         </div>
       </div>
+    </section>
+  );
+}
+
+function MyPageV2({
+  equipmentItems,
+  calendarEvents,
+  managedUser,
+  sessionUser,
+  sessionRole,
+  managerUserIds,
+  permissions,
+  penalties,
+  onCancelReservation,
+  onNavigate
+}: {
+  equipmentItems: EquipmentItem[];
+  calendarEvents: ReservationEvent[];
+  managedUser: ManagedUser | null;
+  sessionUser: StoredSessionUser | null;
+  sessionRole: Role | null;
+  managerUserIds: Set<string>;
+  permissions: EquipmentPermissionMap;
+  penalties: PenaltyRecord[];
+  onCancelReservation: (reservationId: string) => void;
+  onNavigate: (page: PageKey) => void;
+}) {
+  const [reservationFilter, setReservationFilter] = useState<'all' | 'upcoming' | 'past'>('all');
+  const [cancelTarget, setCancelTarget] = useState<ReservationEvent | null>(null);
+  const now = new Date();
+  const profileName = managedUser?.name ?? sessionUser?.name ?? 'USER NAME';
+  const profileDepartment = managedUser?.department ?? '소속 정보 미등록';
+  const authProvider = getAuthProviderLabel(managedUser?.authProvider);
+  const roles = getMyPageRoles(managedUser, sessionRole, managerUserIds);
+  const myReservations = calendarEvents
+    .filter((event) => event.createdBy !== 'ADMIN')
+    .sort((first, second) => first.start.localeCompare(second.start));
+  const upcomingReservations = myReservations
+    .filter((event) => new Date(event.end ?? event.start) > now)
+    .sort((first, second) => first.start.localeCompare(second.start));
+  const pastReservations = myReservations
+    .filter((event) => new Date(event.end ?? event.start) <= now)
+    .sort((first, second) => second.start.localeCompare(first.start));
+  const monthlyUsageHours = myReservations
+    .filter((event) => {
+      const start = new Date(event.start);
+      return start.getFullYear() === now.getFullYear() && start.getMonth() === now.getMonth();
+    })
+    .reduce((sum, event) => sum + getReservationDurationHours(event), 0);
+  const userPenaltyRecords = managedUser
+    ? penalties.filter((record) => record.userId === managedUser.id)
+    : [];
+  const penaltyCount = userPenaltyRecords.length;
+  const penaltyLimit = 3;
+  const permissionIds = managedUser ? permissions[managedUser.id] ?? [] : [];
+  const trainingItems = equipmentItems.slice(0, 12).map((item, index) => ({
+    equipmentName: item.name,
+    completed: permissionIds.includes(item.id) || index % 4 !== 3
+  }));
+  const visibleGroups = [
+    { key: 'upcoming', title: '다가오는 예약', items: upcomingReservations, empty: '예정된 예약이 없습니다.' },
+    { key: 'past', title: '지난 예약', items: pastReservations, empty: '지난 예약 내역이 없습니다.' }
+  ].filter((group) => reservationFilter === 'all' || reservationFilter === group.key);
+
+  function confirmCancelReservation() {
+    if (!cancelTarget) return;
+    onCancelReservation(cancelTarget.id);
+    setCancelTarget(null);
+  }
+
+  function renderReservationRow(event: ReservationEvent, past = false) {
+    const equipmentName = equipmentItems.find((item) => item.id === getEventEquipmentId(event, equipmentItems))?.name ?? event.title.split(' 예약')[0];
+    const canCancel = !past && new Date(event.start) > now;
+    const inProgress = !past && new Date(event.start) <= now;
+    return (
+      <div key={event.id} className={`mypage-reservation-row ${past ? 'is-past' : ''}`}>
+        <div>
+          <p>{formatMyPageReservationDate(event.start, event.end)}</p>
+          <h3>{equipmentName}</h3>
+        </div>
+        {past ? (
+          <button type="button" className="mypage-neutral-action" aria-label={`${equipmentName} 기록 보기`}>
+            <BookOpen size={15} /> 기록
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="mypage-secondary-action"
+            disabled={!canCancel}
+            onClick={() => setCancelTarget(event)}
+          >
+            {inProgress ? '진행 중' : '취소'}
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <section className="mypage-shell">
+      <div className="mypage-profile-card">
+        <div className="mypage-profile-head">
+          <div className="mypage-profile-main">
+            <div className="mypage-avatar">{profileName.slice(0, 1).toUpperCase()}</div>
+            <div>
+              <h2>{profileName}</h2>
+              <p>{profileDepartment}</p>
+            </div>
+          </div>
+          <span className="mypage-auth-badge">
+            <LogIn size={15} /> {authProvider}
+          </span>
+        </div>
+        <div className="mypage-role-grid" aria-label="보유 역할">
+          {MY_PAGE_ROLE_ORDER.map((role) => {
+            const meta = MY_PAGE_ROLE_META[role];
+            const Icon = meta.icon;
+            const owned = roles.includes(role);
+            return (
+              <span
+                key={role}
+                className={`mypage-role-chip is-${meta.tone} ${owned ? 'is-owned' : 'is-muted'}`}
+                aria-disabled={!owned}
+              >
+                <Icon size={14} /> {meta.label}
+              </span>
+            );
+          })}
+        </div>
+        <div className="mypage-summary-grid">
+          <div>
+            <span>이번 달 사용</span>
+            <strong>{monthlyUsageHours.toFixed(1)}h</strong>
+          </div>
+          <div>
+            <span>예정 예약</span>
+            <strong>{upcomingReservations.length}</strong>
+          </div>
+          <div>
+            <span>페널티</span>
+            <strong>{penaltyLimit ? `${penaltyCount}/${penaltyLimit}회` : `${penaltyCount}회`}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div className="mypage-reservation-panel">
+        <div className="mypage-panel-head">
+          <div>
+            <p>My Reservations</p>
+            <h2>내 예약현황</h2>
+          </div>
+          <div className="mypage-filter-tabs">
+            {[
+              ['all', '전체'],
+              ['upcoming', '예정'],
+              ['past', '지난']
+            ].map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                className={reservationFilter === key ? 'is-active' : ''}
+                onClick={() => setReservationFilter(key as 'all' | 'upcoming' | 'past')}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {myReservations.length === 0 ? (
+          <div className="mypage-empty-state">
+            <p>예약 내역이 없습니다. 장비현황에서 예약을 시작해 보세요.</p>
+            <button type="button" onClick={() => onNavigate('equipment')}>장비현황 바로가기</button>
+          </div>
+        ) : (
+          <div className="mypage-reservation-groups">
+            {visibleGroups.map((group) => (
+              <div key={group.key} className="mypage-reservation-group">
+                <h3>{group.title}</h3>
+                {group.items.length > 0 ? (
+                  group.items.map((event) => renderReservationRow(event, group.key === 'past'))
+                ) : (
+                  <p className="mypage-group-empty">{group.empty}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="mypage-training-panel">
+        <div className="mypage-panel-head">
+          <div>
+            <p>Training & Access</p>
+            <h2>교육 및 예약 권한 현황</h2>
+            <span>장비별 교육 이수 상태에 따라 예약 가능 여부가 결정됩니다.</span>
+          </div>
+        </div>
+        <div className="mypage-training-grid">
+          {trainingItems.map((item) => (
+            <div key={item.equipmentName} className="mypage-training-item">
+              <strong>{item.equipmentName}</strong>
+              <span className={`mypage-training-badge ${item.completed ? 'is-complete' : 'is-needed'}`}>
+                {item.completed ? '이수' : '교육 필요'}
+              </span>
+            </div>
+          ))}
+        </div>
+        <div className="mypage-penalty-row">
+          <div>
+            <ShieldCheck size={17} />
+            <span>페널티 상태</span>
+          </div>
+          <span className={`mypage-penalty-badge ${penaltyCount === 0 ? 'is-good' : penaltyCount > penaltyLimit ? 'is-danger' : 'is-warning'}`}>
+            {penaltyCount === 0 ? '정상' : '주의'} · {penaltyCount}회
+          </span>
+        </div>
+      </div>
+
+      {cancelTarget && (
+        <div className="user-add-modal-backdrop" role="presentation">
+          <section className="mypage-cancel-modal" role="dialog" aria-modal="true" aria-labelledby="mypage-cancel-title">
+            <div className="user-add-modal-head">
+              <div>
+                <p>Reservation Cancel</p>
+                <h3 id="mypage-cancel-title">예약 취소 확인</h3>
+              </div>
+              <button type="button" onClick={() => setCancelTarget(null)} aria-label="닫기">
+                <X size={18} />
+              </button>
+            </div>
+            <p className="mypage-cancel-copy">선택한 예약을 취소합니다. 취소 후에는 장비예약관리에서 다시 예약해야 합니다.</p>
+            <div className="user-add-modal-actions">
+              <button type="button" className="is-cancel" onClick={() => setCancelTarget(null)}>닫기</button>
+              <button type="button" className="is-primary" onClick={confirmCancelReservation}>취소 확정</button>
+            </div>
+          </section>
+        </div>
+      )}
     </section>
   );
 }
@@ -5509,10 +5790,17 @@ export function App() {
           )}
           {activePage === 'center' && <PlaceholderPage title="센터소개" />}
           {activePage === 'mypage' && (
-            <MyPage
+            <MyPageV2
               equipmentItems={activeEquipmentItems}
               calendarEvents={reservationEvents}
+              managedUser={currentManagedUser}
+              sessionUser={sessionUser}
+              sessionRole={sessionRole}
+              managerUserIds={managerUserIds}
+              permissions={equipmentPermissions}
+              penalties={penaltyRecords}
               onCancelReservation={deleteReservation}
+              onNavigate={navigate}
             />
           )}
         </main>
