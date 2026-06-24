@@ -1141,7 +1141,14 @@ function SidebarNavigation({
                 item: reservationItem,
                 open: reservationOpen,
                 selected: reservationSelected,
-                onToggle: () => setReservationOpen((current) => !current),
+                onToggle: () => {
+                  if (activePage !== 'reservations') {
+                    setReservationOpen(true);
+                    onNavigate('reservations');
+                    return;
+                  }
+                  setReservationOpen((current) => !current);
+                },
                 children: (
                   <button
                     type="button"
