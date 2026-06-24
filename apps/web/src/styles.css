@@ -123,15 +123,15 @@ select {
 .hero-logo-watermark.is-primary {
   left: 42%;
   top: 3%;
-  width: clamp(8.75rem, 14.6vw, 15.25rem);
-  height: clamp(8.75rem, 14.6vw, 15.25rem);
+  width: clamp(5.75rem, 9.6vw, 10.25rem);
+  height: clamp(5.75rem, 9.6vw, 10.25rem);
 }
 
 .hero-logo-watermark.is-secondary {
   left: 49%;
   bottom: -8%;
-  width: clamp(6.25rem, 9.6vw, 10.25rem);
-  height: clamp(6.25rem, 9.6vw, 10.25rem);
+  width: clamp(4.25rem, 6.8vw, 7.25rem);
+  height: clamp(4.25rem, 6.8vw, 7.25rem);
   opacity: 0.18;
   transform: rotate(13deg);
 }
@@ -139,8 +139,8 @@ select {
 .hero-logo-watermark.is-tertiary {
   right: 7%;
   top: 10%;
-  width: clamp(7.75rem, 12.6vw, 13.25rem);
-  height: clamp(7.75rem, 12.6vw, 13.25rem);
+  width: clamp(5.25rem, 8.4vw, 8.75rem);
+  height: clamp(5.25rem, 8.4vw, 8.75rem);
   opacity: 0.2;
   transform: rotate(18deg);
 }
