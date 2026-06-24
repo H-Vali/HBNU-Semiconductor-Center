@@ -460,7 +460,7 @@ select {
 
 .hero-metrics-panel {
   display: grid;
-  gap: 24px;
+  gap: 38px;
   background: #0b1220;
   padding: 20px 22px 22px;
 }
@@ -473,11 +473,19 @@ select {
   letter-spacing: 0.04em;
 }
 
-.hero-process-grid,
-.stat-grid {
+.hero-process-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
+}
+
+.stat-grid {
+  display: grid;
+  overflow: hidden;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 12px;
+  background: #11192b;
 }
 
 .process-status-card {
@@ -892,11 +900,13 @@ select {
 }
 
 .stat-card {
+  position: relative;
   min-height: 0;
-  border-radius: 11px;
-  border: 0.5px solid rgba(255, 255, 255, 0.08);
-  background: #11192b;
-  padding: 16px;
+  padding: 16px 18px;
+}
+
+.stat-card + .stat-card {
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .stat-card-heading {
@@ -2116,6 +2126,11 @@ select {
   .hero-process-grid,
   .stat-grid {
     grid-template-columns: 1fr;
+  }
+
+  .stat-card + .stat-card {
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    border-left: 0;
   }
 
   .wafer-core {
