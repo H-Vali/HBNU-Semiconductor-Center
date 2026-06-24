@@ -1751,22 +1751,13 @@ function Dashboard({
 function EquipmentPage({
   equipmentItems,
   source,
-  initialGroup,
-  sessionRole,
-  onAddEquipment,
-  onDeleteEquipment
+  initialGroup
 }: {
   equipmentItems: EquipmentItem[];
   source: 'api' | 'fallback';
   initialGroup: EquipmentGroup;
-  sessionRole: Role | null;
-  onAddEquipment: (item: EquipmentItem) => void;
-  onDeleteEquipment: (equipmentId: string) => void;
 }) {
   const [activeGroup, setActiveGroup] = useState<EquipmentGroup>(initialGroup);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const isAdmin = sessionRole === 'ADMIN';
 
   useEffect(() => setActiveGroup(initialGroup), [initialGroup]);
 
@@ -1781,18 +1772,6 @@ function EquipmentPage({
       <EquipmentGateway
         equipmentItems={equipmentItems}
         onOpen={setActiveGroup}
-        action={
-          isAdmin ? (
-            <div className="flex flex-wrap gap-2">
-            <button className="rounded-md bg-blue-700 px-5 py-2.5 text-sm font-bold text-white hover:bg-cyan-500 hover:text-slate-950" onClick={() => setShowAddModal(true)}>
-              장비 추가
-            </button>
-            <button className="inline-flex items-center gap-2 rounded-md border border-red-300/30 px-5 py-2.5 text-sm font-bold text-red-100 hover:bg-red-500 hover:text-white" onClick={() => setShowDeleteModal(true)}>
-              <Trash2 size={16} /> 장비 삭제
-            </button>
-            </div>
-          ) : null
-        }
       />
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex gap-2">
@@ -1827,8 +1806,6 @@ function EquipmentPage({
           </article>
         ))}
       </div>
-      {showAddModal && <EquipmentAddModal onClose={() => setShowAddModal(false)} onAdd={(item) => { onAddEquipment(item); setActiveGroup(item.group); setShowAddModal(false); }} />}
-      {showDeleteModal && <EquipmentDeleteModal equipmentItems={equipmentItems} onClose={() => setShowDeleteModal(false)} onDelete={(equipmentId) => { onDeleteEquipment(equipmentId); setShowDeleteModal(false); }} />}
     </section>
   );
 }
@@ -6506,9 +6483,6 @@ export function App() {
               equipmentItems={activeEquipmentItems}
               source={source}
               initialGroup={initialGroup}
-              sessionRole={sessionRole}
-              onAddEquipment={addEquipment}
-              onDeleteEquipment={deleteEquipment}
             />
           )}
           {activePage === 'reservations' && (
