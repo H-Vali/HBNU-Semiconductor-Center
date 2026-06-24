@@ -2792,9 +2792,12 @@ function MyPageV2({
   const penaltyCount = userPenaltyRecords.length;
   const penaltyLimit = 3;
   const permissionIds = managedUser ? permissions[managedUser.id] ?? [] : [];
-  const trainingItems = equipmentItems.slice(0, 12).map((item, index) => ({
+  const completedTrainingSource = permissionIds.length > 0
+    ? equipmentItems.filter((item) => permissionIds.includes(item.id))
+    : equipmentItems.slice(0, 8);
+  const trainingItems = completedTrainingSource.map((item) => ({
     equipmentName: item.name,
-    completed: permissionIds.includes(item.id) || index % 4 !== 3
+    completed: true
   }));
   const visibleGroups = [
     { key: 'upcoming', title: '다가오는 예약', items: upcomingReservations, empty: '예정된 예약이 없습니다.' },
@@ -2938,8 +2941,8 @@ function MyPageV2({
           {trainingItems.map((item) => (
             <div key={item.equipmentName} className="mypage-training-item">
               <strong>{item.equipmentName}</strong>
-              <span className={`mypage-training-badge ${item.completed ? 'is-complete' : 'is-needed'}`}>
-                {item.completed ? '이수' : '교육 필요'}
+              <span className="mypage-training-badge is-complete">
+                이수
               </span>
             </div>
           ))}
