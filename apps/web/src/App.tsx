@@ -1600,6 +1600,7 @@ function AutoRotatingEquipmentStatus({
 }) {
   const groups = useMemo(() => Object.keys(categoryMeta) as EquipmentGroup[], []);
   const [activeGroup, setActiveGroup] = useState<EquipmentGroup>('process');
+  const [rotationCycle, setRotationCycle] = useState(0);
   const [paused, setPaused] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [clock, setClock] = useState(getSeoulClockParts);
@@ -1621,6 +1622,10 @@ function AutoRotatingEquipmentStatus({
   const idleCount = Math.max(statusItems.length - activeCount - maintenanceCount, 0);
   const activeGroupItems = statusItems.filter((entry) => entry.item.group === activeGroup).slice(0, 8);
   const activeCategoryAccent = `rgb(${equipmentCategoryCardMeta[activeGroup].accent})`;
+  const selectGroup = (group: EquipmentGroup) => {
+    setActiveGroup(group);
+    setRotationCycle((cycle) => cycle + 1);
+  };
 
   useEffect(() => {
     const timer = window.setInterval(() => setClock(getSeoulClockParts()), 1000);
@@ -1639,6 +1644,7 @@ function AutoRotatingEquipmentStatus({
     if (paused || reducedMotion) return undefined;
     const timer = window.setInterval(() => {
       setActiveGroup((current) => groups[(groups.indexOf(current) + 1) % groups.length]);
+      setRotationCycle((cycle) => cycle + 1);
     }, durationMs);
     return () => window.clearInterval(timer);
   }, [groups, paused, reducedMotion]);
@@ -1684,7 +1690,7 @@ function AutoRotatingEquipmentStatus({
               role="tab"
               aria-selected={isActive}
               className={`auto-status-tab ${isActive ? 'is-active' : ''}`}
-              onClick={() => setActiveGroup(group)}
+              onClick={() => selectGroup(group)}
             >
               <span className="auto-status-tab-label">
                 <Icon size={16} strokeWidth={1.8} aria-hidden="true" />
@@ -1692,7 +1698,7 @@ function AutoRotatingEquipmentStatus({
                 <em>{count}종</em>
               </span>
               <span className="auto-status-progress" aria-hidden="true">
-                <span />
+                {isActive && <span key={`${group}-${rotationCycle}`} />}
               </span>
             </button>
           );
@@ -1718,8 +1724,8 @@ function AutoRotatingEquipmentStatus({
               <span className="auto-status-copy">
                 <span className="auto-status-cell-top">
                   <span className="auto-status-category">{getRealtimeCategoryLabel(item)}</span>
-                  <span className={`runtime-status-badge is-${status}`}>{getRuntimeStatusLabel(status)}</span>
                 </span>
+                <span className={`runtime-status-badge is-${status}`}>{getRuntimeStatusLabel(status)}</span>
                 <strong>{item.name}</strong>
                 <small>{message}</small>
               </span>
