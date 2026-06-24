@@ -563,8 +563,27 @@ select {
 .dashboard-notice-head h3 {
   margin: 0;
   color: #f8fafc;
-  font-size: 1.08rem;
+  font-size: 1.34rem;
   font-weight: 900;
+}
+
+.dashboard-notice-title {
+  display: flex;
+  align-items: center;
+  gap: 0.62rem;
+  letter-spacing: 0;
+}
+
+.dashboard-notice-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 999px;
+  border: 0.5px solid rgba(248, 113, 113, 0.42);
+  background: rgba(127, 29, 29, 0.45);
+  color: #fca5a5;
 }
 
 .dashboard-notice-head button {
@@ -653,15 +672,15 @@ select {
 .dashboard-notice-row strong {
   overflow: hidden;
   color: #f8fafc;
-  font-size: 0.86rem;
-  font-weight: 800;
+  font-size: 0.98rem;
+  font-weight: 900;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .dashboard-notice-row time {
   color: #94a3b8;
-  font-size: 0.74rem;
+  font-size: 0.8rem;
   font-weight: 700;
 }
 

@@ -1383,7 +1383,12 @@ function DashboardNoticePanel({ onNavigate }: { onNavigate: (page: PageKey) => v
       <div className="dashboard-notice-head">
         <div>
           <p className="hero-section-label">Notice</p>
-          <h3>공지사항</h3>
+          <h3 className="dashboard-notice-title">
+            <span className="dashboard-notice-icon" aria-hidden="true">
+              <Megaphone size={18} />
+            </span>
+            공지사항
+          </h3>
         </div>
         <button type="button" onClick={() => onNavigate('notice')}>전체 보기</button>
       </div>
