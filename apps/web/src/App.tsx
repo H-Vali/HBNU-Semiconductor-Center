@@ -1666,6 +1666,7 @@ function AutoRotatingEquipmentStatus({
     const sortedStatusItems = [...statusItems].sort((first, second) => statusOrder[first.status] - statusOrder[second.status]);
     const processItems = sortedStatusItems.filter((entry) => entry.item.group === 'process');
     const metrologyItems = sortedStatusItems.filter((entry) => entry.item.group === 'metrology');
+    const metrologyPages = [metrologyItems.slice(0, 8), metrologyItems.slice(8, 16)].filter((page) => page.length > 0);
     return [
       {
         id: 'process',
@@ -1676,18 +1677,27 @@ function AutoRotatingEquipmentStatus({
         accent: `rgb(${equipmentCategoryCardMeta.process.accent})`,
         items: processItems.slice(0, 8)
       },
-      {
-        id: 'metrology',
+      ...metrologyPages.map((items, pageIndex) => ({
+        id: `metrology-${pageIndex + 1}`,
         group: 'metrology' as EquipmentGroup,
         title: '검사·계측·패키징',
         count: metrologyItems.length,
         icon: equipmentCategoryCardMeta.metrology.icon,
         accent: `rgb(${equipmentCategoryCardMeta.metrology.accent})`,
-        items: metrologyItems.slice(0, 8)
-      }
+        items
+      }))
     ];
   }, [statusItems]);
   const activeSlide = equipmentSlides[activeSlideIndex] ?? equipmentSlides[0];
+  const equipmentTabs = useMemo(() => {
+    const tabGroups = new Set<EquipmentGroup>();
+    return equipmentSlides.reduce<Array<(typeof equipmentSlides)[number] & { viewIndex: number }>>((tabs, slide, viewIndex) => {
+      if (tabGroups.has(slide.group)) return tabs;
+      tabGroups.add(slide.group);
+      tabs.push({ ...slide, viewIndex });
+      return tabs;
+    }, []);
+  }, [equipmentSlides]);
   const applyStatusView = useCallback((slideIndex: number) => {
     activeSlideIndexRef.current = slideIndex;
     setActiveSlideIndex(slideIndex);
@@ -1774,9 +1784,9 @@ function AutoRotatingEquipmentStatus({
         </div>
       </div>
       <div className="auto-status-tabs" role="tablist" aria-label="장비 카테고리">
-        {equipmentSlides.map((slide, index) => {
+        {equipmentTabs.map((slide) => {
           const Icon = slide.icon;
-          const isActive = activeSlideIndex === index;
+          const isActive = activeSlide.group === slide.group;
           return (
             <button
               key={slide.id}
@@ -1786,7 +1796,7 @@ function AutoRotatingEquipmentStatus({
               aria-label={`${slide.title} ${slide.count}종`}
               className={`auto-status-tab ${isActive ? 'is-active' : ''}`}
               style={{ '--auto-status-tab-accent': slide.accent } as CSSProperties}
-              onClick={() => selectSlide(index)}
+              onClick={() => selectSlide(slide.viewIndex)}
             >
               <span className="auto-status-tab-label">
                 <Icon size={16} strokeWidth={1.8} aria-hidden="true" />
