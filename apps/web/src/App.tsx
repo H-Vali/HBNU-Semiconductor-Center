@@ -1597,10 +1597,13 @@ function AutoRotatingEquipmentStatus({
   calendarEvents: ReservationEvent[];
 }) {
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+  const [activePageIndex, setActivePageIndex] = useState(0);
   const [rotationCycle, setRotationCycle] = useState(0);
+  const [listTransitioning, setListTransitioning] = useState(false);
   const [paused, setPaused] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [clock, setClock] = useState(getSeoulClockParts);
+  const transitionTimeoutRef = useRef<number | null>(null);
   const durationMs = 6000;
 
   const statusItems = useMemo(() => equipmentItems.map((item) => {
@@ -1626,6 +1629,7 @@ function AutoRotatingEquipmentStatus({
     const sortedStatusItems = [...statusItems].sort((first, second) => statusOrder[first.status] - statusOrder[second.status]);
     const processItems = sortedStatusItems.filter((entry) => entry.item.group === 'process');
     const metrologyItems = sortedStatusItems.filter((entry) => entry.item.group === 'metrology');
+    const metrologyPages = [metrologyItems.slice(0, 8), metrologyItems.slice(8)].filter((page) => page.length > 0);
     return [
       {
         id: 'process',
@@ -1634,37 +1638,54 @@ function AutoRotatingEquipmentStatus({
         count: processItems.length,
         icon: equipmentCategoryCardMeta.process.icon,
         accent: `rgb(${equipmentCategoryCardMeta.process.accent})`,
-        items: processItems.slice(0, 8)
+        pages: [processItems.slice(0, 8)]
       },
       {
-        id: 'metrology-a',
+        id: 'metrology',
         group: 'metrology' as EquipmentGroup,
         title: '검사·계측·패키징',
-        count: metrologyItems.slice(0, 8).length,
+        count: metrologyItems.length,
         icon: equipmentCategoryCardMeta.metrology.icon,
         accent: `rgb(${equipmentCategoryCardMeta.metrology.accent})`,
-        items: metrologyItems.slice(0, 8)
-      },
-      {
-        id: 'metrology-b',
-        group: 'metrology' as EquipmentGroup,
-        title: '검사·계측·패키징',
-        count: metrologyItems.slice(8).length,
-        icon: equipmentCategoryCardMeta.metrology.icon,
-        accent: `rgb(${equipmentCategoryCardMeta.metrology.accent})`,
-        items: metrologyItems.slice(8)
+        pages: metrologyPages.length > 0 ? metrologyPages : [[]]
       }
     ];
   }, [statusItems]);
   const activeSlide = equipmentSlides[activeSlideIndex] ?? equipmentSlides[0];
+  const activePageItems = activeSlide.pages[activePageIndex] ?? activeSlide.pages[0] ?? [];
+  const changeStatusView = (updateView: () => void) => {
+    if (transitionTimeoutRef.current) {
+      window.clearTimeout(transitionTimeoutRef.current);
+    }
+    if (reducedMotion) {
+      updateView();
+      setRotationCycle((cycle) => cycle + 1);
+      return;
+    }
+    setListTransitioning(true);
+    transitionTimeoutRef.current = window.setTimeout(() => {
+      updateView();
+      setRotationCycle((cycle) => cycle + 1);
+      setListTransitioning(false);
+      transitionTimeoutRef.current = null;
+    }, 180);
+  };
   const selectSlide = (index: number) => {
-    setActiveSlideIndex(index);
-    setRotationCycle((cycle) => cycle + 1);
+    changeStatusView(() => {
+      setActiveSlideIndex(index);
+      setActivePageIndex(0);
+    });
   };
 
   useEffect(() => {
     const timer = window.setInterval(() => setClock(getSeoulClockParts()), 1000);
     return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => () => {
+    if (transitionTimeoutRef.current) {
+      window.clearTimeout(transitionTimeoutRef.current);
+    }
   }, []);
 
   useEffect(() => {
@@ -1678,11 +1699,18 @@ function AutoRotatingEquipmentStatus({
   useEffect(() => {
     if (paused || reducedMotion) return undefined;
     const timer = window.setInterval(() => {
-      setActiveSlideIndex((current) => (current + 1) % equipmentSlides.length);
-      setRotationCycle((cycle) => cycle + 1);
+      changeStatusView(() => {
+        const pageCount = activeSlide.pages.length;
+        if (pageCount > activePageIndex + 1) {
+          setActivePageIndex((current) => current + 1);
+        } else {
+          setActiveSlideIndex((current) => (current + 1) % equipmentSlides.length);
+          setActivePageIndex(0);
+        }
+      });
     }, durationMs);
     return () => window.clearInterval(timer);
-  }, [equipmentSlides.length, paused, reducedMotion]);
+  }, [activePageIndex, activeSlide.pages.length, equipmentSlides.length, paused, reducedMotion]);
 
   return (
     <section
@@ -1738,8 +1766,13 @@ function AutoRotatingEquipmentStatus({
           );
         })}
       </div>
-      <div className="auto-status-grid" role="tabpanel" aria-label={`${activeSlide.title} ${activeSlide.count}종 장비 상태`}>
-        {activeSlide.items.map(({ item, activeEvent, status }) => {
+      <div
+        key={`${activeSlide.id}-${activePageIndex}-${rotationCycle}`}
+        className={`auto-status-grid ${listTransitioning ? 'is-fading-out' : ''}`}
+        role="tabpanel"
+        aria-label={`${activeSlide.title} ${activeSlide.count}종 장비 상태`}
+      >
+        {activePageItems.map(({ item, activeEvent, status }) => {
           const accent = status === 'active' ? '#34d6b0' : status === 'maintenance' ? '#f5b942' : '#3a4456';
           const message = status === 'active'
             ? `~${formatReservationTime(activeEvent?.end)} 종료`

@@ -1243,6 +1243,14 @@ select {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
+  animation: autoStatusGridIn 0.24s ease both;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.auto-status-grid.is-fading-out {
+  opacity: 0;
+  transform: translateY(5px);
+  animation: none;
 }
 
 .auto-status-cell {
@@ -1345,10 +1353,27 @@ select {
   }
 }
 
+@keyframes autoStatusGridIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .auto-status-tab.is-active .auto-status-progress span {
     width: 100%;
     animation: none;
+  }
+
+  .auto-status-grid {
+    animation: none;
+    transition: none;
   }
 }
 
