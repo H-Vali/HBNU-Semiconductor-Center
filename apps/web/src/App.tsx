@@ -979,6 +979,34 @@ function InstitutionHeader({
   );
 }
 
+function OwnerInfoFooter() {
+  return (
+    <footer className="owner-info-footer" aria-label="소유기관 기본 정보">
+      <div className="owner-info-brand">
+        <School size={30} aria-hidden="true" />
+        <strong>HBNU Semiconductor Center</strong>
+      </div>
+      <div className="owner-info-lines">
+        <p>
+          <span>기관명: 국립한밭대학교</span>
+          <span>운영부서: 창의융합교육센터 / 반도체 장비 공동활용 플랫폼</span>
+          <span>센터장: 홍길동</span>
+        </p>
+        <p>
+          <span>주소: 대전광역시 유성구 동서대로 125, N-Facility FAB</span>
+          <span>대표번호: 042-000-0000</span>
+          <span>이메일: nfabric@hanbat.ac.kr</span>
+        </p>
+        <p>
+          <span>개인정보보호책임자: 창의융합교육센터 행정팀</span>
+          <span>장비예약/교육문의: equipment@hanbat.ac.kr</span>
+          <span>Copyright 2026 Hanbat National University. All rights reserved.</span>
+        </p>
+      </div>
+    </footer>
+  );
+}
+
 function SidebarNavigation({
   activePage,
   onNavigate,
@@ -6906,6 +6934,7 @@ export function App() {
               onNavigate={navigate}
             />
           )}
+          <OwnerInfoFooter />
         </main>
       </div>
       {showPenaltyNotice && activeSessionPenalty && (

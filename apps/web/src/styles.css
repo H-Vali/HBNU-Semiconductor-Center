@@ -735,6 +735,61 @@ select {
   min-width: 0;
 }
 
+.owner-info-footer {
+  margin-top: 3rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+  padding: 2rem 0.25rem 1.75rem;
+  color: #8b96a8;
+}
+
+.owner-info-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-bottom: 1.1rem;
+  color: #cbd5e1;
+}
+
+.owner-info-brand svg {
+  color: #7dd3fc;
+  opacity: 0.72;
+}
+
+.owner-info-brand strong {
+  color: #dbe4f0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.owner-info-lines {
+  display: grid;
+  gap: 0.7rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+.owner-info-lines p {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0;
+  margin: 0;
+}
+
+.owner-info-lines span {
+  display: inline-flex;
+  align-items: center;
+}
+
+.owner-info-lines span + span::before {
+  content: "";
+  width: 1px;
+  height: 0.78rem;
+  margin: 0 1rem;
+  background: rgba(148, 163, 184, 0.32);
+}
+
 .sidebar-stack {
   position: sticky;
   top: 5.6rem;
@@ -2459,6 +2514,20 @@ select {
   .hero-reservation-row span {
     grid-column: 2;
     justify-self: start;
+  }
+
+  .owner-info-footer {
+    margin-top: 2rem;
+    padding-bottom: 1.25rem;
+  }
+
+  .owner-info-lines p {
+    display: grid;
+    gap: 0.4rem;
+  }
+
+  .owner-info-lines span + span::before {
+    content: none;
   }
 
   .hero-process-grid,
