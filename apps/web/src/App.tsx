@@ -4154,7 +4154,11 @@ function EquipmentEditModal({
     status: (equipment.status ?? 'available') as EquipmentStatus,
     image: equipment.image,
     description: equipment.description ?? '',
-    managerId: equipment.managerId ?? ''
+    managerId: equipment.managerId ?? '',
+    vendorName: equipment.vendorName ?? '',
+    vendorContactName: equipment.vendorContactName ?? '',
+    vendorContactPosition: equipment.vendorContactPosition ?? '',
+    vendorContactPhone: equipment.vendorContactPhone ?? ''
   });
   const managerCandidates = users.filter((user) => user.roleLevel === '교원' || user.roleLevel === '대표' || user.roleLevel === '일반');
 
@@ -4182,7 +4186,11 @@ function EquipmentEditModal({
       status: form.status,
       image: form.image,
       description: form.description.trim(),
-      managerId: form.managerId || undefined
+      managerId: form.managerId || undefined,
+      vendorName: form.vendorName.trim() || undefined,
+      vendorContactName: form.vendorContactName.trim() || undefined,
+      vendorContactPosition: form.vendorContactPosition.trim() || undefined,
+      vendorContactPhone: form.vendorContactPhone.trim() || undefined
     });
   }
 
@@ -4236,6 +4244,36 @@ function EquipmentEditModal({
             장비 설명 <span>선택 사항</span>
             <textarea value={form.description} onChange={(event) => updateField('description', event.target.value)} placeholder="장비 용도, 교육 조건, 주의사항 등을 입력하세요." />
           </label>
+          <div className="equipment-optional-info is-wide">
+            <div className="equipment-optional-head">
+              <p>Maintenance Vendor</p>
+              <h4>유지보수 업체 추가 정보</h4>
+              <span>선택 사항 · 구매사 및 유지보수 담당자 정보를 기록합니다.</span>
+            </div>
+            <div className="equipment-edit-grid is-nested">
+              <label>
+                구매사 <span>선택 사항</span>
+                <input value={form.vendorName} onChange={(event) => updateField('vendorName', event.target.value)} placeholder="예: HB Tech Solution" />
+              </label>
+              <label>
+                담당자명 <span>선택 사항</span>
+                <input value={form.vendorContactName} onChange={(event) => updateField('vendorContactName', event.target.value)} placeholder="예: 홍길동" />
+              </label>
+              <label>
+                직급 <span>선택 사항</span>
+                <input value={form.vendorContactPosition} onChange={(event) => updateField('vendorContactPosition', event.target.value)} placeholder="예: 책임연구원 / 매니저" />
+              </label>
+              <label>
+                연락처 <span>선택 사항</span>
+                <input
+                  inputMode="numeric"
+                  value={form.vendorContactPhone}
+                  onChange={(event) => updateField('vendorContactPhone', formatPhoneNumber(event.target.value))}
+                  placeholder="010-0000-0000"
+                />
+              </label>
+            </div>
+          </div>
           <label className="equipment-image-upload is-wide" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); loadImage(event.dataTransfer.files?.[0]); }}>
             <UploadCloud size={26} />
             <strong>장비 사진 업로드</strong>

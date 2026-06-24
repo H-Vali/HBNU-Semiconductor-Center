@@ -3719,6 +3719,7 @@ select {
 }
 
 .equipment-edit-grid label.is-wide,
+.equipment-optional-info.is-wide,
 .equipment-edit-preview.is-wide {
   grid-column: 1 / -1;
 }
@@ -3755,6 +3756,52 @@ select {
 .equipment-edit-grid textarea:focus {
   border-color: rgba(95, 217, 201, 0.72);
   box-shadow: 0 0 0 3px rgba(95, 217, 201, 0.1);
+}
+
+.equipment-optional-info {
+  display: grid;
+  gap: 0.85rem;
+  border: 1px solid rgba(95, 217, 201, 0.16);
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at top right, rgba(52, 214, 176, 0.1), transparent 32%),
+    rgba(15, 23, 42, 0.58);
+  padding: 1rem;
+}
+
+.equipment-optional-head {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.equipment-optional-head p,
+.equipment-optional-head h4,
+.equipment-optional-head span {
+  margin: 0;
+}
+
+.equipment-optional-head p {
+  color: #5eead4;
+  font-size: 0.72rem;
+  font-weight: 950;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.equipment-optional-head h4 {
+  color: #f8fafc;
+  font-size: 1rem;
+  font-weight: 950;
+}
+
+.equipment-optional-head span {
+  color: #94a3b8;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.equipment-edit-grid.is-nested {
+  padding: 0;
 }
 
 .equipment-image-upload {

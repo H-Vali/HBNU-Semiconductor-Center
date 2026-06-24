@@ -14,6 +14,10 @@ export interface EquipmentItem {
   status?: 'available' | 'unavailable';
   description?: string;
   managerId?: string;
+  vendorName?: string;
+  vendorContactName?: string;
+  vendorContactPosition?: string;
+  vendorContactPhone?: string;
   utilization: number;
   usageHours: number;
 }
