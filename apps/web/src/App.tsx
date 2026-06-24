@@ -52,7 +52,7 @@ import {
 } from 'lucide-react';
 import { equipment as fallbackEquipment, events, monthlyUsage, type EquipmentGroup, type EquipmentItem } from './data';
 
-type PageKey = 'home' | 'notice' | 'center' | 'facility' | 'equipment' | 'training' | 'trainingManagement' | 'faq' | 'qna' | 'reservations' | 'managerPermissions' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'equipmentAdmin' | 'penalties' | 'login';
+type PageKey = 'home' | 'notice' | 'operationNotice' | 'meetingNotice' | 'center' | 'facility' | 'equipment' | 'training' | 'trainingManagement' | 'faq' | 'qna' | 'reservations' | 'managerPermissions' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'equipmentAdmin' | 'penalties' | 'login';
 type Role = 'USER' | 'ADMIN';
 type UsagePeriod = '24H' | '1W' | '1M';
 type EquipmentRuntimeStatus = 'active' | 'maintenance' | 'idle';
@@ -1021,15 +1021,22 @@ function SidebarNavigation({
   canManageAssignedPermissions: boolean;
 }) {
   const visitorStats = useVisitorStats();
+  const noticePages: PageKey[] = ['notice', 'operationNotice', 'meetingNotice'];
   const inquiryPages: PageKey[] = ['faq', 'qna'];
   const reservationPages: PageKey[] = ['reservations', 'managerPermissions'];
   const trainingPages: PageKey[] = ['training', 'trainingManagement'];
+  const [noticeOpen, setNoticeOpen] = useState(() => noticePages.includes(activePage));
   const [inquiryOpen, setInquiryOpen] = useState(() => inquiryPages.includes(activePage));
   const [reservationOpen, setReservationOpen] = useState(() => reservationPages.includes(activePage));
   const [trainingOpen, setTrainingOpen] = useState(() => trainingPages.includes(activePage));
+  const noticeSelected = noticePages.includes(activePage);
   const inquirySelected = inquiryPages.includes(activePage);
   const reservationSelected = reservationPages.includes(activePage);
   const trainingSelected = trainingPages.includes(activePage);
+
+  useEffect(() => {
+    if (noticeSelected) setNoticeOpen(true);
+  }, [noticeSelected]);
 
   useEffect(() => {
     if (inquirySelected) setInquiryOpen(true);
@@ -1050,12 +1057,15 @@ function SidebarNavigation({
         <nav className="sidebar-nav">
           {menu.map((item) => {
             const Icon = item.icon;
-            const selected = item.page === 'reservations' ? reservationSelected : item.page === 'training' ? trainingSelected : activePage === item.page;
+            const selected = item.page === 'notice' ? noticeSelected : item.page === 'reservations' ? reservationSelected : item.page === 'training' ? trainingSelected : activePage === item.page;
             return (
               <Fragment key={`${item.page}-${item.label}`}>
                 <button
                   className={`sidebar-nav-item ${selected ? 'is-active' : ''}`}
                   onClick={() => {
+                    if (item.page === 'notice') {
+                      setNoticeOpen((current) => !current);
+                    }
                     if (item.page === 'reservations' && canManageAssignedPermissions) {
                       setReservationOpen((current) => !current);
                     }
@@ -1067,9 +1077,32 @@ function SidebarNavigation({
                 >
                   <Icon size={18} />
                   <span>{item.label}</span>
+                  {item.page === 'notice' && <ChevronDown size={16} />}
                   {item.page === 'reservations' && canManageAssignedPermissions && <ChevronDown size={16} />}
                   {item.page === 'training' && canManageAssignedPermissions && <ChevronDown size={16} />}
                 </button>
+                {item.page === 'notice' && (
+                  <div className={`sidebar-dropdown ${noticeOpen ? 'is-open' : ''}`}>
+                    <div className="sidebar-subnav" aria-hidden={!noticeOpen}>
+                      <button
+                        type="button"
+                        className={`sidebar-subnav-item ${activePage === 'operationNotice' ? 'is-active' : ''}`}
+                        onClick={() => onNavigate('operationNotice')}
+                      >
+                        <Factory size={15} />
+                        <span>운영공지</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`sidebar-subnav-item ${activePage === 'meetingNotice' ? 'is-active' : ''}`}
+                        onClick={() => onNavigate('meetingNotice')}
+                      >
+                        <MessageSquare size={15} />
+                        <span>회의공지</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
                 {item.page === 'reservations' && canManageAssignedPermissions && (
                   <div className={`sidebar-dropdown ${reservationOpen ? 'is-open' : ''}`}>
                     <div className="sidebar-subnav" aria-hidden={!reservationOpen}>
@@ -4991,21 +5024,87 @@ const noticeItems = [
   }
 ];
 
-function NoticePage() {
-  const [selectedNoticeId, setSelectedNoticeId] = useState(noticeItems[0]?.id ?? '');
-  const selectedNotice = noticeItems.find((notice) => notice.id === selectedNoticeId) ?? noticeItems[0];
-  const pinnedCount = noticeItems.filter((notice) => notice.pinned).length;
+const operationNoticeItems: typeof noticeItems = [
+  {
+    id: 'operation-notice-1',
+    category: '운영',
+    title: '공정동 장비 공동활용 운영 시간 안내',
+    date: '2026.06.24',
+    author: '창의융합교육센터',
+    views: 42,
+    pinned: true,
+    summary: '장비 공동활용 플랫폼 운영 시간과 예약 확인 기준을 안내합니다.',
+    body: '장비 공동활용 운영 시간은 평일 기준으로 관리되며, 담당 장비별 교육 이수 및 예약 승인 상태에 따라 사용 가능 여부가 달라질 수 있습니다. 세부 운영 시간은 장비별 담당자 안내를 확인해 주세요.'
+  },
+  {
+    id: 'operation-notice-2',
+    category: '운영',
+    title: '장비 사용 전 안전 점검 체크리스트 적용 안내',
+    date: '2026.06.21',
+    author: '시설운영팀',
+    views: 31,
+    pinned: false,
+    summary: '장비 예약 및 사용 전 안전 점검 항목을 확인하도록 운영 절차를 정비합니다.',
+    body: '사용자는 장비 사용 전 장비 상태, 소모품 잔량, 주변 정리 상태를 확인해야 합니다. 이상이 발견될 경우 담당자에게 즉시 공유하고 임의로 장비를 가동하지 않습니다.'
+  }
+];
+
+const meetingNoticeItems: typeof noticeItems = [
+  {
+    id: 'meeting-notice-1',
+    category: '회의',
+    title: '6월 장비 담당자 운영 회의 일정 안내',
+    date: '2026.06.23',
+    author: '창의융합교육센터',
+    views: 27,
+    pinned: true,
+    summary: '장비 담당자 대상 운영 회의 일정과 주요 안건을 안내합니다.',
+    body: '6월 장비 담당자 운영 회의에서는 교육신청 처리 절차, 장비 사용권한 부여 기준, 점검중 장비 표시 방식, 예약 관리 개선 사항을 논의할 예정입니다.'
+  },
+  {
+    id: 'meeting-notice-2',
+    category: '회의',
+    title: '학생 대표 회의 안건 접수 안내',
+    date: '2026.06.19',
+    author: '운영지원팀',
+    views: 18,
+    pinned: false,
+    summary: '장비 사용 교육 및 예약 운영 개선과 관련한 학생 대표 회의 안건을 접수합니다.',
+    body: '학생 대표는 장비 사용 과정에서 발생하는 불편 사항, 교육 이수 절차 개선 의견, 예약 캘린더 사용성 관련 의견을 취합해 운영지원팀에 제출할 수 있습니다.'
+  }
+];
+
+function NoticePage({
+  title = '공지사항',
+  description = '센터 운영, 장비 예약, 교육 인증 관련 주요 공지를 한 곳에서 확인합니다.',
+  items = noticeItems,
+  filterLabel = '전체 공지'
+}: {
+  title?: string;
+  description?: string;
+  items?: typeof noticeItems;
+  filterLabel?: string;
+}) {
+  const [selectedNoticeId, setSelectedNoticeId] = useState(items[0]?.id ?? '');
+  const selectedNotice = items.find((notice) => notice.id === selectedNoticeId) ?? items[0];
+  const pinnedCount = items.filter((notice) => notice.pinned).length;
+
+  useEffect(() => {
+    if (items[0] && !items.some((notice) => notice.id === selectedNoticeId)) {
+      setSelectedNoticeId(items[0].id);
+    }
+  }, [items, selectedNoticeId]);
 
   return (
     <section className="notice-page">
       <div className="notice-hero">
         <div>
           <p className="consumables-eyebrow">Notice Board</p>
-          <h2>공지사항</h2>
-          <span>센터 운영, 장비 예약, 교육 인증 관련 주요 공지를 한 곳에서 확인합니다.</span>
+          <h2>{title}</h2>
+          <span>{description}</span>
         </div>
         <div className="notice-hero-meta" aria-label="공지사항 요약">
-          <strong>{noticeItems.length}</strong>
+          <strong>{items.length}</strong>
           <span>등록 공지</span>
           <em>중요 {pinnedCount}건</em>
         </div>
@@ -5018,11 +5117,11 @@ function NoticePage() {
               <Search size={17} />
               <span>제목, 내용, 분류 검색</span>
             </div>
-            <button type="button">전체 공지</button>
+            <button type="button">{filterLabel}</button>
           </div>
 
           <div className="notice-list" aria-label="공지사항 목록">
-            {noticeItems.map((notice, index) => (
+            {items.map((notice, index) => (
               <button
                 key={notice.id}
                 type="button"
@@ -5854,6 +5953,22 @@ export function App() {
             </>
           )}
           {activePage === 'notice' && <NoticePage />}
+          {activePage === 'operationNotice' && (
+            <NoticePage
+              title="운영공지"
+              description="센터 운영, 장비 사용 기준, 안전 점검과 관련한 공지를 확인합니다."
+              items={operationNoticeItems}
+              filterLabel="운영공지"
+            />
+          )}
+          {activePage === 'meetingNotice' && (
+            <NoticePage
+              title="회의공지"
+              description="장비 담당자 회의, 학생 대표 회의, 운영 협의 관련 공지를 확인합니다."
+              items={meetingNoticeItems}
+              filterLabel="회의공지"
+            />
+          )}
           {activePage === 'facility' && <FacilityPage sessionRole={sessionRole} />}
           {activePage === 'equipment' && (
             <EquipmentPage
