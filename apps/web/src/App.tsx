@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ChangeEvent, type DragEvent, type FormEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ChangeEvent, type DragEvent, type FormEvent, type ReactNode } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -1624,24 +1624,24 @@ function MonthlyUsageChart({
 
 function AutoRotatingEquipmentStatus({
   equipmentItems,
-  calendarEvents
+  calendarEvents,
+  autoRotate = true
 }: {
   equipmentItems: EquipmentItem[];
   calendarEvents: ReservationEvent[];
+  autoRotate?: boolean;
 }) {
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
-  const [activePageIndex, setActivePageIndex] = useState(0);
   const [rotationCycle, setRotationCycle] = useState(0);
-  const [listTransitioning, setListTransitioning] = useState(false);
   const [paused, setPaused] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [clock, setClock] = useState(getSeoulClockParts);
-  const transitionTimeoutRef = useRef<number | null>(null);
+  const rotationTimerRef = useRef<number | null>(null);
+  const rotationStartedAtRef = useRef(0);
+  const rotationRemainingRef = useRef(5000);
   const activeSlideIndexRef = useRef(activeSlideIndex);
-  const activePageIndexRef = useRef(activePageIndex);
-  const rotationIntervalMs = 4200;
-  const transitionDelayMs = reducedMotion ? 180 : 460;
-  const progressDurationMs = Math.max(rotationIntervalMs - transitionDelayMs, 1000);
+  const rotationIntervalMs = 5000;
+  const canAutoRotate = autoRotate && !reducedMotion;
 
   const statusItems = useMemo(() => equipmentItems.map((item) => {
     const maintenanceEvent = calendarEvents.find((event) => isMaintenanceReservation(event) && isEventForEquipment(event, item, equipmentItems) && isReservationActive(event));
@@ -1666,7 +1666,6 @@ function AutoRotatingEquipmentStatus({
     const sortedStatusItems = [...statusItems].sort((first, second) => statusOrder[first.status] - statusOrder[second.status]);
     const processItems = sortedStatusItems.filter((entry) => entry.item.group === 'process');
     const metrologyItems = sortedStatusItems.filter((entry) => entry.item.group === 'metrology');
-    const metrologyPages = [metrologyItems.slice(0, 8), metrologyItems.slice(8)].filter((page) => page.length > 0);
     return [
       {
         id: 'process',
@@ -1675,7 +1674,7 @@ function AutoRotatingEquipmentStatus({
         count: processItems.length,
         icon: equipmentCategoryCardMeta.process.icon,
         accent: `rgb(${equipmentCategoryCardMeta.process.accent})`,
-        pages: [processItems.slice(0, 8)]
+        items: processItems.slice(0, 8)
       },
       {
         id: 'metrology',
@@ -1684,34 +1683,37 @@ function AutoRotatingEquipmentStatus({
         count: metrologyItems.length,
         icon: equipmentCategoryCardMeta.metrology.icon,
         accent: `rgb(${equipmentCategoryCardMeta.metrology.accent})`,
-        pages: metrologyPages.length > 0 ? metrologyPages : [[]]
+        items: metrologyItems.slice(0, 8)
       }
     ];
   }, [statusItems]);
   const activeSlide = equipmentSlides[activeSlideIndex] ?? equipmentSlides[0];
-  const activePageItems = activeSlide.pages[activePageIndex] ?? activeSlide.pages[0] ?? [];
-  const applyStatusView = (slideIndex: number, pageIndex: number) => {
+  const applyStatusView = useCallback((slideIndex: number) => {
     activeSlideIndexRef.current = slideIndex;
-    activePageIndexRef.current = pageIndex;
     setActiveSlideIndex(slideIndex);
-    setActivePageIndex(pageIndex);
-  };
-  const changeStatusView = (updateView: () => void) => {
-    if (transitionTimeoutRef.current) {
-      window.clearTimeout(transitionTimeoutRef.current);
+  }, []);
+  const clearRotationTimer = useCallback(() => {
+    if (rotationTimerRef.current) {
+      window.clearTimeout(rotationTimerRef.current);
+      rotationTimerRef.current = null;
     }
-    setListTransitioning(true);
-    transitionTimeoutRef.current = window.setTimeout(() => {
-      updateView();
-      setRotationCycle((cycle) => cycle + 1);
-      setListTransitioning(false);
-      transitionTimeoutRef.current = null;
-    }, transitionDelayMs);
-  };
+  }, []);
   const selectSlide = (index: number) => {
-    changeStatusView(() => {
-      applyStatusView(index, 0);
-    });
+    clearRotationTimer();
+    rotationRemainingRef.current = rotationIntervalMs;
+    applyStatusView(index);
+    setRotationCycle((cycle) => cycle + 1);
+  };
+  const pauseRotation = () => {
+    if (rotationTimerRef.current) {
+      const elapsedMs = Date.now() - rotationStartedAtRef.current;
+      rotationRemainingRef.current = Math.max(rotationRemainingRef.current - elapsedMs, 160);
+      clearRotationTimer();
+    }
+    setPaused(true);
+  };
+  const resumeRotation = () => {
+    setPaused(false);
   };
 
   useEffect(() => {
@@ -1720,10 +1722,8 @@ function AutoRotatingEquipmentStatus({
   }, []);
 
   useEffect(() => () => {
-    if (transitionTimeoutRef.current) {
-      window.clearTimeout(transitionTimeoutRef.current);
-    }
-  }, []);
+    clearRotationTimer();
+  }, [clearRotationTimer]);
 
   useEffect(() => {
     const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -1734,35 +1734,30 @@ function AutoRotatingEquipmentStatus({
   }, []);
 
   useEffect(() => {
-    if (paused) return undefined;
-    const timer = window.setInterval(() => {
-      changeStatusView(() => {
-        const currentSlideIndex = activeSlideIndexRef.current;
-        const currentPageIndex = activePageIndexRef.current;
-        const currentSlide = equipmentSlides[currentSlideIndex] ?? equipmentSlides[0];
-        const pageCount = currentSlide.pages.length;
-        if (pageCount > currentPageIndex + 1) {
-          applyStatusView(currentSlideIndex, currentPageIndex + 1);
-        } else {
-          applyStatusView((currentSlideIndex + 1) % equipmentSlides.length, 0);
-        }
-      });
-    }, rotationIntervalMs);
-    return () => window.clearInterval(timer);
-  }, [equipmentSlides, paused, rotationIntervalMs, transitionDelayMs]);
+    clearRotationTimer();
+    if (!canAutoRotate || paused || equipmentSlides.length <= 1) return undefined;
+    rotationStartedAtRef.current = Date.now();
+    rotationTimerRef.current = window.setTimeout(() => {
+      const nextSlideIndex = (activeSlideIndexRef.current + 1) % equipmentSlides.length;
+      rotationRemainingRef.current = rotationIntervalMs;
+      applyStatusView(nextSlideIndex);
+      setRotationCycle((cycle) => cycle + 1);
+    }, rotationRemainingRef.current);
+    return () => {
+      clearRotationTimer();
+    };
+  }, [activeSlideIndex, applyStatusView, canAutoRotate, clearRotationTimer, equipmentSlides.length, paused]);
 
   return (
     <section
       className={`auto-equipment-status ${paused ? 'is-paused' : ''}`}
       aria-labelledby="auto-equipment-status-title"
       style={{
-        '--auto-status-duration': `${progressDurationMs}ms`,
+        '--auto-status-duration': `${rotationIntervalMs}ms`,
         '--auto-status-accent': activeSlide.accent
       } as CSSProperties}
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-      onFocus={() => setPaused(true)}
-      onBlur={() => setPaused(false)}
+      onMouseEnter={pauseRotation}
+      onMouseLeave={resumeRotation}
     >
       <h2 className="sr-only" id="auto-equipment-status-title">통합 장비 현황</h2>
       <div className="auto-status-head">
@@ -1805,13 +1800,54 @@ function AutoRotatingEquipmentStatus({
           );
         })}
       </div>
+      <div className="auto-status-stage">
+        {equipmentSlides.map((slide, slideIndex) => {
+          const isActive = activeSlideIndex === slideIndex;
+          return (
+            <div
+              key={`${slide.id}-${rotationCycle}`}
+              className={`auto-status-grid ${isActive ? 'is-active' : ''}`}
+              role="tabpanel"
+              aria-hidden={!isActive}
+              aria-label={`${slide.title} ${slide.count}醫??λ퉬 ?곹깭`}
+              style={{ '--auto-status-accent': slide.accent } as CSSProperties}
+            >
+              {slide.items.map(({ item, activeEvent, status }) => {
+                const accent = status === 'active' ? '#34d6b0' : status === 'maintenance' ? '#f5b942' : '#3a4456';
+                const message = status === 'active'
+                  ? `~${formatReservationTime(activeEvent?.end)} 종료`
+                  : status === 'maintenance'
+                    ? activeEvent ? `~${formatReservationTime(activeEvent.end)} 점검` : '점검 중'
+                    : '예약 가능 →';
+                return (
+                  <article
+                    key={item.id}
+                    className={`auto-status-cell is-${status}`}
+                    aria-label={`${item.name} ${getRuntimeStatusLabel(status)}`}
+                  >
+                    <span className="auto-status-bar" style={{ background: accent }} />
+                    <span className="auto-status-copy">
+                      <span className="auto-status-cell-top">
+                        <span className="auto-status-category">{getRealtimeCategoryLabel(item)}</span>
+                      </span>
+                      <span className={`runtime-status-badge is-${status}`}>{getRuntimeStatusLabel(status)}</span>
+                      <strong>{item.name}</strong>
+                      <small>{message}</small>
+                    </span>
+                  </article>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
       <div
-        key={`${activeSlide.id}-${activePageIndex}-${rotationCycle}`}
-        className={`auto-status-grid ${listTransitioning ? 'is-fading-out' : ''}`}
+        key={`${activeSlide.id}-${rotationCycle}`}
+        className="auto-status-grid-legacy"
         role="tabpanel"
         aria-label={`${activeSlide.title} ${activeSlide.count}종 장비 상태`}
       >
-        {activePageItems.map(({ item, activeEvent, status }) => {
+        {activeSlide.items.map(({ item, activeEvent, status }) => {
           const accent = status === 'active' ? '#34d6b0' : status === 'maintenance' ? '#f5b942' : '#3a4456';
           const message = status === 'active'
             ? `~${formatReservationTime(activeEvent?.end)} 종료`

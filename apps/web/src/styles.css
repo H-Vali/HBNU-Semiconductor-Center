@@ -1306,28 +1306,47 @@ select {
 }
 
 .auto-status-tab.is-active .auto-status-progress span {
-  animation: autoStatusFill var(--auto-status-duration) linear forwards;
+  animation: autoStatusFill var(--auto-status-duration) cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .auto-equipment-status.is-paused .auto-status-progress span {
   animation-play-state: paused;
 }
 
+.auto-status-stage {
+  position: relative;
+}
+
 .auto-status-grid {
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+  opacity: 0;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
-  animation: autoStatusGridIn 0.64s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform: translateY(6px);
   transition:
-    opacity 0.46s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.46s cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: opacity, transform;
+    opacity 0.55s cubic-bezier(0.22, 0.61, 0.36, 1),
+    transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1),
+    visibility 0s linear 0.55s;
+  pointer-events: none;
+  will-change: opacity, transform, visibility;
 }
 
-.auto-status-grid.is-fading-out {
-  opacity: 0;
-  transform: translateY(6px) scale(0.99);
-  animation: none;
+.auto-status-grid.is-active {
+  position: relative;
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.55s cubic-bezier(0.22, 0.61, 0.36, 1),
+    transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1);
+  pointer-events: auto;
+}
+
+.auto-status-grid-legacy {
+  display: none;
 }
 
 .auto-status-cell {
@@ -1342,6 +1361,42 @@ select {
   padding: 16px 16px 15px;
   color: inherit;
   text-align: left;
+}
+
+.auto-status-grid.is-active .auto-status-cell {
+  animation: autoStatusCellIn 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+.auto-status-grid.is-active .auto-status-cell:nth-child(1) {
+  animation-delay: 0.04s;
+}
+
+.auto-status-grid.is-active .auto-status-cell:nth-child(2) {
+  animation-delay: 0.08s;
+}
+
+.auto-status-grid.is-active .auto-status-cell:nth-child(3) {
+  animation-delay: 0.12s;
+}
+
+.auto-status-grid.is-active .auto-status-cell:nth-child(4) {
+  animation-delay: 0.16s;
+}
+
+.auto-status-grid.is-active .auto-status-cell:nth-child(5) {
+  animation-delay: 0.2s;
+}
+
+.auto-status-grid.is-active .auto-status-cell:nth-child(6) {
+  animation-delay: 0.24s;
+}
+
+.auto-status-grid.is-active .auto-status-cell:nth-child(7) {
+  animation-delay: 0.28s;
+}
+
+.auto-status-grid.is-active .auto-status-cell:nth-child(8) {
+  animation-delay: 0.32s;
 }
 
 .auto-status-cell:hover {
@@ -1442,6 +1497,18 @@ select {
   }
 }
 
+@keyframes autoStatusCellIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .auto-status-tab.is-active .auto-status-progress span {
     width: 100%;
@@ -1449,12 +1516,16 @@ select {
   }
 
   .auto-status-grid {
-    animation: autoStatusReducedGridIn 0.2s ease both;
-    transition: opacity 0.18s ease;
+    transform: none;
+    transition: opacity 0.3s ease, visibility 0s linear 0.3s;
   }
 
-  .auto-status-grid.is-fading-out {
+  .auto-status-grid.is-active {
     transform: none;
+  }
+
+  .auto-status-grid.is-active .auto-status-cell {
+    animation: none;
   }
 }
 
