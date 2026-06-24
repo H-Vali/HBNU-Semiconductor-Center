@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent, type FormEvent, type ReactNode } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -1033,6 +1033,58 @@ function SidebarNavigation({
   const inquirySelected = inquiryPages.includes(activePage);
   const reservationSelected = reservationPages.includes(activePage);
   const trainingSelected = trainingPages.includes(activePage);
+  const noticeItem = menu.find((item) => item.page === 'notice');
+  const centerItem = menu.find((item) => item.page === 'center');
+  const facilityItem = menu.find((item) => item.page === 'facility');
+  const equipmentItem = menu.find((item) => item.page === 'equipment');
+  const reservationItem = menu.find((item) => item.page === 'reservations');
+  const trainingItem = menu.find((item) => item.page === 'training');
+  const mypageItem = menu.find((item) => item.page === 'mypage');
+
+  function renderNavButton(item: (typeof menu)[number] | undefined, selected: boolean) {
+    if (!item) return null;
+    const Icon = item.icon;
+    return (
+      <button type="button" className={`sidebar-nav-item ${selected ? 'is-active' : ''}`} onClick={() => onNavigate(item.page)}>
+        <Icon size={18} />
+        <span>{item.label}</span>
+      </button>
+    );
+  }
+
+  function renderDropdown({
+    item,
+    open,
+    selected,
+    onToggle,
+    children
+  }: {
+    item: (typeof menu)[number] | undefined;
+    open: boolean;
+    selected: boolean;
+    onToggle: () => void;
+    children: ReactNode;
+  }) {
+    if (!item) return null;
+    const Icon = item.icon;
+    return (
+      <div className={`sidebar-dropdown ${open ? 'is-open' : ''}`}>
+        <button
+          type="button"
+          className={`sidebar-nav-item sidebar-dropdown-trigger ${selected ? 'is-active' : ''}`}
+          aria-expanded={open}
+          onClick={onToggle}
+        >
+          <Icon size={18} />
+          <span>{item.label}</span>
+          <ChevronDown size={16} />
+        </button>
+        <div className="sidebar-subnav" aria-hidden={!open}>
+          {children}
+        </div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     if (noticeSelected) setNoticeOpen(true);
@@ -1055,127 +1107,102 @@ function SidebarNavigation({
       <aside className="app-sidebar" aria-label="주요 메뉴">
         <div className="sidebar-section-label">Navigation</div>
         <nav className="sidebar-nav">
-          {menu.map((item) => {
-            const Icon = item.icon;
-            const selected = item.page === 'notice' ? noticeSelected : item.page === 'reservations' ? reservationSelected : item.page === 'training' ? trainingSelected : activePage === item.page;
-            const hasToggleDropdown = item.page === 'notice'
-              || (item.page === 'reservations' && canManageAssignedPermissions)
-              || (item.page === 'training' && canManageAssignedPermissions);
-            return (
-              <Fragment key={`${item.page}-${item.label}`}>
+          {renderDropdown({
+            item: noticeItem,
+            open: noticeOpen,
+            selected: noticeSelected,
+            onToggle: () => setNoticeOpen((current) => !current),
+            children: (
+              <>
                 <button
                   type="button"
-                  className={`sidebar-nav-item ${hasToggleDropdown ? 'sidebar-dropdown-trigger' : ''} ${selected ? 'is-active' : ''}`}
-                  aria-expanded={item.page === 'notice' ? noticeOpen : item.page === 'reservations' ? reservationOpen : item.page === 'training' ? trainingOpen : undefined}
-                  onClick={() => {
-                    if (item.page === 'notice') {
-                      setNoticeOpen((current) => !current);
-                      return;
-                    }
-                    if (item.page === 'reservations' && canManageAssignedPermissions) {
-                      setReservationOpen((current) => !current);
-                      return;
-                    }
-                    if (item.page === 'training' && canManageAssignedPermissions) {
-                      setTrainingOpen((current) => !current);
-                      return;
-                    }
-                    onNavigate(item.page);
-                  }}
+                  className={`sidebar-subnav-item ${activePage === 'operationNotice' ? 'is-active' : ''}`}
+                  onClick={() => onNavigate('operationNotice')}
                 >
-                  <Icon size={18} />
-                  <span>{item.label}</span>
-                  {item.page === 'notice' && <ChevronDown size={16} />}
-                  {item.page === 'reservations' && canManageAssignedPermissions && <ChevronDown size={16} />}
-                  {item.page === 'training' && canManageAssignedPermissions && <ChevronDown size={16} />}
+                  <Factory size={15} />
+                  <span>운영공지</span>
                 </button>
-                {item.page === 'notice' && (
-                  <div className={`sidebar-dropdown ${noticeOpen ? 'is-open' : ''}`}>
-                    <div className="sidebar-subnav" aria-hidden={!noticeOpen}>
-                      <button
-                        type="button"
-                        className={`sidebar-subnav-item ${activePage === 'operationNotice' ? 'is-active' : ''}`}
-                        onClick={() => onNavigate('operationNotice')}
-                      >
-                        <Factory size={15} />
-                        <span>운영공지</span>
-                      </button>
-                      <button
-                        type="button"
-                        className={`sidebar-subnav-item ${activePage === 'meetingNotice' ? 'is-active' : ''}`}
-                        onClick={() => onNavigate('meetingNotice')}
-                      >
-                        <MessageSquare size={15} />
-                        <span>회의공지</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-                {item.page === 'reservations' && canManageAssignedPermissions && (
-                  <div className={`sidebar-dropdown ${reservationOpen ? 'is-open' : ''}`}>
-                    <div className="sidebar-subnav" aria-hidden={!reservationOpen}>
-                      <button
-                        type="button"
-                        className={`sidebar-subnav-item ${activePage === 'managerPermissions' ? 'is-active' : ''}`}
-                        onClick={() => onNavigate('managerPermissions')}
-                      >
-                        <LockKeyhole size={15} />
-                        <span>사용권한부여(담당)</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-                {item.page === 'training' && (
-                  <>
-                  {canManageAssignedPermissions && (
-                    <div className={`sidebar-dropdown ${trainingOpen ? 'is-open' : ''}`}>
-                      <div className="sidebar-subnav" aria-hidden={!trainingOpen}>
-                        <button
-                          type="button"
-                          className={`sidebar-subnav-item ${activePage === 'trainingManagement' ? 'is-active' : ''}`}
-                          onClick={() => onNavigate('trainingManagement')}
-                        >
-                          <GraduationCap size={15} />
-                          <span>교육신청관리(담당)</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  <div className={`sidebar-dropdown ${inquiryOpen ? 'is-open' : ''}`}>
-                    <button
-                      type="button"
-                      className={`sidebar-nav-item sidebar-dropdown-trigger ${inquirySelected ? 'is-active' : ''}`}
-                      onClick={() => setInquiryOpen((current) => !current)}
-                      aria-expanded={inquiryOpen}
-                    >
-                      <HelpCircle size={18} />
-                      <span>문의사항</span>
-                      <ChevronDown size={16} />
-                    </button>
-                    <div className="sidebar-subnav" aria-hidden={!inquiryOpen}>
-                      <button
-                        type="button"
-                        className={`sidebar-subnav-item ${activePage === 'faq' ? 'is-active' : ''}`}
-                        onClick={() => onNavigate('faq')}
-                      >
-                        <BookOpen size={15} />
-                        <span>자주 묻는 내용</span>
-                      </button>
-                      <button
-                        type="button"
-                        className={`sidebar-subnav-item ${activePage === 'qna' ? 'is-active' : ''}`}
-                        onClick={() => onNavigate('qna')}
-                      >
-                        <MessageSquare size={15} />
-                        <span>사용자 Q&amp;A</span>
-                      </button>
-                    </div>
-                  </div>
-                  </>
-                )}
-              </Fragment>
-            );
+                <button
+                  type="button"
+                  className={`sidebar-subnav-item ${activePage === 'meetingNotice' ? 'is-active' : ''}`}
+                  onClick={() => onNavigate('meetingNotice')}
+                >
+                  <MessageSquare size={15} />
+                  <span>회의공지</span>
+                </button>
+              </>
+            )
           })}
+          {renderNavButton(centerItem, activePage === 'center')}
+          {renderNavButton(facilityItem, activePage === 'facility')}
+          {renderNavButton(equipmentItem, activePage === 'equipment')}
+          {canManageAssignedPermissions
+            ? renderDropdown({
+                item: reservationItem,
+                open: reservationOpen,
+                selected: reservationSelected,
+                onToggle: () => setReservationOpen((current) => !current),
+                children: (
+                  <button
+                    type="button"
+                    className={`sidebar-subnav-item ${activePage === 'managerPermissions' ? 'is-active' : ''}`}
+                    onClick={() => onNavigate('managerPermissions')}
+                  >
+                    <LockKeyhole size={15} />
+                    <span>사용권한부여(담당)</span>
+                  </button>
+                )
+              })
+            : renderNavButton(reservationItem, activePage === 'reservations')}
+          {canManageAssignedPermissions
+            ? renderDropdown({
+                item: trainingItem,
+                open: trainingOpen,
+                selected: trainingSelected,
+                onToggle: () => setTrainingOpen((current) => !current),
+                children: (
+                  <button
+                    type="button"
+                    className={`sidebar-subnav-item ${activePage === 'trainingManagement' ? 'is-active' : ''}`}
+                    onClick={() => onNavigate('trainingManagement')}
+                  >
+                    <GraduationCap size={15} />
+                    <span>교육신청관리(담당)</span>
+                  </button>
+                )
+              })
+            : renderNavButton(trainingItem, activePage === 'training')}
+          <div className={`sidebar-dropdown ${inquiryOpen ? 'is-open' : ''}`}>
+            <button
+              type="button"
+              className={`sidebar-nav-item sidebar-dropdown-trigger ${inquirySelected ? 'is-active' : ''}`}
+              onClick={() => setInquiryOpen((current) => !current)}
+              aria-expanded={inquiryOpen}
+            >
+              <HelpCircle size={18} />
+              <span>문의사항</span>
+              <ChevronDown size={16} />
+            </button>
+            <div className="sidebar-subnav" aria-hidden={!inquiryOpen}>
+              <button
+                type="button"
+                className={`sidebar-subnav-item ${activePage === 'faq' ? 'is-active' : ''}`}
+                onClick={() => onNavigate('faq')}
+              >
+                <BookOpen size={15} />
+                <span>자주 묻는 내용</span>
+              </button>
+              <button
+                type="button"
+                className={`sidebar-subnav-item ${activePage === 'qna' ? 'is-active' : ''}`}
+                onClick={() => onNavigate('qna')}
+              >
+                <MessageSquare size={15} />
+                <span>사용자 Q&amp;A</span>
+              </button>
+            </div>
+          </div>
+          {renderNavButton(mypageItem, activePage === 'mypage')}
         </nav>
         <div className="sidebar-admin-block">
           <div className="sidebar-section-label">Admin</div>
