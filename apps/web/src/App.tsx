@@ -268,15 +268,15 @@ const initialConsumables: ConsumableItem[] = [
 const categoryMeta: Record<EquipmentGroup, { title: string; subtitle: string; image: string; bullets: string[] }> = {
   process: {
     title: '공정',
-    subtitle: '박막, 노광, 식각, 열처리 장비',
+    subtitle: '증착, 노광, 식각, 습식 공정 장비',
     image: 'https://images.unsplash.com/photo-1562408590-e32931084e23?auto=format&fit=crop&w=1200&q=85',
-    bullets: ['Lithography / Coating', 'Deposition / Etching', 'Thermal Process', 'Packaging Support']
+    bullets: ['Deposition', 'Lithography / Coating', 'Etching', 'Wet Process']
   },
   metrology: {
-    title: '측정 및 분석',
-    subtitle: '미세구조, 전기적 특성, 광학 분석 장비',
+    title: '검사·계측·패키징',
+    subtitle: '소자 검사, 전기적 계측, 패키징 실습 장비',
     image: 'https://images.unsplash.com/photo-1581093588401-fbb62a02f120?auto=format&fit=crop&w=1200&q=85',
-    bullets: ['Electron Microscopy', 'Surface Analysis', 'Electrical Measurement', 'Optical Spectroscopy']
+    bullets: ['Device Inspection', 'Electrical Measurement', 'Signal Analysis', 'Packaging Support']
   }
 };
 
@@ -341,7 +341,7 @@ function normalizeReservationStatus(status: unknown): ReservationStatus {
 function getRealtimeCategoryLabel(item: EquipmentItem) {
   if (/etch|rie/i.test(item.name)) return 'ETCHING';
   if (/aligner|mask|lithography|coater/i.test(item.name)) return 'LITHOGRAPHY';
-  if (item.group === 'metrology') return 'METROLOGY';
+  if (item.group === 'metrology') return 'INSPECTION';
   return 'PROCESS';
 }
 
@@ -470,7 +470,7 @@ function normalizeEquipment(item: ApiEquipmentItem, index: number): EquipmentIte
   const name = item.name ?? `Equipment ${index + 1}`;
   const inferredGroup: EquipmentGroup =
     item.group ??
-    (item.category?.includes('공정') || ['Spin', 'Sputter', 'PECVD', 'RIE', 'Furnace', 'Aligner', 'Coater'].some((keyword) => name.includes(keyword))
+    (item.category?.includes('공정') || ['Spin', 'Sputter', 'Ebeam', 'Evaporator', 'Mask', 'Aligner', 'Coater', 'ALD', '식각', 'Wet Station'].some((keyword) => name.includes(keyword))
       ? 'process'
       : 'metrology');
 
@@ -478,9 +478,9 @@ function normalizeEquipment(item: ApiEquipmentItem, index: number): EquipmentIte
     id: item.id ?? `eq-${index + 1}`,
     name,
     model: item.model ?? (inferredGroup === 'process' ? `HB-P-${String(index + 1).padStart(3, '0')}` : `HB-M-${String(index + 1).padStart(3, '0')}`),
-    category: inferredGroup === 'process' ? '공정장비' : '측정 및 분석장비',
+    category: inferredGroup === 'process' ? '공정 장비' : '검사·계측·패키징 장비',
     group: inferredGroup,
-    groupName: inferredGroup === 'process' ? '공정' : '측정 및 분석',
+    groupName: inferredGroup === 'process' ? '공정' : '검사·계측·패키징',
     location: item.location ?? `공정동 ${Math.floor(index / 6) + 1}층`,
     image: item.image ?? item.imageUrl ?? fallbackEquipment[index % fallbackEquipment.length].image,
     features: item.features ?? ['예약 캘린더', '교육 인증', '사용 로그'],
@@ -1334,12 +1334,12 @@ function Hero({
           <div className="hero-reservation-list">
             <div className="hero-reservation-row">
               <time>14:00</time>
-              <strong>FE-SEM</strong>
+              <strong>mini SEM</strong>
               <span>이용 예약</span>
             </div>
             <div className="hero-reservation-row">
               <time>16:30</time>
-              <strong>XRD</strong>
+              <strong>반도체검사기</strong>
               <span>이용 예약</span>
             </div>
           </div>
@@ -1391,7 +1391,7 @@ function StatGrid({ equipmentItems }: { equipmentItems: EquipmentItem[] }) {
   const averageUtilization = Math.round(equipmentItems.reduce((sum, item) => sum + item.utilization, 0) / equipmentItems.length);
 
   const statCards = [
-    { label: '운영 장비', value: `${equipmentItems.length}`, unit: '종', detail: '공정·측정·분석', icon: Wrench, type: 'text' as const },
+    { label: '운영 장비', value: `${equipmentItems.length}`, unit: '종', detail: '공정·검사·계측·패키징', icon: Wrench, type: 'text' as const },
     { label: '월간 가동시간', value: `${totalHours.toLocaleString()}`, unit: 'h', detail: `전월 대비 ${monthlyDelta > 0 ? '+' : ''}${monthlyDelta}%`, icon: Gauge, type: 'trend' as const },
     { label: '교육 인증', value: '312', unit: '명', detail: '최근 30일 신규 27명', icon: CheckCircle2, type: 'text' as const },
     { label: 'FAB 가동률', value: `${averageUtilization}`, unit: '%', detail: 'Cleanroom active', icon: Cpu, type: 'gauge' as const }
@@ -1727,10 +1727,6 @@ function EquipmentPage({
 
   return (
     <section id="장비현황" className="grid gap-5">
-      <SectionTitle
-        title="장비현황"
-        eyebrow="Equipment Inventory"
-      />
       <EquipmentGateway
         equipmentItems={equipmentItems}
         onOpen={setActiveGroup}
@@ -1847,8 +1843,8 @@ function CleanroomPlanSection({ image, mode = 'combined' }: { image: string | nu
               <span>Lithography / Deposition / Etching</span>
             </div>
             <div className="cleanroom-room room-metrology">
-              <strong>Metrology Zone</strong>
-              <span>SEM / XRD / Probe Station</span>
+              <strong>Inspection & Packaging Zone</strong>
+              <span>mini SEM / LPKF / 반도체검사기</span>
             </div>
             <div className="cleanroom-room room-utility">
               <strong>Utility Core</strong>
@@ -1920,9 +1916,9 @@ function EquipmentAddModal({ onClose, onAdd }: { onClose: () => void; onAdd: (it
     onAdd({
       id: `eq-${Date.now()}`,
       name: form.name.trim(),
-      category: form.group === 'process' ? '공정장비' : '측정 및 분석장비',
+      category: form.group === 'process' ? '공정 장비' : '검사·계측·패키징 장비',
       group: form.group,
-      groupName: form.group === 'process' ? '공정' : '측정 및 분석',
+      groupName: form.group === 'process' ? '공정' : '검사·계측·패키징',
       location: form.location,
       image: form.group === 'process' ? categoryMeta.process.image : categoryMeta.metrology.image,
       features: ['예약 캘린더', '교육 인증', '사용 로그'],
@@ -1936,13 +1932,16 @@ function EquipmentAddModal({ onClose, onAdd }: { onClose: () => void; onAdd: (it
     <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
       <form className="reservation-modal" onSubmit={submit} onMouseDown={(event) => event.stopPropagation()}>
         <div className="mb-5 flex items-center justify-between">
-          <h3 className="text-2xl font-extrabold text-white">장비 추가</h3>
+          <div>
+            <h3 className="text-2xl font-extrabold text-white">장비 추가</h3>
+            <p className="mt-1 text-sm font-bold text-slate-400">장비 사진 권장 사이즈: 1200 × 675px, JPG/PNG/WEBP</p>
+          </div>
           <button type="button" className="rounded-md border border-white/10 px-4 py-2 text-sm font-bold text-slate-200 hover:border-cyan-300 hover:text-cyan-200" onClick={onClose}>
             닫기
           </button>
         </div>
         <label className="reservation-label">장비명<input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} required /></label>
-        <label className="reservation-label">대분류<select value={form.group} onChange={(event) => setForm((current) => ({ ...current, group: event.target.value as EquipmentGroup }))}><option value="process">공정</option><option value="metrology">측정 및 분석</option></select></label>
+        <label className="reservation-label">대분류<select value={form.group} onChange={(event) => setForm((current) => ({ ...current, group: event.target.value as EquipmentGroup }))}><option value="process">공정</option><option value="metrology">검사·계측·패키징</option></select></label>
         <label className="reservation-label">위치<input value={form.location} onChange={(event) => setForm((current) => ({ ...current, location: event.target.value }))} /></label>
         <label className="reservation-label">사용 조건<input value={form.condition} onChange={(event) => setForm((current) => ({ ...current, condition: event.target.value }))} /></label>
         <div className="mt-6 flex justify-end gap-3">
@@ -2089,7 +2088,7 @@ function ReservationPage({
         >
           <option value="all">전체 카테고리</option>
           <option value="process">공정장비</option>
-          <option value="metrology">계측 및 분석장비</option>
+          <option value="metrology">검사·계측·패키징 장비</option>
         </select>
         <div className="reservation-equipment-list grid max-h-[34rem] gap-2 overflow-y-auto overflow-x-hidden pr-1">
           <button
@@ -2122,7 +2121,7 @@ function ReservationPage({
                 </span>
                 <span className={`equipment-type-chip ${isUnavailable ? 'is-unavailable' : isProcess ? 'is-process' : 'is-metrology'}`}>
                   <GroupIcon size={14} />
-                  {isUnavailable ? '예약불가' : isProcess ? '공정' : '계측 및 분석'}
+                  {isUnavailable ? '예약불가' : isProcess ? '공정' : '검사·계측·패키징'}
                 </span>
               </button>
             );
@@ -4100,7 +4099,7 @@ function EquipmentAdminPage({
         <select value={groupFilter} onChange={(event) => setGroupFilter(event.target.value as '전체' | EquipmentGroup)}>
           <option value="전체">전체 분류</option>
           <option value="process">공정</option>
-          <option value="metrology">계측 및 분석</option>
+          <option value="metrology">검사·계측·패키징</option>
         </select>
         <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as '전체' | EquipmentStatus)}>
           <option value="전체">전체 상태</option>
@@ -4132,7 +4131,7 @@ function EquipmentAdminPage({
                   </td>
                   <td>{item.model ?? '-'}</td>
                   <td>{item.location}</td>
-                  <td><span className={`equipment-admin-group is-${item.group}`}>{item.group === 'process' ? '공정' : '계측 및 분석'}</span></td>
+                  <td><span className={`equipment-admin-group is-${item.group}`}>{item.group === 'process' ? '공정' : '검사·계측·패키징'}</span></td>
                   <td><span className={`equipment-admin-status is-${item.status ?? 'available'}`}>{(item.status ?? 'available') === 'available' ? '이용가능' : '이용불가'}</span></td>
                   <td>{manager ? <span className="equipment-admin-manager">{manager.name}</span> : <span className="equipment-admin-empty">미배정</span>}</td>
                 </tr>
@@ -4208,8 +4207,8 @@ function EquipmentEditModal({
       model: form.model.trim(),
       location: form.location.trim(),
       group: form.group,
-      groupName: form.group === 'process' ? '공정' : '계측 및 분석',
-      category: form.group === 'process' ? '공정장비' : '측정 및 분석장비',
+      groupName: form.group === 'process' ? '공정' : '검사·계측·패키징',
+      category: form.group === 'process' ? '공정 장비' : '검사·계측·패키징 장비',
       status: form.status,
       image: form.image,
       description: form.description.trim(),
@@ -4248,7 +4247,7 @@ function EquipmentEditModal({
             장비 분류 <em>필수</em>
             <select value={form.group} onChange={(event) => updateField('group', event.target.value as EquipmentGroup)}>
               <option value="process">공정</option>
-              <option value="metrology">계측 및 분석</option>
+              <option value="metrology">검사·계측·패키징</option>
             </select>
           </label>
           <label>
@@ -4304,7 +4303,7 @@ function EquipmentEditModal({
           <label className="equipment-image-upload is-wide" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); loadImage(event.dataTransfer.files?.[0]); }}>
             <UploadCloud size={26} />
             <strong>장비 사진 업로드</strong>
-            <span>선택 사항 · 파일 선택 또는 드래그 앤 드롭</span>
+            <span>선택 사항 · 권장 1200 × 675px · 파일 선택 또는 드래그 앤 드롭</span>
             <input type="file" accept="image/*" onChange={(event) => loadImage(event.target.files?.[0])} />
           </label>
           {form.image && <img className="equipment-edit-preview is-wide" src={form.image} alt={`${form.name} 미리보기`} />}
@@ -4862,7 +4861,7 @@ function PermissionModal({
         </div>
         <div className="permission-modal-body">
           {renderEquipmentGroup('공정 장비', processItems)}
-          {renderEquipmentGroup('계측 및 분석 장비', metrologyItems)}
+          {renderEquipmentGroup('검사·계측·패키징 장비', metrologyItems)}
         </div>
         <div className="user-add-modal-actions permission-modal-actions">
           <button type="button" className="is-cancel" onClick={onClose}>닫기</button>
@@ -5309,8 +5308,8 @@ type QnaItem = {
 };
 
 const initialQnaItems: QnaItem[] = [
-  { id: 'qna-1', department: '전자공학과', title: 'FE-SEM 교육 인증 후 예약 권한 반영 시점 문의', content: '교육 이수 후 장비 예약 가능 권한이 언제 반영되는지 확인 부탁드립니다.', status: '답변완료', createdAt: '2026.06.21' },
-  { id: 'qna-2', department: '기계공학과', title: 'Thermal Evaporator 야간 사용 가능 여부 문의', content: '야간 시간대에도 담당자 승인 후 장비 사용이 가능한지 문의드립니다.', status: '답변대기', createdAt: '2026.06.22' },
+  { id: 'qna-1', department: '전자공학과', title: 'mini SEM 교육 인증 후 예약 권한 반영 시점 문의', content: '교육 이수 후 장비 예약 가능 권한이 언제 반영되는지 확인 부탁드립니다.', status: '답변완료', createdAt: '2026.06.21' },
+  { id: 'qna-2', department: '기계공학과', title: 'Ebeam Evaporator 야간 사용 가능 여부 문의', content: '야간 시간대에도 담당자 승인 후 장비 사용이 가능한지 문의드립니다.', status: '답변대기', createdAt: '2026.06.22' },
   { id: 'qna-3', department: '창의융합학과', title: '교육 신청 후 일정 변경 가능 여부 문의', content: '교육 신청 후 개인 일정으로 인해 교육 일정을 변경할 수 있는지 알고 싶습니다.', status: '답변대기', createdAt: '2026.06.22' }
 ];
 
