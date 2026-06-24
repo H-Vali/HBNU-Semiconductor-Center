@@ -2984,6 +2984,12 @@ select {
   font-weight: 800;
 }
 
+.manager-granted-row .manager-granted-date {
+  color: #67e8f9;
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
 .manager-permission-empty {
   display: grid;
   min-height: 24rem;
@@ -4253,6 +4259,20 @@ select {
   border-color: rgba(95, 217, 201, 0.48);
   background: rgba(20, 184, 166, 0.14);
   color: #99f6e4;
+}
+
+.permission-grant-count.is-granted::before {
+  content: "✓";
+  display: inline-grid;
+  width: 1rem;
+  height: 1rem;
+  margin-right: 0.35rem;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(153, 246, 228, 0.16);
+  color: #99f6e4;
+  font-size: 0.68rem;
+  line-height: 1;
 }
 
 .permission-manage-button {

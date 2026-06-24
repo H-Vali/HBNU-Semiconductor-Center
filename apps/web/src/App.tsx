@@ -101,6 +101,7 @@ type ManagedUser = {
 type RoleLevel = '교원' | '대표' | '일반';
 type PermissionRoleLevel = RoleLevel | '담당';
 type EquipmentPermissionMap = Record<string, string[]>;
+type EquipmentPermissionGrantMetaMap = Record<string, { grantedAt: string }>;
 type PenaltyRecord = {
   id: string;
   userId: string;
@@ -632,6 +633,19 @@ function createPreviewEquipmentPermissions(): EquipmentPermissionMap {
     .filter((item) => getPreviewEquipmentPermissionIds().includes(item.id))
     .map((item) => item.id);
   return { [previewUserId]: previewEquipmentIds };
+}
+
+function getPermissionGrantKey(userId: string, equipmentId: string) {
+  return `${userId}:${equipmentId}`;
+}
+
+function createPermissionGrantMetaFromPermissions(permissions: EquipmentPermissionMap) {
+  const fallbackGrantedAt = new Date().toISOString();
+  return Object.fromEntries(
+    Object.entries(permissions).flatMap(([userId, equipmentIds]) => (
+      equipmentIds.map((equipmentId) => [getPermissionGrantKey(userId, equipmentId), { grantedAt: fallbackGrantedAt }])
+    ))
+  );
 }
 function formatProfessorLab(professor: string) {
   const name = professor.replace(/교수님|교수|Prof\.|Lab/gi, '').trim() || '백근우';
@@ -3749,6 +3763,7 @@ function ManagerPermissionGrantPage({
   users,
   equipmentItems,
   permissions,
+  permissionGrantMeta,
   currentUser,
   sessionRole,
   onGrantPermission
@@ -3756,6 +3771,7 @@ function ManagerPermissionGrantPage({
   users: ManagedUser[];
   equipmentItems: EquipmentItem[];
   permissions: EquipmentPermissionMap;
+  permissionGrantMeta: EquipmentPermissionGrantMetaMap;
   currentUser: ManagedUser | null;
   sessionRole: Role | null;
   onGrantPermission: (userId: string, equipmentId: string) => void;
@@ -3877,15 +3893,21 @@ function ManagerPermissionGrantPage({
               <h3>권한 보유 사용자</h3>
             </div>
             {grantedUsers.length > 0 ? (
-              grantedUsers.map((user) => (
+              grantedUsers.map((user) => {
+                const grantedAt = selectedEquipment
+                  ? permissionGrantMeta[getPermissionGrantKey(user.id, selectedEquipment.id)]?.grantedAt
+                  : null;
+                return (
                 <div key={user.id} className="manager-granted-row">
                   <div>
                     <strong>{user.name}</strong>
+                    <span className="manager-granted-date">권한 부여일시 {grantedAt ? formatSeoulDateTime(grantedAt) : '기존 부여 권한'}</span>
                     <span>{user.department} · {formatProfessorLab(user.labProfessor)}</span>
                   </div>
                   <span className="permission-grant-count is-granted">부여됨</span>
                 </div>
-              ))
+                );
+              })
             ) : (
               <p className="permission-empty-row">아직 권한이 부여된 사용자가 없습니다.</p>
             )}
@@ -4927,6 +4949,17 @@ export function App() {
       return createPreviewEquipmentPermissions();
     }
   });
+  const [equipmentPermissionGrantMeta, setEquipmentPermissionGrantMeta] = useState<EquipmentPermissionGrantMetaMap>(() => {
+    try {
+      const stored = localStorage.getItem('hbnu-equipment-permission-grant-meta');
+      if (stored) return JSON.parse(stored) as EquipmentPermissionGrantMetaMap;
+      const initialMeta = createPermissionGrantMetaFromPermissions(equipmentPermissions);
+      localStorage.setItem('hbnu-equipment-permission-grant-meta', JSON.stringify(initialMeta));
+      return initialMeta;
+    } catch {
+      return createPermissionGrantMetaFromPermissions(equipmentPermissions);
+    }
+  });
   const [sessionRole, setSessionRole] = useState<Role | null>(() => {
     const stored = localStorage.getItem('hbnu-session-user');
     if (!stored) return null;
@@ -5046,6 +5079,16 @@ export function App() {
             : [...currentManagerIds, equipmentId];
         }
         localStorage.setItem('hbnu-equipment-permissions', JSON.stringify(next));
+        return next;
+      });
+      setEquipmentPermissionGrantMeta((current) => {
+        const next: EquipmentPermissionGrantMetaMap = Object.fromEntries(
+          Object.entries(current).filter(([key]) => !key.endsWith(`:${equipmentId}`))
+        );
+        if (patch.managerId) {
+          next[getPermissionGrantKey(patch.managerId, equipmentId)] = { grantedAt: new Date().toISOString() };
+        }
+        localStorage.setItem('hbnu-equipment-permission-grant-meta', JSON.stringify(next));
         return next;
       });
     }
@@ -5310,13 +5353,24 @@ export function App() {
   function grantAssignedEquipmentPermission(userId: string, equipmentId: string) {
     setEquipmentPermissions((current) => {
       const currentUserPermissions = current[userId] ?? [];
+      const alreadyGranted = currentUserPermissions.includes(equipmentId);
       const next = {
         ...current,
-        [userId]: currentUserPermissions.includes(equipmentId)
+        [userId]: alreadyGranted
           ? currentUserPermissions
           : [...currentUserPermissions, equipmentId]
       };
       localStorage.setItem('hbnu-equipment-permissions', JSON.stringify(next));
+      if (!alreadyGranted) {
+        setEquipmentPermissionGrantMeta((currentMeta) => {
+          const nextMeta = {
+            ...currentMeta,
+            [getPermissionGrantKey(userId, equipmentId)]: { grantedAt: new Date().toISOString() }
+          };
+          localStorage.setItem('hbnu-equipment-permission-grant-meta', JSON.stringify(nextMeta));
+          return nextMeta;
+        });
+      }
       return next;
     });
   }
@@ -5411,6 +5465,7 @@ export function App() {
                 users={managedUsers}
                 equipmentItems={activeEquipmentItems}
                 permissions={equipmentPermissions}
+                permissionGrantMeta={equipmentPermissionGrantMeta}
                 currentUser={currentManagedUser}
                 sessionRole={sessionRole}
                 onGrantPermission={grantAssignedEquipmentPermission}
