@@ -1058,19 +1058,27 @@ function SidebarNavigation({
           {menu.map((item) => {
             const Icon = item.icon;
             const selected = item.page === 'notice' ? noticeSelected : item.page === 'reservations' ? reservationSelected : item.page === 'training' ? trainingSelected : activePage === item.page;
+            const hasToggleDropdown = item.page === 'notice'
+              || (item.page === 'reservations' && canManageAssignedPermissions)
+              || (item.page === 'training' && canManageAssignedPermissions);
             return (
               <Fragment key={`${item.page}-${item.label}`}>
                 <button
-                  className={`sidebar-nav-item ${selected ? 'is-active' : ''}`}
+                  type="button"
+                  className={`sidebar-nav-item ${hasToggleDropdown ? 'sidebar-dropdown-trigger' : ''} ${selected ? 'is-active' : ''}`}
+                  aria-expanded={item.page === 'notice' ? noticeOpen : item.page === 'reservations' ? reservationOpen : item.page === 'training' ? trainingOpen : undefined}
                   onClick={() => {
                     if (item.page === 'notice') {
                       setNoticeOpen((current) => !current);
+                      return;
                     }
                     if (item.page === 'reservations' && canManageAssignedPermissions) {
                       setReservationOpen((current) => !current);
+                      return;
                     }
                     if (item.page === 'training' && canManageAssignedPermissions) {
                       setTrainingOpen((current) => !current);
+                      return;
                     }
                     onNavigate(item.page);
                   }}

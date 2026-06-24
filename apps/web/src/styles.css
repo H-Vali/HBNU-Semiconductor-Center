@@ -773,6 +773,7 @@ select {
 .sidebar-dropdown {
   display: grid;
   gap: 0;
+  overflow: hidden;
 }
 
 .sidebar-dropdown-trigger svg:last-child {
@@ -793,13 +794,20 @@ select {
   opacity: 0;
   overflow: hidden;
   padding-left: 0.7rem;
-  transform: translateY(-0.35rem);
-  transition: max-height 0.34s ease, opacity 0.24s ease, padding-top 0.34s ease, transform 0.34s ease;
+  pointer-events: none;
+  transform: translateY(-0.55rem);
+  transition:
+    max-height 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.24s ease,
+    padding-top 0.34s ease,
+    transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: max-height, opacity, transform;
 }
 
 .sidebar-dropdown.is-open .sidebar-subnav {
-  max-height: 7rem;
+  max-height: 10rem;
   opacity: 1;
+  pointer-events: auto;
   padding-top: 0.35rem;
   transform: translateY(0);
 }
