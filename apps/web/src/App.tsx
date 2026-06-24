@@ -1618,8 +1618,14 @@ function AutoRotatingEquipmentStatus({
   const maintenanceCount = statusItems.filter((entry) => entry.status === 'maintenance').length;
   const idleCount = Math.max(statusItems.length - activeCount - maintenanceCount, 0);
   const equipmentSlides = useMemo(() => {
-    const processItems = statusItems.filter((entry) => entry.item.group === 'process');
-    const metrologyItems = statusItems.filter((entry) => entry.item.group === 'metrology');
+    const statusOrder: Record<EquipmentRuntimeStatus, number> = {
+      active: 0,
+      maintenance: 1,
+      idle: 2
+    };
+    const sortedStatusItems = [...statusItems].sort((first, second) => statusOrder[first.status] - statusOrder[second.status]);
+    const processItems = sortedStatusItems.filter((entry) => entry.item.group === 'process');
+    const metrologyItems = sortedStatusItems.filter((entry) => entry.item.group === 'metrology');
     return [
       {
         id: 'process',
