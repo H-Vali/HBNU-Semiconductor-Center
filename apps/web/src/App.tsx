@@ -1637,7 +1637,9 @@ function AutoRotatingEquipmentStatus({
   const [reducedMotion, setReducedMotion] = useState(false);
   const [clock, setClock] = useState(getSeoulClockParts);
   const transitionTimeoutRef = useRef<number | null>(null);
-  const durationMs = 6000;
+  const activeSlideIndexRef = useRef(activeSlideIndex);
+  const activePageIndexRef = useRef(activePageIndex);
+  const durationMs = 3500;
 
   const statusItems = useMemo(() => equipmentItems.map((item) => {
     const maintenanceEvent = calendarEvents.find((event) => isMaintenanceReservation(event) && isEventForEquipment(event, item, equipmentItems) && isReservationActive(event));
@@ -1686,6 +1688,12 @@ function AutoRotatingEquipmentStatus({
   }, [statusItems]);
   const activeSlide = equipmentSlides[activeSlideIndex] ?? equipmentSlides[0];
   const activePageItems = activeSlide.pages[activePageIndex] ?? activeSlide.pages[0] ?? [];
+  const applyStatusView = (slideIndex: number, pageIndex: number) => {
+    activeSlideIndexRef.current = slideIndex;
+    activePageIndexRef.current = pageIndex;
+    setActiveSlideIndex(slideIndex);
+    setActivePageIndex(pageIndex);
+  };
   const changeStatusView = (updateView: () => void) => {
     if (transitionTimeoutRef.current) {
       window.clearTimeout(transitionTimeoutRef.current);
@@ -1705,8 +1713,7 @@ function AutoRotatingEquipmentStatus({
   };
   const selectSlide = (index: number) => {
     changeStatusView(() => {
-      setActiveSlideIndex(index);
-      setActivePageIndex(0);
+      applyStatusView(index, 0);
     });
   };
 
@@ -1733,17 +1740,19 @@ function AutoRotatingEquipmentStatus({
     if (paused || reducedMotion) return undefined;
     const timer = window.setInterval(() => {
       changeStatusView(() => {
-        const pageCount = activeSlide.pages.length;
-        if (pageCount > activePageIndex + 1) {
-          setActivePageIndex((current) => current + 1);
+        const currentSlideIndex = activeSlideIndexRef.current;
+        const currentPageIndex = activePageIndexRef.current;
+        const currentSlide = equipmentSlides[currentSlideIndex] ?? equipmentSlides[0];
+        const pageCount = currentSlide.pages.length;
+        if (pageCount > currentPageIndex + 1) {
+          applyStatusView(currentSlideIndex, currentPageIndex + 1);
         } else {
-          setActiveSlideIndex((current) => (current + 1) % equipmentSlides.length);
-          setActivePageIndex(0);
+          applyStatusView((currentSlideIndex + 1) % equipmentSlides.length, 0);
         }
       });
     }, durationMs);
     return () => window.clearInterval(timer);
-  }, [activePageIndex, activeSlide.pages.length, equipmentSlides.length, paused, reducedMotion]);
+  }, [equipmentSlides, paused, reducedMotion]);
 
   return (
     <section
