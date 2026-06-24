@@ -3354,6 +3354,160 @@ select {
   font-weight: 800;
 }
 
+.training-management-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.training-management-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(7rem, 1fr));
+  gap: 0.75rem;
+}
+
+.training-management-summary div {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(2, 6, 23, 0.44);
+  padding: 0.85rem;
+}
+
+.training-management-summary strong,
+.training-management-summary span {
+  display: block;
+}
+
+.training-management-summary strong {
+  color: #f8fafc;
+  font-size: 1.45rem;
+  font-weight: 950;
+}
+
+.training-management-summary span {
+  margin-top: 0.15rem;
+  color: #94a3b8;
+  font-size: 0.76rem;
+  font-weight: 850;
+}
+
+.training-management-layout {
+  display: grid;
+  grid-template-columns: minmax(17rem, 0.36fr) minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.training-application-panel {
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.72);
+  padding: 1rem;
+}
+
+.training-application-list {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.training-application-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(2, 6, 23, 0.44);
+  padding: 0.85rem;
+}
+
+.training-application-row strong,
+.training-application-row span,
+.training-application-row em {
+  display: block;
+}
+
+.training-application-row strong {
+  color: #f8fafc;
+  font-size: 0.96rem;
+  font-weight: 950;
+}
+
+.training-application-row span,
+.training-application-row em {
+  margin-top: 0.22rem;
+  color: #94a3b8;
+  font-size: 0.78rem;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.training-application-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.training-application-status {
+  min-width: 5.4rem;
+  border-radius: 999px;
+  padding: 0.34rem 0.6rem;
+  text-align: center;
+  font-size: 0.74rem;
+  font-weight: 950;
+}
+
+.training-application-status.is-pending {
+  border: 1px solid rgba(245, 158, 11, 0.42);
+  background: rgba(245, 158, 11, 0.14);
+  color: #fcd34d;
+}
+
+.training-application-status.is-approved {
+  border: 1px solid rgba(52, 214, 176, 0.42);
+  background: rgba(20, 184, 166, 0.15);
+  color: #99f6e4;
+}
+
+.training-application-status.is-rejected {
+  border: 1px solid rgba(248, 113, 113, 0.42);
+  background: rgba(127, 29, 29, 0.22);
+  color: #fca5a5;
+}
+
+.training-application-actions button {
+  min-height: 2.1rem;
+  border-radius: 8px;
+  background: rgba(37, 99, 235, 0.92);
+  padding: 0 0.7rem;
+  color: #ffffff;
+  font-size: 0.76rem;
+  font-weight: 950;
+  transition: all 0.3s ease;
+}
+
+.training-application-actions button.is-reject {
+  background: rgba(100, 116, 139, 0.35);
+  color: #cbd5e1;
+}
+
+.training-application-actions button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.22);
+}
+
+.training-management-note {
+  border-top: 1px solid rgba(148, 163, 184, 0.16);
+  padding-top: 0.85rem;
+  color: #94a3b8;
+  font-size: 0.8rem;
+  font-weight: 750;
+  line-height: 1.55;
+}
+
 .manager-granted-row .manager-granted-date {
   color: #67e8f9;
   font-size: 0.74rem;

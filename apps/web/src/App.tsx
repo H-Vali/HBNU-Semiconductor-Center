@@ -52,7 +52,7 @@ import {
 } from 'lucide-react';
 import { equipment as fallbackEquipment, events, monthlyUsage, type EquipmentGroup, type EquipmentItem } from './data';
 
-type PageKey = 'home' | 'notice' | 'center' | 'facility' | 'equipment' | 'training' | 'faq' | 'qna' | 'reservations' | 'managerPermissions' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'equipmentAdmin' | 'penalties' | 'login';
+type PageKey = 'home' | 'notice' | 'center' | 'facility' | 'equipment' | 'training' | 'trainingManagement' | 'faq' | 'qna' | 'reservations' | 'managerPermissions' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'equipmentAdmin' | 'penalties' | 'login';
 type Role = 'USER' | 'ADMIN';
 type UsagePeriod = '24H' | '1W' | '1M';
 type EquipmentRuntimeStatus = 'active' | 'maintenance' | 'idle';
@@ -1023,10 +1023,13 @@ function SidebarNavigation({
   const visitorStats = useVisitorStats();
   const inquiryPages: PageKey[] = ['faq', 'qna'];
   const reservationPages: PageKey[] = ['reservations', 'managerPermissions'];
+  const trainingPages: PageKey[] = ['training', 'trainingManagement'];
   const [inquiryOpen, setInquiryOpen] = useState(() => inquiryPages.includes(activePage));
   const [reservationOpen, setReservationOpen] = useState(() => reservationPages.includes(activePage));
+  const [trainingOpen, setTrainingOpen] = useState(() => trainingPages.includes(activePage));
   const inquirySelected = inquiryPages.includes(activePage);
   const reservationSelected = reservationPages.includes(activePage);
+  const trainingSelected = trainingPages.includes(activePage);
 
   useEffect(() => {
     if (inquirySelected) setInquiryOpen(true);
@@ -1036,6 +1039,10 @@ function SidebarNavigation({
     if (reservationSelected) setReservationOpen(true);
   }, [reservationSelected]);
 
+  useEffect(() => {
+    if (trainingSelected) setTrainingOpen(true);
+  }, [trainingSelected]);
+
   return (
     <div className="sidebar-stack">
       <aside className="app-sidebar" aria-label="주요 메뉴">
@@ -1043,7 +1050,7 @@ function SidebarNavigation({
         <nav className="sidebar-nav">
           {menu.map((item) => {
             const Icon = item.icon;
-            const selected = item.page === 'reservations' ? reservationSelected : activePage === item.page;
+            const selected = item.page === 'reservations' ? reservationSelected : item.page === 'training' ? trainingSelected : activePage === item.page;
             return (
               <Fragment key={`${item.page}-${item.label}`}>
                 <button
@@ -1052,12 +1059,16 @@ function SidebarNavigation({
                     if (item.page === 'reservations' && canManageAssignedPermissions) {
                       setReservationOpen((current) => !current);
                     }
+                    if (item.page === 'training' && canManageAssignedPermissions) {
+                      setTrainingOpen((current) => !current);
+                    }
                     onNavigate(item.page);
                   }}
                 >
                   <Icon size={18} />
                   <span>{item.label}</span>
                   {item.page === 'reservations' && canManageAssignedPermissions && <ChevronDown size={16} />}
+                  {item.page === 'training' && canManageAssignedPermissions && <ChevronDown size={16} />}
                 </button>
                 {item.page === 'reservations' && canManageAssignedPermissions && (
                   <div className={`sidebar-dropdown ${reservationOpen ? 'is-open' : ''}`}>
@@ -1074,6 +1085,21 @@ function SidebarNavigation({
                   </div>
                 )}
                 {item.page === 'training' && (
+                  <>
+                  {canManageAssignedPermissions && (
+                    <div className={`sidebar-dropdown ${trainingOpen ? 'is-open' : ''}`}>
+                      <div className="sidebar-subnav" aria-hidden={!trainingOpen}>
+                        <button
+                          type="button"
+                          className={`sidebar-subnav-item ${activePage === 'trainingManagement' ? 'is-active' : ''}`}
+                          onClick={() => onNavigate('trainingManagement')}
+                        >
+                          <GraduationCap size={15} />
+                          <span>교육신청관리(담당)</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   <div className={`sidebar-dropdown ${inquiryOpen ? 'is-open' : ''}`}>
                     <button
                       type="button"
@@ -1104,6 +1130,7 @@ function SidebarNavigation({
                       </button>
                     </div>
                   </div>
+                  </>
                 )}
               </Fragment>
             );
@@ -2372,6 +2399,148 @@ function TrainingPage({ equipmentItems }: { equipmentItems: EquipmentItem[] }) {
         <div className="grid gap-3 text-sm text-slate-300">
           <p className="rounded-md bg-white/5 p-4">교육 이수 후 장비별 예약 권한이 자동 부여됩니다.</p>
           <p className="rounded-md bg-white/5 p-4">관리자는 교육 일정, 자료, 인증서를 이 화면에서 관리할 수 있습니다.</p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function TrainingManagementPage({
+  users,
+  equipmentItems,
+  currentUser,
+  sessionRole
+}: {
+  users: ManagedUser[];
+  equipmentItems: EquipmentItem[];
+  currentUser: ManagedUser | null;
+  sessionRole: Role | null;
+}) {
+  const manageableEquipment = useMemo(() => (
+    sessionRole === 'ADMIN'
+      ? equipmentItems
+      : currentUser
+        ? equipmentItems.filter((item) => item.managerId === currentUser.id)
+        : []
+  ), [currentUser, equipmentItems, sessionRole]);
+  const [selectedEquipmentId, setSelectedEquipmentId] = useState(manageableEquipment[0]?.id ?? '');
+  const [applicationStatus, setApplicationStatus] = useState<Record<string, 'pending' | 'approved' | 'rejected'>>({});
+  const selectedEquipment = manageableEquipment.find((item) => item.id === selectedEquipmentId) ?? manageableEquipment[0];
+
+  useEffect(() => {
+    if (!selectedEquipmentId && manageableEquipment[0]) {
+      setSelectedEquipmentId(manageableEquipment[0].id);
+    }
+    if (selectedEquipmentId && !manageableEquipment.some((item) => item.id === selectedEquipmentId)) {
+      setSelectedEquipmentId(manageableEquipment[0]?.id ?? '');
+    }
+  }, [manageableEquipment, selectedEquipmentId]);
+
+  const applications = selectedEquipment
+    ? users.slice(0, 8).map((user, index) => {
+      const id = `${selectedEquipment.id}-${user.id}`;
+      const baseStatus = index % 5 === 0 ? 'approved' : 'pending';
+      return {
+        id,
+        user,
+        equipment: selectedEquipment,
+        appliedAt: new Date(Date.now() - (index + 1) * 7_200_000).toISOString(),
+        status: applicationStatus[id] ?? baseStatus
+      };
+    })
+    : [];
+  const pendingCount = applications.filter((item) => item.status === 'pending').length;
+
+  function updateApplicationStatus(id: string, status: 'approved' | 'rejected') {
+    setApplicationStatus((current) => ({ ...current, [id]: status }));
+  }
+
+  if (manageableEquipment.length === 0) {
+    return (
+      <section className="training-management-page">
+        <div className="manager-permission-empty">
+          <LockKeyhole size={32} />
+          <p>Training Management</p>
+          <h2>교육신청을 관리할 담당 장비가 없습니다.</h2>
+          <span>장비관리에서 담당자로 지정되면 이 메뉴에서 담당 장비 교육 신청을 확인할 수 있습니다.</span>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="training-management-page">
+      <div className="consumables-hero">
+        <div>
+          <p className="consumables-eyebrow">Training Management</p>
+          <h2>교육신청관리(담당)</h2>
+          <span>담당 장비의 장비사용교육 신청 내역을 확인하고, 교육 이수 처리 전 단계를 관리합니다.</span>
+        </div>
+        <div className="training-management-summary">
+          <div>
+            <strong>{manageableEquipment.length}</strong>
+            <span>담당 장비</span>
+          </div>
+          <div>
+            <strong>{pendingCount}</strong>
+            <span>승인 대기</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="training-management-layout">
+        <aside className="manager-equipment-panel">
+          <div className="manager-panel-head">
+            <p>Managed Equipment</p>
+            <h3>담당 장비</h3>
+          </div>
+          <div className="manager-equipment-list">
+            {manageableEquipment.map((item) => {
+              const applicationCount = users.slice(0, 8).filter((_, index) => index % 2 === 0 || item.id === selectedEquipment?.id).length;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`manager-equipment-button ${selectedEquipment?.id === item.id ? 'is-selected' : ''}`}
+                  onClick={() => setSelectedEquipmentId(item.id)}
+                >
+                  <strong>{item.name}</strong>
+                  <span>{item.groupName} · {item.location}</span>
+                  <em>{applicationCount}건 신청</em>
+                </button>
+              );
+            })}
+          </div>
+        </aside>
+
+        <div className="training-application-panel">
+          <div className="manager-panel-head">
+            <p>Applications</p>
+            <h3>{selectedEquipment?.name ?? '장비'} 교육 신청 내역</h3>
+          </div>
+          <div className="training-application-list">
+            {applications.map((application) => (
+              <div key={application.id} className="training-application-row">
+                <div>
+                  <strong>{application.user.name}</strong>
+                  <span>{application.user.department} · {formatProfessorLab(application.user.labProfessor)}</span>
+                  <em>신청일시 {formatSeoulDateTime(application.appliedAt)}</em>
+                </div>
+                <div className="training-application-actions">
+                  <span className={`training-application-status is-${application.status}`}>
+                    {application.status === 'approved' ? '승인됨' : application.status === 'rejected' ? '반려됨' : '승인 대기'}
+                  </span>
+                  {application.status === 'pending' && (
+                    <>
+                      <button type="button" onClick={() => updateApplicationStatus(application.id, 'approved')}>승인</button>
+                      <button type="button" className="is-reject" onClick={() => updateApplicationStatus(application.id, 'rejected')}>반려</button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="training-management-note">1차 구축에서는 교육 신청 관리 UI와 담당 장비 필터를 구성했습니다. 실제 운영 시 승인 처리는 교육 이수 기록 및 장비 사용권한 부여 API와 연결하면 됩니다.</p>
         </div>
       </div>
     </section>
@@ -5710,6 +5879,18 @@ export function App() {
             )
           )}
           {activePage === 'training' && <TrainingPage equipmentItems={activeEquipmentItems} />}
+          {activePage === 'trainingManagement' && (
+            canManageAssignedPermissions ? (
+              <TrainingManagementPage
+                users={managedUsers}
+                equipmentItems={activeEquipmentItems}
+                currentUser={currentManagedUser}
+                sessionRole={sessionRole}
+              />
+            ) : (
+              <PlaceholderPage title="접근 권한이 없습니다" />
+            )
+          )}
           {activePage === 'faq' && <FaqPage />}
           {activePage === 'qna' && <QnaPage />}
           {activePage === 'admin' && (
