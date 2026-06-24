@@ -159,6 +159,14 @@ function Convert-DistToVendorPreview {
     $text = $text -replace "[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}", "user***@example.com"
     $text = $text -replace "hbnu-", "vendor-preview-"
     $text = Replace-Literal $text "/vendor-preview-Semiconductor-Center-Vendor-Preview/" $BasePath
+    $text = Replace-Literal $text 'localStorage.getItem("vendor-preview-preview-penalty-demo-dismissed")!=="true"' 'false'
+    if ($file.Extension -eq ".js") {
+      $text = [regex]::Replace(
+        $text,
+        "([,{])([\p{IsHangulSyllables}]\*[\p{IsHangulSyllables}]):",
+        '$1"$2":'
+      )
+    }
 
     [System.IO.File]::WriteAllText($file.FullName, $text, $encoding)
   }
