@@ -979,55 +979,6 @@ function InstitutionHeader({
   );
 }
 
-function useVisitorStats() {
-  const [visitorStats, setVisitorStats] = useState({ today: 184, total: 12840 });
-
-  useEffect(() => {
-    const todayKey = getSeoulDateKey();
-    const storageKey = 'hbnu-preview-visitor-stats';
-    const sessionKey = `hbnu-preview-visitor-session-${todayKey}`;
-    const baseToday = 184;
-    const baseTotal = 12840;
-
-    try {
-      const stored = localStorage.getItem(storageKey);
-      const parsed = stored ? JSON.parse(stored) : null;
-      let next = {
-        date: todayKey,
-        todayExtra: 0,
-        totalExtra: Number(parsed?.totalExtra ?? 0)
-      };
-
-      if (parsed?.date === todayKey) {
-        next = {
-          date: todayKey,
-          todayExtra: Number(parsed.todayExtra ?? 0),
-          totalExtra: Number(parsed.totalExtra ?? 0)
-        };
-      }
-
-      if (!sessionStorage.getItem(sessionKey)) {
-        next = {
-          ...next,
-          todayExtra: next.todayExtra + 1,
-          totalExtra: next.totalExtra + 1
-        };
-        sessionStorage.setItem(sessionKey, '1');
-        localStorage.setItem(storageKey, JSON.stringify(next));
-      }
-
-      setVisitorStats({
-        today: baseToday + next.todayExtra,
-        total: baseTotal + next.totalExtra
-      });
-    } catch {
-      setVisitorStats({ today: baseToday, total: baseTotal });
-    }
-  }, []);
-
-  return visitorStats;
-}
-
 function SidebarNavigation({
   activePage,
   onNavigate,
@@ -1037,7 +988,6 @@ function SidebarNavigation({
   onNavigate: (page: PageKey) => void;
   canManageAssignedPermissions: boolean;
 }) {
-  const visitorStats = useVisitorStats();
   const noticePages: PageKey[] = ['notice', 'operationNotice', 'meetingNotice'];
   const inquiryPages: PageKey[] = ['faq', 'qna'];
   const reservationPages: PageKey[] = ['reservations', 'managerPermissions'];
@@ -1275,20 +1225,6 @@ function SidebarNavigation({
           </nav>
         </div>
       </aside>
-      <div className="visitor-counter-card" aria-label="방문자 통계">
-        <div className="visitor-counter-head">
-          <Gauge size={18} />
-          <span>Visitor</span>
-        </div>
-        <div className="visitor-counter-row">
-          <span>일 방문자</span>
-          <strong>{visitorStats.today.toLocaleString('ko-KR')}</strong>
-        </div>
-        <div className="visitor-counter-row">
-          <span>토탈 방문자</span>
-          <strong>{visitorStats.total.toLocaleString('ko-KR')}</strong>
-        </div>
-      </div>
     </div>
   );
 }
