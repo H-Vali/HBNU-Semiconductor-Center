@@ -4041,16 +4041,23 @@ function UserManagementPage({
 function EquipmentAdminPage({
   equipmentItems,
   users,
+  onAddEquipment,
+  onDeleteEquipment,
   onUpdateEquipment
 }: {
   equipmentItems: EquipmentItem[];
   users: ManagedUser[];
+  onAddEquipment: (item: EquipmentItem) => void;
+  onDeleteEquipment: (equipmentId: string) => void;
   onUpdateEquipment: (equipmentId: string, patch: Partial<EquipmentItem>) => void;
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [groupFilter, setGroupFilter] = useState<'전체' | EquipmentGroup>('전체');
   const [statusFilter, setStatusFilter] = useState<'전체' | EquipmentStatus>('전체');
   const [selectedEquipment, setSelectedEquipment] = useState<EquipmentItem | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [deleteSelectionOpen, setDeleteSelectionOpen] = useState(false);
+  const [selectedEquipmentIds, setSelectedEquipmentIds] = useState<Set<string>>(new Set());
   const filteredItems = useMemo(() => (
     equipmentItems.filter((item) => {
       const keyword = searchTerm.trim().toLowerCase();
@@ -4061,6 +4068,56 @@ function EquipmentAdminPage({
     })
   ), [equipmentItems, groupFilter, searchTerm, statusFilter]);
   const managerCount = new Set(equipmentItems.map((item) => item.managerId).filter(Boolean)).size;
+  const filteredIds = filteredItems.map((item) => item.id);
+  const selectedItems = equipmentItems.filter((item) => selectedEquipmentIds.has(item.id));
+  const allFilteredSelected = filteredIds.length > 0 && filteredIds.every((id) => selectedEquipmentIds.has(id));
+
+  useEffect(() => {
+    setSelectedEquipmentIds((current) => new Set([...current].filter((id) => equipmentItems.some((item) => item.id === id))));
+  }, [equipmentItems]);
+
+  function toggleEquipmentSelection(equipmentId: string) {
+    setSelectedEquipmentIds((current) => {
+      const next = new Set(current);
+      if (next.has(equipmentId)) {
+        next.delete(equipmentId);
+      } else {
+        next.add(equipmentId);
+      }
+      return next;
+    });
+  }
+
+  function toggleFilteredSelection() {
+    setSelectedEquipmentIds((current) => {
+      const next = new Set(current);
+      if (allFilteredSelected) {
+        filteredIds.forEach((id) => next.delete(id));
+      } else {
+        filteredIds.forEach((id) => next.add(id));
+      }
+      return next;
+    });
+  }
+
+  function createEquipmentDraft(): EquipmentItem {
+    return {
+      id: `eq-${Date.now()}`,
+      name: '',
+      model: '',
+      category: '공정 장비',
+      group: 'process',
+      groupName: '공정',
+      location: '',
+      image: categoryMeta.process.image,
+      features: ['예약 캘린더', '교육 인증', '사용 로그'],
+      condition: '교육 이수 후 담당자 승인 시 사용 가능',
+      status: 'available',
+      description: '',
+      utilization: 0,
+      usageHours: 0
+    };
+  }
 
   return (
     <section className="equipment-admin-page">
@@ -4106,12 +4163,33 @@ function EquipmentAdminPage({
           <option value="available">이용가능</option>
           <option value="unavailable">이용불가</option>
         </select>
+        <div className="equipment-admin-actions">
+          <button type="button" className="equipment-admin-action is-add" onClick={() => setShowCreateModal(true)}>
+            <Plus size={16} /> 신규 장비 추가
+          </button>
+          <button
+            type="button"
+            className="equipment-admin-action is-delete"
+            disabled={selectedEquipmentIds.size === 0}
+            onClick={() => setDeleteSelectionOpen(true)}
+          >
+            <Trash2 size={16} /> 선택 삭제 {selectedEquipmentIds.size > 0 ? selectedEquipmentIds.size : ''}
+          </button>
+        </div>
       </div>
 
       <div className="equipment-admin-table-wrap">
         <table className="equipment-admin-table">
           <thead>
             <tr>
+              <th className="equipment-admin-check-cell">
+                <input
+                  type="checkbox"
+                  aria-label="필터된 장비 전체 선택"
+                  checked={allFilteredSelected}
+                  onChange={toggleFilteredSelection}
+                />
+              </th>
               <th>장비명</th>
               <th>모델명</th>
               <th>설치위치</th>
@@ -4125,6 +4203,14 @@ function EquipmentAdminPage({
               const manager = users.find((user) => user.id === item.managerId);
               return (
                 <tr key={item.id} onClick={() => setSelectedEquipment(item)}>
+                  <td className="equipment-admin-check-cell" onClick={(event) => event.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      aria-label={`${item.name} 선택`}
+                      checked={selectedEquipmentIds.has(item.id)}
+                      onChange={() => toggleEquipmentSelection(item.id)}
+                    />
+                  </td>
                   <td>
                     <strong>{item.name}</strong>
                     <span>{item.description ?? item.condition}</span>
@@ -4139,7 +4225,7 @@ function EquipmentAdminPage({
             })}
             {filteredItems.length === 0 && (
               <tr>
-                <td colSpan={6} className="equipment-admin-empty-row">조건에 맞는 장비가 없습니다.</td>
+                <td colSpan={7} className="equipment-admin-empty-row">조건에 맞는 장비가 없습니다.</td>
               </tr>
             )}
           </tbody>
@@ -4150,10 +4236,51 @@ function EquipmentAdminPage({
         <EquipmentEditModal
           equipment={selectedEquipment}
           users={users}
+          mode="edit"
           onClose={() => setSelectedEquipment(null)}
           onSave={(patch) => {
             onUpdateEquipment(selectedEquipment.id, patch);
             setSelectedEquipment(null);
+          }}
+        />
+      )}
+      {showCreateModal && (
+        <EquipmentEditModal
+          equipment={createEquipmentDraft()}
+          users={users}
+          mode="create"
+          onClose={() => setShowCreateModal(false)}
+          onSave={(patch) => {
+            const group = patch.group ?? 'process';
+            onAddEquipment({
+              ...createEquipmentDraft(),
+              ...patch,
+              id: `eq-${Date.now()}`,
+              name: String(patch.name ?? '').trim(),
+              model: String(patch.model ?? '').trim(),
+              location: String(patch.location ?? '').trim(),
+              group,
+              groupName: group === 'process' ? '공정' : '검사·계측·패키징',
+              category: group === 'process' ? '공정 장비' : '검사·계측·패키징 장비',
+              image: patch.image || (group === 'process' ? categoryMeta.process.image : categoryMeta.metrology.image),
+              features: ['예약 캘린더', '교육 인증', '사용 로그'],
+              condition: '교육 이수 후 담당자 승인 시 사용 가능',
+              status: patch.status ?? 'available',
+              utilization: 0,
+              usageHours: 0
+            });
+            setShowCreateModal(false);
+          }}
+        />
+      )}
+      {deleteSelectionOpen && (
+        <EquipmentSelectionDeleteModal
+          items={selectedItems}
+          onCancel={() => setDeleteSelectionOpen(false)}
+          onConfirm={() => {
+            selectedItems.forEach((item) => onDeleteEquipment(item.id));
+            setSelectedEquipmentIds(new Set());
+            setDeleteSelectionOpen(false);
           }}
         />
       )}
@@ -4164,11 +4291,13 @@ function EquipmentAdminPage({
 function EquipmentEditModal({
   equipment,
   users,
+  mode = 'edit',
   onClose,
   onSave
 }: {
   equipment: EquipmentItem;
   users: ManagedUser[];
+  mode?: 'create' | 'edit';
   onClose: () => void;
   onSave: (patch: Partial<EquipmentItem>) => void;
 }) {
@@ -4226,9 +4355,9 @@ function EquipmentEditModal({
         <div className="user-add-modal-head">
           <div>
             <p>Equipment Editor</p>
-            <h3>{equipment.name} 수정</h3>
+            <h3>{mode === 'create' ? '신규 장비 등록' : `${equipment.name} 수정`}</h3>
           </div>
-          <button type="button" onClick={onClose} aria-label="장비 수정 닫기">×</button>
+          <button type="button" onClick={onClose} aria-label={mode === 'create' ? '장비 등록 닫기' : '장비 수정 닫기'}>×</button>
         </div>
         <div className="equipment-edit-grid">
           <label>
@@ -4310,9 +4439,48 @@ function EquipmentEditModal({
         </div>
         <div className="user-add-modal-actions">
           <button type="button" className="is-cancel" onClick={onClose}>취소</button>
-          <button type="submit" className="is-primary">저장</button>
+          <button type="submit" className="is-primary">{mode === 'create' ? '장비 등록' : '저장'}</button>
         </div>
       </form>
+    </div>
+  );
+}
+
+function EquipmentSelectionDeleteModal({
+  items,
+  onCancel,
+  onConfirm
+}: {
+  items: EquipmentItem[];
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="user-add-modal-backdrop" role="presentation">
+      <div className="equipment-delete-confirm-modal" role="dialog" aria-modal="true" aria-label="선택 장비 삭제 확인">
+        <div className="user-add-modal-head">
+          <div>
+            <p>Delete Equipment</p>
+            <h3>선택 장비 삭제</h3>
+          </div>
+          <button type="button" onClick={onCancel} aria-label="선택 장비 삭제 닫기">×</button>
+        </div>
+        <p className="equipment-delete-warning">
+          선택한 {items.length}개 장비를 장비관리 목록에서 삭제합니다. 삭제된 장비는 현재 운영 목록과 예약 선택 목록에서 제외됩니다.
+        </p>
+        <div className="equipment-delete-list" aria-label="삭제 대상 장비 목록">
+          {items.map((item) => (
+            <div key={item.id}>
+              <strong>{item.name}</strong>
+              <span>{item.model ?? '-'} · {item.location}</span>
+            </div>
+          ))}
+        </div>
+        <div className="user-add-modal-actions">
+          <button type="button" className="is-cancel" onClick={onCancel}>취소</button>
+          <button type="button" className="is-danger" onClick={onConfirm}>삭제 확정</button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -6130,6 +6298,8 @@ export function App() {
             <EquipmentAdminPage
               equipmentItems={activeEquipmentItems}
               users={managedUsers}
+              onAddEquipment={addEquipment}
+              onDeleteEquipment={deleteEquipment}
               onUpdateEquipment={updateEquipment}
             />
           )}
