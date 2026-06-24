@@ -1656,11 +1656,11 @@ function MonthlyUsageChart({
 function EquipmentGateway({
   equipmentItems,
   onOpen,
-  action = '장비 추가'
+  action = null
 }: {
   equipmentItems: EquipmentItem[];
   onOpen: (group: EquipmentGroup) => void;
-  action?: string | ReactNode;
+  action?: string | ReactNode | null;
 }) {
   const grouped = {
     process: equipmentItems.filter((item) => item.group === 'process'),
@@ -1929,75 +1929,6 @@ function PlanUploadModal({ onClose, onUpload }: { onClose: () => void; onUpload:
           <button type="button" className="rounded-md bg-cyan-300 px-5 py-3 font-extrabold text-slate-950 hover:bg-white disabled:cursor-not-allowed disabled:opacity-40" disabled={!preview} onClick={() => preview && onUpload(preview)}>
             업로드 적용
           </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function EquipmentAddModal({ onClose, onAdd }: { onClose: () => void; onAdd: (item: EquipmentItem) => void }) {
-  const [form, setForm] = useState({ name: '', group: 'process' as EquipmentGroup, location: '공정동 1층', condition: '교육 이수 후 사용 가능' });
-
-  function submit(event: FormEvent) {
-    event.preventDefault();
-    if (!form.name.trim()) return;
-    onAdd({
-      id: `eq-${Date.now()}`,
-      name: form.name.trim(),
-      category: form.group === 'process' ? '공정 장비' : '검사·계측·패키징 장비',
-      group: form.group,
-      groupName: form.group === 'process' ? '공정' : '검사·계측·패키징',
-      location: form.location,
-      image: form.group === 'process' ? categoryMeta.process.image : categoryMeta.metrology.image,
-      features: ['예약 캘린더', '교육 인증', '사용 로그'],
-      condition: form.condition,
-      utilization: 0,
-      usageHours: 0
-    });
-  }
-
-  return (
-    <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
-      <form className="reservation-modal" onSubmit={submit} onMouseDown={(event) => event.stopPropagation()}>
-        <div className="mb-5 flex items-center justify-between">
-          <div>
-            <h3 className="text-2xl font-extrabold text-white">장비 추가</h3>
-            <p className="mt-1 text-sm font-bold text-slate-400">장비 사진 권장 사이즈: 1200 × 675px, JPG/PNG/WEBP</p>
-          </div>
-          <button type="button" className="rounded-md border border-white/10 px-4 py-2 text-sm font-bold text-slate-200 hover:border-cyan-300 hover:text-cyan-200" onClick={onClose}>
-            닫기
-          </button>
-        </div>
-        <label className="reservation-label">장비명<input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} required /></label>
-        <label className="reservation-label">대분류<select value={form.group} onChange={(event) => setForm((current) => ({ ...current, group: event.target.value as EquipmentGroup }))}><option value="process">공정</option><option value="metrology">검사·계측·패키징</option></select></label>
-        <label className="reservation-label">위치<input value={form.location} onChange={(event) => setForm((current) => ({ ...current, location: event.target.value }))} /></label>
-        <label className="reservation-label">사용 조건<input value={form.condition} onChange={(event) => setForm((current) => ({ ...current, condition: event.target.value }))} /></label>
-        <div className="mt-6 flex justify-end gap-3">
-          <button type="button" className="rounded-md border border-white/15 px-5 py-3 font-bold text-slate-200 hover:border-cyan-300" onClick={onClose}>취소</button>
-          <button type="submit" className="rounded-md bg-cyan-300 px-5 py-3 font-extrabold text-slate-950 hover:bg-white">장비 등록</button>
-        </div>
-      </form>
-    </div>
-  );
-}
-
-function EquipmentDeleteModal({ equipmentItems, onClose, onDelete }: { equipmentItems: EquipmentItem[]; onClose: () => void; onDelete: (equipmentId: string) => void }) {
-  const [equipmentId, setEquipmentId] = useState(equipmentItems[0]?.id ?? '');
-
-  return (
-    <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
-      <div className="reservation-modal" role="dialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}>
-        <div className="mb-5 flex items-center justify-between">
-          <h3 className="text-2xl font-extrabold text-white">장비 삭제</h3>
-          <button type="button" className="rounded-md border border-white/10 px-4 py-2 text-sm font-bold text-slate-200 hover:border-cyan-300 hover:text-cyan-200" onClick={onClose}>
-            닫기
-          </button>
-        </div>
-        <p className="mb-4 text-sm leading-6 text-slate-300">삭제된 장비는 화면과 대시보드 그래프에서 제외됩니다. 누적 사용량 CSV 산출을 위한 원본 데이터는 관리자 통계에 남겨두는 구조입니다.</p>
-        <label className="reservation-label">삭제할 장비<select value={equipmentId} onChange={(event) => setEquipmentId(event.target.value)}>{equipmentItems.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-        <div className="mt-6 flex justify-end gap-3">
-          <button type="button" className="rounded-md border border-white/15 px-5 py-3 font-bold text-slate-200 hover:border-cyan-300" onClick={onClose}>취소</button>
-          <button type="button" className="rounded-md bg-red-500 px-5 py-3 font-extrabold text-white hover:bg-red-400" onClick={() => equipmentId && onDelete(equipmentId)}>삭제 확정</button>
         </div>
       </div>
     </div>
