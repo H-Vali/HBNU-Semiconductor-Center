@@ -5176,7 +5176,29 @@ function ConsumablesPage({
   );
 }
 
-const noticeItems = [
+type NoticeAttachment = {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  dataUrl: string;
+  uploadedAt: string;
+};
+
+type NoticeItem = {
+  id: string;
+  category: string;
+  title: string;
+  date: string;
+  author: string;
+  views: number;
+  pinned: boolean;
+  summary: string;
+  body: string;
+  attachments?: NoticeAttachment[];
+};
+
+const noticeItems: NoticeItem[] = [
   {
     id: 'notice-1',
     category: '운영',
@@ -5223,7 +5245,7 @@ const noticeItems = [
   }
 ];
 
-const operationNoticeItems: typeof noticeItems = [
+const operationNoticeItems: NoticeItem[] = [
   {
     id: 'operation-notice-1',
     category: '운영',
@@ -5248,7 +5270,7 @@ const operationNoticeItems: typeof noticeItems = [
   }
 ];
 
-const meetingNoticeItems: typeof noticeItems = [
+const meetingNoticeItems: NoticeItem[] = [
   {
     id: 'meeting-notice-1',
     category: '회의',
@@ -5360,7 +5382,18 @@ function NoticePage({
             <BookOpen size={18} />
             <div>
               <strong>첨부 및 관련 자료</strong>
-              <span>첨부파일, PDF, 교육자료 링크는 추후 관리자 페이지에서 연동 예정입니다.</span>
+              {(selectedNotice.attachments?.length ?? 0) > 0 ? (
+                <ul className="notice-attachment-list">
+                  {selectedNotice.attachments?.map((attachment) => (
+                    <li key={attachment.id}>
+                      <a href={attachment.dataUrl} download={attachment.name}>{attachment.name}</a>
+                      <span>{formatFileSize(attachment.size)}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <span>등록된 첨부파일이 없습니다.</span>
+              )}
             </div>
           </div>
         </article>
@@ -5371,7 +5404,6 @@ function NoticePage({
 
 type FaqCategory = '예약' | '장비' | '교육' | '운영' | '계정';
 
-type NoticeItem = (typeof noticeItems)[number];
 type NoticeBoardKey = 'operation' | 'meeting';
 
 const noticeBoardMeta: Record<NoticeBoardKey, { label: string; category: string; storageKey: string }> = {
@@ -5381,6 +5413,30 @@ const noticeBoardMeta: Record<NoticeBoardKey, { label: string; category: string;
 
 function formatNoticeDate(dateKey = getSeoulDateKey()) {
   return dateKey.replace(/-/g, '.');
+}
+
+function formatFileSize(size: number) {
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function readNoticeAttachments(files: FileList | null): Promise<NoticeAttachment[]> {
+  if (!files?.length) return Promise.resolve([]);
+  const uploadedAt = new Date().toISOString();
+  return Promise.all(Array.from(files).map((file, index) => new Promise<NoticeAttachment>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve({
+      id: `notice-attachment-${Date.now()}-${index}`,
+      name: file.name,
+      size: file.size,
+      type: file.type || 'application/octet-stream',
+      dataUrl: String(reader.result ?? ''),
+      uploadedAt
+    });
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  })));
 }
 
 function NoticeAdminPage({
@@ -5409,13 +5465,16 @@ function NoticeAdminPage({
     }
   }, [items, selectedNoticeId]);
 
-  function submitNotice(event: FormEvent<HTMLFormElement>) {
+  async function submitNotice(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const title = String(form.get('title') ?? '').trim();
     const summary = String(form.get('summary') ?? '').trim();
     const body = String(form.get('body') ?? '').trim();
     if (!title || !summary || !body) return;
+    const fileInput = formElement.elements.namedItem('attachments') as HTMLInputElement | null;
+    const attachments = await readNoticeAttachments(fileInput?.files ?? null);
     const item: NoticeItem = {
       id: `${activeBoard}-notice-${Date.now()}`,
       category: String(form.get('category') ?? meta.category).trim() || meta.category,
@@ -5425,11 +5484,29 @@ function NoticeAdminPage({
       views: 0,
       pinned: form.get('pinned') === 'on',
       summary,
-      body
+      body,
+      attachments
     };
     onAddNotice(activeBoard, item);
     setSelectedNoticeId(item.id);
     setShowEditor(false);
+  }
+
+  async function addAttachments(event: ChangeEvent<HTMLInputElement>) {
+    if (!selectedNotice) return;
+    const attachments = await readNoticeAttachments(event.target.files);
+    event.target.value = '';
+    if (!attachments.length) return;
+    onUpdateNotice(activeBoard, selectedNotice.id, {
+      attachments: [...(selectedNotice.attachments ?? []), ...attachments]
+    });
+  }
+
+  function removeAttachment(attachmentId: string) {
+    if (!selectedNotice) return;
+    onUpdateNotice(activeBoard, selectedNotice.id, {
+      attachments: (selectedNotice.attachments ?? []).filter((attachment) => attachment.id !== attachmentId)
+    });
   }
 
   return (
@@ -5508,6 +5585,46 @@ function NoticeAdminPage({
                 <label className="is-wide">제목<input value={selectedNotice.title} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { title: event.target.value })} /></label>
                 <label className="is-wide">요약<input value={selectedNotice.summary} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { summary: event.target.value })} /></label>
                 <label className="is-wide">본문<textarea value={selectedNotice.body} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { body: event.target.value })} /></label>
+                <div className="notice-admin-attachments is-wide">
+                  <div className="notice-admin-attachment-head">
+                    <div>
+                      <strong>첨부파일</strong>
+                      <span>{selectedNotice.attachments?.length ?? 0}개 등록</span>
+                    </div>
+                    <label className="notice-file-upload">
+                      <UploadCloud size={16} />
+                      파일 첨부
+                      <input
+                        type="file"
+                        multiple
+                        onChange={addAttachments}
+                        aria-label="공지사항 첨부파일 추가"
+                      />
+                    </label>
+                  </div>
+                  {(selectedNotice.attachments?.length ?? 0) > 0 ? (
+                    <ul className="notice-admin-attachment-list">
+                      {selectedNotice.attachments?.map((attachment) => (
+                        <li key={attachment.id}>
+                          <div>
+                            <strong>{attachment.name}</strong>
+                            <span>{formatFileSize(attachment.size)} · {attachment.type || 'file'}</span>
+                          </div>
+                          <div className="notice-admin-attachment-actions">
+                            <a href={attachment.dataUrl} download={attachment.name} aria-label={`${attachment.name} 다운로드`}>
+                              <Download size={15} />
+                            </a>
+                            <button type="button" onClick={() => removeAttachment(attachment.id)} aria-label={`${attachment.name} 첨부 삭제`}>
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="notice-admin-attachment-empty">첨부된 파일이 없습니다.</p>
+                  )}
+                </div>
               </div>
             </>
           ) : (
@@ -5536,6 +5653,11 @@ function NoticeAdminPage({
               <label className="is-wide">제목<input name="title" required placeholder={`${meta.label} 제목 입력`} /></label>
               <label className="is-wide">요약<input name="summary" required placeholder="목록에 노출될 요약 문구" /></label>
               <label className="is-wide">본문<textarea name="body" required placeholder="공지 내용을 입력하세요." /></label>
+              <label className="notice-create-file is-wide">
+                첨부파일
+                <input name="attachments" type="file" multiple />
+                <span>PDF, Word, Excel, 이미지 등 공지 관련 파일을 함께 등록할 수 있습니다.</span>
+              </label>
             </div>
             <div className="notice-create-actions">
               <button type="button" onClick={() => setShowEditor(false)}>취소</button>
