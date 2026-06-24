@@ -4121,7 +4121,7 @@ function EquipmentAdminPage({
       category: '공정 장비',
       group: 'process',
       groupName: '공정',
-      location: '',
+      location: 'N11동 107호',
       image: categoryMeta.process.image,
       features: ['예약 캘린더', '교육 인증', '사용 로그'],
       condition: '교육 이수 후 담당자 승인 시 사용 가능',
@@ -4383,7 +4383,10 @@ function EquipmentEditModal({
           </label>
           <label>
             설치위치 <em>필수</em>
-            <input value={form.location} onChange={(event) => updateField('location', event.target.value)} required />
+            <select value={form.location} onChange={(event) => updateField('location', event.target.value)} required>
+              <option value="N11동 107호">N11동 107호</option>
+              <option value="N11동 113호">N11동 113호</option>
+            </select>
           </label>
           <label>
             장비 분류 <em>필수</em>
