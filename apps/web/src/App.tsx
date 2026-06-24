@@ -1172,16 +1172,33 @@ function SidebarNavigation({
                 item: trainingItem,
                 open: trainingOpen,
                 selected: trainingSelected,
-                onToggle: () => setTrainingOpen((current) => !current),
+                onToggle: () => {
+                  if (activePage !== 'training') {
+                    setTrainingOpen(true);
+                    onNavigate('training');
+                    return;
+                  }
+                  setTrainingOpen((current) => !current);
+                },
                 children: (
-                  <button
-                    type="button"
-                    className={`sidebar-subnav-item ${activePage === 'trainingManagement' ? 'is-active' : ''}`}
-                    onClick={() => onNavigate('trainingManagement')}
-                  >
-                    <GraduationCap size={15} />
-                    <span>교육신청관리(담당)</span>
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      className={`sidebar-subnav-item ${activePage === 'training' ? 'is-active' : ''}`}
+                      onClick={() => onNavigate('training')}
+                    >
+                      <GraduationCap size={15} />
+                      <span>교육신청</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`sidebar-subnav-item ${activePage === 'trainingManagement' ? 'is-active' : ''}`}
+                      onClick={() => onNavigate('trainingManagement')}
+                    >
+                      <GraduationCap size={15} />
+                      <span>교육신청관리(담당)</span>
+                    </button>
+                  </>
                 )
               })
             : renderNavButton(trainingItem, activePage === 'training')}
