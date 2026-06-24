@@ -1589,6 +1589,151 @@ function MonthlyUsageChart({
   );
 }
 
+function AutoRotatingEquipmentStatus({
+  equipmentItems,
+  calendarEvents,
+  onOpenEquipment
+}: {
+  equipmentItems: EquipmentItem[];
+  calendarEvents: ReservationEvent[];
+  onOpenEquipment: (group: EquipmentGroup) => void;
+}) {
+  const groups = useMemo(() => Object.keys(categoryMeta) as EquipmentGroup[], []);
+  const [activeGroup, setActiveGroup] = useState<EquipmentGroup>('process');
+  const [paused, setPaused] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const [clock, setClock] = useState(getSeoulClockParts);
+  const durationMs = 6000;
+
+  const statusItems = useMemo(() => equipmentItems.map((item) => {
+    const maintenanceEvent = calendarEvents.find((event) => isMaintenanceReservation(event) && isEventForEquipment(event, item, equipmentItems) && isReservationActive(event));
+    const activeEvent = calendarEvents.find((event) => !isMaintenanceReservation(event) && isEventForEquipment(event, item, equipmentItems) && isReservationActive(event));
+    const status: EquipmentRuntimeStatus = !isEquipmentAvailable(item) || maintenanceEvent ? 'maintenance' : activeEvent ? 'active' : 'idle';
+    return {
+      item,
+      activeEvent: maintenanceEvent ?? activeEvent,
+      status
+    };
+  }), [calendarEvents, equipmentItems]);
+
+  const activeCount = statusItems.filter((entry) => entry.status === 'active').length;
+  const maintenanceCount = statusItems.filter((entry) => entry.status === 'maintenance').length;
+  const idleCount = Math.max(statusItems.length - activeCount - maintenanceCount, 0);
+  const activeGroupItems = statusItems.filter((entry) => entry.item.group === activeGroup).slice(0, 8);
+  const activeCategoryAccent = `rgb(${equipmentCategoryCardMeta[activeGroup].accent})`;
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setClock(getSeoulClockParts()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const syncMotionPreference = () => setReducedMotion(motionQuery.matches);
+    syncMotionPreference();
+    motionQuery.addEventListener('change', syncMotionPreference);
+    return () => motionQuery.removeEventListener('change', syncMotionPreference);
+  }, []);
+
+  useEffect(() => {
+    if (paused || reducedMotion) return undefined;
+    const timer = window.setInterval(() => {
+      setActiveGroup((current) => groups[(groups.indexOf(current) + 1) % groups.length]);
+    }, durationMs);
+    return () => window.clearInterval(timer);
+  }, [groups, paused, reducedMotion]);
+
+  return (
+    <section
+      className={`auto-equipment-status ${paused ? 'is-paused' : ''}`}
+      aria-labelledby="auto-equipment-status-title"
+      style={{
+        '--auto-status-duration': `${durationMs}ms`,
+        '--auto-status-accent': activeCategoryAccent
+      } as CSSProperties}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onBlur={() => setPaused(false)}
+    >
+      <h2 className="sr-only" id="auto-equipment-status-title">통합 장비 현황</h2>
+      <div className="auto-status-head">
+        <div>
+          <p className="auto-status-eyebrow">Equipment · Live Status</p>
+          <h3>장비 현황</h3>
+        </div>
+        <div className="auto-status-meta">
+          <span className="auto-status-pause">호버 중 · 자동전환 일시정지</span>
+          <span className="auto-status-pill is-active">가동중 {activeCount}</span>
+          <span className="auto-status-pill is-maintenance">점검 {maintenanceCount}</span>
+          <span className="auto-status-pill is-idle">대기 {idleCount}</span>
+          <time className="auto-status-time">{clock.month}.{clock.day} · {clock.hour}:{clock.minute}</time>
+        </div>
+      </div>
+      <div className="auto-status-tabs" role="tablist" aria-label="장비 카테고리">
+        {groups.map((group) => {
+          const meta = categoryMeta[group];
+          const cardMeta = equipmentCategoryCardMeta[group];
+          const Icon = cardMeta.icon;
+          const isActive = activeGroup === group;
+          const count = equipmentItems.filter((item) => item.group === group).length;
+          return (
+            <button
+              key={group}
+              type="button"
+              role="tab"
+              aria-selected={isActive}
+              className={`auto-status-tab ${isActive ? 'is-active' : ''}`}
+              onClick={() => setActiveGroup(group)}
+            >
+              <span className="auto-status-tab-label">
+                <Icon size={16} strokeWidth={1.8} aria-hidden="true" />
+                {meta.title}
+                <em>{count}종</em>
+              </span>
+              <span className="auto-status-progress" aria-hidden="true">
+                <span />
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="auto-status-grid" role="tabpanel" aria-label={`${categoryMeta[activeGroup].title} 장비 상태`}>
+        {activeGroupItems.map(({ item, activeEvent, status }) => {
+          const accent = status === 'active' ? '#34d6b0' : status === 'maintenance' ? '#f5b942' : '#3a4456';
+          const message = status === 'active'
+            ? `~${formatReservationTime(activeEvent?.end)} 종료`
+            : status === 'maintenance'
+              ? activeEvent ? `~${formatReservationTime(activeEvent.end)} 점검` : '점검중'
+              : '예약 가능 →';
+          return (
+            <button
+              key={item.id}
+              type="button"
+              className={`auto-status-cell is-${status}`}
+              onClick={() => onOpenEquipment(item.group)}
+              aria-label={`${item.name} ${getRuntimeStatusLabel(status)}`}
+            >
+              <span className="auto-status-bar" style={{ background: accent }} />
+              <span className="auto-status-copy">
+                <span className="auto-status-cell-top">
+                  <span className="auto-status-category">{getRealtimeCategoryLabel(item)}</span>
+                  <span className={`runtime-status-badge is-${status}`}>{getRuntimeStatusLabel(status)}</span>
+                </span>
+                <strong>{item.name}</strong>
+                <small>{message}</small>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <button type="button" className="auto-status-link" onClick={() => onOpenEquipment(activeGroup)}>
+        {categoryMeta[activeGroup].title} {equipmentItems.filter((item) => item.group === activeGroup).length}종 전체 보기 →
+      </button>
+    </section>
+  );
+}
+
 function EquipmentGateway({
   equipmentItems,
   onOpen,
@@ -1707,8 +1852,11 @@ function Dashboard({
         grantedEquipmentItems={grantedEquipmentItems}
         isAdmin={sessionRole === 'ADMIN'}
       />
-      <EquipmentGateway equipmentItems={equipmentItems} onOpen={onOpenEquipment} />
-      <RealtimeEquipmentStatus equipmentItems={equipmentItems} calendarEvents={calendarEvents} />
+      <AutoRotatingEquipmentStatus
+        equipmentItems={equipmentItems}
+        calendarEvents={calendarEvents}
+        onOpenEquipment={onOpenEquipment}
+      />
       <MonthlyUsageChart equipmentItems={equipmentItems} calendarEvents={calendarEvents} />
     </section>
   );
