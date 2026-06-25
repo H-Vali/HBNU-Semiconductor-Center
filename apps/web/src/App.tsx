@@ -984,15 +984,13 @@ function InstitutionHeader({
   onNavigate,
   sessionRole,
   onPreviewPenaltyTest,
-  onSwitchPreviewRole
+  onLogout
 }: {
   onNavigate: (page: PageKey) => void;
   sessionRole: Role | null;
   onPreviewPenaltyTest: () => void;
-  onSwitchPreviewRole: () => void;
+  onLogout: () => void;
 }) {
-  const previewSwitchLabel = sessionRole === 'ADMIN' ? '일반 사용자 전환' : '관리자 전환';
-
   return (
     <header className="sticky top-0 z-20 border-b border-white/10 bg-slate-950/90 backdrop-blur">
       <div className="mx-auto flex max-w-[1800px] items-center justify-between gap-5 px-5 py-3 2xl:px-8">
@@ -1006,20 +1004,23 @@ function InstitutionHeader({
           </div>
         </button>
         <div className="hidden items-center gap-2 md:flex">
-          <button
-            type="button"
-            aria-label={previewSwitchLabel}
-            className="rounded-md border border-cyan-300/35 px-3 py-2 text-sm font-extrabold text-cyan-100 hover:bg-cyan-300 hover:text-slate-950"
-            onClick={onSwitchPreviewRole}
-          >
-            {previewSwitchLabel}
-          </button>
           <button type="button" className="rounded-md border border-red-300/40 px-3 py-2 text-sm font-extrabold text-red-100 hover:bg-red-500 hover:text-white" onClick={onPreviewPenaltyTest}>
             페널티 TEST
           </button>
-          <button type="button" className="rounded-md bg-white px-4 py-2 text-sm font-extrabold text-slate-950 hover:bg-cyan-200" onClick={() => onNavigate('login')}>
-            {sessionRole ? `${sessionRole} 접속중` : '로그인'}
-          </button>
+          {sessionRole ? (
+            <>
+              <span className="rounded-md bg-white px-4 py-2 text-sm font-extrabold text-slate-950">
+                {sessionRole === 'ADMIN' ? 'ADMIN 접속중' : 'USER 접속중'}
+              </span>
+              <button type="button" className="rounded-md border border-white/25 px-4 py-2 text-sm font-extrabold text-white hover:bg-white hover:text-slate-950" onClick={onLogout}>
+                로그아웃
+              </button>
+            </>
+          ) : (
+            <button type="button" className="rounded-md bg-white px-4 py-2 text-sm font-extrabold text-slate-950 hover:bg-cyan-200" onClick={() => onNavigate('login')}>
+              로그인
+            </button>
+          )}
         </div>
       </div>
     </header>
@@ -4075,19 +4076,6 @@ function LoginPage({
     setPendingRegistration(null);
   }
 
-  async function handleAdminPreviewLogin() {
-    setMessage('관리자 미리보기 세션을 발급하는 중입니다.');
-    const response = await apiPost<{ user: StoredSessionUser; token: string }>('/auth/dev-login', { role: 'ADMIN' });
-    if (!response) {
-      setMessage('관리자 미리보기 로그인은 로컬 개발 환경에서만 사용할 수 있습니다. 운영에서는 ADMIN_EMAILS에 등록된 Google 계정으로 로그인하세요.');
-      return;
-    }
-    localStorage.setItem(STORAGE_KEYS.sessionToken, response.token);
-    localStorage.setItem(STORAGE_KEYS.sessionUser, JSON.stringify(response.user));
-    onAuthenticated(response.user.role ?? 'ADMIN');
-    setMessage('관리자 미리보기 로그인이 완료되었습니다.');
-  }
-
   function updateRegistrationField<Key extends keyof RegistrationForm>(key: Key, value: RegistrationForm[Key]) {
     setRegistrationForm((current) => ({ ...current, [key]: value }));
   }
@@ -4116,9 +4104,6 @@ function LoginPage({
             </button>
           )}
         </div>
-        <button className="mt-4 rounded-md border border-cyan-300/40 px-5 py-3 text-sm font-bold text-cyan-200 hover:bg-cyan-300 hover:text-slate-950" onClick={handleAdminPreviewLogin}>
-          관리자 미리보기 로그인
-        </button>
         <p className="mt-5 rounded-md bg-white/5 p-4 text-sm text-slate-300">{message}</p>
       </div>
       <div className="rounded-lg border border-white/10 bg-slate-950/80 p-8">
@@ -5019,7 +5004,7 @@ function UserManagementPage({
         <div>
           <p className="consumables-eyebrow">User Directory</p>
           <h2>사용자 관리</h2>
-          <span>Google 또는 Kakao 인증 후 가입자가 입력한 정보를 기준으로 사용자 권한과 Lab 정보를 관리합니다.</span>
+          <span>Google 인증 후 가입자가 입력한 정보를 기준으로 사용자 권한과 지도교수 정보를 관리합니다.</span>
         </div>
         <div className="consumables-actions">
           <button type="button" onClick={() => downloadUsersExcel(users)} aria-label="사용자 명단 엑셀 다운로드">
@@ -6687,26 +6672,11 @@ export function App() {
     }, 520);
   }
 
-  function switchPreviewRole() {
-    const nextRole: Role = sessionRole === 'ADMIN' ? 'USER' : 'ADMIN';
-    const previewUser = managedUsers.find((user) => user.roleLevel === '일반') ?? managedUsers[0];
-    const nextSessionUser: StoredSessionUser = nextRole === 'USER' && previewUser
-      ? {
-          id: previewUser.id,
-          name: previewUser.name,
-          email: previewUser.email,
-          role: 'USER'
-        }
-      : {
-          name: '관리자',
-          email: 'admin-preview@hbnu.local',
-          role: 'ADMIN'
-        };
-
-    localStorage.setItem(STORAGE_KEYS.sessionToken, `preview-switch-${nextRole.toLowerCase()}`);
-    localStorage.setItem(STORAGE_KEYS.sessionUser, JSON.stringify(nextSessionUser));
-    setSessionRole(nextRole);
-    navigate('home');
+  function logout() {
+    localStorage.removeItem(STORAGE_KEYS.sessionToken);
+    localStorage.removeItem(STORAGE_KEYS.sessionUser);
+    setSessionRole(null);
+    navigate('login');
   }
 
   function openEquipment(group: EquipmentGroup) {
@@ -7181,7 +7151,7 @@ export function App() {
         onNavigate={navigate}
         sessionRole={sessionRole}
         onPreviewPenaltyTest={() => setShowPreviewPenaltyDemo(true)}
-        onSwitchPreviewRole={switchPreviewRole}
+        onLogout={logout}
       />
       <div className="app-shell mx-auto max-w-[1800px] px-4 py-5 lg:px-6 2xl:px-8">
         <SidebarNavigation activePage={activePage} onNavigate={navigate} isAdmin={sessionRole === 'ADMIN'} canManageAssignedPermissions={canManageAssignedPermissions} />
