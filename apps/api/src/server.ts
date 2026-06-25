@@ -13,7 +13,13 @@ import {
   listNotices,
   listQnaItems
 } from './content.js';
-import { equipment, reservations } from './data.js';
+import {
+  ReservationOverlapError,
+  createReservation,
+  getEquipment,
+  listEquipment,
+  listReservations
+} from './core.js';
 
 dotenv.config();
 
@@ -41,11 +47,21 @@ app.post('/auth/dev-login', (req, res) => {
   res.json({ user, token: signToken(user) });
 });
 
-app.get('/equipment', (_req, res) => res.json(equipment));
-app.get('/equipment/:id', (req, res) => {
-  const item = equipment.find((entry) => entry.id === req.params.id);
-  if (!item) return res.status(404).json({ message: 'Equipment not found' });
-  return res.json(item);
+app.get('/equipment', async (_req, res, next) => {
+  try {
+    res.json(await listEquipment());
+  } catch (error) {
+    next(error);
+  }
+});
+app.get('/equipment/:id', async (req, res, next) => {
+  try {
+    const item = await getEquipment(req.params.id);
+    if (!item) return res.status(404).json({ message: 'Equipment not found' });
+    return res.json(item);
+  } catch (error) {
+    return next(error);
+  }
 });
 
 app.get('/notices', async (req, res, next) => {
@@ -108,36 +124,38 @@ app.patch('/qna/:id/answer', requireAuth, requireRole(['ADMIN']), async (req, re
   }
 });
 
-app.get('/reservations', requireAuth, (_req, res) => res.json(reservations));
-app.post('/reservations', requireAuth, (req, res) => {
-  const body = z.object({
-    equipmentId: z.string(),
-    startsAt: z.string().datetime(),
-    endsAt: z.string().datetime(),
-    purpose: z.string().min(5)
-  }).parse(req.body);
-
-  const overlaps = reservations.some((reservation) =>
-    reservation.equipmentId === body.equipmentId &&
-    reservation.status !== 'canceled' &&
-    new Date(body.startsAt) < new Date(reservation.endsAt) &&
-    new Date(body.endsAt) > new Date(reservation.startsAt)
-  );
-
-  if (overlaps) return res.status(409).json({ message: 'Reservation overlaps existing booking' });
-  return res.status(201).json({ id: `r-${Date.now()}`, ...body, status: 'pending' });
+app.get('/reservations', requireAuth, async (_req, res, next) => {
+  try {
+    res.json(await listReservations());
+  } catch (error) {
+    next(error);
+  }
+});
+app.post('/reservations', requireAuth, async (req, res, next) => {
+  try {
+    res.status(201).json(await createReservation(req.body, req.user));
+  } catch (error) {
+    next(error);
+  }
 });
 
-app.get('/admin/summary', requireAuth, requireRole(['ADMIN']), (_req, res) => {
-  res.json({
-    users: 128,
-    pendingReservations: 9,
-    educationRequests: 17,
-    equipmentOnline: equipment.length
-  });
+app.get('/admin/summary', requireAuth, requireRole(['ADMIN']), async (_req, res, next) => {
+  try {
+    res.json({
+      users: 128,
+      pendingReservations: 9,
+      educationRequests: 17,
+      equipmentOnline: (await listEquipment()).length
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  if (error instanceof ReservationOverlapError) {
+    return res.status(409).json({ message: error.message });
+  }
   if (error instanceof z.ZodError) {
     return res.status(400).json({ message: 'Invalid request body', issues: error.issues });
   }
