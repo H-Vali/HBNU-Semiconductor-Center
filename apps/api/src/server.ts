@@ -20,10 +20,13 @@ import {
 import {
   ReservationOverlapError,
   cancelReservation,
+  createEquipment,
   createReservation,
+  deleteEquipment,
   getEquipment,
   listEquipment,
-  listReservations
+  listReservations,
+  updateEquipment
 } from './core.js';
 import {
   authenticateGoogle,
@@ -126,6 +129,36 @@ app.get('/equipment', async (_req, res, next) => {
 app.get('/equipment/:id', async (req, res, next) => {
   try {
     const item = await getEquipment(req.params.id);
+    if (!item) return res.status(404).json({ message: 'Equipment not found' });
+    return res.json(item);
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.post('/equipment', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
+  try {
+    res.status(201).json(await createEquipment(req.body));
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.patch('/equipment/:id', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
+  try {
+    const { id } = z.object({ id: z.string() }).parse(req.params);
+    const item = await updateEquipment(id, req.body);
+    if (!item) return res.status(404).json({ message: 'Equipment not found' });
+    return res.json(item);
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.delete('/equipment/:id', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
+  try {
+    const { id } = z.object({ id: z.string() }).parse(req.params);
+    const item = await deleteEquipment(id);
     if (!item) return res.status(404).json({ message: 'Equipment not found' });
     return res.json(item);
   } catch (error) {

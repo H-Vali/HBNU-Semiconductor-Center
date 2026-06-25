@@ -78,7 +78,7 @@ type ReservationForm = {
   reservationType?: 'use' | 'maintenance';
   userType?: 'internal' | 'external';
 };
-type ApiEquipmentItem = Partial<EquipmentItem> & { imageUrl?: string; usageConditions?: string };
+type ApiEquipmentItem = Partial<EquipmentItem> & { imageUrl?: string; usageConditions?: string; managerUserId?: string | null };
 type ReservationEvent = {
   id: string;
   title: string;
@@ -514,7 +514,7 @@ function normalizeEquipment(item: ApiEquipmentItem, index: number): EquipmentIte
     condition: item.condition ?? item.usageConditions ?? '교육 이수 후 사용 가능',
     status: item.status ?? 'available',
     description: item.description ?? `${name} 장비 운영 및 교육 관리용 등록 정보입니다.`,
-    managerId: item.managerId,
+    managerId: item.managerId ?? item.managerUserId ?? undefined,
     vendorName: item.vendorName,
     vendorContactName: item.vendorContactName,
     vendorContactPosition: item.vendorContactPosition,
@@ -536,6 +536,18 @@ function getEquipmentOverrides(): Record<string, Partial<EquipmentItem>> {
 function applyEquipmentOverrides(items: EquipmentItem[]) {
   const overrides = getEquipmentOverrides();
   return items.map((item) => ({ ...item, ...(overrides[item.id] ?? {}) }));
+}
+
+function toApiEquipmentPayload(item: Partial<EquipmentItem>) {
+  const payload: Partial<EquipmentItem> & { imageUrl?: string; usageConditions?: string; managerUserId?: string | null } = {
+    ...item,
+    imageUrl: item.image,
+    usageConditions: item.condition
+  };
+  if (Object.prototype.hasOwnProperty.call(item, 'managerId')) {
+    payload.managerUserId = item.managerId ?? null;
+  }
+  return payload;
 }
 
 function useEquipmentData() {
@@ -6693,10 +6705,24 @@ export function App() {
 
   function addEquipment(item: EquipmentItem) {
     setEquipmentItems((current) => [...current, item]);
+    void apiPost<ApiEquipmentItem>(
+      '/equipment',
+      toApiEquipmentPayload(item),
+      localStorage.getItem(STORAGE_KEYS.sessionToken)
+    ).then((savedItem) => {
+      if (!savedItem) return;
+      setEquipmentItems((current) => current.map((entry, index) => (
+        entry.id === item.id ? normalizeEquipment(savedItem, index) : entry
+      )));
+    });
   }
 
   function deleteEquipment(equipmentId: string) {
     setDeletedEquipmentIds((current) => current.includes(equipmentId) ? current : [...current, equipmentId]);
+    void apiDelete<ApiEquipmentItem>(
+      `/equipment/${encodeURIComponent(equipmentId)}`,
+      localStorage.getItem(STORAGE_KEYS.sessionToken)
+    );
   }
 
   function updateEquipment(equipmentId: string, patch: Partial<EquipmentItem>) {
@@ -6710,6 +6736,16 @@ export function App() {
         [equipmentId]: { ...(currentOverrides[equipmentId] ?? {}), ...patch }
       }));
       return next;
+    });
+    void apiPatch<ApiEquipmentItem>(
+      `/equipment/${encodeURIComponent(equipmentId)}`,
+      toApiEquipmentPayload(patch),
+      localStorage.getItem(STORAGE_KEYS.sessionToken)
+    ).then((savedItem) => {
+      if (!savedItem) return;
+      setEquipmentItems((current) => current.map((item, index) => (
+        item.id === equipmentId ? normalizeEquipment(savedItem, index) : item
+      )));
     });
     if ('managerId' in patch) {
       setEquipmentPermissions((current) => {
