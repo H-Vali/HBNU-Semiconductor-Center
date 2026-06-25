@@ -159,6 +159,8 @@ const adminMenu: Array<{ label: string; page: PageKey; icon: typeof ShieldCheck 
   { label: '관리자', page: 'admin', icon: ShieldCheck }
 ];
 
+const adminOnlyPages = new Set<PageKey>(['admin', 'users', 'permissions', 'consumables', 'equipmentAdmin', 'penalties', 'noticeAdmin', 'educationAdmin']);
+
 const quickLinks: Array<{ label: string; page: PageKey; icon: typeof CalendarDays }> = [
   { label: '장비 사용 예약', page: 'reservations', icon: CalendarDays },
   { label: '장비사용자 교육신청', page: 'training', icon: GraduationCap },
@@ -938,10 +940,12 @@ function OwnerInfoFooter() {
 function SidebarNavigation({
   activePage,
   onNavigate,
+  isAdmin,
   canManageAssignedPermissions
 }: {
   activePage: PageKey;
   onNavigate: (page: PageKey) => void;
+  isAdmin: boolean;
   canManageAssignedPermissions: boolean;
 }) {
   const noticePages: PageKey[] = ['notice', 'operationNotice', 'meetingNotice'];
@@ -1159,25 +1163,27 @@ function SidebarNavigation({
           </div>
           {renderNavButton(mypageItem, activePage === 'mypage')}
         </nav>
-        <div className="sidebar-admin-block">
-          <div className="sidebar-section-label">Admin</div>
-          <nav className="sidebar-nav sidebar-nav-admin">
-            {adminMenu.map((item) => {
-              const Icon = item.icon;
-              const selected = activePage === item.page;
-              return (
-                <button
-                  key={`${item.page}-${item.label}`}
-                  className={`sidebar-nav-item sidebar-nav-item-admin ${selected ? 'is-active' : ''}`}
-                  onClick={() => onNavigate(item.page)}
-                >
-                  <Icon size={18} />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </nav>
-        </div>
+        {isAdmin && (
+          <div className="sidebar-admin-block">
+            <div className="sidebar-section-label">Admin</div>
+            <nav className="sidebar-nav sidebar-nav-admin">
+              {adminMenu.map((item) => {
+                const Icon = item.icon;
+                const selected = activePage === item.page;
+                return (
+                  <button
+                    key={`${item.page}-${item.label}`}
+                    className={`sidebar-nav-item sidebar-nav-item-admin ${selected ? 'is-active' : ''}`}
+                    onClick={() => onNavigate(item.page)}
+                  >
+                    <Icon size={18} />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+        )}
       </aside>
     </div>
   );
@@ -6387,7 +6393,17 @@ export function App() {
     }
   }, [sessionRole, activeSessionPenalty?.id]);
 
+  useEffect(() => {
+    if (sessionRole !== 'ADMIN' && adminOnlyPages.has(activePage)) {
+      setActivePage('home');
+    }
+  }, [activePage, sessionRole]);
+
   function navigate(page: PageKey) {
+    if (adminOnlyPages.has(page) && sessionRole !== 'ADMIN') {
+      setActivePage('home');
+      return;
+    }
     if (page === 'reservations' && sessionRole !== 'ADMIN' && activeSessionPenalty) {
       setShowPenaltyNotice(true);
       return;
@@ -6845,7 +6861,7 @@ export function App() {
         onSwitchPreviewRole={switchPreviewRole}
       />
       <div className="app-shell mx-auto max-w-[1800px] px-4 py-5 lg:px-6 2xl:px-8">
-        <SidebarNavigation activePage={activePage} onNavigate={navigate} canManageAssignedPermissions={canManageAssignedPermissions} />
+        <SidebarNavigation activePage={activePage} onNavigate={navigate} isAdmin={sessionRole === 'ADMIN'} canManageAssignedPermissions={canManageAssignedPermissions} />
         <main className="app-main">
           {activePage === 'home' && (
             <>
@@ -6923,15 +6939,19 @@ export function App() {
           {activePage === 'faq' && <FaqPage items={managedFaqItems} />}
           {activePage === 'qna' && <QnaPage sessionRole={sessionRole} />}
           {activePage === 'admin' && (
-            <AdminPage
-              equipmentItems={equipmentItems}
-              calendarEvents={reservationEvents}
-              onAddReservation={addReservation}
-              onDeleteReservation={deleteReservation}
-              onNavigate={navigate}
-              consumablesUpdatedAt={consumablesUpdatedAt}
-              usersUpdatedAt={usersUpdatedAt}
-            />
+            sessionRole === 'ADMIN' ? (
+              <AdminPage
+                equipmentItems={equipmentItems}
+                calendarEvents={reservationEvents}
+                onAddReservation={addReservation}
+                onDeleteReservation={deleteReservation}
+                onNavigate={navigate}
+                consumablesUpdatedAt={consumablesUpdatedAt}
+                usersUpdatedAt={usersUpdatedAt}
+              />
+            ) : (
+              <PlaceholderPage title="접근 권한이 없습니다" />
+            )
           )}
           {activePage === 'educationAdmin' && (
             sessionRole === 'ADMIN' ? (
@@ -6947,24 +6967,32 @@ export function App() {
             )
           )}
           {activePage === 'users' && (
-            <UserManagementPage
-              users={managedUsers}
-              saveFeedbackPhase={userSaveFeedbackPhase}
-              onUpdateUser={updateManagedUser}
-              onAddUser={addManagedUser}
-              onDeleteUser={deleteManagedUser}
-              onImportUsers={importManagedUsers}
-              onSave={saveManagedUsers}
-            />
+            sessionRole === 'ADMIN' ? (
+              <UserManagementPage
+                users={managedUsers}
+                saveFeedbackPhase={userSaveFeedbackPhase}
+                onUpdateUser={updateManagedUser}
+                onAddUser={addManagedUser}
+                onDeleteUser={deleteManagedUser}
+                onImportUsers={importManagedUsers}
+                onSave={saveManagedUsers}
+              />
+            ) : (
+              <PlaceholderPage title="접근 권한이 없습니다" />
+            )
           )}
           {activePage === 'permissions' && (
-            <PermissionManagementPage
-              users={managedUsers}
-              equipmentItems={activeEquipmentItems}
-              permissions={equipmentPermissions}
-              managerUserIds={managerUserIds}
-              onSavePermissions={saveEquipmentPermissions}
-            />
+            sessionRole === 'ADMIN' ? (
+              <PermissionManagementPage
+                users={managedUsers}
+                equipmentItems={activeEquipmentItems}
+                permissions={equipmentPermissions}
+                managerUserIds={managerUserIds}
+                onSavePermissions={saveEquipmentPermissions}
+              />
+            ) : (
+              <PlaceholderPage title="접근 권한이 없습니다" />
+            )
           )}
           {activePage === 'managerPermissions' && (
             canManageAssignedPermissions ? (
@@ -6982,46 +7010,62 @@ export function App() {
             )
           )}
           {activePage === 'equipmentAdmin' && (
-            <EquipmentAdminPage
-              equipmentItems={activeEquipmentItems}
-              users={managedUsers}
-              onAddEquipment={addEquipment}
-              onDeleteEquipment={deleteEquipment}
-              onUpdateEquipment={updateEquipment}
-            />
+            sessionRole === 'ADMIN' ? (
+              <EquipmentAdminPage
+                equipmentItems={activeEquipmentItems}
+                users={managedUsers}
+                onAddEquipment={addEquipment}
+                onDeleteEquipment={deleteEquipment}
+                onUpdateEquipment={updateEquipment}
+              />
+            ) : (
+              <PlaceholderPage title="접근 권한이 없습니다" />
+            )
           )}
           {activePage === 'consumables' && (
-            <ConsumablesPage
-              month={selectedConsumableMonth}
-              consumables={activeConsumables}
-              saveFeedbackPhase={saveFeedbackPhase}
-              onMonthChange={changeConsumableMonth}
-              onUpdateConsumable={updateConsumable}
-              onAddConsumable={addConsumable}
-              onImportConsumables={importConsumables}
-              onSave={saveConsumables}
-            />
+            sessionRole === 'ADMIN' ? (
+              <ConsumablesPage
+                month={selectedConsumableMonth}
+                consumables={activeConsumables}
+                saveFeedbackPhase={saveFeedbackPhase}
+                onMonthChange={changeConsumableMonth}
+                onUpdateConsumable={updateConsumable}
+                onAddConsumable={addConsumable}
+                onImportConsumables={importConsumables}
+                onSave={saveConsumables}
+              />
+            ) : (
+              <PlaceholderPage title="접근 권한이 없습니다" />
+            )
           )}
           {activePage === 'penalties' && (
-            <PenaltyManagementPage
-              users={managedUsers}
-              penalties={penaltyRecords}
-              onAddPenalty={addPenalty}
-              onRevokePenalty={revokePenalty}
-            />
+            sessionRole === 'ADMIN' ? (
+              <PenaltyManagementPage
+                users={managedUsers}
+                penalties={penaltyRecords}
+                onAddPenalty={addPenalty}
+                onRevokePenalty={revokePenalty}
+              />
+            ) : (
+              <PlaceholderPage title="접근 권한이 없습니다" />
+            )
           )}
           {activePage === 'noticeAdmin' && (
-            <NoticeAdminPage
-              operationItems={managedOperationNotices}
-              meetingItems={managedMeetingNotices}
-              faqItems={managedFaqItems}
-              onAddNotice={addNotice}
-              onUpdateNotice={updateNotice}
-              onDeleteNotice={deleteNotice}
-              onAddFaq={addFaq}
-              onUpdateFaq={updateFaq}
-              onDeleteFaq={deleteFaq}
-            />
+            sessionRole === 'ADMIN' ? (
+              <NoticeAdminPage
+                operationItems={managedOperationNotices}
+                meetingItems={managedMeetingNotices}
+                faqItems={managedFaqItems}
+                onAddNotice={addNotice}
+                onUpdateNotice={updateNotice}
+                onDeleteNotice={deleteNotice}
+                onAddFaq={addFaq}
+                onUpdateFaq={updateFaq}
+                onDeleteFaq={deleteFaq}
+              />
+            ) : (
+              <PlaceholderPage title="접근 권한이 없습니다" />
+            )
           )}
           {activePage === 'login' && (
             <LoginPage
