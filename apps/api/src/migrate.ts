@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import { initialFaqs, initialNotices, initialQnaItems } from './content.js';
 import { closeDatabase, query } from './db.js';
 import { equipment, reservations } from './data.js';
+import { initialUsers } from './usersSeed.js';
 
 dotenv.config();
 
@@ -172,6 +173,47 @@ async function seedReferenceData() {
        on conflict (id) do update
        set name = excluded.name, description = excluded.description`,
       [role.id, role.name, role.description]
+    );
+  }
+
+  for (const user of initialUsers) {
+    const seededUser = await query<{ id: string }>(
+      `insert into users (
+        id, email, name, auth_provider, department, lab_professor, phone, memo,
+        role_level, onboarding_status
+      )
+      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'training_pending')
+      on conflict (email) do update
+      set name = excluded.name,
+          department = excluded.department,
+          lab_professor = excluded.lab_professor,
+          phone = excluded.phone,
+          memo = excluded.memo,
+          role_level = excluded.role_level,
+          onboarding_status = case
+            when users.onboarding_status = 'active' then users.onboarding_status
+            else excluded.onboarding_status
+          end,
+          updated_at = now(),
+          deleted_at = null
+      returning id`,
+      [
+        user.id,
+        user.email,
+        user.name,
+        user.authProvider,
+        user.department,
+        user.labProfessor,
+        user.phone,
+        user.memo,
+        user.roleLevel
+      ]
+    );
+    await query(
+      `insert into user_roles (user_id, role_id)
+       values ($1, 'role-user')
+       on conflict (user_id, role_id) do nothing`,
+      [seededUser.rows[0].id]
     );
   }
 
