@@ -70,6 +70,7 @@ type EquipmentStatus = 'available' | 'unavailable';
 type ReservationForm = {
   equipmentId: string;
   date: string;
+  endDate: string;
   startTime: string;
   endTime: string;
   purpose: string;
@@ -213,8 +214,25 @@ function formatReservationTime(value?: string) {
   return time.slice(0, 5);
 }
 
+function formatReservationRange(start: string, end?: string) {
+  const startDate = start.slice(0, 10);
+  const endDate = end?.slice(0, 10);
+  const startTime = formatReservationTime(start);
+  const endTime = formatReservationTime(end);
+  if (!end || !endTime) return `${startDate} ${startTime}`;
+  return `${startDate} ${startTime} - ${endDate && endDate !== startDate ? `${endDate} ` : ''}${endTime}`;
+}
+
 function toReservationDateTime(date: string, time: string) {
   return `${date}T${time}:00`;
+}
+
+function getReservationEndDate(form: Pick<ReservationForm, 'date' | 'endDate'>) {
+  return form.endDate || form.date;
+}
+
+function isReservationRangeValid(form: Pick<ReservationForm, 'date' | 'endDate' | 'startTime' | 'endTime'>) {
+  return new Date(toReservationDateTime(form.date, form.startTime)).getTime() < new Date(toReservationDateTime(getReservationEndDate(form), form.endTime)).getTime();
 }
 
 function reservationOverlaps(startA: string, endA = startA, startB: string, endB = startB) {
@@ -2150,7 +2168,7 @@ function ReservationPage({
       id: `reservation-${Date.now()}`,
       title: `${equipment.name} 예약${purpose}`,
       start: toReservationDateTime(form.date, form.startTime),
-      end: toReservationDateTime(form.date, form.endTime),
+      end: toReservationDateTime(getReservationEndDate(form), form.endTime),
       status: sessionRole === 'ADMIN' ? 'approved' : 'pending',
       equipmentId: equipment.id,
       createdBy: sessionRole === 'ADMIN' ? 'ADMIN' : 'USER'
@@ -2304,15 +2322,16 @@ function ReservationModal({
   const [form, setForm] = useState({
     equipmentId: isEquipmentAvailable(equipmentItems.find((item) => item.id === selectedEquipmentId)) ? selectedEquipmentId : availableEquipmentItems[0]?.id || '',
     date: initialDate,
+    endDate: initialDate,
     startTime: '09:00',
     endTime: '10:00',
     purpose: ''
   });
-  const endTimes = reservationTimes.filter((time) => time > form.startTime);
+  const endTimes = reservationTimes.filter((time) => form.endDate > form.date || time > form.startTime);
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    if (!isEquipmentAvailable(equipmentItems.find((item) => item.id === form.equipmentId))) return;
+    if (!isEquipmentAvailable(equipmentItems.find((item) => item.id === form.equipmentId)) || !isReservationRangeValid(form)) return;
     onConfirm(form);
   }
 
@@ -2333,10 +2352,19 @@ function ReservationModal({
             ))}
           </select>
         </label>
-        <label className="reservation-label">
-          예약일
-          <input type="date" value={form.date} onChange={(event) => setForm((current) => ({ ...current, date: event.target.value }))} />
-        </label>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="reservation-label">
+            시작일
+            <input type="date" value={form.date} onChange={(event) => {
+              const nextDate = event.target.value;
+              setForm((current) => ({ ...current, date: nextDate, endDate: current.endDate < nextDate ? nextDate : current.endDate }));
+            }} />
+          </label>
+          <label className="reservation-label">
+            종료일
+            <input type="date" min={form.date} value={form.endDate} onChange={(event) => setForm((current) => ({ ...current, endDate: event.target.value }))} />
+          </label>
+        </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="reservation-label">
             시작 시간
@@ -2371,7 +2399,7 @@ function ReservationModal({
         </label>
         <div className="mt-6 flex justify-end gap-3">
           <button type="button" className="rounded-md border border-red-300/35 px-5 py-3 font-bold text-red-100 hover:border-red-300 hover:bg-red-500/20 hover:text-white" onClick={onClose}>취소</button>
-          <button type="submit" className="rounded-md bg-cyan-300 px-5 py-3 font-extrabold text-slate-950 shadow-[0_0_28px_rgba(34,211,238,0.24)] hover:bg-white disabled:cursor-not-allowed disabled:opacity-40" disabled={!isEquipmentAvailable(equipmentItems.find((item) => item.id === form.equipmentId))}>예약 확정</button>
+          <button type="submit" className="rounded-md bg-cyan-300 px-5 py-3 font-extrabold text-slate-950 shadow-[0_0_28px_rgba(34,211,238,0.24)] hover:bg-white disabled:cursor-not-allowed disabled:opacity-40" disabled={!isEquipmentAvailable(equipmentItems.find((item) => item.id === form.equipmentId)) || !isReservationRangeValid(form)}>예약 확정</button>
         </div>
       </form>
     </div>
@@ -2403,6 +2431,7 @@ function ReservationModalV2({
   const [form, setForm] = useState({
     equipmentId: isEquipmentAvailable(equipmentItems.find((item) => item.id === selectedEquipmentId)) ? selectedEquipmentId : availableEquipmentItems[0]?.id || '',
     date: initialDate,
+    endDate: initialDate,
     startTime: '09:00',
     endTime: '10:00',
     purpose: '',
@@ -2411,32 +2440,43 @@ function ReservationModalV2({
   });
   const selectedModalEquipment = equipmentItems.find((item) => item.id === form.equipmentId);
   const selectedModalEquipmentAvailable = isEquipmentAvailable(selectedModalEquipment);
-
-  const sameEquipmentReservations = calendarEvents.filter((event) => {
-    const eventEquipmentId = getEventEquipmentId(event, equipmentItems);
-    return event.start.slice(0, 10) === form.date && eventEquipmentId === form.equipmentId;
-  });
+  const reservationStart = toReservationDateTime(form.date, form.startTime);
+  const reservationEnd = toReservationDateTime(getReservationEndDate(form), form.endTime);
+  const rangePanelStart = toReservationDateTime(form.date, '00:00');
+  const rangePanelEnd = toReservationDateTime(getReservationEndDate(form), '23:59');
+  const sameEquipmentReservations = calendarEvents.filter((event) => getEventEquipmentId(event, equipmentItems) === form.equipmentId);
+  const rangeHasOverlap = sameEquipmentReservations.some((event) => reservationOverlaps(reservationStart, reservationEnd, event.start, event.end));
+  const hasValidRange = isReservationRangeValid(form);
   const availableStartTimes = reservationTimes.filter((time, index) => {
     const nextTime = reservationTimes[index + 1];
-    if (!nextTime) return false;
+    if (!nextTime) return getReservationEndDate(form) > form.date;
     const slotStart = toReservationDateTime(form.date, time);
     const slotEnd = toReservationDateTime(form.date, nextTime);
     return !sameEquipmentReservations.some((event) => reservationOverlaps(slotStart, slotEnd, event.start, event.end));
   });
   const endTimes = reservationTimes.filter((time) => {
-    if (time <= form.startTime) return false;
+    if (getReservationEndDate(form) === form.date && time <= form.startTime) return false;
     const requestedStart = toReservationDateTime(form.date, form.startTime);
-    const requestedEnd = toReservationDateTime(form.date, time);
+    const requestedEnd = toReservationDateTime(getReservationEndDate(form), time);
+    if (new Date(requestedStart).getTime() >= new Date(requestedEnd).getTime()) return false;
     return !sameEquipmentReservations.some((event) => reservationOverlaps(requestedStart, requestedEnd, event.start, event.end));
   });
   const reservationsForDate = calendarEvents
-    .filter((event) => event.start.slice(0, 10) === form.date && getEventEquipmentId(event, equipmentItems) === form.equipmentId)
+    .filter((event) => (
+      getEventEquipmentId(event, equipmentItems) === form.equipmentId
+      && reservationOverlaps(rangePanelStart, rangePanelEnd, event.start, event.end)
+    ))
     .sort((first, second) => first.start.localeCompare(second.start));
-  const canSubmit = selectedModalEquipmentAvailable && availableStartTimes.includes(form.startTime) && endTimes.includes(form.endTime);
+  const canSubmit = selectedModalEquipmentAvailable && hasValidRange && !rangeHasOverlap && availableStartTimes.includes(form.startTime) && endTimes.includes(form.endTime);
 
   function updateStartTime(nextStart: string) {
     setForm((current) => {
-      const nextEnd = reservationTimes.find((time) => time > nextStart && !sameEquipmentReservations.some((event) => reservationOverlaps(toReservationDateTime(current.date, nextStart), toReservationDateTime(current.date, time), event.start, event.end)));
+      const nextEnd = reservationTimes.find((time) => {
+        const requestedStart = toReservationDateTime(current.date, nextStart);
+        const requestedEnd = toReservationDateTime(getReservationEndDate(current), time);
+        return new Date(requestedStart).getTime() < new Date(requestedEnd).getTime()
+          && !sameEquipmentReservations.some((event) => reservationOverlaps(requestedStart, requestedEnd, event.start, event.end));
+      });
       return { ...current, startTime: nextStart, endTime: nextEnd ?? current.endTime };
     });
   }
@@ -2457,12 +2497,12 @@ function ReservationModalV2({
         <div className="reservation-modal-grid">
           <aside className="reservation-day-panel">
             <p className="text-xs font-extrabold uppercase text-cyan-300">Daily Schedule</p>
-            <h4>{form.date} 예약현황</h4>
+            <h4>{form.date === getReservationEndDate(form) ? `${form.date} 예약현황` : `${form.date} - ${getReservationEndDate(form)} 예약현황`}</h4>
             <div className="reservation-day-list">
               {reservationsForDate.length > 0 ? (
                 reservationsForDate.map((event) => (
                   <div key={event.id} className={`reservation-day-item ${isReservationActive(event) ? 'is-live' : ''} ${isMaintenanceReservation(event) ? 'is-maintenance' : ''} ${isExternalReservation(event) ? 'is-external' : ''}`}>
-                    <span>{formatReservationTime(event.start)}{event.end ? ` - ${formatReservationTime(event.end)}` : ''}</span>
+                    <span>{formatReservationRange(event.start, event.end)}</span>
                     <strong>{event.title}</strong>
                     {isReservationActive(event) && <em>{isMaintenanceReservation(event) ? '점검중' : isExternalReservation(event) ? '외부 사용중' : '사용중'}</em>}
                     {onDeleteReservation && (
@@ -2502,23 +2542,54 @@ function ReservationModalV2({
                 </label>
               </div>
             )}
-            <label className="reservation-label">
-              예약일
-              <input type="date" value={form.date} onChange={(event) => setForm((current) => ({ ...current, date: event.target.value }))} />
-            </label>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="reservation-label">
+                시작일
+                <input
+                  type="date"
+                  value={form.date}
+                  onChange={(event) => {
+                    const nextDate = event.target.value;
+                    setForm((current) => ({
+                      ...current,
+                      date: nextDate,
+                      endDate: current.endDate < nextDate ? nextDate : current.endDate
+                    }));
+                  }}
+                />
+              </label>
+              <label className="reservation-label">
+                종료일
+                <input
+                  type="date"
+                  min={form.date}
+                  value={form.endDate}
+                  onChange={(event) => {
+                    const nextEndDate = event.target.value;
+                    setForm((current) => ({
+                      ...current,
+                      endDate: nextEndDate,
+                      endTime: nextEndDate === current.date && current.endTime <= current.startTime
+                        ? reservationTimes.find((time) => time > current.startTime) ?? current.endTime
+                        : current.endTime
+                    }));
+                  }}
+                />
+              </label>
+            </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="reservation-label">
                 시작 시간
                 <select value={form.startTime} onChange={(event) => updateStartTime(event.target.value)}>
                   {reservationTimes.map((time, index) => (
-                    <option key={time} value={time} disabled={index === reservationTimes.length - 1 || !availableStartTimes.includes(time)}>{time}</option>
+                    <option key={time} value={time} disabled={!availableStartTimes.includes(time)}>{time}</option>
                   ))}
                 </select>
               </label>
               <label className="reservation-label">
                 종료 시간
                 <select value={form.endTime} onChange={(event) => setForm((current) => ({ ...current, endTime: event.target.value }))}>
-                  {reservationTimes.filter((time) => time > form.startTime).map((time) => (
+                  {reservationTimes.filter((time) => getReservationEndDate(form) > form.date || time > form.startTime).map((time) => (
                     <option key={time} value={time} disabled={!endTimes.includes(time)}>{time}</option>
                   ))}
                 </select>
@@ -2529,7 +2600,9 @@ function ReservationModalV2({
               <input value={form.purpose} onChange={(event) => setForm((current) => ({ ...current, purpose: event.target.value }))} placeholder="예: 박막 증착 공정" />
             </label>
             {!selectedModalEquipmentAvailable && <p className="reservation-warning">이용불가 장비는 예약할 수 없습니다.</p>}
-            {selectedModalEquipmentAvailable && !canSubmit && <p className="reservation-warning">이미 예약된 시간입니다. 다른 시간을 선택해주세요.</p>}
+            {selectedModalEquipmentAvailable && !hasValidRange && <p className="reservation-warning">종료 일시는 시작 일시보다 뒤여야 합니다.</p>}
+            {selectedModalEquipmentAvailable && hasValidRange && rangeHasOverlap && <p className="reservation-warning">선택한 기간에 이미 등록된 예약이 있습니다. 다른 기간을 선택해주세요.</p>}
+            {selectedModalEquipmentAvailable && hasValidRange && !rangeHasOverlap && !canSubmit && <p className="reservation-warning">선택한 시간으로 예약할 수 없습니다. 다른 시간을 선택해주세요.</p>}
           </div>
         </div>
         <div className="mt-6 flex justify-end gap-3">
@@ -3587,7 +3660,7 @@ function AdminPage({
       id: `admin-reservation-${Date.now()}`,
       title: `${equipment.name} ${isMaintenance ? '장비 점검' : isExternal ? '외부 기업 예약' : '관리자 예약'}${purpose}`,
       start: toReservationDateTime(form.date, form.startTime),
-      end: toReservationDateTime(form.date, form.endTime),
+      end: toReservationDateTime(getReservationEndDate(form), form.endTime),
       status: reservationStatus,
       equipmentId: equipment.id,
       createdBy: 'ADMIN'
