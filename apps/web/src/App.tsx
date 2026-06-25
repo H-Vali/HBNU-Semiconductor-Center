@@ -2572,6 +2572,7 @@ function TrainingPage({
   const [preferredDate, setPreferredDate] = useState('');
   const [purpose, setPurpose] = useState<'연구' | '수업' | '기타'>('연구');
   const [message, setMessage] = useState('');
+  const [submittedTrainingRequest, setSubmittedTrainingRequest] = useState(false);
   const [applications, setApplications] = useState<TrainingApplication[]>(() => {
     const pendingEquipment = equipmentItems.find((item) => !currentUserPermissionIds.includes(item.id)) ?? equipmentItems[0];
     const scheduledEquipment = equipmentItems.find((item) => item.id !== pendingEquipment?.id && !currentUserPermissionIds.includes(item.id)) ?? equipmentItems[1];
@@ -2614,7 +2615,7 @@ function TrainingPage({
     ? managerNameById.get(selectedEquipment.managerId) ?? '담당자 미지정'
     : '담당자 미지정';
   const canSubmitTrainingRequest = Boolean(selectedEquipment && preferredDate && message.trim());
-  const activeStep = applications.some((item) => item.status === 'pending' || item.status === 'scheduled') || selectedEquipment ? 2 : 1;
+  const activeStep = submittedTrainingRequest ? 3 : selectedEquipment ? 2 : 1;
 
   function submitTrainingRequest(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -2634,6 +2635,7 @@ function TrainingPage({
     setPreferredDate('');
     setPurpose('연구');
     setMessage('');
+    setSubmittedTrainingRequest(true);
     window.alert(`${selectedManagerName}에게 교육 신청 알림이 전송되었습니다.`);
   }
 
@@ -2675,6 +2677,7 @@ function TrainingPage({
                 onChange={(event) => {
                   setSelectedEquipmentGroup(event.target.value as EquipmentGroup);
                   setSelectedEquipmentId('');
+                  setSubmittedTrainingRequest(false);
                 }}
               >
                 <option value="process">공정</option>
@@ -2684,7 +2687,10 @@ function TrainingPage({
               <select
                 id="training-equipment-select"
                 value={selectedEquipmentId}
-                onChange={(event) => setSelectedEquipmentId(event.target.value)}
+                onChange={(event) => {
+                  setSelectedEquipmentId(event.target.value);
+                  setSubmittedTrainingRequest(false);
+                }}
               >
                 <option value="">장비를 선택하세요</option>
                 {filteredEquipment.map((item) => (
