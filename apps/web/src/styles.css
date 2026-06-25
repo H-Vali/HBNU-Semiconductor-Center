@@ -4919,6 +4919,24 @@ select {
   opacity: 0.42;
 }
 
+.admin-education-permission,
+.admin-education-permission * {
+  font-weight: 800 !important;
+}
+
+.admin-education-permission h2,
+.admin-education-permission h3,
+.admin-education-permission strong,
+.admin-equipment-master-row strong,
+.admin-education-user-cell strong {
+  font-weight: 950 !important;
+}
+
+.admin-education-permission input::placeholder,
+.admin-education-permission textarea::placeholder {
+  font-weight: 800;
+}
+
 @media (max-width: 860px) {
   .admin-education-layout,
   .admin-education-detail-head {
