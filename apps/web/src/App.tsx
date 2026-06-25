@@ -22,6 +22,7 @@ import {
   CalendarDays,
   CheckCircle2,
   ChevronDown,
+  Clock3,
   Cpu,
   Download,
   Factory,
@@ -32,10 +33,12 @@ import {
   LayoutDashboard,
   LockKeyhole,
   LogIn,
+  Mail,
   Megaphone,
   MessageSquare,
   Microscope,
   PackageCheck,
+  Phone,
   Plus,
   School,
   Search,
@@ -2548,6 +2551,112 @@ const trainingStatusMeta: Record<TrainingApplicationStatus, { label: string; cla
   completed: { label: '이수 완료', className: 'is-success' }
 };
 
+type ManagerTrainingRequestStatus = 'requested' | 'scheduled' | 'completed' | 'rejected';
+type ManagerTrainingDraft = {
+  date: string;
+  start: string;
+  end: string;
+  changeReason: string;
+};
+type ManagerTrainingPatch = Partial<{
+  status: ManagerTrainingRequestStatus;
+  scheduledDate: string;
+  scheduledStart: string;
+  scheduledEnd: string;
+  scheduleChangeReason: string;
+  handledBy: string;
+  rejectedReason: string;
+  completedAt: string;
+}>;
+type ManagerTrainingRequestView = {
+  id: string;
+  equipment: EquipmentItem;
+  applicant: ManagedUser;
+  requestedAt: string;
+  preferredDate: string;
+  preferredStart: string;
+  preferredEnd: string;
+  preferredNote: string;
+  purpose: '연구' | '수업' | '기타';
+  message: string;
+  status: ManagerTrainingRequestStatus;
+  scheduledDate?: string;
+  scheduledStart?: string;
+  scheduledEnd?: string;
+  scheduleChangeReason?: string;
+  handledBy?: string;
+  rejectedReason?: string;
+  completedAt?: string;
+};
+
+const managerTrainingStatusMeta: Record<ManagerTrainingRequestStatus, { label: string; className: string }> = {
+  requested: { label: '승인 대기', className: 'is-requested' },
+  scheduled: { label: '일정 확정', className: 'is-scheduled' },
+  completed: { label: '이수 완료', className: 'is-completed' },
+  rejected: { label: '반려', className: 'is-rejected' }
+};
+
+const managerTrainingTabs: Array<{ status: ManagerTrainingRequestStatus; label: string }> = [
+  { status: 'requested', label: '승인 대기' },
+  { status: 'scheduled', label: '일정 확정' },
+  { status: 'completed', label: '이수 완료' },
+  { status: 'rejected', label: '반려' }
+];
+
+function getDateInputOffset(days: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function formatTrainingDateLabel(date: string, start?: string, end?: string) {
+  const target = new Date(`${date}T${start || '09:00'}:00`);
+  const dateLabel = new Intl.DateTimeFormat('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    month: '2-digit',
+    day: '2-digit',
+    weekday: 'short'
+  }).format(target);
+  return `${dateLabel} ${start ?? '--:--'}${end ? `-${end}` : ''}`;
+}
+
+function createManagerTrainingRequests(equipmentItems: EquipmentItem[], users: ManagedUser[]): ManagerTrainingRequestView[] {
+  const purposeOptions: ManagerTrainingRequestView['purpose'][] = ['연구', '수업', '기타'];
+  const notes = ['오전 중 희망', '공정 실습 전 장비 세팅 포함', '시료 측정 전 기본 운용 교육 요청', '소자 분석 실습 일정과 연동'];
+  return equipmentItems.flatMap((equipment, equipmentIndex) => {
+    const applicants = users.slice(0, Math.min(users.length, 5));
+    return applicants.slice(0, 3).map((user, index) => {
+      const requestedIndex = equipmentIndex * 3 + index;
+      const preferredDate = getDateInputOffset(index + 1 + (equipmentIndex % 3));
+      const preferredStart = index % 2 === 0 ? '09:00' : '14:00';
+      const preferredEnd = index % 2 === 0 ? '10:00' : '15:00';
+      const baseStatus: ManagerTrainingRequestStatus = requestedIndex % 7 === 0
+        ? 'scheduled'
+        : requestedIndex % 11 === 0
+          ? 'completed'
+          : 'requested';
+      return {
+        id: `manager-training-${equipment.id}-${user.id}`,
+        equipment,
+        applicant: user,
+        requestedAt: new Date(Date.now() - (requestedIndex + 1) * 5_400_000).toISOString(),
+        preferredDate,
+        preferredStart,
+        preferredEnd,
+        preferredNote: notes[requestedIndex % notes.length],
+        purpose: purposeOptions[requestedIndex % purposeOptions.length],
+        message: `${equipment.name} 사용 전 안전수칙과 기본 운용 절차 교육을 요청합니다.`,
+        status: baseStatus,
+        scheduledDate: baseStatus === 'scheduled' || baseStatus === 'completed' ? preferredDate : undefined,
+        scheduledStart: baseStatus === 'scheduled' || baseStatus === 'completed' ? preferredStart : undefined,
+        scheduledEnd: baseStatus === 'scheduled' || baseStatus === 'completed' ? preferredEnd : undefined,
+        handledBy: equipment.managerId,
+        completedAt: baseStatus === 'completed' ? new Date().toISOString() : undefined
+      };
+    });
+  });
+}
+
 function TrainingPage({
   equipmentItems,
   users,
@@ -2824,13 +2933,17 @@ function TrainingPage({
 function TrainingManagementPage({
   users,
   equipmentItems,
+  permissions,
   currentUser,
-  sessionRole
+  sessionRole,
+  onGrantPermission
 }: {
   users: ManagedUser[];
   equipmentItems: EquipmentItem[];
+  permissions: EquipmentPermissionMap;
   currentUser: ManagedUser | null;
   sessionRole: Role | null;
+  onGrantPermission: (userId: string, equipmentId: string) => void;
 }) {
   const manageableEquipment = useMemo(() => (
     sessionRole === 'ADMIN'
@@ -2839,36 +2952,108 @@ function TrainingManagementPage({
         ? equipmentItems.filter((item) => item.managerId === currentUser.id)
         : []
   ), [currentUser, equipmentItems, sessionRole]);
-  const [selectedEquipmentId, setSelectedEquipmentId] = useState(manageableEquipment[0]?.id ?? '');
-  const [applicationStatus, setApplicationStatus] = useState<Record<string, 'pending' | 'approved' | 'rejected'>>({});
-  const selectedEquipment = manageableEquipment.find((item) => item.id === selectedEquipmentId) ?? manageableEquipment[0];
+  const [selectedStatus, setSelectedStatus] = useState<ManagerTrainingRequestStatus>('requested');
+  const [expandedRequestId, setExpandedRequestId] = useState('');
+  const [requestPatches, setRequestPatches] = useState<Record<string, ManagerTrainingPatch>>({});
+  const [scheduleDrafts, setScheduleDrafts] = useState<Record<string, ManagerTrainingDraft>>({});
+  const requestSource = useMemo(() => createManagerTrainingRequests(manageableEquipment, users), [manageableEquipment, users]);
+  const requests = useMemo(() => requestSource.map((request) => ({ ...request, ...requestPatches[request.id] })), [requestPatches, requestSource]);
+  const filteredRequests = requests.filter((request) => request.status === selectedStatus);
+  const requestedCount = requests.filter((item) => item.status === 'requested').length;
+  const scheduledCount = requests.filter((item) => item.status === 'scheduled').length;
+  const completedCount = requests.filter((item) => item.status === 'completed').length;
+  const weekScheduledCount = requests.filter((item) => item.status === 'scheduled' && item.scheduledDate && item.scheduledDate <= getDateInputOffset(7)).length;
+  const upcomingRequests = requests
+    .filter((item) => item.status === 'scheduled')
+    .sort((a, b) => `${a.scheduledDate}T${a.scheduledStart}`.localeCompare(`${b.scheduledDate}T${b.scheduledStart}`))
+    .slice(0, 5);
+  const completionPending = requests
+    .filter((item) => item.status === 'scheduled')
+    .slice(0, 4);
+  const managerName = sessionRole === 'ADMIN'
+    ? '관리자'
+    : currentUser?.name ?? '담당자';
 
   useEffect(() => {
-    if (!selectedEquipmentId && manageableEquipment[0]) {
-      setSelectedEquipmentId(manageableEquipment[0].id);
+    if (filteredRequests.length > 0 && !filteredRequests.some((item) => item.id === expandedRequestId)) {
+      setExpandedRequestId(filteredRequests[0].id);
     }
-    if (selectedEquipmentId && !manageableEquipment.some((item) => item.id === selectedEquipmentId)) {
-      setSelectedEquipmentId(manageableEquipment[0]?.id ?? '');
+    if (filteredRequests.length === 0 && expandedRequestId) {
+      setExpandedRequestId('');
     }
-  }, [manageableEquipment, selectedEquipmentId]);
+  }, [expandedRequestId, filteredRequests]);
 
-  const applications = selectedEquipment
-    ? users.slice(0, 8).map((user, index) => {
-      const id = `${selectedEquipment.id}-${user.id}`;
-      const baseStatus = index % 5 === 0 ? 'approved' : 'pending';
-      return {
-        id,
-        user,
-        equipment: selectedEquipment,
-        appliedAt: new Date(Date.now() - (index + 1) * 7_200_000).toISOString(),
-        status: applicationStatus[id] ?? baseStatus
-      };
-    })
-    : [];
-  const pendingCount = applications.filter((item) => item.status === 'pending').length;
+  function getScheduleDraft(request: ManagerTrainingRequestView): ManagerTrainingDraft {
+    return scheduleDrafts[request.id] ?? {
+      date: request.scheduledDate ?? request.preferredDate,
+      start: request.scheduledStart ?? request.preferredStart,
+      end: request.scheduledEnd ?? request.preferredEnd,
+      changeReason: request.scheduleChangeReason ?? ''
+    };
+  }
 
-  function updateApplicationStatus(id: string, status: 'approved' | 'rejected') {
-    setApplicationStatus((current) => ({ ...current, [id]: status }));
+  function updateScheduleDraft(requestId: string, patch: Partial<ManagerTrainingDraft>) {
+    const request = requests.find((item) => item.id === requestId);
+    if (!request) return;
+    const current = getScheduleDraft(request);
+    setScheduleDrafts((drafts) => ({ ...drafts, [requestId]: { ...current, ...patch } }));
+  }
+
+  function scheduleRequest(request: ManagerTrainingRequestView) {
+    const draft = getScheduleDraft(request);
+    if (!draft.date || !draft.start || !draft.end || draft.end <= draft.start) {
+      window.alert('교육 종료 시간은 시작 시간보다 늦어야 합니다.');
+      return;
+    }
+    setRequestPatches((current) => ({
+      ...current,
+      [request.id]: {
+        ...current[request.id],
+        status: 'scheduled',
+        scheduledDate: draft.date,
+        scheduledStart: draft.start,
+        scheduledEnd: draft.end,
+        scheduleChangeReason: isScheduleChanged(request, draft) ? draft.changeReason : '',
+        handledBy: currentUser?.id ?? 'admin'
+      }
+    }));
+    setSelectedStatus('scheduled');
+    window.alert(`${request.applicant.name} 신청자의 교육 일정이 확정되었습니다.`);
+  }
+
+  function rejectRequest(request: ManagerTrainingRequestView) {
+    const reason = window.prompt('반려 사유를 입력해주세요.');
+    if (reason === null) return;
+    setRequestPatches((current) => ({
+      ...current,
+      [request.id]: {
+        ...current[request.id],
+        status: 'rejected',
+        rejectedReason: reason.trim() || '담당자 일정 조율 필요',
+        handledBy: currentUser?.id ?? 'admin'
+      }
+    }));
+    setSelectedStatus('rejected');
+  }
+
+  function completeRequest(request: ManagerTrainingRequestView) {
+    if (request.status !== 'scheduled') return;
+    onGrantPermission(request.applicant.id, request.equipment.id);
+    setRequestPatches((current) => ({
+      ...current,
+      [request.id]: {
+        ...current[request.id],
+        status: 'completed',
+        completedAt: new Date().toISOString(),
+        handledBy: currentUser?.id ?? 'admin'
+      }
+    }));
+    setSelectedStatus('completed');
+    window.alert(`${request.applicant.name} 신청자에게 ${request.equipment.name} 예약 권한이 부여되었습니다.`);
+  }
+
+  function isScheduleChanged(request: ManagerTrainingRequestView, draft: ManagerTrainingDraft) {
+    return draft.date !== request.preferredDate || draft.start !== request.preferredStart || draft.end !== request.preferredEnd;
   }
 
   if (manageableEquipment.length === 0) {
@@ -2886,78 +3071,226 @@ function TrainingManagementPage({
 
   return (
     <section className="training-management-page">
-      <div className="consumables-hero">
+      <div className="training-manager-hero">
         <div>
-          <p className="consumables-eyebrow">Training Management</p>
-          <h2>교육신청관리(담당)</h2>
-          <span>담당 장비의 장비사용교육 신청 내역을 확인하고, 교육 이수 처리 전 단계를 관리합니다.</span>
+          <p>TRAINING REQUEST · MANAGER</p>
+          <h2>교육 요청 관리</h2>
+          <span>담당 장비의 교육 요청을 확인하고 실제 교육 시간을 확정한 뒤 이수 권한을 부여합니다.</span>
         </div>
-        <div className="training-management-summary">
-          <div>
-            <strong>{manageableEquipment.length}</strong>
-            <span>담당 장비</span>
-          </div>
-          <div>
-            <strong>{pendingCount}</strong>
-            <span>승인 대기</span>
-          </div>
+        <div className="training-manager-identity">
+          <strong>담당 {managerName}</strong>
+          <span>담당 장비 {manageableEquipment.length}종</span>
+        </div>
+      </div>
+
+      <div className="training-management-summary" aria-label="교육 요청 요약">
+        <div>
+          <strong>{requestedCount}</strong>
+          <span>승인 대기</span>
+        </div>
+        <div>
+          <strong>{scheduledCount}</strong>
+          <span>일정 확정</span>
+        </div>
+        <div>
+          <strong>{weekScheduledCount}</strong>
+          <span>금주 교육 예정</span>
+        </div>
+        <div>
+          <strong>{completedCount}</strong>
+          <span>누적 이수자</span>
         </div>
       </div>
 
       <div className="training-management-layout">
-        <aside className="manager-equipment-panel">
-          <div className="manager-panel-head">
-            <p>Managed Equipment</p>
-            <h3>담당 장비</h3>
-          </div>
-          <div className="manager-equipment-list">
-            {manageableEquipment.map((item) => {
-              const applicationCount = users.slice(0, 8).filter((_, index) => index % 2 === 0 || item.id === selectedEquipment?.id).length;
+        <div className="training-request-manager-board">
+          <div className="training-manager-tabs" role="tablist" aria-label="교육 요청 상태">
+            {managerTrainingTabs.map((tab) => {
+              const count = requests.filter((request) => request.status === tab.status).length;
               return (
                 <button
-                  key={item.id}
+                  key={tab.status}
                   type="button"
-                  className={`manager-equipment-button ${selectedEquipment?.id === item.id ? 'is-selected' : ''}`}
-                  onClick={() => setSelectedEquipmentId(item.id)}
+                  className={selectedStatus === tab.status ? 'is-active' : ''}
+                  onClick={() => setSelectedStatus(tab.status)}
                 >
-                  <strong>{item.name}</strong>
-                  <span>{item.groupName} · {item.location}</span>
-                  <em>{applicationCount}건 신청</em>
+                  {tab.label}
+                  <span>{count}</span>
                 </button>
               );
             })}
           </div>
-        </aside>
 
-        <div className="training-application-panel">
-          <div className="manager-panel-head">
-            <p>Applications</p>
-            <h3>{selectedEquipment?.name ?? '장비'} 교육 신청 내역</h3>
-          </div>
-          <div className="training-application-list">
-            {applications.map((application) => (
-              <div key={application.id} className="training-application-row">
-                <div>
-                  <strong>{application.user.name}</strong>
-                  <span>{application.user.department} · {formatProfessorLab(application.user.labProfessor)}</span>
-                  <em>신청일시 {formatSeoulDateTime(application.appliedAt)}</em>
-                </div>
-                <div className="training-application-actions">
-                  <span className={`training-application-status is-${application.status}`}>
-                    {application.status === 'approved' ? '승인됨' : application.status === 'rejected' ? '반려됨' : '승인 대기'}
-                  </span>
-                  {application.status === 'pending' && (
-                    <>
-                      <button type="button" onClick={() => updateApplicationStatus(application.id, 'approved')}>승인</button>
-                      <button type="button" className="is-reject" onClick={() => updateApplicationStatus(application.id, 'rejected')}>반려</button>
-                    </>
+          <div className="training-manager-request-list">
+            {filteredRequests.length > 0 ? filteredRequests.map((request) => {
+              const statusMeta = managerTrainingStatusMeta[request.status];
+              const draft = getScheduleDraft(request);
+              const scheduleChanged = isScheduleChanged(request, draft);
+              const isExpanded = expandedRequestId === request.id;
+              const hasPermission = permissions[request.applicant.id]?.includes(request.equipment.id);
+              return (
+                <article key={request.id} className={`training-manager-card ${isExpanded ? 'is-expanded' : ''}`}>
+                  <div className="training-manager-card-head">
+                    <div className="training-manager-equipment-mark" aria-hidden="true">
+                      <GraduationCap size={20} />
+                    </div>
+                    <div>
+                      <strong>{request.equipment.name}</strong>
+                      <span>{request.applicant.name} · {request.applicant.department} · 신청 {formatSeoulDateTime(request.requestedAt)}</span>
+                    </div>
+                    <em className={`training-manager-status ${statusMeta.className}`}>{statusMeta.label}</em>
+                  </div>
+
+                  <div className="training-manager-contact-row" aria-label={`${request.applicant.name} 연락처`}>
+                    {request.applicant.phone && (
+                      <a href={`tel:${request.applicant.phone.replace(/\D/g, '')}`} aria-label={`${request.applicant.name}에게 전화`}>
+                        <Phone size={15} /> {request.applicant.phone}
+                      </a>
+                    )}
+                    {request.applicant.email && (
+                      <a href={`mailto:${request.applicant.email}`} aria-label={`${request.applicant.name}에게 이메일`}>
+                        <Mail size={15} /> {request.applicant.email}
+                      </a>
+                    )}
+                  </div>
+
+                  <div className="training-manager-card-body">
+                    <div>
+                      <span>사용 목적</span>
+                      <strong>{request.purpose}</strong>
+                    </div>
+                    <div>
+                      <span>희망 시간</span>
+                      <strong>{formatTrainingDateLabel(request.preferredDate, request.preferredStart, request.preferredEnd)} · {request.preferredNote}</strong>
+                    </div>
+                    <p>{request.message}</p>
+                  </div>
+
+                  {request.status === 'requested' && !isExpanded && (
+                    <div className="training-manager-compact-actions">
+                      <span>연락 후 실제 교육 시간을 확정해주세요.</span>
+                      <button type="button" onClick={() => setExpandedRequestId(request.id)}>
+                        일정 잡고 승인
+                      </button>
+                    </div>
                   )}
-                </div>
-              </div>
-            ))}
+
+                  {request.status === 'requested' && isExpanded && (
+                    <div className="training-schedule-editor">
+                      <div className="training-schedule-grid">
+                        <label htmlFor={`${request.id}-date`}>
+                          날짜
+                          <input id={`${request.id}-date`} type="date" value={draft.date} onChange={(event) => updateScheduleDraft(request.id, { date: event.target.value })} />
+                        </label>
+                        <label htmlFor={`${request.id}-start`}>
+                          시작
+                          <input id={`${request.id}-start`} type="time" value={draft.start} onChange={(event) => updateScheduleDraft(request.id, { start: event.target.value })} />
+                        </label>
+                        <label htmlFor={`${request.id}-end`}>
+                          종료
+                          <input id={`${request.id}-end`} type="time" value={draft.end} onChange={(event) => updateScheduleDraft(request.id, { end: event.target.value })} />
+                        </label>
+                      </div>
+                      {scheduleChanged && (
+                        <div className="training-schedule-warning">
+                          <AlertTriangle size={16} />
+                          <span>희망 시간과 달라 {draft.start}으로 조정됩니다.</span>
+                        </div>
+                      )}
+                      {scheduleChanged && (
+                        <label className="training-change-reason" htmlFor={`${request.id}-reason`}>
+                          변경 사유
+                          <input
+                            id={`${request.id}-reason`}
+                            value={draft.changeReason}
+                            onChange={(event) => updateScheduleDraft(request.id, { changeReason: event.target.value })}
+                            placeholder="예: 장비 점검 후 교육 가능 시간으로 조정"
+                          />
+                        </label>
+                      )}
+                      <div className="training-manager-actions">
+                        <button type="button" className="is-muted" onClick={() => rejectRequest(request)}>반려</button>
+                        <a href={`mailto:${request.applicant.email}?subject=${encodeURIComponent(`${request.equipment.name} 교육 요청 문의`)}`}>
+                          <MessageSquare size={15} /> 메시지
+                        </a>
+                        <button type="button" className="is-primary" onClick={() => scheduleRequest(request)}>
+                          <CheckCircle2 size={15} /> 이 시간으로 승인
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {request.status !== 'requested' && (
+                    <div className="training-manager-confirmed">
+                      <Clock3 size={16} />
+                      <div>
+                        <span>확정 교육 시간</span>
+                        <strong>{request.scheduledDate ? formatTrainingDateLabel(request.scheduledDate, request.scheduledStart, request.scheduledEnd) : '미확정'}</strong>
+                        {request.scheduleChangeReason && <em>변경 사유: {request.scheduleChangeReason}</em>}
+                        {request.rejectedReason && <em>반려 사유: {request.rejectedReason}</em>}
+                        {request.status === 'completed' && <em>{hasPermission ? '예약 권한 부여 완료' : '이수 완료 처리됨'}</em>}
+                      </div>
+                    </div>
+                  )}
+                </article>
+              );
+            }) : (
+              <p className="training-manager-empty">해당 상태의 교육 요청이 없습니다.</p>
+            )}
           </div>
-          <p className="training-management-note">1차 구축에서는 교육 신청 관리 UI와 담당 장비 필터를 구성했습니다. 실제 운영 시 승인 처리는 교육 이수 기록 및 장비 사용권한 부여 API와 연결하면 됩니다.</p>
         </div>
+
+        <aside className="training-manager-side">
+          <section>
+            <div className="manager-panel-head">
+              <p>Upcoming</p>
+              <h3>다가오는 교육 일정</h3>
+            </div>
+            <div className="training-side-list">
+              {upcomingRequests.length > 0 ? upcomingRequests.map((request) => (
+                <div key={request.id}>
+                  <strong>{request.equipment.name}</strong>
+                  <span>{formatTrainingDateLabel(request.scheduledDate ?? request.preferredDate, request.scheduledStart, request.scheduledEnd)} · {request.applicant.name}</span>
+                  <em className="training-manager-status is-scheduled">일정 확정</em>
+                </div>
+              )) : (
+                <p className="training-manager-empty">확정된 교육 일정이 없습니다.</p>
+              )}
+            </div>
+          </section>
+
+          <section>
+            <div className="manager-panel-head">
+              <p>Completion</p>
+              <h3>이수 처리 대기</h3>
+            </div>
+            <div className="training-side-list">
+              {completionPending.length > 0 ? completionPending.map((request) => (
+                <div key={request.id} className="training-complete-row">
+                  <div>
+                    <strong>{request.applicant.name}</strong>
+                    <span>{request.equipment.name} · {formatTrainingDateLabel(request.scheduledDate ?? request.preferredDate, request.scheduledStart, request.scheduledEnd)}</span>
+                  </div>
+                  <button type="button" onClick={() => completeRequest(request)}>이수 처리</button>
+                </div>
+              )) : (
+                <p className="training-manager-empty">이수 처리할 교육이 없습니다.</p>
+              )}
+            </div>
+          </section>
+
+          <section>
+            <div className="manager-panel-head">
+              <p>Managed Equipment</p>
+              <h3>내 담당 장비</h3>
+            </div>
+            <div className="training-managed-chip-list">
+              {manageableEquipment.map((item) => (
+                <span key={item.id}>{item.name}</span>
+              ))}
+            </div>
+          </section>
+        </aside>
       </div>
     </section>
   );
@@ -6206,8 +6539,10 @@ export function App() {
               <TrainingManagementPage
                 users={managedUsers}
                 equipmentItems={activeEquipmentItems}
+                permissions={equipmentPermissions}
                 currentUser={currentManagedUser}
                 sessionRole={sessionRole}
+                onGrantPermission={grantAssignedEquipmentPermission}
               />
             ) : (
               <PlaceholderPage title="접근 권한이 없습니다" />
