@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import { initialFaqs, initialNotices, initialQnaItems } from './content.js';
 import { closeDatabase, query } from './db.js';
-import { equipment } from './data.js';
+import { equipment, reservations } from './data.js';
 
 dotenv.config();
 
@@ -42,18 +42,36 @@ const statements = [
   `create table if not exists equipment (
     id text primary key,
     name text not null,
+    model text,
     category text not null,
+    group_key text not null default 'metrology',
+    group_name text not null default '',
     location text not null default '',
     image_url text,
     features jsonb not null default '[]'::jsonb,
     usage_conditions text not null default '',
+    description text,
+    vendor_name text,
+    vendor_contact_name text,
+    vendor_contact_position text,
+    vendor_contact_phone text,
     utilization integer not null default 0 check (utilization >= 0 and utilization <= 100),
+    usage_hours integer not null default 0 check (usage_hours >= 0),
     status text not null default 'available' check (status in ('available', 'unavailable', 'maintenance')),
     manager_user_id text references users(id),
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now(),
     deleted_at timestamptz
   )`,
+  `alter table equipment add column if not exists model text`,
+  `alter table equipment add column if not exists group_key text not null default 'metrology'`,
+  `alter table equipment add column if not exists group_name text not null default ''`,
+  `alter table equipment add column if not exists description text`,
+  `alter table equipment add column if not exists vendor_name text`,
+  `alter table equipment add column if not exists vendor_contact_name text`,
+  `alter table equipment add column if not exists vendor_contact_position text`,
+  `alter table equipment add column if not exists vendor_contact_phone text`,
+  `alter table equipment add column if not exists usage_hours integer not null default 0`,
   `create index if not exists equipment_category_status_idx on equipment (category, status) where deleted_at is null`,
   `create table if not exists reservations (
     id text primary key,
@@ -148,26 +166,68 @@ async function seedReferenceData() {
 
   for (const item of equipment) {
     await query(
-      `insert into equipment (id, name, category, location, image_url, features, usage_conditions, utilization)
-       values ($1, $2, $3, $4, $5, $6::jsonb, $7, $8)
+      `insert into equipment (
+        id, name, model, category, group_key, group_name, location, image_url, features,
+        usage_conditions, description, vendor_name, vendor_contact_name, vendor_contact_position,
+        vendor_contact_phone, utilization, usage_hours, status
+      )
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, $11, $12, $13, $14, $15, $16, $17, $18)
        on conflict (id) do update
        set name = excluded.name,
+           model = excluded.model,
            category = excluded.category,
+           group_key = excluded.group_key,
+           group_name = excluded.group_name,
            location = excluded.location,
            image_url = excluded.image_url,
            features = excluded.features,
            usage_conditions = excluded.usage_conditions,
+           description = excluded.description,
+           vendor_name = excluded.vendor_name,
+           vendor_contact_name = excluded.vendor_contact_name,
+           vendor_contact_position = excluded.vendor_contact_position,
+           vendor_contact_phone = excluded.vendor_contact_phone,
            utilization = excluded.utilization,
+           usage_hours = excluded.usage_hours,
+           status = excluded.status,
            updated_at = now()`,
       [
         item.id,
         item.name,
+        item.model,
         item.category,
+        item.group,
+        item.groupName,
         item.location,
         item.imageUrl,
         JSON.stringify(item.features),
         item.usageConditions,
-        item.utilization
+        item.description,
+        item.vendorName,
+        item.vendorContactName,
+        item.vendorContactPosition,
+        item.vendorContactPhone,
+        item.utilization,
+        item.usageHours,
+        item.status
+      ]
+    );
+  }
+
+  for (const reservation of reservations) {
+    await query(
+      `insert into reservations (id, equipment_id, title, purpose, starts_at, ends_at, status, created_by_role)
+       values ($1, $2, $3, $4, $5, $6, $7, $8)
+       on conflict (id) do nothing`,
+      [
+        reservation.id,
+        reservation.equipmentId,
+        reservation.title,
+        reservation.title,
+        reservation.startsAt,
+        reservation.endsAt,
+        reservation.status,
+        'SYSTEM'
       ]
     );
   }

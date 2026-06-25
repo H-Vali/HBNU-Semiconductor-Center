@@ -37,12 +37,21 @@ type CreateReservationInput = z.infer<typeof createReservationSchema>;
 type EquipmentRow = {
   id: string;
   name: string;
+  model: string | null;
   category: string;
+  group: string;
+  groupName: string;
   location: string;
   imageUrl: string | null;
   features: unknown;
   usageConditions: string;
+  description: string | null;
+  vendorName: string | null;
+  vendorContactName: string | null;
+  vendorContactPosition: string | null;
+  vendorContactPhone: string | null;
   utilization: number;
+  usageHours: number;
   status: string;
   managerUserId: string | null;
 };
@@ -67,12 +76,21 @@ function mapEquipment(row: EquipmentRow): Equipment & { status?: string; manager
   return {
     id: row.id,
     name: row.name,
+    model: row.model ?? '',
     category: row.category,
+    group: row.group === 'process' ? 'process' : 'metrology',
+    groupName: row.groupName,
     location: row.location,
     imageUrl: row.imageUrl ?? '',
     features: Array.isArray(row.features) ? row.features as string[] : [],
     usageConditions: row.usageConditions,
+    description: row.description ?? '',
+    vendorName: row.vendorName ?? '',
+    vendorContactName: row.vendorContactName ?? '',
+    vendorContactPosition: row.vendorContactPosition ?? '',
+    vendorContactPhone: row.vendorContactPhone ?? '',
     utilization: row.utilization,
+    usageHours: row.usageHours,
     status: row.status,
     managerUserId: row.managerUserId
   };
@@ -104,8 +122,11 @@ function hasReservationOverlap(input: CreateReservationInput, reservations: Fall
 export async function listEquipment() {
   if (!hasDatabase()) return fallbackEquipment;
   const result = await query<EquipmentRow>(
-    `select id, name, category, location, image_url as "imageUrl", features,
-      usage_conditions as "usageConditions", utilization, status, manager_user_id as "managerUserId"
+    `select id, name, model, category, group_key as "group", group_name as "groupName",
+      location, image_url as "imageUrl", features, usage_conditions as "usageConditions",
+      description, vendor_name as "vendorName", vendor_contact_name as "vendorContactName",
+      vendor_contact_position as "vendorContactPosition", vendor_contact_phone as "vendorContactPhone",
+      utilization, usage_hours as "usageHours", status, manager_user_id as "managerUserId"
      from equipment
      where deleted_at is null
      order by id`
@@ -116,8 +137,11 @@ export async function listEquipment() {
 export async function getEquipment(id: string) {
   if (!hasDatabase()) return fallbackEquipment.find((entry) => entry.id === id) ?? null;
   const result = await query<EquipmentRow>(
-    `select id, name, category, location, image_url as "imageUrl", features,
-      usage_conditions as "usageConditions", utilization, status, manager_user_id as "managerUserId"
+    `select id, name, model, category, group_key as "group", group_name as "groupName",
+      location, image_url as "imageUrl", features, usage_conditions as "usageConditions",
+      description, vendor_name as "vendorName", vendor_contact_name as "vendorContactName",
+      vendor_contact_position as "vendorContactPosition", vendor_contact_phone as "vendorContactPhone",
+      utilization, usage_hours as "usageHours", status, manager_user_id as "managerUserId"
      from equipment
      where id = $1 and deleted_at is null`,
     [id]

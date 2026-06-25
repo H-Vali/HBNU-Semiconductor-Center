@@ -419,6 +419,10 @@ function normalizeEquipment(item: ApiEquipmentItem, index: number): EquipmentIte
     status: item.status ?? 'available',
     description: item.description ?? `${name} 장비 운영 및 교육 관리용 등록 정보입니다.`,
     managerId: item.managerId,
+    vendorName: item.vendorName,
+    vendorContactName: item.vendorContactName,
+    vendorContactPosition: item.vendorContactPosition,
+    vendorContactPhone: item.vendorContactPhone,
     utilization: item.utilization ?? fallbackEquipment[index % fallbackEquipment.length].utilization,
     usageHours: item.usageHours ?? fallbackEquipment[index % fallbackEquipment.length].usageHours
   };
