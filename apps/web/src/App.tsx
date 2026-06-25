@@ -30,7 +30,6 @@ import {
   GraduationCap,
   HelpCircle,
   KeyRound,
-  LayoutDashboard,
   LockKeyhole,
   LogIn,
   Mail,
@@ -139,7 +138,6 @@ const apiUrl = ((import.meta as ImportMeta & { env?: Record<string, string> }).e
 const menu: Array<{ label: string; page: PageKey; icon: typeof Factory }> = [
   { label: '공지사항', page: 'notice', icon: Megaphone },
   { label: '센터소개', page: 'center', icon: Factory },
-  { label: '시설안내', page: 'facility', icon: LayoutDashboard },
   { label: '장비현황', page: 'equipment', icon: Wrench },
   { label: '장비사용예약', page: 'reservations', icon: CalendarDays },
   { label: '교육신청', page: 'training', icon: GraduationCap },
@@ -932,7 +930,6 @@ function SidebarNavigation({
   const trainingSelected = trainingPages.includes(activePage);
   const noticeItem = menu.find((item) => item.page === 'notice');
   const centerItem = menu.find((item) => item.page === 'center');
-  const facilityItem = menu.find((item) => item.page === 'facility');
   const equipmentItem = menu.find((item) => item.page === 'equipment');
   const reservationItem = menu.find((item) => item.page === 'reservations');
   const trainingItem = menu.find((item) => item.page === 'training');
@@ -1031,7 +1028,6 @@ function SidebarNavigation({
             )
           })}
           {renderNavButton(centerItem, activePage === 'center')}
-          {renderNavButton(facilityItem, activePage === 'facility')}
           {renderNavButton(equipmentItem, activePage === 'equipment')}
           {canManageAssignedPermissions
             ? renderDropdown({
