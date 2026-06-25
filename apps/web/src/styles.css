@@ -4190,21 +4190,21 @@ select {
 
 .training-request-header p {
   color: var(--training-teal);
-  font-size: 0.76rem;
-  font-weight: 500;
+  font-size: 0.84rem;
+  font-weight: 700;
   letter-spacing: 0;
 }
 
 .training-request-header h2 {
   color: var(--training-primary);
-  font-size: clamp(1.55rem, 2.5vw, 2.1rem);
-  font-weight: 500;
+  font-size: clamp(1.85rem, 2.8vw, 2.45rem);
+  font-weight: 800;
   letter-spacing: 0;
 }
 
 .training-request-header span {
   color: var(--training-secondary);
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: 400;
 }
 
@@ -4223,8 +4223,8 @@ select {
   justify-items: center;
   gap: 0.5rem;
   color: var(--training-muted);
-  font-size: 0.78rem;
-  font-weight: 500;
+  font-size: 0.9rem;
+  font-weight: 600;
   text-align: center;
 }
 
@@ -4251,8 +4251,8 @@ select {
   border-radius: 50%;
   background: #1c2a40;
   color: var(--training-muted);
-  font-size: 0.78rem;
-  font-weight: 500;
+  font-size: 0.86rem;
+  font-weight: 700;
 }
 
 .training-request-stepper li.is-active span {
@@ -4263,7 +4263,7 @@ select {
 
 .training-request-stepper strong {
   color: inherit;
-  font-weight: 500;
+  font-weight: 700;
 }
 
 .training-request-stepper li.is-active strong {
@@ -4314,15 +4314,15 @@ select {
   border-radius: 8px;
   background: rgba(95, 217, 201, 0.12);
   color: var(--training-teal);
-  font-size: 0.72rem;
-  font-weight: 500;
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .training-request-section-title h3,
 .training-request-panel-head h3 {
   color: var(--training-primary);
-  font-size: 0.98rem;
-  font-weight: 500;
+  font-size: 1.16rem;
+  font-weight: 800;
 }
 
 .training-equipment-picker {
@@ -4336,8 +4336,8 @@ select {
   display: grid;
   gap: 0.68rem;
   color: var(--training-secondary);
-  font-size: 0.78rem;
-  font-weight: 500;
+  font-size: 0.92rem;
+  font-weight: 700;
 }
 
 .training-equipment-search {
@@ -4366,7 +4366,7 @@ select {
   border-radius: 9px;
   background: var(--training-field);
   color: var(--training-primary);
-  font-size: 0.88rem;
+  font-size: 0.98rem;
   font-weight: 400;
   outline: none;
 }
@@ -4438,14 +4438,14 @@ select {
 
 .training-selected-equipment strong {
   color: var(--training-primary);
-  font-size: 0.82rem;
-  font-weight: 500;
+  font-size: 1rem;
+  font-weight: 800;
 }
 
 .training-selected-equipment span {
   margin-top: 0.2rem;
   color: var(--training-muted);
-  font-size: 0.75rem;
+  font-size: 0.88rem;
   font-weight: 400;
 }
 
@@ -4460,9 +4460,9 @@ select {
   width: fit-content;
   border-radius: 6px;
   padding: 3px 9px;
-  font-size: 0.64rem;
+  font-size: 0.76rem;
   font-style: normal;
-  font-weight: 500;
+  font-weight: 700;
   white-space: nowrap;
 }
 
@@ -4487,7 +4487,7 @@ select {
 .training-request-actions p {
   margin: 0;
   color: var(--training-muted);
-  font-size: 0.78rem;
+  font-size: 0.9rem;
   font-weight: 400;
   line-height: 1.55;
 }
@@ -4524,8 +4524,8 @@ select {
   background: var(--training-accent);
   padding: 0 1rem;
   color: #062018;
-  font-size: 0.84rem;
-  font-weight: 500;
+  font-size: 0.95rem;
+  font-weight: 800;
 }
 
 .training-request-actions button:disabled {
@@ -4551,8 +4551,8 @@ select {
   background: var(--training-field);
   padding: 0.4rem 0.62rem;
   color: var(--training-secondary);
-  font-size: 0.74rem;
-  font-weight: 500;
+  font-size: 0.86rem;
+  font-weight: 700;
 }
 
 .training-request-panel-head button:hover {
@@ -4589,14 +4589,14 @@ select {
 
 .training-status-row strong {
   color: var(--training-primary);
-  font-size: 0.75rem;
-  font-weight: 500;
+  font-size: 0.96rem;
+  font-weight: 800;
 }
 
 .training-status-row span {
   margin-top: 0.22rem;
   color: var(--training-muted);
-  font-size: 0.72rem;
+  font-size: 0.84rem;
   font-weight: 400;
   line-height: 1.45;
 }
@@ -4617,8 +4617,8 @@ select {
   background: rgba(82, 224, 176, 0.12);
   padding: 0.34rem 0.58rem;
   color: var(--training-success);
-  font-size: 0.68rem;
-  font-weight: 500;
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
 @media (max-width: 880px) {

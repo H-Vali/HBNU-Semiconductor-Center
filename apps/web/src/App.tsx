@@ -2568,6 +2568,7 @@ function TrainingPage({
     equipmentItems.filter((item) => currentUserPermissionIds.includes(item.id))
   ), [currentUserPermissionIds, equipmentItems]);
   const [selectedEquipmentId, setSelectedEquipmentId] = useState('');
+  const [selectedEquipmentGroup, setSelectedEquipmentGroup] = useState<EquipmentGroup>('process');
   const [equipmentQuery, setEquipmentQuery] = useState('');
   const [preferredDate, setPreferredDate] = useState('');
   const [purpose, setPurpose] = useState<'연구' | '수업' | '기타'>('연구');
@@ -2608,14 +2609,15 @@ function TrainingPage({
 
   const filteredEquipment = useMemo(() => {
     const query = equipmentQuery.trim().toLowerCase();
+    const groupItems = requestableEquipment.filter((item) => item.group === selectedEquipmentGroup);
     return query
-      ? requestableEquipment.filter((item) => (
+      ? groupItems.filter((item) => (
           item.name.toLowerCase().includes(query)
           || item.category.toLowerCase().includes(query)
           || item.location.toLowerCase().includes(query)
         ))
-      : requestableEquipment;
-  }, [equipmentQuery, requestableEquipment]);
+      : groupItems;
+  }, [equipmentQuery, requestableEquipment, selectedEquipmentGroup]);
   const selectedEquipment = requestableEquipment.find((item) => item.id === selectedEquipmentId) ?? null;
   const selectedManagerName = selectedEquipment?.managerId
     ? managerNameById.get(selectedEquipment.managerId) ?? '담당자 미지정'
@@ -2675,14 +2677,27 @@ function TrainingPage({
               <h3>교육받을 장비 선택</h3>
             </div>
             <div className="training-equipment-picker">
-              <label htmlFor="training-equipment-search">장비 검색</label>
+              <label htmlFor="training-equipment-group">장비 분류</label>
+              <select
+                id="training-equipment-group"
+                value={selectedEquipmentGroup}
+                onChange={(event) => {
+                  setSelectedEquipmentGroup(event.target.value as EquipmentGroup);
+                  setSelectedEquipmentId('');
+                  setEquipmentQuery('');
+                }}
+              >
+                <option value="process">공정</option>
+                <option value="metrology">검사·계측·패키징</option>
+              </select>
+              <label htmlFor="training-equipment-search">분류 내 장비 검색</label>
               <div className="training-equipment-search">
                 <Search size={16} aria-hidden="true" />
                 <input
                   id="training-equipment-search"
                   value={equipmentQuery}
                   onChange={(event) => setEquipmentQuery(event.target.value)}
-                  placeholder="장비명, 분류, 위치 검색"
+                  placeholder="장비명 또는 위치 검색"
                 />
               </div>
               <label htmlFor="training-equipment-select">장비 목록</label>
