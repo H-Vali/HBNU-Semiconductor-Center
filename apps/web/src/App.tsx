@@ -112,7 +112,17 @@ type RoleLevel = '교원' | '대표' | '일반';
 type PermissionRoleLevel = RoleLevel | '담당';
 type MyPageRole = 'admin' | 'faculty' | 'representative' | 'manager' | 'general';
 type EquipmentPermissionMap = Record<string, string[]>;
-type EquipmentPermissionGrantMetaMap = Record<string, { grantedAt: string }>;
+type EquipmentPermissionGrantMetaMap = Record<string, { grantedAt: string; grantedByRole?: 'MANAGER' | 'ADMIN'; sourceRequestId?: string }>;
+type EquipmentPermissionHistoryRecord = {
+  id: string;
+  action: 'REVOKE';
+  actorId: string;
+  actorRole: 'ADMIN';
+  userId: string;
+  equipmentId: string;
+  reason: string;
+  createdAt: string;
+};
 type PenaltyRecord = {
   id: string;
   userId: string;
@@ -3292,19 +3302,254 @@ function TrainingManagementPage({
   );
 }
 
+function AdminEducationPermissionPanel({
+  users,
+  equipmentItems,
+  permissions,
+  permissionGrantMeta,
+  onRevokePermission
+}: {
+  users: ManagedUser[];
+  equipmentItems: EquipmentItem[];
+  permissions: EquipmentPermissionMap;
+  permissionGrantMeta: EquipmentPermissionGrantMetaMap;
+  onRevokePermission: (userId: string, equipmentId: string, reason: string) => void;
+}) {
+  const [equipmentSearch, setEquipmentSearch] = useState('');
+  const [userSearch, setUserSearch] = useState('');
+  const [selectedEquipmentId, setSelectedEquipmentId] = useState(equipmentItems[0]?.id ?? '');
+  const [pendingRevoke, setPendingRevoke] = useState<{ user: ManagedUser; equipment: EquipmentItem } | null>(null);
+  const [revokeReason, setRevokeReason] = useState('');
+  const managerNameById = useMemo(() => new Map(users.map((user) => [user.id, user.name])), [users]);
+  const selectedEquipment = equipmentItems.find((item) => item.id === selectedEquipmentId) ?? equipmentItems[0];
+
+  useEffect(() => {
+    if (!selectedEquipmentId && equipmentItems[0]) {
+      setSelectedEquipmentId(equipmentItems[0].id);
+    }
+    if (selectedEquipmentId && !equipmentItems.some((item) => item.id === selectedEquipmentId)) {
+      setSelectedEquipmentId(equipmentItems[0]?.id ?? '');
+    }
+  }, [equipmentItems, selectedEquipmentId]);
+
+  const permissionRows = selectedEquipment
+    ? users
+        .filter((user) => permissions[user.id]?.includes(selectedEquipment.id))
+        .map((user) => {
+          const meta = permissionGrantMeta[getPermissionGrantKey(user.id, selectedEquipment.id)];
+          const fallbackRole: 'MANAGER' | 'ADMIN' = selectedEquipment.managerId && selectedEquipment.managerId !== user.id ? 'MANAGER' : 'ADMIN';
+          return {
+            permissionId: getPermissionGrantKey(user.id, selectedEquipment.id),
+            user,
+            grantedAt: meta?.grantedAt,
+            grantedByRole: meta?.grantedByRole ?? fallbackRole
+          };
+        })
+    : [];
+  const filteredPermissionRows = permissionRows.filter((row) => {
+    const keyword = userSearch.trim().toLowerCase();
+    if (!keyword) return true;
+    return `${row.user.name} ${row.user.email} ${row.user.department}`.toLowerCase().includes(keyword);
+  });
+  const filteredEquipment = equipmentItems.filter((item) => {
+    const keyword = equipmentSearch.trim().toLowerCase();
+    if (!keyword) return true;
+    return `${item.name} ${item.groupName} ${item.category}`.toLowerCase().includes(keyword);
+  });
+  const equipmentGroups: Array<{ key: EquipmentGroup; title: string }> = [
+    { key: 'process', title: '공정' },
+    { key: 'metrology', title: '검사·계측·패키징' }
+  ];
+
+  function getActivePermissionCount(equipmentId: string) {
+    return users.filter((user) => permissions[user.id]?.includes(equipmentId)).length;
+  }
+
+  function requestRevoke(user: ManagedUser, equipment: EquipmentItem) {
+    setPendingRevoke({ user, equipment });
+    setRevokeReason('');
+  }
+
+  function cancelRevoke() {
+    setPendingRevoke(null);
+    setRevokeReason('');
+  }
+
+  function confirmRevoke() {
+    if (!pendingRevoke || !revokeReason.trim()) return;
+    onRevokePermission(pendingRevoke.user.id, pendingRevoke.equipment.id, revokeReason);
+    cancelRevoke();
+  }
+
+  if (!selectedEquipment) {
+    return (
+      <section className="admin-education-permission">
+        <p className="admin-education-empty">등록된 장비가 없습니다.</p>
+      </section>
+    );
+  }
+
+  return (
+    <section id="admin-education-permission" className="admin-education-permission" aria-labelledby="admin-education-title">
+      <header className="admin-education-hero">
+        <p>ADMIN · EDUCATION</p>
+        <h2 id="admin-education-title">교육관리 · 장비 권한</h2>
+        <span>장비별 권한 보유자를 조회하고 필요 시 권한을 회수합니다. 회수 내역은 이력에 기록됩니다.</span>
+      </header>
+
+      <div className="admin-education-layout">
+        <aside className="admin-education-master" aria-label="장비별 권한 보유 인원">
+          <label className="admin-education-search">
+            장비 검색
+            <input value={equipmentSearch} onChange={(event) => setEquipmentSearch(event.target.value)} placeholder="장비명 또는 분류 검색" />
+          </label>
+          <div className="admin-equipment-master-list">
+            {equipmentGroups.map((group) => {
+              const groupItems = filteredEquipment.filter((item) => item.group === group.key);
+              if (groupItems.length === 0) return null;
+              return (
+                <div key={group.key} className="admin-equipment-master-group">
+                  <h3>{group.title}</h3>
+                  {groupItems.map((item) => {
+                    const activeCount = getActivePermissionCount(item.id);
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        className={`admin-equipment-master-row ${selectedEquipment.id === item.id ? 'is-selected' : ''}`}
+                        onClick={() => setSelectedEquipmentId(item.id)}
+                      >
+                        <span className={`admin-equipment-dot is-${item.group}`} aria-hidden="true" />
+                        <strong>{item.name}</strong>
+                        <em>{activeCount}</em>
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        </aside>
+
+        <div className="admin-education-detail">
+          <div className="admin-education-detail-head">
+            <div className="admin-education-equipment-title">
+              <div className="admin-education-equipment-icon" aria-hidden="true">
+                <GraduationCap size={20} />
+              </div>
+              <div>
+                <h3>{selectedEquipment.name}</h3>
+                <span>{selectedEquipment.groupName} · 담당 {selectedEquipment.managerId ? managerNameById.get(selectedEquipment.managerId) ?? '미지정' : '미지정'} · 권한 보유 {permissionRows.length}명</span>
+              </div>
+            </div>
+            <label className="admin-education-search is-user">
+              사용자 검색
+              <input value={userSearch} onChange={(event) => setUserSearch(event.target.value)} placeholder="이름, 이메일, 소속 검색" />
+            </label>
+          </div>
+
+          <div className="admin-education-table-wrap">
+            <table className="admin-education-table">
+              <thead>
+                <tr>
+                  <th scope="col">사용자</th>
+                  <th scope="col">소속</th>
+                  <th scope="col">부여일</th>
+                  <th scope="col">부여 경로</th>
+                  <th scope="col">관리</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredPermissionRows.length > 0 ? filteredPermissionRows.map((row) => (
+                  <tr key={row.permissionId}>
+                    <td>
+                      <div className="admin-education-user-cell">
+                        <span>{row.user.name.slice(0, 1)}</span>
+                        <div>
+                          <strong>{row.user.name}</strong>
+                          <em>{row.user.email}</em>
+                        </div>
+                      </div>
+                    </td>
+                    <td>{row.user.department}</td>
+                    <td>{row.grantedAt ? formatSeoulDateTime(row.grantedAt) : '기존 부여 권한'}</td>
+                    <td>
+                      <span className={`admin-education-source is-${row.grantedByRole.toLowerCase()}`}>
+                        {row.grantedByRole === 'MANAGER' ? '교육 이수' : '관리자 부여'}
+                      </span>
+                    </td>
+                    <td>
+                      <button type="button" className="admin-education-revoke-button" onClick={() => requestRevoke(row.user, selectedEquipment)} aria-label={`${row.user.name} 권한 회수`}>
+                        <Ban size={15} /> 회수
+                      </button>
+                    </td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan={5}>
+                      <p className="admin-education-empty">권한 보유자가 없습니다.</p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          <footer className="admin-education-footer">
+            <span>총 {filteredPermissionRows.length}명 표시 · ACTIVE 권한 기준</span>
+            <strong>회수 시 사용자는 즉시 예약이 차단되며, 재사용하려면 재교육이 필요합니다.</strong>
+          </footer>
+
+          {pendingRevoke && (
+            <section className="admin-education-revoke-panel" role="dialog" aria-labelledby="admin-education-revoke-title">
+              <div>
+                <p>Permission Revoke</p>
+                <h3 id="admin-education-revoke-title">{pendingRevoke.user.name}님의 {pendingRevoke.equipment.name} 권한을 회수합니다.</h3>
+                <span>회수 즉시 예약 권한이 차단되며, 재사용하려면 재교육 또는 관리자 재부여가 필요합니다.</span>
+              </div>
+              <label htmlFor="admin-education-revoke-reason">
+                회수 사유 <em>필수</em>
+                <textarea
+                  id="admin-education-revoke-reason"
+                  value={revokeReason}
+                  onChange={(event) => setRevokeReason(event.target.value)}
+                  placeholder="예: 장비 안전수칙 미준수로 교육 권한 회수"
+                />
+              </label>
+              <div className="admin-education-revoke-actions">
+                <button type="button" className="is-cancel" onClick={cancelRevoke}>취소</button>
+                <button type="button" className="is-danger" onClick={confirmRevoke} disabled={!revokeReason.trim()}>
+                  <Ban size={15} /> 권한 회수
+                </button>
+              </div>
+            </section>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function AdminPage({
   equipmentItems,
   calendarEvents,
+  users,
+  permissions,
+  permissionGrantMeta,
   onAddReservation,
   onDeleteReservation,
+  onRevokePermission,
   onNavigate,
   consumablesUpdatedAt,
   usersUpdatedAt
 }: {
   equipmentItems: EquipmentItem[];
   calendarEvents: ReservationEvent[];
+  users: ManagedUser[];
+  permissions: EquipmentPermissionMap;
+  permissionGrantMeta: EquipmentPermissionGrantMetaMap;
   onAddReservation: (event: ReservationEvent) => void;
   onDeleteReservation: (reservationId: string) => void;
+  onRevokePermission: (userId: string, equipmentId: string, reason: string) => void;
   onNavigate: (page: PageKey) => void;
   consumablesUpdatedAt: string;
   usersUpdatedAt: string;
@@ -3483,6 +3728,13 @@ function AdminPage({
           </button>
         </div>
       </div>
+      <AdminEducationPermissionPanel
+        users={users}
+        equipmentItems={equipmentItems}
+        permissions={permissions}
+        permissionGrantMeta={permissionGrantMeta}
+        onRevokePermission={onRevokePermission}
+      />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {[
           { title: '사용자관리', page: 'users' as PageKey, icon: UserRound, updatedAt: usersUpdatedAt },
@@ -3491,14 +3743,14 @@ function AdminPage({
           { title: '권한관리', page: 'permissions' as PageKey, icon: LockKeyhole },
           { title: '소모품관리', page: 'consumables' as PageKey, icon: PackageCheck, updatedAt: consumablesUpdatedAt },
           { title: '페널티 관리', page: 'penalties' as PageKey, icon: Ban },
-          { title: '교육관리' }
+          { title: '교육관리', icon: GraduationCap, anchor: 'admin-education-permission' }
         ].map((item) => {
           const Icon = item.icon;
           return (
             <button
               key={item.title}
               className="rounded-lg border border-white/10 bg-surface/85 p-6 text-left text-lg font-extrabold text-white hover:border-cyan-300 hover:bg-blue-500/20"
-              onClick={() => item.title.includes('怨듭') || item.title.includes('공지') ? onNavigate('noticeAdmin') : item.page && onNavigate(item.page)}
+              onClick={() => item.anchor ? document.getElementById(item.anchor)?.scrollIntoView({ behavior: 'smooth', block: 'start' }) : item.title.includes('怨듭') || item.title.includes('공지') ? onNavigate('noticeAdmin') : item.page && onNavigate(item.page)}
             >
               <span className="inline-flex items-center gap-2">
                 {Icon && <Icon size={20} className="text-cyan-300" />}
@@ -5998,6 +6250,14 @@ export function App() {
       return createPermissionGrantMetaFromPermissions(equipmentPermissions);
     }
   });
+  const [, setEquipmentPermissionHistory] = useState<EquipmentPermissionHistoryRecord[]>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.equipmentPermissionHistory);
+      return stored ? JSON.parse(stored) as EquipmentPermissionHistoryRecord[] : [];
+    } catch {
+      return [];
+    }
+  });
   const [sessionRole, setSessionRole] = useState<Role | null>(() => {
     const stored = localStorage.getItem(STORAGE_KEYS.sessionUser);
     if (!stored) return null;
@@ -6449,12 +6709,43 @@ export function App() {
         setEquipmentPermissionGrantMeta((currentMeta) => {
           const nextMeta = {
             ...currentMeta,
-            [getPermissionGrantKey(userId, equipmentId)]: { grantedAt: new Date().toISOString() }
+            [getPermissionGrantKey(userId, equipmentId)]: {
+              grantedAt: new Date().toISOString(),
+              grantedByRole: sessionRole === 'ADMIN' ? 'ADMIN' as const : 'MANAGER' as const
+            }
           };
           localStorage.setItem(STORAGE_KEYS.equipmentPermissionGrantMeta, JSON.stringify(nextMeta));
           return nextMeta;
         });
       }
+      return next;
+    });
+  }
+
+  function revokeEquipmentPermissionByAdmin(userId: string, equipmentId: string, reason: string) {
+    const normalizedReason = reason.trim();
+    if (!normalizedReason || sessionRole !== 'ADMIN') return;
+    setEquipmentPermissions((current) => {
+      const currentUserPermissions = current[userId] ?? [];
+      if (!currentUserPermissions.includes(equipmentId)) return current;
+      const nextPermissions = currentUserPermissions.filter((id) => id !== equipmentId);
+      const next = { ...current, [userId]: nextPermissions };
+      localStorage.setItem(STORAGE_KEYS.equipmentPermissions, JSON.stringify(next));
+      return next;
+    });
+    const record: EquipmentPermissionHistoryRecord = {
+      id: `permission-history-${Date.now()}`,
+      action: 'REVOKE',
+      actorId: currentManagedUser?.id ?? 'admin',
+      actorRole: 'ADMIN',
+      userId,
+      equipmentId,
+      reason: normalizedReason,
+      createdAt: new Date().toISOString()
+    };
+    setEquipmentPermissionHistory((current) => {
+      const next = [record, ...current];
+      localStorage.setItem(STORAGE_KEYS.equipmentPermissionHistory, JSON.stringify(next));
       return next;
     });
   }
@@ -6550,8 +6841,12 @@ export function App() {
             <AdminPage
               equipmentItems={equipmentItems}
               calendarEvents={reservationEvents}
+              users={managedUsers}
+              permissions={equipmentPermissions}
+              permissionGrantMeta={equipmentPermissionGrantMeta}
               onAddReservation={addReservation}
               onDeleteReservation={deleteReservation}
+              onRevokePermission={revokeEquipmentPermissionByAdmin}
               onNavigate={navigate}
               consumablesUpdatedAt={consumablesUpdatedAt}
               usersUpdatedAt={usersUpdatedAt}
