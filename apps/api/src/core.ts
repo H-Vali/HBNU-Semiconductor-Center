@@ -129,7 +129,7 @@ export async function listEquipment() {
       utilization, usage_hours as "usageHours", status, manager_user_id as "managerUserId"
      from equipment
      where deleted_at is null
-     order by id`
+     order by nullif(regexp_replace(id, '\\D', '', 'g'), '')::integer nulls last, id`
   );
   return result.rows.map(mapEquipment);
 }

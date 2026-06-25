@@ -214,6 +214,13 @@ async function seedReferenceData() {
     );
   }
 
+  await query(
+    `update equipment
+     set deleted_at = now(), updated_at = now()
+     where id in ('eq-22', 'eq-23', 'eq-24')
+       and deleted_at is null`
+  );
+
   for (const reservation of reservations) {
     await query(
       `insert into reservations (id, equipment_id, title, purpose, starts_at, ends_at, status, created_by_role)
