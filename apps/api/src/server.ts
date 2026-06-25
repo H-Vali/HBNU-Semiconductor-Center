@@ -4,6 +4,15 @@ import express from 'express';
 import helmet from 'helmet';
 import { z } from 'zod';
 import { requireAuth, requireRole, signToken } from './auth.js';
+import {
+  answerQnaItem,
+  createFaq,
+  createNotice,
+  createQnaItem,
+  listFaqs,
+  listNotices,
+  listQnaItems
+} from './content.js';
 import { equipment, reservations } from './data.js';
 
 dotenv.config();
@@ -39,6 +48,66 @@ app.get('/equipment/:id', (req, res) => {
   return res.json(item);
 });
 
+app.get('/notices', async (req, res, next) => {
+  try {
+    const board = typeof req.query.board === 'string' ? req.query.board : undefined;
+    res.json(await listNotices(board));
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/notices', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
+  try {
+    res.status(201).json(await createNotice(req.body));
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/faqs', async (_req, res, next) => {
+  try {
+    res.json(await listFaqs());
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/faqs', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
+  try {
+    res.status(201).json(await createFaq(req.body));
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/qna', async (_req, res, next) => {
+  try {
+    res.json(await listQnaItems());
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/qna', async (req, res, next) => {
+  try {
+    res.status(201).json(await createQnaItem(req.body));
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.patch('/qna/:id/answer', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
+  try {
+    const { id } = z.object({ id: z.string() }).parse(req.params);
+    const item = await answerQnaItem(id, req.body);
+    if (!item) return res.status(404).json({ message: 'Q&A item not found' });
+    return res.json(item);
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.get('/reservations', requireAuth, (_req, res) => res.json(reservations));
 app.post('/reservations', requireAuth, (req, res) => {
   const body = z.object({
@@ -66,6 +135,14 @@ app.get('/admin/summary', requireAuth, requireRole(['ADMIN']), (_req, res) => {
     educationRequests: 17,
     equipmentOnline: equipment.length
   });
+});
+
+app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  if (error instanceof z.ZodError) {
+    return res.status(400).json({ message: 'Invalid request body', issues: error.issues });
+  }
+  console.error(error);
+  return res.status(500).json({ message: 'Internal server error' });
 });
 
 app.listen(port, () => {

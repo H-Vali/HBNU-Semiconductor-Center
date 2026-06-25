@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { CalendarDays, CheckCircle2, Factory, GraduationCap, LayoutDashboard, MessageSquare, Search, UserRound, Wrench } from 'lucide-react';
 import { STORAGE_KEYS } from '../appStorage';
+import { apiGet, apiPatch, apiPost } from '../apiClient';
 
 type Role = 'USER' | 'ADMIN';
 
@@ -222,6 +223,18 @@ export function QnaPage({ sessionRole }: { sessionRole: Role | null }) {
     answerSaveTimers.current.forEach((timer) => window.clearTimeout(timer));
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+    void apiGet<QnaItem[]>('/qna').then((items) => {
+      if (isMounted && items) {
+        setQnaItems(items);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   function persistQnaItems(nextItems: QnaItem[]) {
     setQnaItems(nextItems);
     localStorage.setItem(STORAGE_KEYS.qnaItems, JSON.stringify(nextItems));
@@ -246,6 +259,14 @@ export function QnaPage({ sessionRole }: { sessionRole: Role | null }) {
     setSelectedQnaId(newQuestion.id);
     setCurrentPage(1);
     setShowCreateModal(false);
+    void apiPost<QnaItem>('/qna', newQuestion).then((savedQuestion) => {
+      if (!savedQuestion) return;
+      setQnaItems((current) => {
+        const next = current.map((item) => item.id === newQuestion.id ? savedQuestion : item);
+        localStorage.setItem(STORAGE_KEYS.qnaItems, JSON.stringify(next));
+        return next;
+      });
+    });
   }
 
   const normalizedSearch = searchTerm.trim().toLowerCase();
@@ -310,6 +331,18 @@ export function QnaPage({ sessionRole }: { sessionRole: Role | null }) {
         : item
     ));
     persistQnaItems(nextItems);
+    void apiPatch<QnaItem>(`/qna/${selectedQna.id}/answer`, {
+      answer: trimmedAnswer,
+      answeredAt,
+      answeredBy: '관리자'
+    }, localStorage.getItem(STORAGE_KEYS.sessionToken)).then((savedQuestion) => {
+      if (!savedQuestion) return;
+      setQnaItems((current) => {
+        const next = current.map((item) => item.id === savedQuestion.id ? savedQuestion : item);
+        localStorage.setItem(STORAGE_KEYS.qnaItems, JSON.stringify(next));
+        return next;
+      });
+    });
     answerSaveTimers.current.forEach((timer) => window.clearTimeout(timer));
     answerSaveTimers.current = [
       window.setTimeout(() => setAnswerSavePhase('returning'), 1200),

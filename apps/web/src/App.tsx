@@ -58,6 +58,7 @@ import { STORAGE_KEYS } from './appStorage';
 import { initialConsumablesData, initialManagedUsersData } from './mockData';
 import { NoticeAdminPage, NoticePage, getNoticeCategoryTone, meetingNoticeItems, normalizeNoticeItems, noticeBoardMeta, noticeItems, operationNoticeItems, type NoticeBoardKey, type NoticeItem } from './pages/NoticePages';
 import { FaqPage, QnaPage, faqItems as initialFaqItems, type FaqItem } from './pages/InquiryPages';
+import { apiGet } from './apiClient';
 
 type PageKey = 'home' | 'notice' | 'operationNotice' | 'meetingNotice' | 'center' | 'facility' | 'equipment' | 'training' | 'trainingManagement' | 'faq' | 'qna' | 'reservations' | 'managerPermissions' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'equipmentAdmin' | 'penalties' | 'noticeAdmin' | 'educationAdmin' | 'login';
 type Role = 'USER' | 'ADMIN';
@@ -6398,6 +6399,28 @@ export function App() {
       setActivePage('home');
     }
   }, [activePage, sessionRole]);
+
+  useEffect(() => {
+    let isMounted = true;
+    void apiGet<NoticeItem[]>('/notices?board=operation').then((items) => {
+      if (isMounted && items) {
+        setManagedOperationNotices(normalizeNoticeItems(items));
+      }
+    });
+    void apiGet<NoticeItem[]>('/notices?board=meeting').then((items) => {
+      if (isMounted && items) {
+        setManagedMeetingNotices(normalizeNoticeItems(items));
+      }
+    });
+    void apiGet<FaqItem[]>('/faqs').then((items) => {
+      if (isMounted && items) {
+        setManagedFaqItems(items);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   function navigate(page: PageKey) {
     if (adminOnlyPages.has(page) && sessionRole !== 'ADMIN') {
