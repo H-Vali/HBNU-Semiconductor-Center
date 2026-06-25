@@ -8767,6 +8767,67 @@ select {
   width: min(34rem, 100%);
 }
 
+.access-requirement-modal {
+  width: min(30rem, calc(100vw - 2rem));
+  border: 1px solid rgba(52, 214, 176, 0.24);
+  border-radius: 16px;
+  background: #131d30;
+  padding: 1.35rem;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+}
+
+.access-requirement-icon {
+  display: inline-flex;
+  width: 3rem;
+  height: 3rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(52, 214, 176, 0.4);
+  border-radius: 14px;
+  background: rgba(52, 214, 176, 0.08);
+  color: #34d6b0;
+}
+
+.access-requirement-heading {
+  margin-top: 1rem;
+}
+
+.access-requirement-modal p {
+  margin: 0.9rem 0 0;
+  color: #cbd5e1;
+  font-size: 0.92rem;
+  font-weight: 650;
+  line-height: 1.7;
+}
+
+.access-requirement-heading p {
+  margin: 0;
+  color: #34d6b0;
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+}
+
+.access-requirement-modal h3 {
+  margin: 0.25rem 0 0;
+  color: #ffffff;
+  font-size: 1.35rem;
+  font-weight: 950;
+  letter-spacing: 0;
+}
+
+.access-requirement-detail {
+  margin-top: 0.95rem;
+  border-radius: 12px;
+  border: 1px solid rgba(52, 214, 176, 0.16);
+  background: rgba(15, 24, 41, 0.82);
+  padding: 0.9rem;
+  color: #a9e9d7;
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.65;
+}
+
 .user-modal-action-spacer {
   flex: 1 1 auto;
 }

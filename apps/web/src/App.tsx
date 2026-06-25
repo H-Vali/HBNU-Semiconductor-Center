@@ -186,6 +186,14 @@ type GoogleCredentialResponse = {
   credential?: string;
 };
 
+type AccessRequirementNotice = {
+  title: string;
+  message: string;
+  detail?: string;
+  primaryLabel?: string;
+  onPrimary?: () => void;
+};
+
 type GoogleIdentityWindow = Window & typeof globalThis & {
   google?: {
     accounts: {
@@ -2270,24 +2278,38 @@ function ReservationPage({
   equipmentItems,
   calendarEvents,
   sessionRole,
+  sessionUser,
+  currentUser,
+  permissions,
+  onNavigate,
   onAddReservation,
   onDeleteReservation
 }: {
   equipmentItems: EquipmentItem[];
   calendarEvents: ReservationEvent[];
   sessionRole: Role | null;
+  sessionUser: StoredSessionUser | null;
+  currentUser: ManagedUser | null;
+  permissions: EquipmentPermissionMap;
+  onNavigate: (page: PageKey) => void;
   onAddReservation: (event: ReservationEvent) => void;
   onDeleteReservation: (reservationId: string) => void;
 }) {
   const allEquipmentId = 'all-equipment';
   const [selectedEquipmentId, setSelectedEquipmentId] = useState(allEquipmentId);
   const [showReservationModal, setShowReservationModal] = useState(false);
+  const [accessNotice, setAccessNotice] = useState<AccessRequirementNotice | null>(null);
   const [reservationDate, setReservationDate] = useState(getSeoulDateKey());
   const [searchTerm, setSearchTerm] = useState('');
   const [groupFilter, setGroupFilter] = useState<'all' | EquipmentGroup>('all');
   const selectedEquipment = selectedEquipmentId === allEquipmentId ? undefined : equipmentItems.find((item) => item.id === selectedEquipmentId);
   const selectedEquipmentAvailable = selectedEquipmentId === allEquipmentId || isEquipmentAvailable(selectedEquipment);
   const firstAvailableEquipmentId = equipmentItems.find(isEquipmentAvailable)?.id ?? '';
+  const currentUserPermissionIds = currentUser ? permissions[currentUser.id] ?? [] : [];
+  const reservableEquipmentItems = sessionRole === 'ADMIN'
+    ? equipmentItems.filter(isEquipmentAvailable)
+    : equipmentItems.filter((item) => isEquipmentAvailable(item) && currentUserPermissionIds.includes(item.id));
+  const firstReservableEquipmentId = reservableEquipmentItems[0]?.id ?? firstAvailableEquipmentId;
   const todayKey = getSeoulDateKey();
   const isAllLive = calendarEvents.some((event) => isReservationActive(event));
   const filteredEquipmentItems = useMemo(() => {
@@ -2302,6 +2324,10 @@ function ReservationPage({
   function confirmReservation(form: ReservationForm) {
     const equipment = equipmentItems.find((item) => item.id === form.equipmentId);
     if (!equipment || !isEquipmentAvailable(equipment)) return;
+    if (!canReserveEquipment(equipment.id)) {
+      showReservationRequirement(equipment);
+      return;
+    }
 
     const purpose = form.purpose.trim() ? ` - ${form.purpose.trim()}` : '';
     onAddReservation({
@@ -2311,13 +2337,56 @@ function ReservationPage({
       end: toReservationDateTime(getReservationEndDate(form), form.endTime),
       status: sessionRole === 'ADMIN' ? 'approved' : 'pending',
       equipmentId: equipment.id,
+      userId: currentUser?.id ?? sessionUser?.id,
       createdBy: sessionRole === 'ADMIN' ? 'ADMIN' : 'USER'
     });
     setSelectedEquipmentId(equipment.id);
     setShowReservationModal(false);
   }
+
+  function canReserveEquipment(equipmentId: string) {
+    if (sessionRole === 'ADMIN') return true;
+    return Boolean(sessionUser && currentUser && currentUserPermissionIds.includes(equipmentId));
+  }
+
+  function showReservationRequirement(equipment?: EquipmentItem) {
+    if (!sessionUser) {
+      setAccessNotice({
+        title: '로그인이 필요합니다.',
+        message: '장비 사용 예약은 Google 본인인증과 회원가입 후 이용할 수 있습니다.',
+        detail: '로그인 후 회원정보를 등록하고 장비사용 교육을 이수해야 예약 권한이 활성화됩니다.',
+        primaryLabel: '로그인하기',
+        onPrimary: () => onNavigate('login')
+      });
+      return;
+    }
+    if (!currentUser) {
+      setAccessNotice({
+        title: '회원정보 등록이 필요합니다.',
+        message: '장비 사용 예약은 사용자관리와 연동된 회원정보 등록 후 이용할 수 있습니다.',
+        detail: 'Google 본인인증 후 이름, 소속학과, 지도교수명, 연락처, 이메일을 등록해 주세요.',
+        primaryLabel: '회원가입 진행',
+        onPrimary: () => onNavigate('login')
+      });
+      return;
+    }
+    setAccessNotice({
+      title: '장비 사용 권한이 필요합니다.',
+      message: `${equipment?.name ?? '선택한 장비'} 예약은 장비사용 교육 이수 후 담당자 또는 관리자가 권한을 부여해야 가능합니다.`,
+      detail: '교육신청 페이지에서 해당 장비 교육을 요청하고, 이수 완료 후 예약을 진행해 주세요.',
+      primaryLabel: '교육신청으로 이동',
+      onPrimary: () => onNavigate('training')
+    });
+  }
+
   function openReservation(date = getSeoulDateKey()) {
     if (!selectedEquipmentAvailable) return;
+    const targetEquipment = selectedEquipment ?? equipmentItems.find((item) => item.id === firstReservableEquipmentId);
+    if (!targetEquipment || !canReserveEquipment(targetEquipment.id)) {
+      showReservationRequirement(targetEquipment ?? selectedEquipment ?? equipmentItems.find((item) => item.id === firstAvailableEquipmentId));
+      return;
+    }
+    setSelectedEquipmentId(targetEquipment.id);
     setReservationDate(date);
     setShowReservationModal(true);
   }
@@ -2427,9 +2496,9 @@ function ReservationPage({
       </div>
       {showReservationModal && (
         <ReservationModalV2
-          equipmentItems={equipmentItems}
+          equipmentItems={sessionRole === 'ADMIN' ? equipmentItems : reservableEquipmentItems}
           calendarEvents={calendarEvents}
-          selectedEquipmentId={selectedEquipmentAvailable ? selectedEquipment?.id ?? firstAvailableEquipmentId : firstAvailableEquipmentId}
+          selectedEquipmentId={selectedEquipmentAvailable ? selectedEquipment?.id ?? firstReservableEquipmentId : firstReservableEquipmentId}
           initialDate={reservationDate}
           onClose={() => setShowReservationModal(false)}
           onConfirm={confirmReservation}
@@ -2437,6 +2506,9 @@ function ReservationPage({
           allowMaintenanceReservation={sessionRole === 'ADMIN'}
           titleSuffix={sessionRole === 'ADMIN' ? '(ADMIN)' : ''}
         />
+      )}
+      {accessNotice && (
+        <AccessRequirementModal notice={accessNotice} onClose={() => setAccessNotice(null)} />
       )}
     </section>
   );
@@ -2876,13 +2948,17 @@ function createManagerTrainingRequests(equipmentItems: EquipmentItem[], users: M
 function TrainingPage({
   equipmentItems,
   users,
+  sessionUser,
   currentUser,
-  permissions
+  permissions,
+  onNavigate
 }: {
   equipmentItems: EquipmentItem[];
   users: ManagedUser[];
+  sessionUser: StoredSessionUser | null;
   currentUser: ManagedUser | null;
   permissions: EquipmentPermissionMap;
+  onNavigate: (page: PageKey) => void;
 }) {
   const currentUserPermissionIds = currentUser ? permissions[currentUser.id] ?? [] : [];
   const managerNameById = useMemo(() => new Map(users.map((user) => [user.id, user.name])), [users]);
@@ -2897,6 +2973,7 @@ function TrainingPage({
   const [preferredDate, setPreferredDate] = useState('');
   const [purpose, setPurpose] = useState<'연구' | '수업' | '기타'>('연구');
   const [message, setMessage] = useState('');
+  const [accessNotice, setAccessNotice] = useState<AccessRequirementNotice | null>(null);
   const [submittedTrainingRequest, setSubmittedTrainingRequest] = useState(false);
   const [applications, setApplications] = useState<TrainingApplication[]>(() => {
     const pendingEquipment = equipmentItems.find((item) => !currentUserPermissionIds.includes(item.id)) ?? equipmentItems[0];
@@ -2944,6 +3021,26 @@ function TrainingPage({
 
   function submitTrainingRequest(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!sessionUser) {
+      setAccessNotice({
+        title: '로그인이 필요합니다.',
+        message: '교육신청은 Google 본인인증 후 이용할 수 있습니다.',
+        detail: '먼저 Google 계정으로 본인인증을 진행한 뒤 센터 회원정보를 등록해 주세요.',
+        primaryLabel: '로그인하기',
+        onPrimary: () => onNavigate('login')
+      });
+      return;
+    }
+    if (!currentUser) {
+      setAccessNotice({
+        title: '회원정보 등록이 필요합니다.',
+        message: '교육신청은 사용자관리와 연동된 회원정보 등록 후 이용할 수 있습니다.',
+        detail: '이름, 소속학과, 지도교수명, 연락처, 이메일 등록을 완료해 주세요.',
+        primaryLabel: '회원가입 진행',
+        onPrimary: () => onNavigate('login')
+      });
+      return;
+    }
     if (!selectedEquipment || !canSubmitTrainingRequest) return;
     const confirmed = window.confirm(`${selectedEquipment.name} 교육 신청을 담당자에게 전송하시겠습니까?`);
     if (!confirmed) return;
@@ -3142,6 +3239,9 @@ function TrainingPage({
           </section>
         </aside>
       </div>
+      {accessNotice && (
+        <AccessRequirementModal notice={accessNotice} onClose={() => setAccessNotice(null)} />
+      )}
     </section>
   );
 }
@@ -4959,6 +5059,45 @@ function PenaltyRestrictedPage({ penalty, onAcknowledge }: { penalty: PenaltyRec
       <div className="penalty-notice-reason">{penalty.reason}</div>
       <button type="button" onClick={onAcknowledge}>페널티 상세 확인</button>
     </section>
+  );
+}
+
+function AccessRequirementModal({
+  notice,
+  onClose
+}: {
+  notice: AccessRequirementNotice;
+  onClose: () => void;
+}) {
+  return (
+    <div className="user-add-modal-backdrop" role="presentation">
+      <section className="access-requirement-modal" role="dialog" aria-modal="true" aria-labelledby="access-requirement-title">
+        <div className="access-requirement-icon" aria-hidden="true">
+          <LockKeyhole size={26} />
+        </div>
+        <div className="access-requirement-heading">
+          <p>이용 조건 안내</p>
+          <h3 id="access-requirement-title">{notice.title}</h3>
+        </div>
+        <p>{notice.message}</p>
+        {notice.detail && <div className="access-requirement-detail">{notice.detail}</div>}
+        <div className="user-add-modal-actions">
+          <button type="button" className="is-cancel" onClick={onClose}>확인</button>
+          {notice.primaryLabel && notice.onPrimary && (
+            <button
+              type="button"
+              className="is-primary"
+              onClick={() => {
+                onClose();
+                notice.onPrimary?.();
+              }}
+            >
+              {notice.primaryLabel}
+            </button>
+          )}
+        </div>
+      </section>
+    </div>
   );
 }
 
@@ -7557,6 +7696,10 @@ export function App() {
                 equipmentItems={activeEquipmentItems}
                 calendarEvents={reservationEvents}
                 sessionRole={sessionRole}
+                sessionUser={sessionUser}
+                currentUser={currentManagedUser}
+                permissions={equipmentPermissions}
+                onNavigate={navigate}
                 onAddReservation={addReservation}
                 onDeleteReservation={deleteReservation}
               />
@@ -7566,8 +7709,10 @@ export function App() {
             <TrainingPage
               equipmentItems={activeEquipmentItems}
               users={managedUsers}
+              sessionUser={sessionUser}
               currentUser={currentManagedUser}
               permissions={equipmentPermissions}
+              onNavigate={navigate}
             />
           )}
           {activePage === 'trainingManagement' && (
