@@ -1922,6 +1922,7 @@ select {
   border: 0.5px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   background: #11192b;
+  font-weight: 800;
   text-decoration: none;
   transition: transform 0.15s ease, border-color 0.15s ease;
 }
@@ -1968,7 +1969,7 @@ select {
 .eq-cat {
   color: #f3f6fb;
   font-size: 1.18rem;
-  font-weight: 500;
+  font-weight: 900;
 }
 
 .eq-desc {
@@ -1976,7 +1977,7 @@ select {
   margin-top: 4px;
   color: #8b96a8;
   font-size: 0.86rem;
-  font-weight: 400;
+  font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1990,13 +1991,13 @@ select {
 .eq-count-label {
   color: #6b7689;
   font-size: 0.74rem;
-  font-weight: 400;
+  font-weight: 800;
 }
 
 .eq-count-num {
   color: rgb(var(--accent));
   font-size: 1.08rem;
-  font-weight: 500;
+  font-weight: 900;
 }
 
 .eq-body {
@@ -2017,7 +2018,7 @@ select {
   padding: 5px 11px;
   color: #aab4c4;
   font-size: 0.82rem;
-  font-weight: 400;
+  font-weight: 800;
 }
 
 .eq-cta {
@@ -2026,7 +2027,7 @@ select {
   gap: 8px;
   color: rgb(var(--accent));
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 900;
 }
 
 .eq-arrow {
