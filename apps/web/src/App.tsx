@@ -2569,7 +2569,6 @@ function TrainingPage({
   ), [currentUserPermissionIds, equipmentItems]);
   const [selectedEquipmentId, setSelectedEquipmentId] = useState('');
   const [selectedEquipmentGroup, setSelectedEquipmentGroup] = useState<EquipmentGroup>('process');
-  const [equipmentQuery, setEquipmentQuery] = useState('');
   const [preferredDate, setPreferredDate] = useState('');
   const [purpose, setPurpose] = useState<'연구' | '수업' | '기타'>('연구');
   const [message, setMessage] = useState('');
@@ -2607,17 +2606,9 @@ function TrainingPage({
     ].filter(Boolean) as TrainingApplication[];
   });
 
-  const filteredEquipment = useMemo(() => {
-    const query = equipmentQuery.trim().toLowerCase();
-    const groupItems = requestableEquipment.filter((item) => item.group === selectedEquipmentGroup);
-    return query
-      ? groupItems.filter((item) => (
-          item.name.toLowerCase().includes(query)
-          || item.category.toLowerCase().includes(query)
-          || item.location.toLowerCase().includes(query)
-        ))
-      : groupItems;
-  }, [equipmentQuery, requestableEquipment, selectedEquipmentGroup]);
+  const filteredEquipment = useMemo(() => (
+    requestableEquipment.filter((item) => item.group === selectedEquipmentGroup)
+  ), [requestableEquipment, selectedEquipmentGroup]);
   const selectedEquipment = requestableEquipment.find((item) => item.id === selectedEquipmentId) ?? null;
   const selectedManagerName = selectedEquipment?.managerId
     ? managerNameById.get(selectedEquipment.managerId) ?? '담당자 미지정'
@@ -2684,22 +2675,11 @@ function TrainingPage({
                 onChange={(event) => {
                   setSelectedEquipmentGroup(event.target.value as EquipmentGroup);
                   setSelectedEquipmentId('');
-                  setEquipmentQuery('');
                 }}
               >
                 <option value="process">공정</option>
                 <option value="metrology">검사·계측·패키징</option>
               </select>
-              <label htmlFor="training-equipment-search">분류 내 장비 검색</label>
-              <div className="training-equipment-search">
-                <Search size={16} aria-hidden="true" />
-                <input
-                  id="training-equipment-search"
-                  value={equipmentQuery}
-                  onChange={(event) => setEquipmentQuery(event.target.value)}
-                  placeholder="장비명 또는 위치 검색"
-                />
-              </div>
               <label htmlFor="training-equipment-select">장비 목록</label>
               <select
                 id="training-equipment-select"
@@ -2725,7 +2705,7 @@ function TrainingPage({
                 <ChevronDown size={16} aria-hidden="true" />
               </article>
             ) : (
-              <p className="training-request-help">쓰고 싶은 장비를 검색하거나 목록에서 선택하세요.</p>
+              <p className="training-request-help">장비 분류를 선택한 뒤 목록에서 교육받을 장비를 선택하세요.</p>
             )}
           </section>
 
