@@ -59,7 +59,7 @@ import { initialConsumablesData, initialManagedUsersData } from './mockData';
 import { NoticeAdminPage, NoticePage, getNoticeCategoryTone, meetingNoticeItems, normalizeNoticeItems, noticeBoardMeta, noticeItems, operationNoticeItems, type NoticeBoardKey, type NoticeItem } from './pages/NoticePages';
 import { FaqPage, QnaPage } from './pages/InquiryPages';
 
-type PageKey = 'home' | 'notice' | 'operationNotice' | 'meetingNotice' | 'center' | 'facility' | 'equipment' | 'training' | 'trainingManagement' | 'faq' | 'qna' | 'reservations' | 'managerPermissions' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'equipmentAdmin' | 'penalties' | 'noticeAdmin' | 'login';
+type PageKey = 'home' | 'notice' | 'operationNotice' | 'meetingNotice' | 'center' | 'facility' | 'equipment' | 'training' | 'trainingManagement' | 'faq' | 'qna' | 'reservations' | 'managerPermissions' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'equipmentAdmin' | 'penalties' | 'noticeAdmin' | 'educationAdmin' | 'login';
 type Role = 'USER' | 'ADMIN';
 type UsagePeriod = '24H' | '1W' | '1M';
 type EquipmentRuntimeStatus = 'active' | 'maintenance' | 'idle';
@@ -3532,24 +3532,16 @@ function AdminEducationPermissionPanel({
 function AdminPage({
   equipmentItems,
   calendarEvents,
-  users,
-  permissions,
-  permissionGrantMeta,
   onAddReservation,
   onDeleteReservation,
-  onRevokePermission,
   onNavigate,
   consumablesUpdatedAt,
   usersUpdatedAt
 }: {
   equipmentItems: EquipmentItem[];
   calendarEvents: ReservationEvent[];
-  users: ManagedUser[];
-  permissions: EquipmentPermissionMap;
-  permissionGrantMeta: EquipmentPermissionGrantMetaMap;
   onAddReservation: (event: ReservationEvent) => void;
   onDeleteReservation: (reservationId: string) => void;
-  onRevokePermission: (userId: string, equipmentId: string, reason: string) => void;
   onNavigate: (page: PageKey) => void;
   consumablesUpdatedAt: string;
   usersUpdatedAt: string;
@@ -3728,13 +3720,6 @@ function AdminPage({
           </button>
         </div>
       </div>
-      <AdminEducationPermissionPanel
-        users={users}
-        equipmentItems={equipmentItems}
-        permissions={permissions}
-        permissionGrantMeta={permissionGrantMeta}
-        onRevokePermission={onRevokePermission}
-      />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {[
           { title: '사용자관리', page: 'users' as PageKey, icon: UserRound, updatedAt: usersUpdatedAt },
@@ -3743,14 +3728,14 @@ function AdminPage({
           { title: '권한관리', page: 'permissions' as PageKey, icon: LockKeyhole },
           { title: '소모품관리', page: 'consumables' as PageKey, icon: PackageCheck, updatedAt: consumablesUpdatedAt },
           { title: '페널티 관리', page: 'penalties' as PageKey, icon: Ban },
-          { title: '교육관리', icon: GraduationCap, anchor: 'admin-education-permission' }
+          { title: '교육관리', page: 'educationAdmin' as PageKey, icon: GraduationCap }
         ].map((item) => {
           const Icon = item.icon;
           return (
             <button
               key={item.title}
               className="rounded-lg border border-white/10 bg-surface/85 p-6 text-left text-lg font-extrabold text-white hover:border-cyan-300 hover:bg-blue-500/20"
-              onClick={() => item.anchor ? document.getElementById(item.anchor)?.scrollIntoView({ behavior: 'smooth', block: 'start' }) : item.title.includes('怨듭') || item.title.includes('공지') ? onNavigate('noticeAdmin') : item.page && onNavigate(item.page)}
+              onClick={() => item.title.includes('怨듭') || item.title.includes('공지') ? onNavigate('noticeAdmin') : item.page && onNavigate(item.page)}
             >
               <span className="inline-flex items-center gap-2">
                 {Icon && <Icon size={20} className="text-cyan-300" />}
@@ -6841,16 +6826,25 @@ export function App() {
             <AdminPage
               equipmentItems={equipmentItems}
               calendarEvents={reservationEvents}
-              users={managedUsers}
-              permissions={equipmentPermissions}
-              permissionGrantMeta={equipmentPermissionGrantMeta}
               onAddReservation={addReservation}
               onDeleteReservation={deleteReservation}
-              onRevokePermission={revokeEquipmentPermissionByAdmin}
               onNavigate={navigate}
               consumablesUpdatedAt={consumablesUpdatedAt}
               usersUpdatedAt={usersUpdatedAt}
             />
+          )}
+          {activePage === 'educationAdmin' && (
+            sessionRole === 'ADMIN' ? (
+              <AdminEducationPermissionPanel
+                users={managedUsers}
+                equipmentItems={activeEquipmentItems}
+                permissions={equipmentPermissions}
+                permissionGrantMeta={equipmentPermissionGrantMeta}
+                onRevokePermission={revokeEquipmentPermissionByAdmin}
+              />
+            ) : (
+              <PlaceholderPage title="접근 권한이 없습니다" />
+            )
           )}
           {activePage === 'users' && (
             <UserManagementPage
