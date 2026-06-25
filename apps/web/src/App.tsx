@@ -1333,26 +1333,36 @@ function SidebarNavigation({
 
 function Hero({
   onNavigate,
+  onReservationAction,
   equipmentItems,
   userName,
   userLab,
   userRole,
   grantedEquipmentItems,
-  isAdmin
+  isAdmin,
+  accountStatus
 }: {
   onNavigate: (page: PageKey) => void;
+  onReservationAction: () => void;
   equipmentItems: EquipmentItem[];
   userName: string;
   userLab: string;
   userRole: ManagedUser['roleLevel'];
   grantedEquipmentItems: EquipmentItem[];
   isAdmin: boolean;
+  accountStatus: 'guest' | 'profileRequired' | 'ready';
 }) {
   const [showAllPermissions, setShowAllPermissions] = useState(false);
   const collapsedPermissionItems = grantedEquipmentItems.slice(0, 3);
   const visiblePermissionItems = showAllPermissions ? grantedEquipmentItems : collapsedPermissionItems;
   const hiddenPermissionCount = Math.max(grantedEquipmentItems.length - collapsedPermissionItems.length, 0);
   const roleToneClass = getRoleToneClass(userRole);
+  const needsAccountAction = accountStatus !== 'ready';
+  const statusBadgeLabel = accountStatus === 'guest'
+    ? 'Google 로그인 필요'
+    : accountStatus === 'profileRequired'
+      ? '회원정보 등록 필요'
+      : formatProfessorLab(userLab);
 
   return (
     <section className="hero-panel relative overflow-hidden">
@@ -1391,50 +1401,82 @@ function Hero({
         </div>
         <div className="hero-user-summary" aria-label="사용자 예약 요약">
           <div className="hero-user-summary-head">
-            <h3><strong>{userName}</strong> 님 환영합니다.</h3>
+            {accountStatus === 'guest' ? (
+              <h3>로그인이 필요합니다.</h3>
+            ) : accountStatus === 'profileRequired' ? (
+              <h3>회원정보 등록이 필요합니다.</h3>
+            ) : (
+              <h3><strong>{userName}</strong> 님 환영합니다.</h3>
+            )}
             <span style={{ borderColor: `${getProfessorTone(userLab)}66`, backgroundColor: `${getProfessorTone(userLab)}1f`, color: getProfessorTone(userLab) }}>
-              {formatProfessorLab(userLab)}
+              {statusBadgeLabel}
             </span>
           </div>
           <div className="hero-user-permissions" aria-label="사용자 역할 및 장비 권한">
-            <span className={`hero-role-badge ${roleToneClass}`}>{isAdmin ? 'ADMIN' : userRole}</span>
-            {isAdmin && <span className="hero-permission-badge is-admin">전체 장비 접근</span>}
-            {visiblePermissionItems.length > 0 ? (
+            {accountStatus === 'guest' ? (
+              <span className="hero-permission-badge is-empty">로그인 후 교육신청과 예약을 이용할 수 있습니다.</span>
+            ) : accountStatus === 'profileRequired' ? (
+              <span className="hero-permission-badge is-empty">회원정보 등록 후 교육신청을 이용할 수 있습니다.</span>
+            ) : (
               <>
-                {visiblePermissionItems.map((item) => (
-                  <span key={item.id} className={`hero-permission-badge is-${item.group}`}>{item.name}</span>
-                ))}
-                {hiddenPermissionCount > 0 && (
-                  <button
-                    type="button"
-                    className="hero-permission-badge is-more"
-                    onClick={() => setShowAllPermissions((current) => !current)}
-                    aria-expanded={showAllPermissions}
-                    aria-label={showAllPermissions ? '장비 권한 목록 접기' : `숨겨진 장비 권한 ${hiddenPermissionCount}개 모두 보기`}
-                  >
-                    {showAllPermissions ? '접기' : `+${hiddenPermissionCount}`}
-                  </button>
+                <span className={`hero-role-badge ${roleToneClass}`}>{isAdmin ? 'ADMIN' : userRole}</span>
+                {isAdmin && <span className="hero-permission-badge is-admin">전체 장비 접근</span>}
+                {visiblePermissionItems.length > 0 ? (
+                  <>
+                    {visiblePermissionItems.map((item) => (
+                      <span key={item.id} className={`hero-permission-badge is-${item.group}`}>{item.name}</span>
+                    ))}
+                    {hiddenPermissionCount > 0 && (
+                      <button
+                        type="button"
+                        className="hero-permission-badge is-more"
+                        onClick={() => setShowAllPermissions((current) => !current)}
+                        aria-expanded={showAllPermissions}
+                        aria-label={showAllPermissions ? '장비 권한 목록 접기' : `숨겨진 장비 권한 ${hiddenPermissionCount}개 모두 보기`}
+                      >
+                        {showAllPermissions ? '접기' : `+${hiddenPermissionCount}`}
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <span className="hero-permission-badge is-empty">부여된 장비 권한 없음</span>
                 )}
               </>
-            ) : (
-              <span className="hero-permission-badge is-empty">부여된 장비 권한 없음</span>
             )}
           </div>
           <div className="hero-reservation-list">
-            <div className="hero-reservation-row">
-              <time>14:00</time>
-              <strong>mini SEM</strong>
-              <span>이용 예약</span>
-            </div>
-            <div className="hero-reservation-row">
-              <time>16:30</time>
-              <strong>반도체검사기</strong>
-              <span>이용 예약</span>
-            </div>
+            {needsAccountAction ? (
+              <div className="hero-reservation-row is-message">
+                <time>-</time>
+                <strong>
+                  {accountStatus === 'guest'
+                    ? 'Google 로그인 후 예약 현황을 확인할 수 있습니다.'
+                    : '회원정보 등록 후 예약 현황을 확인할 수 있습니다.'}
+                </strong>
+                <button type="button" className="hero-reservation-action" onClick={onReservationAction}>
+                  {accountStatus === 'guest' ? '로그인 필요' : '회원가입 필요'}
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="hero-reservation-row">
+                  <time>14:00</time>
+                  <strong>mini SEM</strong>
+                  <button type="button" className="hero-reservation-action" onClick={onReservationAction}>이용 예약</button>
+                </div>
+                <div className="hero-reservation-row">
+                  <time>16:30</time>
+                  <strong>반도체검사기</strong>
+                  <button type="button" className="hero-reservation-action" onClick={onReservationAction}>이용 예약</button>
+                </div>
+              </>
+            )}
           </div>
           <div className="hero-user-summary-foot">
-            <span>오늘 이용 예약 2건</span>
-            <button type="button" aria-label="내 예약 전체 보기">전체 보기</button>
+            <span>{needsAccountAction ? '로그인 후 예약 기능 이용 가능' : '오늘 이용 예약 2건'}</span>
+            <button type="button" aria-label="내 예약 전체 보기" onClick={onReservationAction}>
+              {needsAccountAction ? '조건 확인' : '전체 보기'}
+            </button>
           </div>
         </div>
       </div>
@@ -2017,6 +2059,8 @@ function Dashboard({
   managedUsers,
   sessionUserName,
   sessionRole,
+  sessionUser,
+  currentUser,
   equipmentPermissions,
   onNavigate
 }: {
@@ -2025,31 +2069,67 @@ function Dashboard({
   managedUsers: ManagedUser[];
   sessionUserName: string;
   sessionRole: Role | null;
+  sessionUser: StoredSessionUser | null;
+  currentUser: ManagedUser | null;
   equipmentPermissions: EquipmentPermissionMap;
   onNavigate: (page: PageKey) => void;
 }) {
-  const dashboardUser = managedUsers.find((user) => user.name === sessionUserName) ?? managedUsers[0];
+  const [accessNotice, setAccessNotice] = useState<AccessRequirementNotice | null>(null);
+  const accountStatus = !sessionUser ? 'guest' : !currentUser ? 'profileRequired' : 'ready';
+  const dashboardUser = currentUser ?? managedUsers.find((user) => user.name === sessionUserName) ?? managedUsers[0];
   const isPermissionPreviewMode = new URLSearchParams(window.location.search).get('permissionPreview') === 'multi';
-  const grantedEquipmentIds = isPermissionPreviewMode
+  const grantedEquipmentIds = accountStatus !== 'ready'
+    ? []
+    : isPermissionPreviewMode
     ? getPreviewEquipmentPermissionIds()
     : dashboardUser ? equipmentPermissions[dashboardUser.id] ?? [] : [];
   const grantedEquipmentItems = equipmentItems.filter((item) => grantedEquipmentIds.includes(item.id));
+
+  function showDashboardReservationRequirement() {
+    if (!sessionUser) {
+      setAccessNotice({
+        title: '로그인이 필요합니다.',
+        message: '장비 사용 예약과 예약 현황 확인은 Google 본인인증 후 이용할 수 있습니다.',
+        detail: '로그인 후 회원정보를 등록하고 장비사용 교육을 이수하면 예약 권한이 활성화됩니다.',
+        primaryLabel: '로그인하기',
+        onPrimary: () => onNavigate('login')
+      });
+      return;
+    }
+    if (!currentUser) {
+      setAccessNotice({
+        title: '회원정보 등록이 필요합니다.',
+        message: '예약 기능은 사용자관리와 연동된 회원정보 등록 후 이용할 수 있습니다.',
+        detail: '이름, 소속학과, 지도교수명, 연락처, 이메일 등록을 완료해 주세요.',
+        primaryLabel: '회원가입 진행',
+        onPrimary: () => onNavigate('login')
+      });
+      return;
+    }
+    onNavigate('reservations');
+  }
+
   return (
     <section className="mt-5 grid gap-5">
       <Hero
         onNavigate={onNavigate}
+        onReservationAction={showDashboardReservationRequirement}
         equipmentItems={equipmentItems}
         userName={sessionUserName || 'USER NAME'}
         userLab={dashboardUser?.labProfessor ?? '백근우 교수님'}
         userRole={dashboardUser?.roleLevel ?? '일반'}
         grantedEquipmentItems={grantedEquipmentItems}
         isAdmin={sessionRole === 'ADMIN'}
+        accountStatus={accountStatus}
       />
       <AutoRotatingEquipmentStatus
         equipmentItems={equipmentItems}
         calendarEvents={calendarEvents}
       />
       <MonthlyUsageChart equipmentItems={equipmentItems} calendarEvents={calendarEvents} />
+      {accessNotice && (
+        <AccessRequirementModal notice={accessNotice} onClose={() => setAccessNotice(null)} />
+      )}
     </section>
   );
 }
@@ -7658,6 +7738,8 @@ export function App() {
                 managedUsers={managedUsers}
                 sessionUserName={sessionUserName}
                 sessionRole={sessionRole}
+                sessionUser={sessionUser}
+                currentUser={currentManagedUser}
                 equipmentPermissions={equipmentPermissions}
                 onNavigate={navigate}
               />

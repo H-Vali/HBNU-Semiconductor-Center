@@ -386,13 +386,25 @@ select {
   white-space: nowrap;
 }
 
-.hero-reservation-row span {
+.hero-reservation-action {
   border-radius: 7px;
   background: rgba(139, 150, 168, 0.18);
   padding: 0.28rem 0.48rem;
   color: #cdd5e1;
   font-size: 0.72rem;
   font-weight: 700;
+}
+
+.hero-reservation-action:hover,
+.hero-reservation-action:focus-visible {
+  background: rgba(52, 214, 176, 0.16);
+  color: #99f6e4;
+  outline: none;
+}
+
+.hero-reservation-row.is-message strong {
+  white-space: normal;
+  line-height: 1.5;
 }
 
 .hero-user-summary-foot {
@@ -2621,7 +2633,7 @@ select {
     grid-template-columns: 3.8rem minmax(0, 1fr);
   }
 
-  .hero-reservation-row span {
+  .hero-reservation-action {
     grid-column: 2;
     justify-self: start;
   }
