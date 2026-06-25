@@ -1,14 +1,17 @@
+import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
+import type { SessionUser } from './auth.js';
 import { equipment as fallbackEquipment, reservations as fallbackReservations } from './data.js';
 import { hasDatabase, query, transaction } from './db.js';
 
-type SessionUser = {
-  id: string;
-  role: string;
+type Equipment = typeof fallbackEquipment[number];
+type FallbackReservation = typeof fallbackReservations[number] & {
+  purpose?: string;
+  userId?: string;
+  createdByRole?: string;
 };
 
-type Equipment = typeof fallbackEquipment[number];
-type FallbackReservation = typeof fallbackReservations[number];
+const mutableFallbackReservations = fallbackReservations as FallbackReservation[];
 
 export class ReservationOverlapError extends Error {
   constructor() {
@@ -119,6 +122,14 @@ function hasReservationOverlap(input: CreateReservationInput, reservations: Fall
   );
 }
 
+function canAssignReservationOwner(user?: SessionUser) {
+  return user?.role === 'ADMIN' || user?.role === 'MANAGER';
+}
+
+function canCancelAnyReservation(user: SessionUser) {
+  return user.role === 'ADMIN';
+}
+
 export async function listEquipment() {
   if (!hasDatabase()) return fallbackEquipment;
   const result = await query<EquipmentRow>(
@@ -150,7 +161,7 @@ export async function getEquipment(id: string) {
 }
 
 export async function listReservations() {
-  if (!hasDatabase()) return fallbackReservations;
+  if (!hasDatabase()) return mutableFallbackReservations;
   const result = await query<ReservationRow>(
     `select id, equipment_id as "equipmentId", user_id as "userId", title, purpose,
       starts_at as "startsAt", ends_at as "endsAt", status, created_by_role as "createdByRole"
@@ -163,17 +174,25 @@ export async function listReservations() {
 
 export async function createReservation(input: unknown, user?: SessionUser) {
   const body = createReservationSchema.parse(input);
+  const canAssignOwner = canAssignReservationOwner(user);
+  const ownerId = canAssignOwner ? (body.userId ?? user?.id ?? null) : (user?.id ?? null);
+  const status = canAssignOwner ? (body.status ?? 'pending') : 'pending';
+  const reservationId = `r-${randomUUID()}`;
+
   if (!hasDatabase()) {
-    if (hasReservationOverlap(body, fallbackReservations)) throw new ReservationOverlapError();
-    const reservation = {
-      id: `r-${Date.now()}`,
+    if (hasReservationOverlap(body, mutableFallbackReservations)) throw new ReservationOverlapError();
+    const reservation: FallbackReservation = {
+      id: reservationId,
       equipmentId: body.equipmentId,
       title: body.title ?? body.purpose,
+      purpose: body.purpose,
       startsAt: body.startsAt,
       endsAt: body.endsAt,
-      status: body.status ?? 'pending'
+      status,
+      userId: ownerId ?? undefined,
+      createdByRole: user?.role
     };
-    fallbackReservations.push(reservation);
+    mutableFallbackReservations.push(reservation);
     return reservation;
   }
 
@@ -187,14 +206,14 @@ export async function createReservation(input: unknown, user?: SessionUser) {
         returning id, equipment_id as "equipmentId", user_id as "userId", title, purpose,
           starts_at as "startsAt", ends_at as "endsAt", status, created_by_role as "createdByRole"`,
         [
-          `r-${Date.now()}`,
+          reservationId,
           body.equipmentId,
-          body.userId ?? user?.id ?? null,
+          ownerId,
           body.title ?? body.purpose,
           body.purpose,
           body.startsAt,
           body.endsAt,
-          body.status ?? 'pending',
+          status,
           user?.role ?? null
         ]
       );
@@ -208,21 +227,26 @@ export async function createReservation(input: unknown, user?: SessionUser) {
   }
 }
 
-export async function cancelReservation(id: string) {
+export async function cancelReservation(id: string, user: SessionUser) {
+  const canCancelAny = canCancelAnyReservation(user);
+
   if (!hasDatabase()) {
-    const index = fallbackReservations.findIndex((reservation) => reservation.id === id);
+    const index = mutableFallbackReservations.findIndex((reservation) => (
+      reservation.id === id &&
+      (canCancelAny || reservation.userId === user.id)
+    ));
     if (index === -1) return null;
-    const [removed] = fallbackReservations.splice(index, 1);
+    const [removed] = mutableFallbackReservations.splice(index, 1);
     return removed;
   }
 
   const result = await query<ReservationRow>(
     `update reservations
      set status = 'canceled', deleted_at = now(), updated_at = now()
-     where id = $1 and deleted_at is null
+     where id = $1 and deleted_at is null and ($2 = true or user_id = $3)
      returning id, equipment_id as "equipmentId", user_id as "userId", title, purpose,
        starts_at as "startsAt", ends_at as "endsAt", status, created_by_role as "createdByRole"`,
-    [id]
+    [id, canCancelAny, user.id]
   );
   return result.rows[0] ? mapReservation(result.rows[0]) : null;
 }

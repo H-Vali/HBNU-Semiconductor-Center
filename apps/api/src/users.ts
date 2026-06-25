@@ -22,7 +22,8 @@ const googleTokenInfoSchema = z.object({
   email: z.string().email(),
   email_verified: z.union([z.boolean(), z.string()]).optional(),
   name: z.string().optional(),
-  aud: z.string().optional()
+  aud: z.string().optional(),
+  iss: z.string().optional()
 });
 
 type ManagedUser = z.infer<typeof managedUserSchema> & { id: string; index: number };
@@ -261,10 +262,16 @@ async function verifyGoogleCredential(credential: string): Promise<RegistrationP
   }
   const tokenInfo = googleTokenInfoSchema.parse(await response.json());
   const expectedAudience = process.env.GOOGLE_CLIENT_ID;
-  if (expectedAudience && tokenInfo.aud !== expectedAudience) {
+  if (!expectedAudience) {
+    throw new Error('GOOGLE_CLIENT_ID is not configured');
+  }
+  if (tokenInfo.aud !== expectedAudience) {
     throw new Error('Google credential audience mismatch');
   }
-  if (tokenInfo.email_verified === false || tokenInfo.email_verified === 'false') {
+  if (tokenInfo.iss && !['accounts.google.com', 'https://accounts.google.com'].includes(tokenInfo.iss)) {
+    throw new Error('Google credential issuer mismatch');
+  }
+  if (tokenInfo.email_verified !== true && tokenInfo.email_verified !== 'true') {
     throw new Error('Google email is not verified');
   }
   return {

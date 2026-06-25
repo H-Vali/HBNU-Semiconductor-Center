@@ -86,6 +86,7 @@ type ReservationEvent = {
   end?: string;
   status?: ReservationStatus;
   equipmentId?: string;
+  userId?: string;
   createdBy?: string;
 };
 type ApiReservationEvent = {
@@ -96,6 +97,7 @@ type ApiReservationEvent = {
   endsAt?: string;
   status?: ReservationStatus;
   equipmentId?: string;
+  userId?: string;
   createdByRole?: string;
 };
 type ConsumableItem = {
@@ -461,6 +463,7 @@ function normalizeApiReservation(event: ApiReservationEvent): ReservationEvent {
     end: fromApiReservationDateTime(event.endsAt),
     status: normalizeReservationStatus(event.status),
     equipmentId: event.equipmentId,
+    userId: event.userId,
     createdBy: event.createdByRole
   };
 }
@@ -4236,8 +4239,11 @@ function MyPageV2({
   const profileDepartment = managedUser?.department ?? '소속 정보 미등록';
   const authProvider = getAuthProviderLabel(managedUser?.authProvider);
   const roles = getMyPageRoles(managedUser, sessionRole, managerUserIds);
+  const isAdminSession = sessionRole === 'ADMIN';
+  const sessionUserId = sessionUser?.id ?? managedUser?.id;
   const myReservations = calendarEvents
     .filter((event) => event.createdBy !== 'ADMIN')
+    .filter((event) => isAdminSession || !event.userId || event.userId === sessionUserId)
     .sort((first, second) => first.start.localeCompare(second.start));
   const upcomingReservations = myReservations
     .filter((event) => new Date(event.end ?? event.start) > now)
@@ -4277,7 +4283,8 @@ function MyPageV2({
 
   function renderReservationRow(event: ReservationEvent, past = false) {
     const equipmentName = equipmentItems.find((item) => item.id === getEventEquipmentId(event, equipmentItems))?.name ?? event.title.split(' 예약')[0];
-    const canCancel = !past && new Date(event.start) > now;
+    const canCancelReservation = isAdminSession || (Boolean(sessionUserId) && event.userId === sessionUserId);
+    const canCancel = !past && new Date(event.start) > now && canCancelReservation;
     const inProgress = !past && new Date(event.start) <= now;
     return (
       <div key={event.id} className={`mypage-reservation-row ${past ? 'is-past' : ''}`}>
@@ -6814,7 +6821,8 @@ export function App() {
   }
 
   function addReservation(event: ReservationEvent) {
-    setReservationEvents((current) => [...current, event]);
+    const nextEvent = { ...event, userId: event.userId ?? sessionUser?.id };
+    setReservationEvents((current) => [...current, nextEvent]);
     void apiPost<ApiReservationEvent>('/reservations', {
       equipmentId: event.equipmentId,
       title: event.title,

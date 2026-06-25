@@ -247,7 +247,7 @@ app.get('/reservations', async (_req, res, next) => {
 app.delete('/reservations/:id', requireAuth, async (req, res, next) => {
   try {
     const { id } = z.object({ id: z.string() }).parse(req.params);
-    const reservation = await cancelReservation(id);
+    const reservation = await cancelReservation(id, req.user!);
     if (!reservation) return res.status(404).json({ message: 'Reservation not found' });
     return res.json(reservation);
   } catch (error) {
