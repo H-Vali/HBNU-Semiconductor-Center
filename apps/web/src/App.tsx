@@ -17,6 +17,7 @@ import {
 } from 'recharts';
 import {
   AlertTriangle,
+  ArrowRight,
   Ban,
   BookOpen,
   CalendarDays,
@@ -3977,7 +3978,78 @@ function AdminPage({
   );
 }
 
-function LoginPage({
+type LoginAuthState =
+  | { kind: 'guest' }
+  | { kind: 'needsRegistration' }
+  | { kind: 'onboarding'; status: 'profile_pending' | 'training_pending' }
+  | { kind: 'active' };
+
+const loginSteps = [
+  { title: 'Google 본인인증', description: 'Google 계정으로 본인 확인' },
+  { title: '회원정보 등록', description: '이름, 소속학과, 지도교수명, 연락처, 이메일' },
+  { title: '사용자관리 자동 연동', description: '센터 사용자 DB와 회원정보 매핑' },
+  { title: '예약 권한 활성화', description: '장비사용 교육 이수 후 예약 가능' }
+];
+
+const loginStateMeta: Record<LoginAuthState['kind'], { label: string; tone: 'ready' | 'progress' | 'wait' | 'success' }> = {
+  guest: { label: '본인인증을 진행해 주세요 · 등록 전', tone: 'ready' },
+  needsRegistration: { label: '인증 완료 · 회원정보 등록 필요', tone: 'progress' },
+  onboarding: { label: '회원정보 연동 완료 · 장비 교육 이수 대기', tone: 'wait' },
+  active: { label: '예약 권한 활성화', tone: 'success' }
+};
+
+function deriveLoginStep(state: LoginAuthState) {
+  if (state.kind === 'guest') return { current: 1, done: [] };
+  if (state.kind === 'needsRegistration') return { current: 2, done: [1] };
+  if (state.kind === 'onboarding') return { current: 4, done: [1, 2, 3] };
+  return { current: 5, done: [1, 2, 3, 4] };
+}
+
+function LoginStepper({ state }: { state: LoginAuthState }) {
+  const { current, done } = deriveLoginStep(state);
+  return (
+    <div className="login-stepper" aria-label="가입 흐름">
+      <h3>가입 흐름</h3>
+      <div className="login-step-list">
+        {loginSteps.map((step, index) => {
+          const stepNumber = index + 1;
+          const isDone = done.includes(stepNumber);
+          const isActive = stepNumber === current;
+          const isLast = stepNumber === loginSteps.length;
+          return (
+            <div key={step.title} className={`login-step ${isDone ? 'is-done' : ''} ${isActive ? 'is-active' : ''}`}>
+              <div className="login-step-rail" aria-hidden="true">
+                <span className="login-step-badge">
+                  {isDone ? <CheckCircle2 size={16} /> : stepNumber}
+                </span>
+                {!isLast && <span className="login-step-line" />}
+              </div>
+              <div className="login-step-copy" aria-current={isActive ? 'step' : undefined}>
+                <div>
+                  <strong>{step.title}</strong>
+                  {isActive && <em>현재 단계</em>}
+                </div>
+                <p>{step.description}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function LoginStatusChip({ state, message }: { state: LoginAuthState; message: string }) {
+  const meta = loginStateMeta[state.kind];
+  return (
+    <div className={`login-status-chip is-${meta.tone}`} role="status" aria-live="polite">
+      <strong>{meta.label}</strong>
+      <span>{message}</span>
+    </div>
+  );
+}
+
+function LegacyLoginPage({
   onAuthenticated,
   onRegisterUser
 }: {
@@ -4164,6 +4236,245 @@ function LoginPage({
             </div>
             <div className="user-add-modal-actions">
               <button type="button" className="is-cancel" onClick={() => setPendingRegistration(null)}>취소</button>
+              <button type="submit" className="is-primary">가입</button>
+            </div>
+          </form>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function LoginPage({
+  onAuthenticated,
+  onRegisterUser
+}: {
+  onAuthenticated: (role: Role) => void;
+  onRegisterUser: (user: ManagedUser) => void;
+}) {
+  const [message, setMessage] = useState('Google 본인인증 후 센터 회원정보를 등록하면 사용자관리와 자동 연동됩니다.');
+  const [authState, setAuthState] = useState<LoginAuthState>({ kind: 'guest' });
+  const [pendingRegistration, setPendingRegistration] = useState<{ token: string; profile: GoogleAuthProfile } | null>(null);
+  const [registrationForm, setRegistrationForm] = useState<RegistrationForm>({
+    name: '',
+    department: '',
+    labProfessor: '',
+    phone: '',
+    email: ''
+  });
+  const googleButtonRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!googleClientId || !googleButtonRef.current) return;
+    let isMounted = true;
+    void loadGoogleIdentityScript().then(() => {
+      if (!isMounted || !googleButtonRef.current) return;
+      const googleWindow = window as GoogleIdentityWindow;
+      googleWindow.google?.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: (response) => {
+          if (response.credential) {
+            void submitGoogleCredential(response.credential);
+          } else {
+            setMessage('Google 인증 응답을 받지 못했습니다.');
+          }
+        }
+      });
+      googleWindow.google?.accounts.id.renderButton(googleButtonRef.current, {
+        type: 'standard',
+        theme: 'filled_black',
+        size: 'large',
+        text: 'continue_with',
+        shape: 'pill',
+        width: 360
+      });
+    }).catch(() => {
+      if (isMounted) setMessage('Google 인증 버튼을 불러오지 못했습니다.');
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  function completeLogin(data: GoogleAuthResponse) {
+    if (!data.user || !data.token) return false;
+    localStorage.setItem(STORAGE_KEYS.sessionToken, data.token);
+    localStorage.setItem(STORAGE_KEYS.sessionUser, JSON.stringify(data.user));
+    if (data.managedUser) onRegisterUser(data.managedUser);
+    onAuthenticated(data.user.role ?? 'USER');
+
+    const onboardingStatus = data.managedUser?.onboardingStatus;
+    if (onboardingStatus === 'active') {
+      setAuthState({ kind: 'active' });
+      setMessage('예약 권한이 활성화되었습니다.');
+    } else {
+      setAuthState({ kind: 'onboarding', status: onboardingStatus === 'profile_pending' ? 'profile_pending' : 'training_pending' });
+      setMessage('회원정보가 연동되었습니다. 장비사용 교육 이수 후 예약 권한이 활성화됩니다.');
+    }
+    return true;
+  }
+
+  async function submitGoogleCredential(credential: string) {
+    setMessage('Google 인증 정보를 확인하는 중입니다.');
+    const response = await apiPost<GoogleAuthResponse>('/auth/google', { credential });
+    if (!response) {
+      setMessage('Google 인증 확인에 실패했습니다. Google Client ID와 Render 환경변수를 확인해 주세요.');
+      return;
+    }
+    if (response.requiresRegistration && response.registrationToken && response.profile) {
+      setAuthState({ kind: 'needsRegistration' });
+      setPendingRegistration({ token: response.registrationToken, profile: response.profile });
+      setRegistrationForm({
+        name: response.profile.name ?? '',
+        department: '',
+        labProfessor: '',
+        phone: '',
+        email: response.profile.email
+      });
+      setMessage('본인인증이 완료되었습니다. 회원정보를 등록해 주세요.');
+      return;
+    }
+    completeLogin(response);
+  }
+
+  function handleGoogleLogin() {
+    if (!googleClientId) {
+      setMessage('Google Client ID가 아직 설정되지 않았습니다. VITE_GOOGLE_CLIENT_ID와 GOOGLE_CLIENT_ID 등록 후 실제 인증이 활성화됩니다.');
+      return;
+    }
+    setMessage('Google 버튼을 눌러 본인인증을 진행해 주세요.');
+  }
+
+  async function handleRegistrationSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!pendingRegistration) return;
+    const payload = {
+      ...registrationForm,
+      name: registrationForm.name.trim(),
+      department: registrationForm.department.trim(),
+      labProfessor: registrationForm.labProfessor.trim(),
+      phone: formatPhoneNumber(registrationForm.phone),
+      email: registrationForm.email.trim(),
+      registrationToken: pendingRegistration.token
+    };
+    if (!payload.name || !payload.department || !payload.labProfessor || !payload.email) {
+      setMessage('이름, 소속학과, 지도교수명, 이메일은 필수입니다.');
+      return;
+    }
+    const response = await apiPost<GoogleAuthResponse>('/auth/register', payload);
+    if (!response || !completeLogin(response)) {
+      setMessage('회원 등록에 실패했습니다. 입력값과 인증 세션을 확인해 주세요.');
+      return;
+    }
+    setPendingRegistration(null);
+  }
+
+  function updateRegistrationField<Key extends keyof RegistrationForm>(key: Key, value: RegistrationForm[Key]) {
+    setRegistrationForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function closeRegistration() {
+    setPendingRegistration(null);
+    setMessage('회원정보 등록이 필요합니다. Google 인증을 다시 진행하거나 회원정보를 입력해 주세요.');
+  }
+
+  return (
+    <section className="login-redesign-shell">
+      <article className="login-auth-card">
+        <div className="login-card-head">
+          <div className="login-head-icon">
+            <LockKeyhole size={20} aria-hidden="true" />
+          </div>
+          <div>
+            <p>OAuth 로그인</p>
+            <h2>로그인 / 회원가입</h2>
+          </div>
+        </div>
+
+        <p className="login-auth-copy">
+          Google 본인인증 후 센터 회원정보를 등록하면 사용자관리와 자동 연동됩니다.
+        </p>
+
+        {googleClientId ? (
+          <div className="login-google-card" role="button" tabIndex={0} aria-label="Google 계정으로 로그인" onClick={handleGoogleLogin} onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') handleGoogleLogin();
+          }}>
+            <div className="login-google-visual" aria-hidden="true">
+              <span className="login-google-mark">G</span>
+              <span>
+                <strong>Google 계정 사용</strong>
+                <em>학교 이메일로 본인인증을 진행합니다</em>
+              </span>
+              <ArrowRight size={18} />
+            </div>
+            <div className="login-google-native" ref={googleButtonRef} />
+          </div>
+        ) : (
+          <button type="button" className="login-google-card is-disabled" onClick={handleGoogleLogin}>
+            <span className="login-google-mark">
+              <LogIn size={17} />
+            </span>
+            <span>
+              <strong>Google Client ID 설정 필요</strong>
+              <em>환경변수 등록 후 실제 인증이 활성화됩니다</em>
+            </span>
+            <ArrowRight size={18} />
+          </button>
+        )}
+
+        <LoginStatusChip state={authState} message={message} />
+
+        <footer className="login-safe-footer">
+          <div>
+            <ShieldCheck size={14} aria-hidden="true" />
+            <span>안전한 Google 본인인증</span>
+          </div>
+          <nav aria-label="로그인 관련 링크">
+            <a href="#terms">이용약관</a>
+            <a href="#privacy">개인정보처리방침</a>
+            <a href="#contact">문의</a>
+          </nav>
+        </footer>
+      </article>
+
+      <article className="login-flow-card">
+        <LoginStepper state={authState} />
+      </article>
+
+      {pendingRegistration && (
+        <div className="user-add-modal-backdrop" role="presentation">
+          <form className="user-add-modal" onSubmit={handleRegistrationSubmit} aria-label="회원정보 등록">
+            <div className="user-add-modal-head">
+              <div>
+                <p>Google verified</p>
+                <h3>회원정보 등록</h3>
+              </div>
+              <button type="button" onClick={closeRegistration} aria-label="회원정보 등록 닫기">×</button>
+            </div>
+            <div className="user-add-modal-grid">
+              <label>
+                이름
+                <input value={registrationForm.name} onChange={(event) => updateRegistrationField('name', event.target.value)} autoFocus />
+              </label>
+              <label>
+                소속학과
+                <input value={registrationForm.department} onChange={(event) => updateRegistrationField('department', event.target.value)} placeholder="예: 전자공학과" />
+              </label>
+              <label>
+                지도교수명
+                <input value={registrationForm.labProfessor} onChange={(event) => updateRegistrationField('labProfessor', event.target.value)} placeholder="예: 홍길동 교수님" />
+              </label>
+              <label>
+                연락처
+                <input inputMode="numeric" value={registrationForm.phone} onChange={(event) => updateRegistrationField('phone', formatPhoneNumber(event.target.value))} placeholder="010-0000-0000" />
+              </label>
+              <label className="is-wide">
+                이메일
+                <input type="email" value={registrationForm.email} readOnly />
+              </label>
+            </div>
+            <div className="user-add-modal-actions">
+              <button type="button" className="is-cancel" onClick={closeRegistration}>취소</button>
               <button type="submit" className="is-primary">가입</button>
             </div>
           </form>
