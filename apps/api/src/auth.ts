@@ -1,5 +1,8 @@
 import type { NextFunction, Request, Response } from 'express';
+import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
+
+dotenv.config();
 
 export type Role = 'USER' | 'MANAGER' | 'ADMIN';
 
@@ -25,18 +28,24 @@ declare global {
   }
 }
 
-const jwtSecret = process.env.JWT_SECRET ?? 'local-dev-secret';
+export const isProductionRuntime = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
+
+const jwtSecret = process.env.JWT_SECRET;
+if (!jwtSecret && isProductionRuntime) {
+  throw new Error('JWT_SECRET required');
+}
+const signingSecret = jwtSecret ?? 'local-dev-secret';
 
 export function signToken(user: SessionUser) {
-  return jwt.sign(user, jwtSecret, { expiresIn: '8h' });
+  return jwt.sign(user, signingSecret, { expiresIn: '8h' });
 }
 
 export function signRegistrationToken(profile: RegistrationProfile) {
-  return jwt.sign({ type: 'registration', ...profile }, jwtSecret, { expiresIn: '30m' });
+  return jwt.sign({ type: 'registration', ...profile }, signingSecret, { expiresIn: '30m' });
 }
 
 export function verifyRegistrationToken(token: string) {
-  const payload = jwt.verify(token, jwtSecret) as RegistrationProfile & { type?: string };
+  const payload = jwt.verify(token, signingSecret) as RegistrationProfile & { type?: string };
   if (payload.type !== 'registration') {
     throw new Error('Invalid registration token');
   }
@@ -50,7 +59,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
   }
 
   try {
-    req.user = jwt.verify(token, jwtSecret) as SessionUser;
+    req.user = jwt.verify(token, signingSecret) as SessionUser;
     next();
   } catch {
     return res.status(401).json({ message: 'Invalid or expired session' });

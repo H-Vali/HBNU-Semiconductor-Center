@@ -4079,7 +4079,7 @@ function LoginPage({
     setMessage('관리자 미리보기 세션을 발급하는 중입니다.');
     const response = await apiPost<{ user: StoredSessionUser; token: string }>('/auth/dev-login', { role: 'ADMIN' });
     if (!response) {
-      setMessage('관리자 미리보기 로그인에 실패했습니다.');
+      setMessage('관리자 미리보기 로그인은 로컬 개발 환경에서만 사용할 수 있습니다. 운영에서는 ADMIN_EMAILS에 등록된 Google 계정으로 로그인하세요.');
       return;
     }
     localStorage.setItem(STORAGE_KEYS.sessionToken, response.token);

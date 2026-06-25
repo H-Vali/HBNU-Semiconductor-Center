@@ -33,6 +33,19 @@ function toRoleId(role: Role) {
   return role === 'ADMIN' ? 'role-admin' : role === 'MANAGER' ? 'role-manager' : 'role-user';
 }
 
+function getConfiguredAdminEmails() {
+  return new Set(
+    (process.env.ADMIN_EMAILS ?? '')
+      .split(',')
+      .map((email) => email.trim().toLowerCase())
+      .filter(Boolean)
+  );
+}
+
+function isConfiguredAdminEmail(email: string) {
+  return getConfiguredAdminEmails().has(email.toLowerCase());
+}
+
 function mapUserRow(row: Record<string, unknown>, index = 0): ManagedUser {
   return {
     id: String(row.id),
@@ -83,6 +96,12 @@ async function grantRole(userId: string, role: Role) {
      on conflict (user_id, role_id) do nothing`,
     [userId, toRoleId(role)]
   );
+}
+
+async function grantConfiguredAdminRole(user: ManagedUser) {
+  if (!isConfiguredAdminEmail(user.email)) return false;
+  await grantRole(user.id, 'ADMIN');
+  return true;
 }
 
 export async function listUsers() {
@@ -273,7 +292,8 @@ export async function authenticateGoogle(input: unknown) {
     };
   }
 
-  const role = await getPrimaryRole(user.id);
+  const isAdmin = await grantConfiguredAdminRole(user);
+  const role = isAdmin ? 'ADMIN' : await getPrimaryRole(user.id);
   const sessionUser = toSessionUser(user, role);
   return {
     requiresRegistration: false,
@@ -309,7 +329,8 @@ export async function registerGoogleUser(input: unknown) {
     googleSubject: profile.googleSubject,
     onboardingStatus: 'training_pending'
   });
-  const sessionUser = toSessionUser(user, 'USER');
+  const isAdmin = await grantConfiguredAdminRole(user);
+  const sessionUser = toSessionUser(user, isAdmin ? 'ADMIN' : 'USER');
   return {
     user: sessionUser,
     managedUser: user,

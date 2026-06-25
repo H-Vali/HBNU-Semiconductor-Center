@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import express from 'express';
 import helmet from 'helmet';
 import { z } from 'zod';
-import { requireAuth, requireRole, signToken } from './auth.js';
+import { isProductionRuntime, requireAuth, requireRole, signToken } from './auth.js';
 import {
   answerQnaItem,
   createFaq,
@@ -45,20 +45,22 @@ app.use(express.json());
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
-app.post('/auth/dev-login', (req, res) => {
-  const body = z.object({
-    role: z.enum(['USER', 'MANAGER', 'ADMIN']).default('USER')
-  }).parse(req.body ?? {});
+if (!isProductionRuntime) {
+  app.post('/auth/dev-login', (req, res) => {
+    const body = z.object({
+      role: z.enum(['USER', 'MANAGER', 'ADMIN']).default('USER')
+    }).parse(req.body ?? {});
 
-  const user = {
-    id: 'dev-user',
-    email: body.role === 'ADMIN' ? 'admin@hbnu.ac.kr' : 'user@hbnu.ac.kr',
-    name: body.role === 'ADMIN' ? '관리자' : '연구원',
-    role: body.role
-  };
+    const user = {
+      id: 'dev-user',
+      email: body.role === 'ADMIN' ? 'admin@hbnu.ac.kr' : 'user@hbnu.ac.kr',
+      name: body.role === 'ADMIN' ? '관리자' : '연구원',
+      role: body.role
+    };
 
-  res.json({ user, token: signToken(user) });
-});
+    res.json({ user, token: signToken(user) });
+  });
+}
 
 app.post('/auth/google', async (req, res, next) => {
   try {
