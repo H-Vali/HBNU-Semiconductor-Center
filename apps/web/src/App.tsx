@@ -39,6 +39,7 @@ import {
   Plus,
   School,
   Search,
+  Send,
   ShieldCheck,
   SlidersHorizontal,
   Star,
@@ -2530,32 +2531,290 @@ function ReservationModalV2({
     </div>
   );
 }
-function TrainingPage({ equipmentItems }: { equipmentItems: EquipmentItem[] }) {
+type TrainingApplicationStatus = 'pending' | 'scheduled' | 'completed';
+type TrainingApplication = {
+  id: string;
+  equipmentName: string;
+  status: TrainingApplicationStatus;
+  requestedAt: string;
+  managerName: string;
+  scheduledAt?: string;
+  note?: string;
+};
+
+const trainingStatusMeta: Record<TrainingApplicationStatus, { label: string; className: string }> = {
+  pending: { label: '승인 대기', className: 'is-warning' },
+  scheduled: { label: '일정 확정', className: 'is-info' },
+  completed: { label: '이수 완료', className: 'is-success' }
+};
+
+function TrainingPage({
+  equipmentItems,
+  users,
+  currentUser,
+  permissions
+}: {
+  equipmentItems: EquipmentItem[];
+  users: ManagedUser[];
+  currentUser: ManagedUser | null;
+  permissions: EquipmentPermissionMap;
+}) {
+  const currentUserPermissionIds = currentUser ? permissions[currentUser.id] ?? [] : [];
+  const managerNameById = useMemo(() => new Map(users.map((user) => [user.id, user.name])), [users]);
+  const requestableEquipment = useMemo(() => (
+    equipmentItems.filter((item) => !currentUserPermissionIds.includes(item.id))
+  ), [currentUserPermissionIds, equipmentItems]);
+  const grantedEquipment = useMemo(() => (
+    equipmentItems.filter((item) => currentUserPermissionIds.includes(item.id))
+  ), [currentUserPermissionIds, equipmentItems]);
+  const [selectedEquipmentId, setSelectedEquipmentId] = useState('');
+  const [equipmentQuery, setEquipmentQuery] = useState('');
+  const [preferredDate, setPreferredDate] = useState('');
+  const [purpose, setPurpose] = useState<'연구' | '수업' | '기타'>('연구');
+  const [message, setMessage] = useState('');
+  const [applications, setApplications] = useState<TrainingApplication[]>(() => {
+    const pendingEquipment = equipmentItems.find((item) => !currentUserPermissionIds.includes(item.id)) ?? equipmentItems[0];
+    const scheduledEquipment = equipmentItems.find((item) => item.id !== pendingEquipment?.id && !currentUserPermissionIds.includes(item.id)) ?? equipmentItems[1];
+    const completedEquipment = grantedEquipment[0] ?? equipmentItems.find((item) => item.id !== pendingEquipment?.id && item.id !== scheduledEquipment?.id) ?? equipmentItems[2];
+    return [
+      pendingEquipment && {
+        id: 'training-preview-pending',
+        equipmentName: pendingEquipment.name,
+        status: 'pending' as const,
+        requestedAt: '2026-06-25',
+        managerName: pendingEquipment.managerId ? managerNameById.get(pendingEquipment.managerId) ?? '담당자 미지정' : '담당자 미지정',
+        note: '담당자 승인 대기'
+      },
+      scheduledEquipment && {
+        id: 'training-preview-scheduled',
+        equipmentName: scheduledEquipment.name,
+        status: 'scheduled' as const,
+        requestedAt: '2026-06-24',
+        managerName: scheduledEquipment.managerId ? managerNameById.get(scheduledEquipment.managerId) ?? '담당자 미지정' : '담당자 미지정',
+        scheduledAt: '2026-07-02 14:00',
+        note: '교육 일정 확정'
+      },
+      completedEquipment && {
+        id: 'training-preview-completed',
+        equipmentName: completedEquipment.name,
+        status: 'completed' as const,
+        requestedAt: '2026-06-18',
+        managerName: completedEquipment.managerId ? managerNameById.get(completedEquipment.managerId) ?? '담당자 미지정' : '담당자 미지정',
+        scheduledAt: '2026-06-21 10:00',
+        note: '예약 권한 부여됨'
+      }
+    ].filter(Boolean) as TrainingApplication[];
+  });
+
+  const filteredEquipment = useMemo(() => {
+    const query = equipmentQuery.trim().toLowerCase();
+    return query
+      ? requestableEquipment.filter((item) => (
+          item.name.toLowerCase().includes(query)
+          || item.category.toLowerCase().includes(query)
+          || item.location.toLowerCase().includes(query)
+        ))
+      : requestableEquipment;
+  }, [equipmentQuery, requestableEquipment]);
+  const selectedEquipment = requestableEquipment.find((item) => item.id === selectedEquipmentId) ?? null;
+  const selectedManagerName = selectedEquipment?.managerId
+    ? managerNameById.get(selectedEquipment.managerId) ?? '담당자 미지정'
+    : '담당자 미지정';
+  const canSubmitTrainingRequest = Boolean(selectedEquipment && preferredDate && message.trim());
+  const activeStep = applications.some((item) => item.status === 'pending' || item.status === 'scheduled') || selectedEquipment ? 2 : 1;
+
+  function submitTrainingRequest(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedEquipment || !canSubmitTrainingRequest) return;
+    const confirmed = window.confirm(`${selectedEquipment.name} 교육 신청을 담당자에게 전송하시겠습니까?`);
+    if (!confirmed) return;
+    const nextApplication: TrainingApplication = {
+      id: `training-${Date.now()}`,
+      equipmentName: selectedEquipment.name,
+      status: 'pending',
+      requestedAt: new Date().toISOString().slice(0, 10),
+      managerName: selectedManagerName,
+      scheduledAt: preferredDate.replace('T', ' '),
+      note: `${purpose} 목적 신청`
+    };
+    setApplications((current) => [nextApplication, ...current]);
+    setPreferredDate('');
+    setPurpose('연구');
+    setMessage('');
+    window.alert(`${selectedManagerName}에게 교육 신청 알림이 전송되었습니다.`);
+  }
+
+  const trainingSteps = ['장비 선택', '교육 신청', '담당자 승인·일정', '권한 부여'];
+
   return (
-    <section className="grid gap-5 xl:grid-cols-[1fr_0.8fr]">
-      <div className="rounded-lg border border-white/10 bg-surface/85 p-5">
-        <SectionTitle title="장비 사용 교육" eyebrow="Training" action="교육 신청" />
-        <select className="mb-4 w-full rounded-md border border-white/10 bg-slate-950 px-3 py-3 outline-none focus:border-cyan-300">
-          {equipmentItems.map((item) => <option key={item.id}>{item.name} 교육 신청</option>)}
-        </select>
-        <div className="grid gap-3">
-          {['PDF 교육자료', '안전 교육 영상', '교육완료 인증서'].map((title) => (
-            <div key={title} className="flex items-center justify-between rounded-md bg-white/5 p-3">
-              <div className="flex items-center gap-3">
-                <BookOpen className="text-cyan-300" size={20} />
-                <span className="font-semibold text-white">{title}</span>
-              </div>
-              <button className="rounded-md bg-blue-700 px-3 py-2 text-sm font-semibold text-white hover:bg-cyan-500 hover:text-slate-950">열기</button>
+    <section className="training-request-page">
+      <header className="training-request-header">
+        <p>EQUIPMENT TRAINING REQUEST</p>
+        <h2>장비 사용 교육신청</h2>
+        <span>권한이 없는 장비는 담당자에게 교육을 요청해 이수하면 예약 권한이 자동 부여됩니다.</span>
+      </header>
+
+      <ol className="training-request-stepper" aria-label="교육신청 진행 단계">
+        {trainingSteps.map((step, index) => {
+          const stepNumber = index + 1;
+          const isActive = stepNumber <= activeStep;
+          return (
+            <li key={step} className={isActive ? 'is-active' : ''} aria-current={stepNumber === activeStep ? 'step' : undefined}>
+              <span>{stepNumber}</span>
+              <strong>{step}</strong>
+            </li>
+          );
+        })}
+      </ol>
+
+      <div className="training-request-layout">
+        <form className="training-request-form" onSubmit={submitTrainingRequest}>
+          <section className="training-request-card">
+            <div className="training-request-section-title">
+              <span>01</span>
+              <h3>교육받을 장비 선택</h3>
             </div>
-          ))}
-        </div>
-      </div>
-      <div className="rounded-lg border border-white/10 bg-surface/85 p-5">
-        <SectionTitle title="교육 완료 인증" eyebrow="Certification" />
-        <div className="grid gap-3 text-sm text-slate-300">
-          <p className="rounded-md bg-white/5 p-4">교육 이수 후 장비별 예약 권한이 자동 부여됩니다.</p>
-          <p className="rounded-md bg-white/5 p-4">관리자는 교육 일정, 자료, 인증서를 이 화면에서 관리할 수 있습니다.</p>
-        </div>
+            <div className="training-equipment-picker">
+              <label htmlFor="training-equipment-search">장비 검색</label>
+              <div className="training-equipment-search">
+                <Search size={16} aria-hidden="true" />
+                <input
+                  id="training-equipment-search"
+                  value={equipmentQuery}
+                  onChange={(event) => setEquipmentQuery(event.target.value)}
+                  placeholder="장비명, 분류, 위치 검색"
+                />
+              </div>
+              <label htmlFor="training-equipment-select">장비 목록</label>
+              <select
+                id="training-equipment-select"
+                value={selectedEquipmentId}
+                onChange={(event) => setSelectedEquipmentId(event.target.value)}
+              >
+                <option value="">장비를 선택하세요</option>
+                {filteredEquipment.map((item) => (
+                  <option key={item.id} value={item.id}>{item.name} · {item.location}</option>
+                ))}
+              </select>
+            </div>
+            {selectedEquipment ? (
+              <article className="training-selected-equipment">
+                <div className="training-equipment-icon" aria-hidden="true">
+                  {selectedEquipment.group === 'process' ? <Cpu size={18} /> : <Microscope size={18} />}
+                </div>
+                <div>
+                  <strong>{selectedEquipment.name}</strong>
+                  <span>{selectedEquipment.groupName} · 담당 {selectedManagerName} 교수님</span>
+                </div>
+                <em className="training-status-badge is-warning">권한 없음</em>
+                <ChevronDown size={16} aria-hidden="true" />
+              </article>
+            ) : (
+              <p className="training-request-help">쓰고 싶은 장비를 검색하거나 목록에서 선택하세요.</p>
+            )}
+          </section>
+
+          <section className={`training-request-card ${!selectedEquipment ? 'is-disabled' : ''}`}>
+            <div className="training-request-section-title">
+              <span>02</span>
+              <h3>교육 요청 내용</h3>
+            </div>
+            <div className="training-request-field-grid">
+              <label htmlFor="training-preferred-date">
+                희망 일정
+                <input
+                  id="training-preferred-date"
+                  type="datetime-local"
+                  value={preferredDate}
+                  onChange={(event) => setPreferredDate(event.target.value)}
+                  disabled={!selectedEquipment}
+                />
+              </label>
+              <label htmlFor="training-purpose">
+                사용 목적
+                <select
+                  id="training-purpose"
+                  value={purpose}
+                  onChange={(event) => setPurpose(event.target.value as '연구' | '수업' | '기타')}
+                  disabled={!selectedEquipment}
+                >
+                  <option value="연구">연구</option>
+                  <option value="수업">수업</option>
+                  <option value="기타">기타</option>
+                </select>
+              </label>
+            </div>
+            <label className="training-message-field" htmlFor="training-message">
+              요청 메시지
+              <textarea
+                id="training-message"
+                value={message}
+                onChange={(event) => setMessage(event.target.value)}
+                placeholder="실험 개요, 요청 사항 등을 적어 담당자에게 전달하세요."
+                disabled={!selectedEquipment}
+              />
+            </label>
+            <div className="training-request-actions">
+              <p>
+                {selectedEquipment
+                  ? `신청 시 담당 ${selectedManagerName} 교수님에게 알림이 전송됩니다.`
+                  : '장비를 먼저 선택하면 교육 요청 내용을 입력할 수 있습니다.'}
+              </p>
+              <button type="submit" disabled={!canSubmitTrainingRequest}>
+                <Send size={15} aria-hidden="true" />
+                교육 신청하기
+              </button>
+            </div>
+          </section>
+        </form>
+
+        <aside className="training-request-side">
+          <section className="training-request-card">
+            <div className="training-request-panel-head">
+              <h3>내 교육 신청 현황</h3>
+              <button type="button">전체 →</button>
+            </div>
+            <div className="training-application-summary">
+              {applications.length > 0 ? applications.map((application) => {
+                const meta = trainingStatusMeta[application.status];
+                return (
+                  <article key={application.id} className="training-status-row">
+                    <div>
+                      <strong>{application.equipmentName}</strong>
+                      <span>
+                        {application.status === 'completed'
+                          ? <a href="#reservations">예약 권한 부여됨 →</a>
+                          : application.scheduledAt
+                            ? `${application.scheduledAt} · ${application.managerName}`
+                            : `${application.requestedAt} 신청 · ${application.managerName}`}
+                      </span>
+                    </div>
+                    <em className={`training-status-badge ${meta.className}`}>
+                      {application.status === 'completed' && <CheckCircle2 size={12} aria-hidden="true" />}
+                      {meta.label}
+                    </em>
+                  </article>
+                );
+              }) : (
+                <p className="training-empty-state">아직 교육 신청 내역이 없습니다.</p>
+              )}
+            </div>
+          </section>
+
+          <section className="training-request-card">
+            <div className="training-request-panel-head">
+              <h3>내 보유 권한</h3>
+            </div>
+            <div className="training-permission-list">
+              {grantedEquipment.length > 0 ? grantedEquipment.map((item) => (
+                <span key={item.id} className="training-permission-chip">{item.name}</span>
+              )) : (
+                <p className="training-empty-state">아직 보유한 장비 권한이 없습니다.</p>
+              )}
+            </div>
+            <p className="training-permission-note">이수 완료 장비는 즉시 예약할 수 있습니다.</p>
+          </section>
+        </aside>
       </div>
     </section>
   );
@@ -5933,7 +6192,14 @@ export function App() {
               />
             )
           )}
-          {activePage === 'training' && <TrainingPage equipmentItems={activeEquipmentItems} />}
+          {activePage === 'training' && (
+            <TrainingPage
+              equipmentItems={activeEquipmentItems}
+              users={managedUsers}
+              currentUser={currentManagedUser}
+              permissions={equipmentPermissions}
+            />
+          )}
           {activePage === 'trainingManagement' && (
             canManageAssignedPermissions ? (
               <TrainingManagementPage

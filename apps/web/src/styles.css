@@ -4155,6 +4155,518 @@ select {
   font-weight: 900;
 }
 
+.training-request-page {
+  --training-bg: #0a111e;
+  --training-surface: #121c2e;
+  --training-field: #0e1726;
+  --training-accent: #34d6b0;
+  --training-teal: #5fd9c9;
+  --training-primary: #eef2f8;
+  --training-secondary: #9aa4b2;
+  --training-muted: #8b96a8;
+  --training-faint: #6b7689;
+  --training-success: #52e0b0;
+  --training-info: #7db3f0;
+  --training-warning: #f5b942;
+  display: grid;
+  gap: 1.35rem;
+  border-radius: 16px;
+  background: var(--training-bg);
+  padding: 1.35rem;
+}
+
+.training-request-header {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.training-request-header p,
+.training-request-header h2,
+.training-request-header span,
+.training-request-section-title h3,
+.training-request-panel-head h3 {
+  margin: 0;
+}
+
+.training-request-header p {
+  color: var(--training-teal);
+  font-size: 0.76rem;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.training-request-header h2 {
+  color: var(--training-primary);
+  font-size: clamp(1.55rem, 2.5vw, 2.1rem);
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.training-request-header span {
+  color: var(--training-secondary);
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+.training-request-stepper {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  margin: 0.15rem 0 0.1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.training-request-stepper li {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  color: var(--training-muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+.training-request-stepper li:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 13px;
+  left: calc(50% + 16px);
+  width: calc(100% - 32px);
+  height: 1.5px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.training-request-stepper li.is-active:not(:last-child)::after {
+  background: rgba(52, 214, 176, 0.62);
+}
+
+.training-request-stepper span {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border: 0.5px solid rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  background: #1c2a40;
+  color: var(--training-muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.training-request-stepper li.is-active span {
+  border-color: transparent;
+  background: var(--training-accent);
+  color: #062018;
+}
+
+.training-request-stepper strong {
+  color: inherit;
+  font-weight: 500;
+}
+
+.training-request-stepper li.is-active strong {
+  color: var(--training-primary);
+}
+
+.training-request-layout {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 1rem;
+}
+
+.training-request-form,
+.training-request-side {
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+}
+
+.training-request-side {
+  gap: 0.875rem;
+}
+
+.training-request-card {
+  display: grid;
+  gap: 1rem;
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: var(--training-surface);
+  padding: 1.125rem;
+}
+
+.training-request-card.is-disabled {
+  opacity: 0.66;
+}
+
+.training-request-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.training-request-section-title span {
+  display: grid;
+  min-width: 1.65rem;
+  height: 1.65rem;
+  place-items: center;
+  border-radius: 8px;
+  background: rgba(95, 217, 201, 0.12);
+  color: var(--training-teal);
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+.training-request-section-title h3,
+.training-request-panel-head h3 {
+  color: var(--training-primary);
+  font-size: 0.98rem;
+  font-weight: 500;
+}
+
+.training-equipment-picker {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.training-equipment-picker label,
+.training-request-field-grid label,
+.training-message-field {
+  display: grid;
+  gap: 0.68rem;
+  color: var(--training-secondary);
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.training-equipment-search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9px;
+  background: var(--training-field);
+  padding: 0 0.75rem;
+}
+
+.training-equipment-search svg {
+  flex: 0 0 auto;
+  color: var(--training-faint);
+}
+
+.training-equipment-search input,
+.training-equipment-picker select,
+.training-request-field-grid input,
+.training-request-field-grid select,
+.training-message-field textarea {
+  width: 100%;
+  min-height: 2.65rem;
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9px;
+  background: var(--training-field);
+  color: var(--training-primary);
+  font-size: 0.88rem;
+  font-weight: 400;
+  outline: none;
+}
+
+.training-equipment-search input {
+  min-height: 2.6rem;
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.training-equipment-picker select,
+.training-request-field-grid input,
+.training-request-field-grid select,
+.training-message-field textarea {
+  padding: 0.68rem 0.75rem;
+}
+
+.training-message-field textarea {
+  min-height: 7.5rem;
+  resize: vertical;
+  line-height: 1.55;
+}
+
+.training-equipment-search:focus-within,
+.training-equipment-picker select:focus-visible,
+.training-request-field-grid input:focus-visible,
+.training-request-field-grid select:focus-visible,
+.training-message-field textarea:focus-visible,
+.training-request-actions button:focus-visible,
+.training-request-panel-head button:focus-visible {
+  border-color: var(--training-accent);
+  outline: 2px solid rgba(52, 214, 176, 0.24);
+  outline-offset: 2px;
+}
+
+.training-equipment-picker select:hover,
+.training-request-field-grid input:not(:disabled):hover,
+.training-request-field-grid select:not(:disabled):hover,
+.training-message-field textarea:not(:disabled):hover {
+  border-color: rgba(95, 217, 201, 0.4);
+}
+
+.training-selected-equipment {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.75rem;
+  border: 0.5px solid rgba(95, 217, 201, 0.4);
+  border-radius: 12px;
+  background: rgba(14, 23, 38, 0.72);
+  padding: 0.9rem;
+}
+
+.training-equipment-icon {
+  display: grid;
+  width: 2.2rem;
+  height: 2.2rem;
+  place-items: center;
+  border-radius: 9px;
+  background: rgba(95, 217, 201, 0.12);
+  color: var(--training-teal);
+}
+
+.training-selected-equipment strong,
+.training-selected-equipment span {
+  display: block;
+}
+
+.training-selected-equipment strong {
+  color: var(--training-primary);
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.training-selected-equipment span {
+  margin-top: 0.2rem;
+  color: var(--training-muted);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.training-selected-equipment svg {
+  color: var(--training-faint);
+}
+
+.training-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  width: fit-content;
+  border-radius: 6px;
+  padding: 3px 9px;
+  font-size: 0.64rem;
+  font-style: normal;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.training-status-badge.is-warning {
+  background: rgba(245, 185, 66, 0.14);
+  color: var(--training-warning);
+}
+
+.training-status-badge.is-info {
+  background: rgba(125, 179, 240, 0.14);
+  color: var(--training-info);
+}
+
+.training-status-badge.is-success {
+  background: rgba(82, 224, 176, 0.14);
+  color: var(--training-success);
+}
+
+.training-request-help,
+.training-empty-state,
+.training-permission-note,
+.training-request-actions p {
+  margin: 0;
+  color: var(--training-muted);
+  font-size: 0.78rem;
+  font-weight: 400;
+  line-height: 1.55;
+}
+
+.training-request-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.875rem;
+}
+
+.training-request-field-grid input:disabled,
+.training-request-field-grid select:disabled,
+.training-message-field textarea:disabled {
+  cursor: not-allowed;
+  color: var(--training-faint);
+}
+
+.training-request-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.training-request-actions button {
+  display: inline-flex;
+  min-height: 2.45rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 0.42rem;
+  border: 0;
+  border-radius: 9px;
+  background: var(--training-accent);
+  padding: 0 1rem;
+  color: #062018;
+  font-size: 0.84rem;
+  font-weight: 500;
+}
+
+.training-request-actions button:disabled {
+  cursor: not-allowed;
+  background: rgba(107, 118, 137, 0.32);
+  color: var(--training-muted);
+}
+
+.training-request-actions button:not(:disabled):hover {
+  background: #5fd9c9;
+}
+
+.training-request-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.training-request-panel-head button {
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: var(--training-field);
+  padding: 0.4rem 0.62rem;
+  color: var(--training-secondary);
+  font-size: 0.74rem;
+  font-weight: 500;
+}
+
+.training-request-panel-head button:hover {
+  border-color: rgba(95, 217, 201, 0.4);
+  color: var(--training-primary);
+}
+
+.training-application-summary {
+  display: grid;
+}
+
+.training-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.875rem;
+  border-top: 0.5px solid rgba(255, 255, 255, 0.06);
+  padding: 0.82rem 0;
+}
+
+.training-status-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.training-status-row:last-child {
+  padding-bottom: 0;
+}
+
+.training-status-row strong,
+.training-status-row span {
+  display: block;
+}
+
+.training-status-row strong {
+  color: var(--training-primary);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.training-status-row span {
+  margin-top: 0.22rem;
+  color: var(--training-muted);
+  font-size: 0.72rem;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.training-status-row a {
+  color: var(--training-success);
+  text-decoration: none;
+}
+
+.training-permission-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.training-permission-chip {
+  border-radius: 6px;
+  background: rgba(82, 224, 176, 0.12);
+  padding: 0.34rem 0.58rem;
+  color: var(--training-success);
+  font-size: 0.68rem;
+  font-weight: 500;
+}
+
+@media (max-width: 880px) {
+  .training-request-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .training-request-page {
+    padding: 1rem;
+  }
+
+  .training-request-stepper {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .training-request-stepper li {
+    grid-template-columns: 26px 1fr;
+    justify-items: start;
+    text-align: left;
+  }
+
+  .training-request-stepper li::after {
+    display: none;
+  }
+
+  .training-selected-equipment {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .training-selected-equipment .training-status-badge,
+  .training-selected-equipment > svg {
+    grid-column: 2;
+  }
+
+  .training-request-field-grid,
+  .training-request-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .training-request-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
 .manager-permission-empty {
   display: grid;
   min-height: 24rem;
