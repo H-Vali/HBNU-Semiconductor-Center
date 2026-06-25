@@ -6,6 +6,7 @@ export const STORAGE_KEYS = {
   equipmentPermissionGrantMeta: 'hbnu-equipment-permission-grant-meta',
   equipmentPermissionHistory: 'hbnu-equipment-permission-history',
   managedUsers: 'hbnu-managed-users',
+  faqItems: 'hbnu-faq-items',
   meetingNotices: 'hbnu-meeting-notices',
   operationNotices: 'hbnu-operation-notices',
   penaltyRecords: 'hbnu-penalty-records',

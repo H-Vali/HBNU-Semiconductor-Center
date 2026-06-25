@@ -1,6 +1,7 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { BookOpen, Download, Plus, Search, Trash2, UploadCloud, X } from 'lucide-react';
 import { STORAGE_KEYS } from '../appStorage';
+import type { FaqCategory, FaqItem } from './InquiryPages';
 
 function getSeoulDateKey(date = new Date()) {
   const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -265,6 +266,8 @@ export function NoticePage({
 }
 
 export type NoticeBoardKey = 'operation' | 'meeting';
+type NoticeAdminSectionKey = NoticeBoardKey | 'faq';
+const faqCategoryOptions: FaqCategory[] = ['예약', '장비', '교육', '운영', '계정'];
 
 export const noticeBoardMeta: Record<NoticeBoardKey, { label: string; category: NoticeCategory; storageKey: string }> = {
   operation: { label: '운영공지', category: '운영', storageKey: STORAGE_KEYS.operationNotices },
@@ -302,31 +305,50 @@ function readNoticeAttachments(files: FileList | null): Promise<NoticeAttachment
 export function NoticeAdminPage({
   operationItems,
   meetingItems,
+  faqItems,
   onAddNotice,
   onUpdateNotice,
-  onDeleteNotice
+  onDeleteNotice,
+  onAddFaq,
+  onUpdateFaq,
+  onDeleteFaq
 }: {
   operationItems: NoticeItem[];
   meetingItems: NoticeItem[];
+  faqItems: FaqItem[];
   onAddNotice: (board: NoticeBoardKey, item: NoticeItem) => void;
   onUpdateNotice: (board: NoticeBoardKey, noticeId: string, patch: Partial<NoticeItem>) => void;
   onDeleteNotice: (board: NoticeBoardKey, noticeId: string) => void;
+  onAddFaq: (item: FaqItem) => void;
+  onUpdateFaq: (faqId: string, patch: Partial<FaqItem>) => void;
+  onDeleteFaq: (faqId: string) => void;
 }) {
-  const [activeBoard, setActiveBoard] = useState<NoticeBoardKey>('operation');
+  const [activeBoard, setActiveBoard] = useState<NoticeAdminSectionKey>('operation');
   const [selectedNoticeId, setSelectedNoticeId] = useState('');
+  const [selectedFaqId, setSelectedFaqId] = useState('');
   const [showEditor, setShowEditor] = useState(false);
-  const items = activeBoard === 'operation' ? operationItems : meetingItems;
-  const selectedNotice = items.find((item) => item.id === selectedNoticeId) ?? items[0];
-  const meta = noticeBoardMeta[activeBoard];
+  const isFaqBoard = activeBoard === 'faq';
+  const items = activeBoard === 'operation' ? operationItems : activeBoard === 'meeting' ? meetingItems : [];
+  const selectedNotice = !isFaqBoard ? items.find((item) => item.id === selectedNoticeId) ?? items[0] : undefined;
+  const selectedFaq = isFaqBoard ? faqItems.find((item) => item.id === selectedFaqId) ?? faqItems[0] : undefined;
+  const meta = !isFaqBoard ? noticeBoardMeta[activeBoard] : { label: '자주묻는 질문', category: '운영' as NoticeCategory };
 
   useEffect(() => {
+    if (isFaqBoard) {
+      if (faqItems[0] && !faqItems.some((item) => item.id === selectedFaqId)) {
+        setSelectedFaqId(faqItems[0].id);
+      }
+      return;
+    }
     if (items[0] && !items.some((item) => item.id === selectedNoticeId)) {
       setSelectedNoticeId(items[0].id);
     }
-  }, [items, selectedNoticeId]);
+  }, [faqItems, isFaqBoard, items, selectedFaqId, selectedNoticeId]);
 
   async function submitNotice(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isFaqBoard) return;
+    const noticeBoard = activeBoard as NoticeBoardKey;
     const formElement = event.currentTarget;
     const form = new FormData(formElement);
     const title = String(form.get('title') ?? '').trim();
@@ -348,24 +370,44 @@ export function NoticeAdminPage({
       body,
       attachments
     };
-    onAddNotice(activeBoard, item);
+    onAddNotice(noticeBoard, item);
     setSelectedNoticeId(item.id);
     setShowEditor(false);
   }
 
+  function submitFaq(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const question = String(form.get('question') ?? '').trim();
+    const answer = String(form.get('answer') ?? '').trim();
+    if (!question || !answer) return;
+    const item: FaqItem = {
+      id: `faq-${Date.now()}`,
+      category: String(form.get('category') ?? '운영') as FaqCategory,
+      question,
+      answer,
+      updatedAt: formatNoticeDate(String(form.get('updatedAt') ?? getSeoulDateKey()))
+    };
+    onAddFaq(item);
+    setSelectedFaqId(item.id);
+    setShowEditor(false);
+  }
+
   async function addAttachments(event: ChangeEvent<HTMLInputElement>) {
-    if (!selectedNotice) return;
+    if (isFaqBoard || !selectedNotice) return;
+    const noticeBoard = activeBoard as NoticeBoardKey;
     const attachments = await readNoticeAttachments(event.target.files);
     event.target.value = '';
     if (!attachments.length) return;
-    onUpdateNotice(activeBoard, selectedNotice.id, {
+    onUpdateNotice(noticeBoard, selectedNotice.id, {
       attachments: [...(selectedNotice.attachments ?? []), ...attachments]
     });
   }
 
   function removeAttachment(attachmentId: string) {
-    if (!selectedNotice) return;
-    onUpdateNotice(activeBoard, selectedNotice.id, {
+    if (isFaqBoard || !selectedNotice) return;
+    const noticeBoard = activeBoard as NoticeBoardKey;
+    onUpdateNotice(noticeBoard, selectedNotice.id, {
       attachments: (selectedNotice.attachments ?? []).filter((attachment) => attachment.id !== attachmentId)
     });
   }
@@ -384,7 +426,7 @@ export function NoticeAdminPage({
       </div>
 
       <div className="notice-admin-tabs" role="tablist" aria-label="공지 구분">
-        {(Object.keys(noticeBoardMeta) as NoticeBoardKey[]).map((board) => (
+        {([...(Object.keys(noticeBoardMeta) as NoticeBoardKey[]), 'faq'] as NoticeAdminSectionKey[]).map((board) => (
           <button
             key={board}
             type="button"
@@ -392,10 +434,11 @@ export function NoticeAdminPage({
             onClick={() => {
               setActiveBoard(board);
               setSelectedNoticeId('');
+              setSelectedFaqId('');
             }}
           >
-            {noticeBoardMeta[board].label}
-            <span>{board === 'operation' ? operationItems.length : meetingItems.length}</span>
+            {board === 'faq' ? '자주묻는 질문' : noticeBoardMeta[board].label}
+            <span>{board === 'operation' ? operationItems.length : board === 'meeting' ? meetingItems.length : faqItems.length}</span>
           </button>
         ))}
       </div>
@@ -405,29 +448,73 @@ export function NoticeAdminPage({
           <div className="notice-admin-list-head">
             <div>
               <p>{meta.label}</p>
-              <h3>게시물 목록</h3>
+              <h3>{isFaqBoard ? 'FAQ 목록' : '게시물 목록'}</h3>
             </div>
-            <span>{items.length}건</span>
+            <span>{isFaqBoard ? faqItems.length : items.length}건</span>
           </div>
-          {items.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={`notice-admin-row ${selectedNotice?.id === item.id ? 'is-selected' : ''}`}
-              onClick={() => setSelectedNoticeId(item.id)}
-            >
-              <span>
-                {isImportantNotice(item) && <em>중요</em>}
-                {item.title}
-              </span>
-              <small>{item.date} · {item.author}</small>
-            </button>
-          ))}
-          {items.length === 0 && <p className="notice-admin-empty">등록된 공지가 없습니다.</p>}
+          {isFaqBoard ? (
+            <>
+              {faqItems.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`notice-admin-row ${selectedFaq?.id === item.id ? 'is-selected' : ''}`}
+                  onClick={() => setSelectedFaqId(item.id)}
+                >
+                  <span>
+                    <em>{item.category}</em>
+                    {item.question}
+                  </span>
+                  <small>{item.updatedAt} · FAQ</small>
+                </button>
+              ))}
+              {faqItems.length === 0 && <p className="notice-admin-empty">등록된 FAQ가 없습니다.</p>}
+            </>
+          ) : (
+            <>
+              {items.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={`notice-admin-row ${selectedNotice?.id === item.id ? 'is-selected' : ''}`}
+                  onClick={() => setSelectedNoticeId(item.id)}
+                >
+                  <span>
+                    {isImportantNotice(item) && <em>중요</em>}
+                    {item.title}
+                  </span>
+                  <small>{item.date} · {item.author}</small>
+                </button>
+              ))}
+              {items.length === 0 && <p className="notice-admin-empty">등록된 공지가 없습니다.</p>}
+            </>
+          )}
         </div>
 
         <div className="notice-admin-editor">
-          {selectedNotice ? (
+          {isFaqBoard ? (
+            selectedFaq ? (
+              <>
+                <div className="notice-admin-editor-head">
+                  <div>
+                    <p>Selected FAQ</p>
+                    <h3>{selectedFaq.question}</h3>
+                  </div>
+                  <button type="button" className="is-danger" onClick={() => onDeleteFaq(selectedFaq.id)}>
+                    <Trash2 size={16} /> 삭제
+                  </button>
+                </div>
+                <div className="notice-admin-form-grid">
+                  <label>분류<select value={selectedFaq.category} onChange={(event) => onUpdateFaq(selectedFaq.id, { category: event.target.value as FaqCategory })}>{faqCategoryOptions.map((category) => <option key={category} value={category}>{category}</option>)}</select></label>
+                  <label>수정일<input value={selectedFaq.updatedAt} onChange={(event) => onUpdateFaq(selectedFaq.id, { updatedAt: event.target.value })} /></label>
+                  <label className="is-wide">질문<input value={selectedFaq.question} onChange={(event) => onUpdateFaq(selectedFaq.id, { question: event.target.value })} /></label>
+                  <label className="is-wide">답변<textarea value={selectedFaq.answer} onChange={(event) => onUpdateFaq(selectedFaq.id, { answer: event.target.value })} /></label>
+                </div>
+              </>
+            ) : (
+              <p className="notice-admin-empty">왼쪽에서 FAQ를 선택하거나 새 FAQ를 등록하세요.</p>
+            )
+          ) : selectedNotice ? (
             <>
               <div className="notice-admin-editor-head">
                 <div>
@@ -499,17 +586,25 @@ export function NoticeAdminPage({
 
       {showEditor && (
         <div className="modal-backdrop" onMouseDown={() => setShowEditor(false)}>
-          <form className="notice-create-modal" onSubmit={submitNotice} onMouseDown={(event) => event.stopPropagation()}>
+          <form className="notice-create-modal" onSubmit={isFaqBoard ? submitFaq : submitNotice} onMouseDown={(event) => event.stopPropagation()}>
             <div className="notice-admin-editor-head">
               <div>
                 <p>{meta.label}</p>
-                <h3>새 공지 등록</h3>
+                <h3>{isFaqBoard ? '새 FAQ 등록' : '새 공지 등록'}</h3>
               </div>
               <button type="button" className="is-danger" onClick={() => setShowEditor(false)}>
                 <X size={16} /> 닫기
               </button>
             </div>
-            <div className="notice-admin-form-grid">
+            {isFaqBoard && (
+              <div className="notice-admin-form-grid">
+                <label>분류<select name="category" defaultValue="운영">{faqCategoryOptions.map((category) => <option key={category} value={category}>{category}</option>)}</select></label>
+                <label>수정일<input name="updatedAt" type="date" defaultValue={getSeoulDateKey()} /></label>
+                <label className="is-wide">질문<input name="question" required placeholder="자주 묻는 질문을 입력하세요." /></label>
+                <label className="is-wide">답변<textarea name="answer" required placeholder="사용자에게 보여줄 답변을 입력하세요." /></label>
+              </div>
+            )}
+            <fieldset disabled={isFaqBoard} className={`notice-admin-form-grid ${isFaqBoard ? 'is-hidden' : ''}`}>
               <label>분류<select name="category" defaultValue={meta.category}>{noticeCategoryOptions.map((category) => <option key={category} value={category}>{category}</option>)}</select></label>
               <label>작성자<input name="author" defaultValue="관리자" /></label>
               <label>등록일<input name="date" type="date" defaultValue={getSeoulDateKey()} /></label>
@@ -525,7 +620,7 @@ export function NoticeAdminPage({
                 <input name="attachments" type="file" multiple />
                 <span>PDF, Word, Excel, 이미지 등 공지 관련 파일을 함께 등록할 수 있습니다.</span>
               </label>
-            </div>
+            </fieldset>
             <div className="notice-create-actions">
               <button type="button" onClick={() => setShowEditor(false)}>취소</button>
               <button type="submit" className="is-primary">등록</button>

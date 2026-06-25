@@ -57,7 +57,7 @@ import { equipment as fallbackEquipment, events, monthlyUsage, type EquipmentGro
 import { STORAGE_KEYS } from './appStorage';
 import { initialConsumablesData, initialManagedUsersData } from './mockData';
 import { NoticeAdminPage, NoticePage, getNoticeCategoryTone, meetingNoticeItems, normalizeNoticeItems, noticeBoardMeta, noticeItems, operationNoticeItems, type NoticeBoardKey, type NoticeItem } from './pages/NoticePages';
-import { FaqPage, QnaPage } from './pages/InquiryPages';
+import { FaqPage, QnaPage, faqItems as initialFaqItems, type FaqItem } from './pages/InquiryPages';
 
 type PageKey = 'home' | 'notice' | 'operationNotice' | 'meetingNotice' | 'center' | 'facility' | 'equipment' | 'training' | 'trainingManagement' | 'faq' | 'qna' | 'reservations' | 'managerPermissions' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'equipmentAdmin' | 'penalties' | 'noticeAdmin' | 'educationAdmin' | 'login';
 type Role = 'USER' | 'ADMIN';
@@ -6286,6 +6286,14 @@ export function App() {
       return normalizeNoticeItems(meetingNoticeItems);
     }
   });
+  const [managedFaqItems, setManagedFaqItems] = useState<FaqItem[]>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.faqItems);
+      return stored ? JSON.parse(stored) as FaqItem[] : initialFaqItems;
+    } catch {
+      return initialFaqItems;
+    }
+  });
   const [equipmentPermissions, setEquipmentPermissions] = useState<EquipmentPermissionMap>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.equipmentPermissions);
@@ -6494,6 +6502,28 @@ export function App() {
 
   function deleteNotice(board: NoticeBoardKey, noticeId: string) {
     updateNoticeBoard(board, (current) => current.filter((item) => item.id !== noticeId));
+  }
+
+  function updateFaqItems(updater: (items: FaqItem[]) => FaqItem[]) {
+    setManagedFaqItems((current) => {
+      const next = updater(current);
+      localStorage.setItem(STORAGE_KEYS.faqItems, JSON.stringify(next));
+      return next;
+    });
+  }
+
+  function addFaq(item: FaqItem) {
+    updateFaqItems((current) => [item, ...current]);
+  }
+
+  function updateFaq(faqId: string, patch: Partial<FaqItem>) {
+    updateFaqItems((current) => current.map((item) => (
+      item.id === faqId ? { ...item, ...patch } : item
+    )));
+  }
+
+  function deleteFaq(faqId: string) {
+    updateFaqItems((current) => current.filter((item) => item.id !== faqId));
   }
 
   function addReservation(event: ReservationEvent) {
@@ -6893,7 +6923,7 @@ export function App() {
               <PlaceholderPage title="접근 권한이 없습니다" />
             )
           )}
-          {activePage === 'faq' && <FaqPage />}
+          {activePage === 'faq' && <FaqPage items={managedFaqItems} />}
           {activePage === 'qna' && <QnaPage sessionRole={sessionRole} />}
           {activePage === 'admin' && (
             <AdminPage
@@ -6987,9 +7017,13 @@ export function App() {
             <NoticeAdminPage
               operationItems={managedOperationNotices}
               meetingItems={managedMeetingNotices}
+              faqItems={managedFaqItems}
               onAddNotice={addNotice}
               onUpdateNotice={updateNotice}
               onDeleteNotice={deleteNotice}
+              onAddFaq={addFaq}
+              onUpdateFaq={updateFaq}
+              onDeleteFaq={deleteFaq}
             />
           )}
           {activePage === 'login' && (

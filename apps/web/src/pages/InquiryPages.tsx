@@ -17,7 +17,7 @@ function formatSeoulDateTime(value: string) {
   }).format(date);
 }
 
-type FaqCategory = '예약' | '장비' | '교육' | '운영' | '계정';
+export type FaqCategory = '예약' | '장비' | '교육' | '운영' | '계정';
 
 const faqCategoryMeta: Record<FaqCategory, { icon: typeof CalendarDays; tone: string }> = {
   예약: { icon: CalendarDays, tone: 'reservation' },
@@ -29,13 +29,15 @@ const faqCategoryMeta: Record<FaqCategory, { icon: typeof CalendarDays; tone: st
 
 const faqCategories: Array<FaqCategory | '전체'> = ['전체', '예약', '장비', '교육', '운영', '계정'];
 
-const faqItems: Array<{
+export type FaqItem = {
   id: string;
   category: FaqCategory;
   question: string;
   answer: string;
   updatedAt: string;
-}> = [
+};
+
+export const faqItems: FaqItem[] = [
   {
     id: 'faq-1',
     category: '예약',
@@ -92,9 +94,9 @@ const initialQnaItems: QnaItem[] = [
   { id: 'qna-3', department: '창의융합학과', title: '교육 신청 후 일정 변경 가능 여부 문의', content: '교육 신청 후 개인 일정으로 인해 교육 일정을 변경할 수 있는지 알고 싶습니다.', status: '답변대기', createdAt: '2026.06.22' }
 ];
 
-export function FaqPage() {
+export function FaqPage({ items = faqItems }: { items?: FaqItem[] }) {
   const [activeCategory, setActiveCategory] = useState<FaqCategory | '전체'>('전체');
-  const visibleFaqItems = activeCategory === '전체' ? faqItems : faqItems.filter((item) => item.category === activeCategory);
+  const visibleFaqItems = activeCategory === '전체' ? items : items.filter((item) => item.category === activeCategory);
 
   return (
     <section className="inquiry-page">
@@ -105,7 +107,7 @@ export function FaqPage() {
           <span>관리자가 등록한 장비 예약, 교육, 계정 관련 주요 안내를 게시물 형태로 제공합니다.</span>
         </div>
         <div className="notice-hero-meta" aria-label="FAQ 요약">
-          <strong>{faqItems.length}</strong>
+          <strong>{items.length}</strong>
           <span>등록 게시물</span>
           <em>관리자 업로드</em>
         </div>
@@ -115,7 +117,7 @@ export function FaqPage() {
         {faqCategories.map((category) => {
           const meta = category === '전체' ? null : faqCategoryMeta[category];
           const Icon = meta?.icon ?? LayoutDashboard;
-          const count = category === '전체' ? faqItems.length : faqItems.filter((item) => item.category === category).length;
+          const count = category === '전체' ? items.length : items.filter((item) => item.category === category).length;
           return (
             <button
               key={category}

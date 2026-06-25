@@ -6471,9 +6471,16 @@ select {
 }
 
 .notice-admin-form-grid {
+  border: 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.85rem;
+  margin: 0;
+  padding: 0;
+}
+
+.notice-admin-form-grid.is-hidden {
+  display: none;
 }
 
 .notice-admin-form-grid label {
