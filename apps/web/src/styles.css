@@ -2469,15 +2469,21 @@ select {
   .sidebar-nav {
     display: flex;
     overflow-x: auto;
-    min-width: max-content;
+    width: 100%;
+    min-width: 0;
     gap: 0.45rem;
     padding-bottom: 0.15rem;
   }
 
   .sidebar-nav-item {
+    flex: 0 0 auto;
     grid-template-columns: 1.25rem auto auto;
     min-height: 2.75rem;
     white-space: nowrap;
+  }
+
+  .sidebar-subnav-item {
+    flex: 0 0 auto;
   }
 
   .sidebar-admin-block {
