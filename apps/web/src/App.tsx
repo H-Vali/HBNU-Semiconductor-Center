@@ -2254,9 +2254,6 @@ function ReservationPage({
           eyebrow="Equipment Calendar"
           action={
             <div className="flex gap-2">
-              <button className="rounded-md bg-slate-800 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700">
-                내 예약 보기
-              </button>
               <button
                 className="inline-flex items-center gap-2 rounded-md bg-blue-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-cyan-500 hover:text-slate-950 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
                 onClick={() => openReservation()}
