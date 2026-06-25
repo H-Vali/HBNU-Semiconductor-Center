@@ -207,3 +207,22 @@ export async function createReservation(input: unknown, user?: SessionUser) {
     throw error;
   }
 }
+
+export async function cancelReservation(id: string) {
+  if (!hasDatabase()) {
+    const index = fallbackReservations.findIndex((reservation) => reservation.id === id);
+    if (index === -1) return null;
+    const [removed] = fallbackReservations.splice(index, 1);
+    return removed;
+  }
+
+  const result = await query<ReservationRow>(
+    `update reservations
+     set status = 'canceled', deleted_at = now(), updated_at = now()
+     where id = $1 and deleted_at is null
+     returning id, equipment_id as "equipmentId", user_id as "userId", title, purpose,
+       starts_at as "startsAt", ends_at as "endsAt", status, created_by_role as "createdByRole"`,
+    [id]
+  );
+  return result.rows[0] ? mapReservation(result.rows[0]) : null;
+}

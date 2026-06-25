@@ -58,7 +58,7 @@ import { STORAGE_KEYS } from './appStorage';
 import { initialConsumablesData, initialManagedUsersData } from './mockData';
 import { NoticeAdminPage, NoticePage, getNoticeCategoryTone, meetingNoticeItems, normalizeNoticeItems, noticeBoardMeta, noticeItems, operationNoticeItems, type NoticeBoardKey, type NoticeItem } from './pages/NoticePages';
 import { FaqPage, QnaPage, faqItems as initialFaqItems, type FaqItem } from './pages/InquiryPages';
-import { apiGet } from './apiClient';
+import { apiDelete, apiGet, apiPost } from './apiClient';
 
 type PageKey = 'home' | 'notice' | 'operationNotice' | 'meetingNotice' | 'center' | 'facility' | 'equipment' | 'training' | 'trainingManagement' | 'faq' | 'qna' | 'reservations' | 'managerPermissions' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'equipmentAdmin' | 'penalties' | 'noticeAdmin' | 'educationAdmin' | 'login';
 type Role = 'USER' | 'ADMIN';
@@ -87,6 +87,16 @@ type ReservationEvent = {
   status?: ReservationStatus;
   equipmentId?: string;
   createdBy?: string;
+};
+type ApiReservationEvent = {
+  id: string;
+  title: string;
+  purpose?: string;
+  startsAt: string;
+  endsAt?: string;
+  status?: ReservationStatus;
+  equipmentId?: string;
+  createdByRole?: string;
 };
 type ConsumableItem = {
   id: string;
@@ -230,6 +240,17 @@ function toReservationDateTime(date: string, time: string) {
   return `${date}T${time}:00`;
 }
 
+function toApiReservationDateTime(value?: string) {
+  if (!value) return value;
+  return /(?:Z|[+-]\d{2}:\d{2})$/.test(value) ? value : `${value}+09:00`;
+}
+
+function fromApiReservationDateTime(value?: string) {
+  if (!value) return value;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : toLocalReservationDateTime(date);
+}
+
 function getReservationEndDate(form: Pick<ReservationForm, 'date' | 'endDate'>) {
   return form.endDate || form.date;
 }
@@ -370,6 +391,18 @@ function createRealtimeTestReservations(equipmentItems: EquipmentItem[]): Reserv
       createdBy: 'USER'
     };
   });
+}
+
+function normalizeApiReservation(event: ApiReservationEvent): ReservationEvent {
+  return {
+    id: event.id,
+    title: event.title,
+    start: fromApiReservationDateTime(event.startsAt) ?? event.startsAt,
+    end: fromApiReservationDateTime(event.endsAt),
+    status: normalizeReservationStatus(event.status),
+    equipmentId: event.equipmentId,
+    createdBy: event.createdByRole
+  };
 }
 
 function getSeoulClockParts() {
@@ -6426,6 +6459,20 @@ export function App() {
     };
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+    void apiGet<ApiReservationEvent[]>('/reservations').then((items) => {
+      if (!isMounted || !items) return;
+      setReservationEvents([
+        ...createRealtimeTestReservations(equipmentItems),
+        ...items.map(normalizeApiReservation)
+      ]);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [equipmentItems]);
+
   function navigate(page: PageKey) {
     if (adminOnlyPages.has(page) && sessionRole !== 'ADMIN') {
       setActivePage('home');
@@ -6568,10 +6615,24 @@ export function App() {
 
   function addReservation(event: ReservationEvent) {
     setReservationEvents((current) => [...current, event]);
+    void apiPost<ApiReservationEvent>('/reservations', {
+      equipmentId: event.equipmentId,
+      title: event.title,
+      startsAt: toApiReservationDateTime(event.start),
+      endsAt: toApiReservationDateTime(event.end),
+      purpose: event.title,
+      status: event.status
+    }, localStorage.getItem(STORAGE_KEYS.sessionToken)).then((savedEvent) => {
+      if (!savedEvent) return;
+      setReservationEvents((current) => current.map((item) => (
+        item.id === event.id ? normalizeApiReservation(savedEvent) : item
+      )));
+    });
   }
 
   function deleteReservation(reservationId: string) {
     setReservationEvents((current) => current.filter((event) => event.id !== reservationId));
+    void apiDelete<ApiReservationEvent>(`/reservations/${reservationId}`, localStorage.getItem(STORAGE_KEYS.sessionToken));
   }
 
   function dismissPreviewPenaltyDemo() {

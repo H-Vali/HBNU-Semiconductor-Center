@@ -15,6 +15,7 @@ import {
 } from './content.js';
 import {
   ReservationOverlapError,
+  cancelReservation,
   createReservation,
   getEquipment,
   listEquipment,
@@ -124,9 +125,19 @@ app.patch('/qna/:id/answer', requireAuth, requireRole(['ADMIN']), async (req, re
   }
 });
 
-app.get('/reservations', requireAuth, async (_req, res, next) => {
+app.get('/reservations', async (_req, res, next) => {
   try {
     res.json(await listReservations());
+  } catch (error) {
+    next(error);
+  }
+});
+app.delete('/reservations/:id', requireAuth, async (req, res, next) => {
+  try {
+    const { id } = z.object({ id: z.string() }).parse(req.params);
+    const reservation = await cancelReservation(id);
+    if (!reservation) return res.status(404).json({ message: 'Reservation not found' });
+    return res.json(reservation);
   } catch (error) {
     next(error);
   }

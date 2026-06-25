@@ -47,3 +47,10 @@ export function apiPatch<T>(path: string, body: unknown, authToken?: string | nu
     authToken
   });
 }
+
+export function apiDelete<T>(path: string, authToken?: string | null) {
+  return apiRequest<T>(path, {
+    method: 'DELETE',
+    authToken
+  });
+}
