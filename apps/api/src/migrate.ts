@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import { initialFaqs, initialNotices, initialQnaItems } from './content.js';
 import { closeDatabase, query } from './db.js';
 import { equipment } from './data.js';
 
@@ -172,11 +173,66 @@ async function seedReferenceData() {
   }
 }
 
+async function seedContentData() {
+  for (const notice of initialNotices) {
+    await query(
+      `insert into notices (
+        id, board, category, title, summary, body, author, notice_date, views, important, pinned, attachments
+      )
+      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12::jsonb)
+      on conflict (id) do nothing`,
+      [
+        notice.id,
+        notice.board,
+        notice.category,
+        notice.title,
+        notice.summary,
+        notice.body,
+        notice.author,
+        notice.date,
+        notice.views,
+        notice.important,
+        notice.pinned,
+        JSON.stringify(notice.attachments)
+      ]
+    );
+  }
+
+  for (const faq of initialFaqs) {
+    await query(
+      `insert into faqs (id, category, question, answer, updated_at, sort_order)
+       values ($1, $2, $3, $4, $5, $6)
+       on conflict (id) do nothing`,
+      [faq.id, faq.category, faq.question, faq.answer, faq.updatedAt, faq.sortOrder]
+    );
+  }
+
+  for (const item of initialQnaItems) {
+    await query(
+      `insert into qna_items (id, department, title, content, status, created_at, answer, answered_at, answered_by)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       on conflict (id) do nothing`,
+      [
+        item.id,
+        item.department,
+        item.title,
+        item.content,
+        item.status,
+        item.createdAt,
+        item.answer ?? null,
+        item.answeredAt ?? null,
+        item.answeredBy ?? null
+      ]
+    );
+  }
+}
+
 async function migrate() {
   for (const statement of statements) {
     await query(statement);
   }
   await seedReferenceData();
+  await seedContentData();
 }
 
 migrate()

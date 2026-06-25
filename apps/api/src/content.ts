@@ -50,7 +50,7 @@ export type Notice = z.infer<typeof noticeSchema>;
 export type Faq = z.infer<typeof faqSchema>;
 export type QnaItem = z.infer<typeof qnaSchema>;
 
-const notices: Notice[] = [
+export const initialNotices: Notice[] = [
   {
     id: 'notice-1',
     board: 'general',
@@ -95,7 +95,7 @@ const notices: Notice[] = [
   }
 ];
 
-const faqs: Faq[] = [
+export const initialFaqs: Faq[] = [
   {
     id: 'faq-1',
     category: '예약',
@@ -114,7 +114,7 @@ const faqs: Faq[] = [
   }
 ];
 
-const qnaItems: QnaItem[] = [
+export const initialQnaItems: QnaItem[] = [
   {
     id: 'qna-1',
     department: '전자공학과',
@@ -155,7 +155,7 @@ function mapNoticeRow(row: Record<string, unknown>): Notice {
 
 export async function listNotices(board?: string) {
   if (!hasDatabase()) {
-    return board ? notices.filter((notice) => notice.board === board) : notices;
+    return board ? initialNotices.filter((notice) => notice.board === board) : initialNotices;
   }
   const result = board
     ? await query<Record<string, unknown>>(
@@ -171,7 +171,7 @@ export async function listNotices(board?: string) {
 export async function createNotice(input: unknown) {
   const notice = noticeSchema.parse(input);
   if (!hasDatabase()) {
-    notices.unshift(notice);
+    initialNotices.unshift(notice);
     return notice;
   }
   const result = await query<Record<string, unknown>>(
@@ -197,7 +197,7 @@ export async function createNotice(input: unknown) {
 }
 
 export async function listFaqs() {
-  if (!hasDatabase()) return faqs;
+  if (!hasDatabase()) return initialFaqs;
   const result = await query<Record<string, unknown>>(
     `select id, category, question, answer, updated_at as "updatedAt", sort_order as "sortOrder"
      from faqs where deleted_at is null order by sort_order asc, id asc`
@@ -208,7 +208,7 @@ export async function listFaqs() {
 export async function createFaq(input: unknown) {
   const faq = faqSchema.parse(input);
   if (!hasDatabase()) {
-    faqs.push(faq);
+    initialFaqs.push(faq);
     return faq;
   }
   const result = await query<Faq>(
@@ -221,7 +221,7 @@ export async function createFaq(input: unknown) {
 }
 
 export async function listQnaItems() {
-  if (!hasDatabase()) return qnaItems;
+  if (!hasDatabase()) return initialQnaItems;
   const result = await query<QnaItem>(
     `select id, department, title, content, status, created_at as "createdAt",
       answer, answered_at as "answeredAt", answered_by as "answeredBy"
@@ -233,7 +233,7 @@ export async function listQnaItems() {
 export async function createQnaItem(input: unknown) {
   const item = qnaSchema.parse(input);
   if (!hasDatabase()) {
-    qnaItems.unshift(item);
+    initialQnaItems.unshift(item);
     return item;
   }
   const result = await query<QnaItem>(
@@ -263,10 +263,10 @@ export async function answerQnaItem(id: string, input: unknown) {
     answeredAt: z.string().default(() => new Date().toISOString())
   }).parse(input);
   if (!hasDatabase()) {
-    const index = qnaItems.findIndex((item) => item.id === id);
+    const index = initialQnaItems.findIndex((item) => item.id === id);
     if (index === -1) return null;
-    qnaItems[index] = { ...qnaItems[index], ...body, status: '답변완료' };
-    return qnaItems[index];
+    initialQnaItems[index] = { ...initialQnaItems[index], ...body, status: '답변완료' };
+    return initialQnaItems[index];
   }
   const result = await query<QnaItem>(
     `update qna_items
