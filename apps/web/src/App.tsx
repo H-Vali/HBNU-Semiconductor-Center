@@ -119,6 +119,7 @@ type ManagedUser = {
   email: string;
   memo: string;
   authProvider?: 'Google' | 'Kakao' | 'Manual';
+  onboardingStatus?: 'profile_pending' | 'training_pending' | 'active';
 };
 type RoleLevel = '교원' | '대표' | '일반';
 type PermissionRoleLevel = RoleLevel | '담당';
@@ -155,7 +156,66 @@ type StoredSessionUser = {
   role?: Role;
 };
 
+type GoogleAuthProfile = {
+  name?: string;
+  email: string;
+  authProvider?: 'Google';
+};
+
+type GoogleAuthResponse = {
+  requiresRegistration?: boolean;
+  registrationToken?: string;
+  profile?: GoogleAuthProfile;
+  user?: StoredSessionUser;
+  managedUser?: ManagedUser;
+  token?: string;
+};
+
+type RegistrationForm = {
+  name: string;
+  department: string;
+  labProfessor: string;
+  phone: string;
+  email: string;
+};
+
+type GoogleCredentialResponse = {
+  credential?: string;
+};
+
+type GoogleIdentityWindow = Window & typeof globalThis & {
+  google?: {
+    accounts: {
+      id: {
+        initialize: (config: { client_id: string; callback: (response: GoogleCredentialResponse) => void }) => void;
+        renderButton: (parent: HTMLElement, options: Record<string, string | number | boolean>) => void;
+      };
+    };
+  };
+};
+
 const apiUrl = ((import.meta as ImportMeta & { env?: Record<string, string> }).env?.VITE_API_URL) ?? 'http://localhost:4000';
+const googleClientId = ((import.meta as ImportMeta & { env?: Record<string, string> }).env?.VITE_GOOGLE_CLIENT_ID) ?? '';
+
+function loadGoogleIdentityScript() {
+  const googleWindow = window as GoogleIdentityWindow;
+  if (googleWindow.google?.accounts.id) return Promise.resolve();
+  return new Promise<void>((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>('script[src="https://accounts.google.com/gsi/client"]');
+    if (existing) {
+      existing.addEventListener('load', () => resolve(), { once: true });
+      existing.addEventListener('error', () => reject(new Error('Google Identity script failed')), { once: true });
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Google Identity script failed'));
+    document.head.appendChild(script);
+  });
+}
 
 const menu: Array<{ label: string; page: PageKey; icon: typeof Factory }> = [
   { label: '공지사항', page: 'notice', icon: Megaphone },
@@ -609,6 +669,25 @@ function cloneManagedUsers(items = initialManagedUsers) {
   return items.map((item) => ({ ...item }));
 }
 
+function normalizeManagedUsers(items: ManagedUser[]) {
+  return items.map((item, index) => ({ ...item, index: index + 1 }));
+}
+
+function mergeManagedUsers(current: ManagedUser[], incoming: ManagedUser[]) {
+  const next = [...current];
+  incoming.forEach((user) => {
+    const existingIndex = next.findIndex((item) => (
+      item.id === user.id || item.email.toLowerCase() === user.email.toLowerCase()
+    ));
+    if (existingIndex >= 0) {
+      next[existingIndex] = { ...next[existingIndex], ...user };
+    } else {
+      next.push(user);
+    }
+  });
+  return normalizeManagedUsers(next);
+}
+
 function getPreviewEquipmentPermissionIds() {
   return ['eq-1', 'eq-2', 'eq-5', 'eq-14', 'eq-16', 'eq-19'];
 }
@@ -719,7 +798,7 @@ function formatPhoneNumber(value: string) {
 
 function downloadUsersExcel(rows: ManagedUser[]) {
   const escapeCell = (value: string | number) => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const headers = ['연번', '이름', 'ROLE', '소속 학과', '소속 연구실', '연락처', '이메일', '메모', '인증'];
+  const headers = ['연번', '이름', 'ROLE', '소속 학과', '지도교수명', '연락처', '이메일', '메모', '인증'];
   const body = rows.map((user, index) => [
     index + 1,
     user.name,
@@ -763,7 +842,7 @@ function parseUsersUpload(text: string) {
     name: indexOf('이름'),
     roleLevel: indexOf('ROLE'),
     department: indexOf('소속 학과'),
-    labProfessor: indexOf('소속 연구실'),
+    labProfessor: indexOf('지도교수명'),
     phone: indexOf('연락처'),
     email: indexOf('이메일'),
     memo: indexOf('메모'),
@@ -3887,34 +3966,130 @@ function LoginPage({
   onRegisterUser
 }: {
   onAuthenticated: (role: Role) => void;
-  onRegisterUser: (provider: 'Google' | 'Kakao', user: { name?: string; email?: string }) => void;
+  onRegisterUser: (user: ManagedUser) => void;
 }) {
-  const [message, setMessage] = useState('Google 또는 Kakao OAuth로 로그인하세요.');
+  const [message, setMessage] = useState('Google 본인인증 후 센터 회원정보를 등록해 주세요.');
+  const [pendingRegistration, setPendingRegistration] = useState<{ token: string; profile: GoogleAuthProfile } | null>(null);
+  const [registrationForm, setRegistrationForm] = useState<RegistrationForm>({
+    name: '',
+    department: '',
+    labProfessor: '',
+    phone: '',
+    email: ''
+  });
+  const googleButtonRef = useRef<HTMLDivElement | null>(null);
 
-  async function handleLogin(provider: 'Google' | 'Kakao', role: Role = 'USER') {
-    setMessage(`${provider} 인증을 확인하는 중입니다.`);
-
-    try {
-      const response = await fetch(`${apiUrl}/auth/dev-login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role })
+  useEffect(() => {
+    if (!googleClientId || !googleButtonRef.current) return;
+    let isMounted = true;
+    void loadGoogleIdentityScript().then(() => {
+      if (!isMounted || !googleButtonRef.current) return;
+      const googleWindow = window as GoogleIdentityWindow;
+      googleWindow.google?.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: (response) => {
+          if (response.credential) {
+            void submitGoogleCredential(response.credential);
+          } else {
+            setMessage('Google 인증 응답을 받지 못했습니다.');
+          }
+        }
       });
-      if (!response.ok) throw new Error('auth unavailable');
-      const data = await response.json();
-      localStorage.setItem(STORAGE_KEYS.sessionToken, data.token);
-      localStorage.setItem(STORAGE_KEYS.sessionUser, JSON.stringify(data.user));
-      onRegisterUser(provider, data.user);
-      onAuthenticated(data.user.role);
-      setMessage(`${provider} 인증이 완료되었습니다.`);
-    } catch {
-      const fallbackUser = { name: role === 'ADMIN' ? '관리자' : 'USER NAME', email: `${provider.toLowerCase()}-preview@hbnu.local`, role };
-      localStorage.setItem(STORAGE_KEYS.sessionToken, `preview-${provider.toLowerCase()}-${role}`);
-      localStorage.setItem(STORAGE_KEYS.sessionUser, JSON.stringify(fallbackUser));
-      onRegisterUser(provider, fallbackUser);
-      onAuthenticated(role);
-      setMessage(`${provider} 프리뷰 인증이 완료되었습니다. API 연결 시 실제 OAuth 콜백으로 교체됩니다.`);
+      googleWindow.google?.accounts.id.renderButton(googleButtonRef.current, {
+        type: 'standard',
+        theme: 'outline',
+        size: 'large',
+        text: 'continue_with',
+        shape: 'rectangular',
+        width: 320
+      });
+    }).catch(() => {
+      if (isMounted) setMessage('Google 인증 버튼을 불러오지 못했습니다.');
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  function completeLogin(data: GoogleAuthResponse) {
+    if (!data.user || !data.token) return false;
+    localStorage.setItem(STORAGE_KEYS.sessionToken, data.token);
+    localStorage.setItem(STORAGE_KEYS.sessionUser, JSON.stringify(data.user));
+    if (data.managedUser) onRegisterUser(data.managedUser);
+    onAuthenticated(data.user.role ?? 'USER');
+    setMessage('Google 인증 로그인이 완료되었습니다.');
+    return true;
+  }
+
+  async function submitGoogleCredential(credential: string) {
+    setMessage('Google 인증 정보를 확인하는 중입니다.');
+    const response = await apiPost<GoogleAuthResponse>('/auth/google', { credential });
+    if (!response) {
+      setMessage('Google 인증 확인에 실패했습니다. Google Client ID와 Render 환경변수를 확인해 주세요.');
+      return;
     }
+    if (response.requiresRegistration && response.registrationToken && response.profile) {
+      setPendingRegistration({ token: response.registrationToken, profile: response.profile });
+      setRegistrationForm({
+        name: response.profile.name ?? '',
+        department: '',
+        labProfessor: '',
+        phone: '',
+        email: response.profile.email
+      });
+      setMessage('본인인증이 완료되었습니다. 회원 정보를 등록해 주세요.');
+      return;
+    }
+    completeLogin(response);
+  }
+
+  async function handleGoogleLogin() {
+    if (!googleClientId) {
+      setMessage('Google Client ID가 아직 설정되지 않았습니다. Google Cloud에서 발급 후 VITE_GOOGLE_CLIENT_ID와 GOOGLE_CLIENT_ID를 등록하면 실제 인증이 활성화됩니다.');
+      return;
+    }
+    setMessage('아래 Google 버튼을 눌러 본인인증을 진행해 주세요.');
+  }
+
+  async function handleRegistrationSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!pendingRegistration) return;
+    const payload = {
+      ...registrationForm,
+      name: registrationForm.name.trim(),
+      department: registrationForm.department.trim(),
+      labProfessor: registrationForm.labProfessor.trim(),
+      phone: formatPhoneNumber(registrationForm.phone),
+      email: registrationForm.email.trim(),
+      registrationToken: pendingRegistration.token
+    };
+    if (!payload.name || !payload.department || !payload.labProfessor || !payload.email) {
+      setMessage('이름, 소속학과, 지도교수명, 이메일은 필수입니다.');
+      return;
+    }
+    const response = await apiPost<GoogleAuthResponse>('/auth/register', payload);
+    if (!response || !completeLogin(response)) {
+      setMessage('회원 등록에 실패했습니다. 입력값과 인증 세션을 확인해 주세요.');
+      return;
+    }
+    setPendingRegistration(null);
+  }
+
+  async function handleAdminPreviewLogin() {
+    setMessage('관리자 미리보기 세션을 발급하는 중입니다.');
+    const response = await apiPost<{ user: StoredSessionUser; token: string }>('/auth/dev-login', { role: 'ADMIN' });
+    if (!response) {
+      setMessage('관리자 미리보기 로그인에 실패했습니다.');
+      return;
+    }
+    localStorage.setItem(STORAGE_KEYS.sessionToken, response.token);
+    localStorage.setItem(STORAGE_KEYS.sessionUser, JSON.stringify(response.user));
+    onAuthenticated(response.user.role ?? 'ADMIN');
+    setMessage('관리자 미리보기 로그인이 완료되었습니다.');
+  }
+
+  function updateRegistrationField<Key extends keyof RegistrationForm>(key: Key, value: RegistrationForm[Key]) {
+    setRegistrationForm((current) => ({ ...current, [key]: value }));
   }
 
   return (
@@ -3929,28 +4104,71 @@ function LoginPage({
             <h2 className="mt-1 text-3xl font-extrabold text-white">로그인 / 회원가입</h2>
           </div>
         </div>
-        <p className="mb-6 max-w-2xl text-slate-300">Google, Kakao OAuth 인증을 통해 예약, 교육, 마이페이지, 관리자 기능에 접근합니다.</p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <button className="flex items-center justify-center gap-2 rounded-md bg-white px-5 py-4 text-base font-extrabold text-slate-950 hover:bg-cyan-100" onClick={() => handleLogin('Google')}>
-            <LogIn size={20} /> Google로 계속
-          </button>
-          <button className="flex items-center justify-center gap-2 rounded-md bg-[#FEE500] px-5 py-4 text-base font-extrabold text-slate-950 hover:brightness-110" onClick={() => handleLogin('Kakao')}>
-            <LogIn size={20} /> Kakao로 계속
-          </button>
+        <p className="mb-6 max-w-2xl text-slate-300">Google 본인인증 후 센터 회원정보를 등록하면 사용자관리와 연동됩니다. 장비 사용은 교육 이수 후 활성화됩니다.</p>
+        <div className="grid gap-3">
+          {googleClientId ? (
+            <div className="flex min-h-[3.5rem] items-center rounded-md bg-white px-5 py-2">
+              <div ref={googleButtonRef} />
+            </div>
+          ) : (
+            <button className="flex items-center justify-center gap-2 rounded-md bg-white px-5 py-4 text-base font-extrabold text-slate-950 hover:bg-cyan-100" onClick={handleGoogleLogin}>
+              <LogIn size={20} /> Google Client ID 설정 필요
+            </button>
+          )}
         </div>
-        <button className="mt-4 rounded-md border border-cyan-300/40 px-5 py-3 text-sm font-bold text-cyan-200 hover:bg-cyan-300 hover:text-slate-950" onClick={() => handleLogin('Google', 'ADMIN')}>
-          관리자 프리뷰 로그인
+        <button className="mt-4 rounded-md border border-cyan-300/40 px-5 py-3 text-sm font-bold text-cyan-200 hover:bg-cyan-300 hover:text-slate-950" onClick={handleAdminPreviewLogin}>
+          관리자 미리보기 로그인
         </button>
         <p className="mt-5 rounded-md bg-white/5 p-4 text-sm text-slate-300">{message}</p>
       </div>
       <div className="rounded-lg border border-white/10 bg-slate-950/80 p-8">
-        <h3 className="text-2xl font-extrabold text-white">인증 흐름</h3>
+        <h3 className="text-2xl font-extrabold text-white">가입 흐름</h3>
         <div className="mt-6 grid gap-4 text-sm text-slate-300">
-          <p className="rounded-md bg-white/5 p-4">1. OAuth 제공자 선택</p>
-          <p className="rounded-md bg-white/5 p-4">2. 백엔드 콜백에서 JWT 세션 발급</p>
-          <p className="rounded-md bg-white/5 p-4">3. RBAC 권한에 따라 예약, 교육, 관리자 기능 접근</p>
+          <p className="rounded-md bg-white/5 p-4">1. Google 본인인증</p>
+          <p className="rounded-md bg-white/5 p-4">2. 이름, 소속학과, 지도교수명, 연락처, 이메일 등록</p>
+          <p className="rounded-md bg-white/5 p-4">3. 사용자관리 자동 연동</p>
+          <p className="rounded-md bg-white/5 p-4">4. 장비사용 교육 이수 후 예약 권한 활성화</p>
         </div>
       </div>
+      {pendingRegistration && (
+        <div className="user-add-modal-backdrop" role="presentation">
+          <form className="user-add-modal" onSubmit={handleRegistrationSubmit} aria-label="회원 등록">
+            <div className="user-add-modal-head">
+              <div>
+                <p>Google verified</p>
+                <h3>회원 정보 등록</h3>
+              </div>
+              <button type="button" onClick={() => setPendingRegistration(null)} aria-label="회원 등록 닫기">×</button>
+            </div>
+            <div className="user-add-modal-grid">
+              <label>
+                이름
+                <input value={registrationForm.name} onChange={(event) => updateRegistrationField('name', event.target.value)} autoFocus />
+              </label>
+              <label>
+                소속학과
+                <input value={registrationForm.department} onChange={(event) => updateRegistrationField('department', event.target.value)} placeholder="예: 전자공학과" />
+              </label>
+              <label>
+                지도교수명
+                <input value={registrationForm.labProfessor} onChange={(event) => updateRegistrationField('labProfessor', event.target.value)} placeholder="예: 백근우 교수님" />
+              </label>
+              <label>
+                연락처
+                <input inputMode="numeric" value={registrationForm.phone} onChange={(event) => updateRegistrationField('phone', formatPhoneNumber(event.target.value))} placeholder="010-0000-0000" />
+              </label>
+              <label className="is-wide">
+                이메일
+                <input type="email" value={registrationForm.email} readOnly />
+              </label>
+            </div>
+            <div className="user-add-modal-actions">
+              <button type="button" className="is-cancel" onClick={() => setPendingRegistration(null)}>취소</button>
+              <button type="submit" className="is-primary">가입</button>
+            </div>
+          </form>
+        </div>
+      )}
     </section>
   );
 }
@@ -4441,21 +4659,18 @@ function UserAddModal({
   onConfirm: (user: Omit<ManagedUser, 'id' | 'index'>) => void;
 }) {
   const newDepartmentValue = '__new_department__';
-  const newLabValue = '__new_lab__';
   const [departmentMode, setDepartmentMode] = useState(departments[0] ? departments[0] : newDepartmentValue);
-  const [labMode, setLabMode] = useState(labs[0] ? labs[0] : newLabValue);
   const [form, setForm] = useState<Omit<ManagedUser, 'id' | 'index'>>({
     name: '',
     roleLevel: '일반',
     department: departments[0] ?? '',
-    labProfessor: labs[0] ?? '',
+    labProfessor: '',
     phone: '',
     email: '',
     memo: '',
     authProvider: 'Manual'
   });
   const isNewDepartment = departmentMode === newDepartmentValue;
-  const isNewLab = labMode === newLabValue;
 
   function updateField<Key extends keyof typeof form>(key: Key, value: typeof form[Key]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -4476,7 +4691,7 @@ function UserAddModal({
       return;
     }
     if (!form.labProfessor.trim()) {
-      window.alert('소속 연구실을 선택하거나 입력해주세요.');
+      window.alert('지도교수명을 입력해주세요.');
       return;
     }
     onConfirm({
@@ -4534,26 +4749,8 @@ function UserAddModal({
             )}
           </label>
           <label>
-            소속 연구실
-            <select
-              value={labMode}
-              onChange={(event) => {
-                const value = event.target.value;
-                setLabMode(value);
-                updateField('labProfessor', value === newLabValue ? '' : value);
-              }}
-            >
-              <option value={newLabValue}>신규 교수 추가</option>
-              {labs.map((lab) => <option key={lab} value={lab}>{lab}</option>)}
-            </select>
-            {isNewLab && (
-              <input
-                className="user-add-manual-field"
-                value={form.labProfessor}
-                onChange={(event) => updateField('labProfessor', event.target.value)}
-                placeholder="예: 백근우 교수님"
-              />
-            )}
+            지도교수명
+            <input value={form.labProfessor} onChange={(event) => updateField('labProfessor', event.target.value)} placeholder="예: 백근우 교수님" />
           </label>
           <label>
             연락처
@@ -4593,9 +4790,7 @@ function UserEditModal({
   onRequestDelete: (user: ManagedUser) => void;
 }) {
   const newDepartmentValue = '__new_department__';
-  const newLabValue = '__new_lab__';
   const [departmentMode, setDepartmentMode] = useState(departments.includes(user.department) ? user.department : newDepartmentValue);
-  const [labMode, setLabMode] = useState(labs.includes(user.labProfessor) ? user.labProfessor : newLabValue);
   const [form, setForm] = useState({
     name: user.name,
     roleLevel: user.roleLevel,
@@ -4606,7 +4801,6 @@ function UserEditModal({
     memo: user.memo
   });
   const isNewDepartment = departmentMode === newDepartmentValue;
-  const isNewLab = labMode === newLabValue;
 
   function updateField<Key extends keyof typeof form>(key: Key, value: typeof form[Key]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -4623,7 +4817,7 @@ function UserEditModal({
       return;
     }
     if (!form.labProfessor.trim()) {
-      window.alert('소속 연구실을 선택하거나 입력해주세요.');
+      window.alert('지도교수명을 입력해주세요.');
       return;
     }
 
@@ -4677,21 +4871,8 @@ function UserEditModal({
             )}
           </label>
           <label>
-            소속 연구실
-            <select
-              value={labMode}
-              onChange={(event) => {
-                const value = event.target.value;
-                setLabMode(value);
-                updateField('labProfessor', value === newLabValue ? '' : value);
-              }}
-            >
-              <option value={newLabValue}>신규 교수 추가</option>
-              {labs.map((lab) => <option key={lab} value={lab}>{lab}</option>)}
-            </select>
-            {isNewLab && (
-              <input className="user-add-manual-field" value={form.labProfessor} onChange={(event) => updateField('labProfessor', event.target.value)} placeholder="예: 백근우 교수님" />
-            )}
+            지도교수명
+            <input value={form.labProfessor} onChange={(event) => updateField('labProfessor', event.target.value)} placeholder="예: 백근우 교수님" />
           </label>
           <label>
             연락처
@@ -4900,7 +5081,7 @@ function UserManagementPage({
           <option value="전체">전체</option>
           {roleLevelOptions.map((role) => <option key={role} value={role}>{role}</option>)}
         </select>
-        <select value={labFilter} onChange={(event) => setLabFilter(event.target.value)} aria-label="소속 연구실 필터">
+        <select value={labFilter} onChange={(event) => setLabFilter(event.target.value)} aria-label="지도교수명 필터">
           {labs.map((lab) => (
             <option key={lab} value={lab}>{lab}</option>
           ))}
@@ -4934,7 +5115,7 @@ function UserManagementPage({
               <th>이름</th>
               <th>ROLE</th>
               <th>소속 학과</th>
-              <th>소속 연구실</th>
+              <th>지도교수명</th>
               <th>연락처</th>
               <th>이메일</th>
               <th>인증</th>
@@ -4959,7 +5140,7 @@ function UserManagementPage({
                 </select>
               </th>
               <th>
-                <select value={labFilter} onChange={(event) => setLabFilter(event.target.value)} aria-label="소속 연구실 컬럼 필터">
+                <select value={labFilter} onChange={(event) => setLabFilter(event.target.value)} aria-label="지도교수명 컬럼 필터">
                   {labs.map((lab) => (
                     <option key={lab} value={lab}>{lab}</option>
                   ))}
@@ -5847,7 +6028,7 @@ function PermissionManagementPage({
               <th>이름</th>
               <th>ROLE</th>
               <th>소속 학과</th>
-              <th>소속 연구실</th>
+              <th>지도교수명</th>
               <th>권한</th>
               <th>관리</th>
             </tr>
@@ -6460,6 +6641,22 @@ export function App() {
   }, []);
 
   useEffect(() => {
+    if (sessionRole !== 'ADMIN') return;
+    let isMounted = true;
+    void apiGet<ManagedUser[]>('/users', localStorage.getItem(STORAGE_KEYS.sessionToken)).then((items) => {
+      if (!isMounted || !items?.length) return;
+      setManagedUsers((current) => {
+        const next = mergeManagedUsers(current, items);
+        localStorage.setItem(STORAGE_KEYS.managedUsers, JSON.stringify(next));
+        return next;
+      });
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [sessionRole]);
+
+  useEffect(() => {
     let isMounted = true;
     void apiGet<ApiReservationEvent[]>('/reservations').then((items) => {
       if (!isMounted || !items) return;
@@ -6805,22 +7002,43 @@ export function App() {
       return next;
     });
     setUsersUpdatedAt(savedAt);
+    void apiPatch<ManagedUser>(
+      `/users/${encodeURIComponent(id)}`,
+      patch,
+      localStorage.getItem(STORAGE_KEYS.sessionToken)
+    );
   }
 
   function addManagedUser(user: Omit<ManagedUser, 'id' | 'index'>) {
+    const savedAt = new Date().toISOString();
+    const newUser: ManagedUser = {
+      ...user,
+      id: `managed-user-${Date.now()}`,
+      index: managedUsers.length + 1,
+      authProvider: user.authProvider ?? 'Manual',
+      onboardingStatus: user.onboardingStatus ?? 'training_pending'
+    };
     clearUserSaveFeedbackTimers();
     setUserSaveFeedbackPhase('idle');
     setManagedUsers((current) => {
-      const next = [
-        ...current,
-        {
-          ...user,
-          id: `managed-user-${Date.now()}`,
-          index: current.length + 1,
-          authProvider: user.authProvider ?? 'Manual'
-        }
-      ];
-      return next.map((item, index) => ({ ...item, index: index + 1 }));
+      const next = normalizeManagedUsers([...current, newUser]);
+      localStorage.setItem(STORAGE_KEYS.managedUsers, JSON.stringify(next));
+      localStorage.setItem(STORAGE_KEYS.usersUpdatedAt, savedAt);
+      return next;
+    });
+    setUsersUpdatedAt(savedAt);
+    void apiPost<ManagedUser>(
+      '/users',
+      newUser,
+      localStorage.getItem(STORAGE_KEYS.sessionToken)
+    ).then((savedUser) => {
+      if (!savedUser) return;
+      setManagedUsers((current) => {
+        const next = current.map((item) => item.id === newUser.id ? savedUser : item);
+        const normalized = normalizeManagedUsers(next);
+        localStorage.setItem(STORAGE_KEYS.managedUsers, JSON.stringify(normalized));
+        return normalized;
+      });
     });
   }
 
@@ -6840,6 +7058,10 @@ export function App() {
       return next;
     });
     setUsersUpdatedAt(savedAt);
+    void apiDelete<ManagedUser>(
+      `/users/${encodeURIComponent(id)}`,
+      localStorage.getItem(STORAGE_KEYS.sessionToken)
+    );
   }
 
   function importManagedUsers(rows: ManagedUser[]) {
@@ -6876,30 +7098,10 @@ export function App() {
     });
   }
 
-  function registerAuthenticatedUser(provider: 'Google' | 'Kakao', user: { name?: string; email?: string }) {
+  function registerAuthenticatedUser(user: ManagedUser) {
     const savedAt = new Date().toISOString();
     setManagedUsers((current) => {
-      const email = user.email ?? `${provider.toLowerCase()}-preview@hbnu.local`;
-      const name = user.name ?? 'USER NAME';
-      const exists = current.some((item) => item.email === email);
-      const next: ManagedUser[] = exists
-        ? current.map((item) => item.email === email ? { ...item, name, authProvider: provider } : item)
-        : [
-            ...current,
-            {
-              id: `auth-user-${Date.now()}`,
-              index: current.length + 1,
-              name,
-              roleLevel: '일반' as const,
-              department: '가입 정보 입력 필요',
-              labProfessor: '백근우 교수님',
-              phone: '',
-              email,
-              memo: '인증 완료 후 상세 정보 입력 대기',
-              authProvider: provider
-            }
-          ];
-      const normalized = next.map((item, index) => ({ ...item, index: index + 1 }));
+      const normalized = mergeManagedUsers(current, [user]);
       localStorage.setItem(STORAGE_KEYS.managedUsers, JSON.stringify(normalized));
       return normalized;
     });

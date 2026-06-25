@@ -28,8 +28,8 @@ async function apiRequest<T>(path: string, options: ApiOptions = {}): Promise<T 
   }
 }
 
-export function apiGet<T>(path: string) {
-  return apiRequest<T>(path);
+export function apiGet<T>(path: string, authToken?: string | null) {
+  return apiRequest<T>(path, { authToken });
 }
 
 export function apiPost<T>(path: string, body: unknown, authToken?: string | null) {

@@ -1,7 +1,8 @@
 param(
   [string]$PreviewRepo = "H-Vali/HBNU-Semiconductor-Center-Preview",
   [string]$PreviewDir = (Join-Path $env:USERPROFILE "Documents\HBNU-Semiconductor-Center-Preview"),
-  [string]$ApiUrl = "https://hbnu-semiconductor-center-api.onrender.com"
+  [string]$ApiUrl = "https://hbnu-semiconductor-center-api.onrender.com",
+  [string]$GoogleClientId = $env:VITE_GOOGLE_CLIENT_ID
 )
 
 $ErrorActionPreference = "Stop"
@@ -60,11 +61,15 @@ Write-Host "Building web app for GitHub Pages..."
 
 $env:GITHUB_PAGES_BASE = "/HBNU-Semiconductor-Center-Preview/"
 $env:VITE_API_URL = $ApiUrl
+if ($GoogleClientId) {
+  $env:VITE_GOOGLE_CLIENT_ID = $GoogleClientId
+}
 try {
   Invoke-Native $npm run build --workspace "@hbnu/web"
 } finally {
   Remove-Item Env:\GITHUB_PAGES_BASE -ErrorAction SilentlyContinue
   Remove-Item Env:\VITE_API_URL -ErrorAction SilentlyContinue
+  Remove-Item Env:\VITE_GOOGLE_CLIENT_ID -ErrorAction SilentlyContinue
 }
 
 if (-not (Test-Path $PreviewDir)) {

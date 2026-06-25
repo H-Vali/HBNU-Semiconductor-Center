@@ -10,6 +10,13 @@ export interface SessionUser {
   role: Role;
 }
 
+export interface RegistrationProfile {
+  googleSubject: string;
+  email: string;
+  name: string;
+  provider: 'Google';
+}
+
 declare global {
   namespace Express {
     interface Request {
@@ -22,6 +29,18 @@ const jwtSecret = process.env.JWT_SECRET ?? 'local-dev-secret';
 
 export function signToken(user: SessionUser) {
   return jwt.sign(user, jwtSecret, { expiresIn: '8h' });
+}
+
+export function signRegistrationToken(profile: RegistrationProfile) {
+  return jwt.sign({ type: 'registration', ...profile }, jwtSecret, { expiresIn: '30m' });
+}
+
+export function verifyRegistrationToken(token: string) {
+  const payload = jwt.verify(token, jwtSecret) as RegistrationProfile & { type?: string };
+  if (payload.type !== 'registration') {
+    throw new Error('Invalid registration token');
+  }
+  return payload;
 }
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {

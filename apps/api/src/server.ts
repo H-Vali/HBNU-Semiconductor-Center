@@ -25,6 +25,14 @@ import {
   listEquipment,
   listReservations
 } from './core.js';
+import {
+  authenticateGoogle,
+  createUser,
+  deleteUser,
+  listUsers,
+  registerGoogleUser,
+  updateUser
+} from './users.js';
 
 dotenv.config();
 
@@ -50,6 +58,60 @@ app.post('/auth/dev-login', (req, res) => {
   };
 
   res.json({ user, token: signToken(user) });
+});
+
+app.post('/auth/google', async (req, res, next) => {
+  try {
+    res.json(await authenticateGoogle(req.body));
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/auth/register', async (req, res, next) => {
+  try {
+    res.status(201).json(await registerGoogleUser(req.body));
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/users', requireAuth, requireRole(['ADMIN']), async (_req, res, next) => {
+  try {
+    res.json(await listUsers());
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/users', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
+  try {
+    res.status(201).json(await createUser(req.body));
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.patch('/users/:id', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
+  try {
+    const { id } = z.object({ id: z.string() }).parse(req.params);
+    const user = await updateUser(id, req.body);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    return res.json(user);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete('/users/:id', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
+  try {
+    const { id } = z.object({ id: z.string() }).parse(req.params);
+    const user = await deleteUser(id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    return res.json(user);
+  } catch (error) {
+    next(error);
+  }
 });
 
 app.get('/equipment', async (_req, res, next) => {
