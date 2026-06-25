@@ -58,7 +58,7 @@ import { STORAGE_KEYS } from './appStorage';
 import { initialConsumablesData, initialManagedUsersData } from './mockData';
 import { NoticeAdminPage, NoticePage, getNoticeCategoryTone, meetingNoticeItems, normalizeNoticeItems, noticeBoardMeta, noticeItems, operationNoticeItems, type NoticeBoardKey, type NoticeItem } from './pages/NoticePages';
 import { FaqPage, QnaPage, faqItems as initialFaqItems, type FaqItem } from './pages/InquiryPages';
-import { apiDelete, apiGet, apiPost } from './apiClient';
+import { apiDelete, apiGet, apiPatch, apiPost } from './apiClient';
 
 type PageKey = 'home' | 'notice' | 'operationNotice' | 'meetingNotice' | 'center' | 'facility' | 'equipment' | 'training' | 'trainingManagement' | 'faq' | 'qna' | 'reservations' | 'managerPermissions' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'equipmentAdmin' | 'penalties' | 'noticeAdmin' | 'educationAdmin' | 'login';
 type Role = 'USER' | 'ADMIN';
@@ -6579,16 +6579,34 @@ export function App() {
 
   function addNotice(board: NoticeBoardKey, item: NoticeItem) {
     updateNoticeBoard(board, (current) => [item, ...current]);
+    void apiPost<NoticeItem>('/notices', {
+      ...item,
+      board
+    }, localStorage.getItem(STORAGE_KEYS.sessionToken)).then((savedNotice) => {
+      if (!savedNotice) return;
+      updateNoticeBoard(board, (current) => current.map((notice) => (
+        notice.id === item.id ? savedNotice : notice
+      )));
+    });
   }
 
   function updateNotice(board: NoticeBoardKey, noticeId: string, patch: Partial<NoticeItem>) {
     updateNoticeBoard(board, (current) => current.map((item) => (
       item.id === noticeId ? { ...item, ...patch } : item
     )));
+    void apiPatch<NoticeItem>(
+      `/notices/${encodeURIComponent(noticeId)}`,
+      patch,
+      localStorage.getItem(STORAGE_KEYS.sessionToken)
+    );
   }
 
   function deleteNotice(board: NoticeBoardKey, noticeId: string) {
     updateNoticeBoard(board, (current) => current.filter((item) => item.id !== noticeId));
+    void apiDelete<NoticeItem>(
+      `/notices/${encodeURIComponent(noticeId)}`,
+      localStorage.getItem(STORAGE_KEYS.sessionToken)
+    );
   }
 
   function updateFaqItems(updater: (items: FaqItem[]) => FaqItem[]) {
@@ -6601,16 +6619,31 @@ export function App() {
 
   function addFaq(item: FaqItem) {
     updateFaqItems((current) => [item, ...current]);
+    void apiPost<FaqItem>('/faqs', item, localStorage.getItem(STORAGE_KEYS.sessionToken)).then((savedFaq) => {
+      if (!savedFaq) return;
+      updateFaqItems((current) => current.map((faq) => (
+        faq.id === item.id ? savedFaq : faq
+      )));
+    });
   }
 
   function updateFaq(faqId: string, patch: Partial<FaqItem>) {
     updateFaqItems((current) => current.map((item) => (
       item.id === faqId ? { ...item, ...patch } : item
     )));
+    void apiPatch<FaqItem>(
+      `/faqs/${encodeURIComponent(faqId)}`,
+      patch,
+      localStorage.getItem(STORAGE_KEYS.sessionToken)
+    );
   }
 
   function deleteFaq(faqId: string) {
     updateFaqItems((current) => current.filter((item) => item.id !== faqId));
+    void apiDelete<FaqItem>(
+      `/faqs/${encodeURIComponent(faqId)}`,
+      localStorage.getItem(STORAGE_KEYS.sessionToken)
+    );
   }
 
   function addReservation(event: ReservationEvent) {

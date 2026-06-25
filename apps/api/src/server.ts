@@ -9,9 +9,13 @@ import {
   createFaq,
   createNotice,
   createQnaItem,
+  deleteFaq,
+  deleteNotice,
   listFaqs,
   listNotices,
-  listQnaItems
+  listQnaItems,
+  updateFaq,
+  updateNotice
 } from './content.js';
 import {
   ReservationOverlapError,
@@ -82,6 +86,28 @@ app.post('/notices', requireAuth, requireRole(['ADMIN']), async (req, res, next)
   }
 });
 
+app.patch('/notices/:id', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
+  try {
+    const { id } = z.object({ id: z.string() }).parse(req.params);
+    const notice = await updateNotice(id, req.body);
+    if (!notice) return res.status(404).json({ message: 'Notice not found' });
+    return res.json(notice);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete('/notices/:id', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
+  try {
+    const { id } = z.object({ id: z.string() }).parse(req.params);
+    const notice = await deleteNotice(id);
+    if (!notice) return res.status(404).json({ message: 'Notice not found' });
+    return res.json(notice);
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.get('/faqs', async (_req, res, next) => {
   try {
     res.json(await listFaqs());
@@ -93,6 +119,28 @@ app.get('/faqs', async (_req, res, next) => {
 app.post('/faqs', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
   try {
     res.status(201).json(await createFaq(req.body));
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.patch('/faqs/:id', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
+  try {
+    const { id } = z.object({ id: z.string() }).parse(req.params);
+    const faq = await updateFaq(id, req.body);
+    if (!faq) return res.status(404).json({ message: 'FAQ not found' });
+    return res.json(faq);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete('/faqs/:id', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
+  try {
+    const { id } = z.object({ id: z.string() }).parse(req.params);
+    const faq = await deleteFaq(id);
+    if (!faq) return res.status(404).json({ message: 'FAQ not found' });
+    return res.json(faq);
   } catch (error) {
     next(error);
   }

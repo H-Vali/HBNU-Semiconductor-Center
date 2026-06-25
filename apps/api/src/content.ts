@@ -196,6 +196,65 @@ export async function createNotice(input: unknown) {
   return mapNoticeRow(result.rows[0]);
 }
 
+export async function updateNotice(id: string, input: unknown) {
+  const patch = noticeSchema.partial().omit({ id: true }).parse(input);
+  if (!hasDatabase()) {
+    const index = initialNotices.findIndex((notice) => notice.id === id);
+    if (index === -1) return null;
+    initialNotices[index] = noticeSchema.parse({ ...initialNotices[index], ...patch, id });
+    return initialNotices[index];
+  }
+  const result = await query<Record<string, unknown>>(
+    `update notices
+     set board = coalesce($2, board),
+       category = coalesce($3, category),
+       title = coalesce($4, title),
+       summary = coalesce($5, summary),
+       body = coalesce($6, body),
+       author = coalesce($7, author),
+       notice_date = coalesce($8, notice_date),
+       views = coalesce($9, views),
+       important = coalesce($10, important),
+       pinned = coalesce($11, pinned),
+       attachments = coalesce($12::jsonb, attachments),
+       updated_at = now()
+     where id = $1 and deleted_at is null
+     returning *`,
+    [
+      id,
+      patch.board ?? null,
+      patch.category ?? null,
+      patch.title ?? null,
+      patch.summary ?? null,
+      patch.body ?? null,
+      patch.author ?? null,
+      patch.date ?? null,
+      patch.views ?? null,
+      patch.important ?? null,
+      patch.pinned ?? null,
+      patch.attachments ? JSON.stringify(patch.attachments) : null
+    ]
+  );
+  return result.rows[0] ? mapNoticeRow(result.rows[0]) : null;
+}
+
+export async function deleteNotice(id: string) {
+  if (!hasDatabase()) {
+    const index = initialNotices.findIndex((notice) => notice.id === id);
+    if (index === -1) return null;
+    const [removed] = initialNotices.splice(index, 1);
+    return removed;
+  }
+  const result = await query<Record<string, unknown>>(
+    `update notices
+     set deleted_at = now(), updated_at = now()
+     where id = $1 and deleted_at is null
+     returning *`,
+    [id]
+  );
+  return result.rows[0] ? mapNoticeRow(result.rows[0]) : null;
+}
+
 export async function listFaqs() {
   if (!hasDatabase()) return initialFaqs;
   const result = await query<Record<string, unknown>>(
@@ -218,6 +277,52 @@ export async function createFaq(input: unknown) {
     [faq.id, faq.category, faq.question, faq.answer, faq.updatedAt, faq.sortOrder]
   );
   return result.rows[0];
+}
+
+export async function updateFaq(id: string, input: unknown) {
+  const patch = faqSchema.partial().omit({ id: true }).parse(input);
+  if (!hasDatabase()) {
+    const index = initialFaqs.findIndex((faq) => faq.id === id);
+    if (index === -1) return null;
+    initialFaqs[index] = faqSchema.parse({ ...initialFaqs[index], ...patch, id });
+    return initialFaqs[index];
+  }
+  const result = await query<Faq>(
+    `update faqs
+     set category = coalesce($2, category),
+       question = coalesce($3, question),
+       answer = coalesce($4, answer),
+       updated_at = coalesce($5, updated_at),
+       sort_order = coalesce($6, sort_order)
+     where id = $1 and deleted_at is null
+     returning id, category, question, answer, updated_at as "updatedAt", sort_order as "sortOrder"`,
+    [
+      id,
+      patch.category ?? null,
+      patch.question ?? null,
+      patch.answer ?? null,
+      patch.updatedAt ?? null,
+      patch.sortOrder ?? null
+    ]
+  );
+  return result.rows[0] ?? null;
+}
+
+export async function deleteFaq(id: string) {
+  if (!hasDatabase()) {
+    const index = initialFaqs.findIndex((faq) => faq.id === id);
+    if (index === -1) return null;
+    const [removed] = initialFaqs.splice(index, 1);
+    return removed;
+  }
+  const result = await query<Faq>(
+    `update faqs
+     set deleted_at = now()
+     where id = $1 and deleted_at is null
+     returning id, category, question, answer, updated_at as "updatedAt", sort_order as "sortOrder"`,
+    [id]
+  );
+  return result.rows[0] ?? null;
 }
 
 export async function listQnaItems() {
