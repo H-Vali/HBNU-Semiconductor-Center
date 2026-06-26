@@ -1400,7 +1400,10 @@ function Hero({
         <div className={`hero-user-summary ${accountStatus === 'guest' ? 'is-guest' : accountStatus === 'profileRequired' ? 'is-profile-required' : ''}`} aria-label="사용자 예약 요약">
           <div className="hero-user-summary-head">
             {accountStatus === 'guest' ? (
-              <h3>로그인이 필요합니다.</h3>
+              <h3 className="hero-guest-login-title">
+                <AlertTriangle size={19} aria-hidden="true" />
+                로그인이 필요합니다.
+              </h3>
             ) : accountStatus === 'profileRequired' ? (
               <h3>회원정보 등록이 필요합니다.</h3>
             ) : (

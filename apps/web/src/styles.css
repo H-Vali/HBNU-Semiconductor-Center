@@ -245,10 +245,13 @@ select {
 }
 
 .hero-user-summary.is-guest {
+  justify-content: start;
+  min-height: 11rem;
   border-color: rgba(95, 217, 201, 0.28);
   background:
     linear-gradient(135deg, rgba(52, 214, 176, 0.13), transparent 42%),
     rgba(17, 25, 43, 0.68);
+  padding: 1rem 1.1rem;
   box-shadow: inset 0 0 0 1px rgba(95, 217, 201, 0.05);
 }
 
@@ -266,6 +269,17 @@ select {
   color: #f3f6fb;
   font-size: 1.12rem;
   font-weight: 700;
+}
+
+.hero-guest-login-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.52rem;
+}
+
+.hero-guest-login-title svg {
+  flex: 0 0 auto;
+  color: #f5b942;
 }
 
 .hero-user-summary-head h3 strong {
@@ -292,6 +306,23 @@ select {
   min-height: 2.6rem;
   border-bottom: 0.5px solid rgba(255, 255, 255, 0.08);
   padding: 0.65rem 0;
+}
+
+.hero-user-summary.is-guest .hero-user-summary-head {
+  padding-bottom: 0.68rem;
+}
+
+.hero-user-summary.is-guest .hero-user-permissions {
+  min-height: auto;
+  gap: 0.38rem;
+  padding: 0.55rem 0;
+}
+
+.hero-user-summary.is-guest .hero-role-badge,
+.hero-user-summary.is-guest .hero-permission-badge {
+  min-height: 1.45rem;
+  padding: 0.18rem 0.55rem;
+  font-size: 0.7rem;
 }
 
 .hero-role-badge,
@@ -438,6 +469,17 @@ select {
 .hero-reservation-row.is-message strong {
   white-space: normal;
   line-height: 1.5;
+}
+
+.hero-user-summary.is-guest .hero-reservation-row {
+  grid-template-columns: 3.5rem minmax(0, 1fr) auto;
+  gap: 0.58rem;
+  padding: 0.62rem 0;
+}
+
+.hero-user-summary.is-guest .hero-reservation-row strong {
+  font-size: 0.92rem;
+  line-height: 1.35;
 }
 
 .hero-user-summary-foot {
