@@ -7158,6 +7158,33 @@ export function App() {
   }, [activePage, sessionRole]);
 
   useEffect(() => {
+    if (sessionRole || !['reservations', 'training', 'mypage'].includes(activePage)) return;
+    const notice = activePage === 'reservations'
+      ? {
+        title: '로그인이 필요합니다.',
+        message: '장비사용예약은 로그인한 사용자만 이용할 수 있습니다.',
+        detail: '비로그인 방문자는 장비현황과 공지사항을 읽기 전용으로 확인할 수 있으며, 예약 신청은 Google 본인인증 후 가능합니다.'
+      }
+      : activePage === 'training'
+        ? {
+          title: '로그인이 필요합니다.',
+          message: '교육신청은 로그인한 사용자만 신청할 수 있습니다.',
+          detail: '비로그인 방문자는 교육신청 화면에 진입할 수 없으며, 로그인 후 회원정보 등록을 마치면 장비 담당자에게 교육을 요청할 수 있습니다.'
+        }
+        : {
+          title: '로그인이 필요합니다.',
+          message: '마이페이지는 로그인 후 이용할 수 있습니다.',
+          detail: '비로그인 방문자는 공지사항, 센터소개, 장비현황, FAQ/Q&A 목록만 읽기 전용으로 확인할 수 있습니다.'
+        };
+    setActivePage('home');
+    setGlobalAccessNotice({
+      ...notice,
+      primaryLabel: '로그인하기',
+      onPrimary: () => navigate('login')
+    });
+  }, [activePage, sessionRole]);
+
+  useEffect(() => {
     let isMounted = true;
     void apiGet<NoticeItem[]>('/notices?board=operation').then((items) => {
       if (isMounted && items) {
@@ -7214,7 +7241,7 @@ export function App() {
       setActivePage('home');
       return;
     }
-    if (!sessionUser && page === 'reservations') {
+    if (!sessionRole && page === 'reservations') {
       setGlobalAccessNotice({
         title: '로그인이 필요합니다.',
         message: '장비사용예약은 로그인한 사용자만 이용할 수 있습니다.',
@@ -7224,7 +7251,7 @@ export function App() {
       });
       return;
     }
-    if (!sessionUser && page === 'training') {
+    if (!sessionRole && page === 'training') {
       setGlobalAccessNotice({
         title: '로그인이 필요합니다.',
         message: '교육신청은 로그인한 사용자만 신청할 수 있습니다.',
@@ -7234,7 +7261,7 @@ export function App() {
       });
       return;
     }
-    if (!sessionUser && page === 'mypage') {
+    if (!sessionRole && page === 'mypage') {
       setGlobalAccessNotice({
         title: '로그인이 필요합니다.',
         message: '마이페이지는 로그인 후 이용할 수 있습니다.',
@@ -7984,7 +8011,7 @@ export function App() {
             />
           )}
           {activePage === 'center' && <PlaceholderPage title="센터소개" />}
-          {activePage === 'mypage' && (
+          {activePage === 'mypage' && sessionRole && (
             <MyPageV2
               equipmentItems={activeEquipmentItems}
               calendarEvents={reservationEvents}
