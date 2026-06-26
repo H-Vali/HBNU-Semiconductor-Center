@@ -781,12 +781,20 @@ function getProfessorTone(professor: string) {
 }
 
 const roleLevelOptions: RoleLevel[] = ['교원', '대표', '일반'];
+type OnboardingStatus = NonNullable<ManagedUser['onboardingStatus']>;
+const onboardingStatusOptions: OnboardingStatus[] = ['profile_pending', 'training_pending', 'active'];
 const permissionRoleOptions: PermissionRoleLevel[] = ['교원', '담당', '대표', '일반'];
 const penaltyTypeOptions: PenaltyType[] = ['1주 사용정지', '2주 사용정지', '1개월 정지', '영구정지'];
 const penaltyCategoryOptions: PenaltyCategory[] = ['장비활용관련', '안전관련', '학생자치기구 관련', '사고 유발'];
 
 function normalizeRoleLevel(value: string): RoleLevel {
   return roleLevelOptions.includes(value as RoleLevel) ? value as RoleLevel : '일반';
+}
+
+function getOnboardingStatusLabel(status: ManagedUser['onboardingStatus']) {
+  if (status === 'active') return '활성';
+  if (status === 'profile_pending') return '정보등록 대기';
+  return '교육이수 대기';
 }
 
 function getRoleToneClass(roleLevel: PermissionRoleLevel) {
@@ -5238,7 +5246,8 @@ function UserAddModal({
     phone: '',
     email: '',
     memo: '',
-    authProvider: 'Manual'
+    authProvider: 'Manual',
+    onboardingStatus: 'training_pending'
   });
   const isNewDepartment = departmentMode === newDepartmentValue;
 
@@ -5271,7 +5280,8 @@ function UserAddModal({
       labProfessor: form.labProfessor.trim(),
       phone: formatPhoneNumber(form.phone),
       email: form.email.trim(),
-      memo: form.memo.trim()
+      memo: form.memo.trim(),
+      onboardingStatus: form.onboardingStatus
     });
   }
 
@@ -5334,6 +5344,12 @@ function UserAddModal({
             메모
             <input value={form.memo} onChange={(event) => updateField('memo', event.target.value)} placeholder="관리자 메모" />
           </label>
+          <label>
+            회원상태
+            <select value={form.onboardingStatus} onChange={(event) => updateField('onboardingStatus', event.target.value as OnboardingStatus)}>
+              {onboardingStatusOptions.map((status) => <option key={status} value={status}>{getOnboardingStatusLabel(status)}</option>)}
+            </select>
+          </label>
         </div>
         <div className="user-add-modal-actions">
           <button type="button" className="is-cancel" onClick={onClose}>닫기</button>
@@ -5368,7 +5384,8 @@ function UserEditModal({
     labProfessor: user.labProfessor,
     phone: user.phone,
     email: user.email,
-    memo: user.memo
+    memo: user.memo,
+    onboardingStatus: user.onboardingStatus ?? 'training_pending'
   });
   const isNewDepartment = departmentMode === newDepartmentValue;
 
@@ -5398,7 +5415,8 @@ function UserEditModal({
       labProfessor: form.labProfessor.trim(),
       phone: formatPhoneNumber(form.phone),
       email: form.email.trim(),
-      memo: form.memo.trim()
+      memo: form.memo.trim(),
+      onboardingStatus: form.onboardingStatus
     });
   }
 
@@ -5455,6 +5473,12 @@ function UserEditModal({
           <label className="is-wide">
             메모
             <input value={form.memo} onChange={(event) => updateField('memo', event.target.value)} placeholder="관리자 메모" />
+          </label>
+          <label>
+            회원상태
+            <select value={form.onboardingStatus} onChange={(event) => updateField('onboardingStatus', event.target.value as OnboardingStatus)}>
+              {onboardingStatusOptions.map((status) => <option key={status} value={status}>{getOnboardingStatusLabel(status)}</option>)}
+            </select>
           </label>
         </div>
         <div className="user-add-modal-actions">
@@ -5676,6 +5700,7 @@ function UserManagementPage({
             <col className="user-col-lab" />
             <col className="user-col-phone" />
             <col className="user-col-email" />
+            <col className="user-col-status" />
             <col className="user-col-auth" />
             <col className="user-col-memo" />
           </colgroup>
@@ -5688,6 +5713,7 @@ function UserManagementPage({
               <th>지도교수명</th>
               <th>연락처</th>
               <th>이메일</th>
+              <th>회원상태</th>
               <th>인증</th>
               <th>메모</th>
             </tr>
@@ -5716,6 +5742,7 @@ function UserManagementPage({
                   ))}
                 </select>
               </th>
+              <th />
               <th />
               <th />
               <th>
@@ -5748,6 +5775,7 @@ function UserManagementPage({
                   </td>
                   <td><span className="user-readonly-cell">{user.phone || '-'}</span></td>
                   <td><span className="user-readonly-cell is-email">{user.email || '-'}</span></td>
+                  <td><span className="user-readonly-cell">{getOnboardingStatusLabel(user.onboardingStatus)}</span></td>
                   <td>
                     <span className={`auth-provider-badge is-${(user.authProvider ?? 'Manual').toLowerCase()}`}>{user.authProvider ?? 'Manual'}</span>
                   </td>
@@ -5757,7 +5785,7 @@ function UserManagementPage({
             })}
             {pageUsers.length === 0 && (
               <tr>
-                <td colSpan={9} className="permission-empty-row">조건에 맞는 사용자가 없습니다.</td>
+                <td colSpan={10} className="permission-empty-row">조건에 맞는 사용자가 없습니다.</td>
               </tr>
             )}
           </tbody>
@@ -7654,27 +7682,31 @@ export function App() {
   }
 
   function updateManagedUser(id: string, patch: Partial<ManagedUser>) {
-    const savedAt = new Date().toISOString();
     clearUserSaveFeedbackTimers();
     setUserSaveFeedbackPhase('idle');
-    setManagedUsers((current) => {
-      const next = current.map((user) => (
-        user.id === id ? { ...user, ...patch } : user
-      )).map((user, index) => ({ ...user, index: index + 1 }));
-      localStorage.setItem(STORAGE_KEYS.managedUsers, JSON.stringify(next));
-      localStorage.setItem(STORAGE_KEYS.usersUpdatedAt, savedAt);
-      return next;
-    });
-    setUsersUpdatedAt(savedAt);
     void apiPatch<ManagedUser>(
       `/users/${encodeURIComponent(id)}`,
       patch,
       localStorage.getItem(STORAGE_KEYS.sessionToken)
-    );
+    ).then((savedUser) => {
+      if (!savedUser) {
+        window.alert('사용자 정보를 DB에 저장하지 못했습니다. 로그인 상태와 관리자 권한을 확인해 주세요.');
+        return;
+      }
+      const savedAt = new Date().toISOString();
+      setManagedUsers((current) => {
+        const next = normalizeManagedUsers(current.map((user) => (
+          user.id === id ? { ...user, ...savedUser } : user
+        )));
+        localStorage.setItem(STORAGE_KEYS.managedUsers, JSON.stringify(next));
+        localStorage.setItem(STORAGE_KEYS.usersUpdatedAt, savedAt);
+        return next;
+      });
+      setUsersUpdatedAt(savedAt);
+    });
   }
 
   function addManagedUser(user: Omit<ManagedUser, 'id' | 'index'>) {
-    const savedAt = new Date().toISOString();
     const newUser: ManagedUser = {
       ...user,
       id: `managed-user-${Date.now()}`,
@@ -7684,48 +7716,51 @@ export function App() {
     };
     clearUserSaveFeedbackTimers();
     setUserSaveFeedbackPhase('idle');
-    setManagedUsers((current) => {
-      const next = normalizeManagedUsers([...current, newUser]);
-      localStorage.setItem(STORAGE_KEYS.managedUsers, JSON.stringify(next));
-      localStorage.setItem(STORAGE_KEYS.usersUpdatedAt, savedAt);
-      return next;
-    });
-    setUsersUpdatedAt(savedAt);
     void apiPost<ManagedUser>(
       '/users',
       newUser,
       localStorage.getItem(STORAGE_KEYS.sessionToken)
     ).then((savedUser) => {
-      if (!savedUser) return;
+      if (!savedUser) {
+        window.alert('신규 사용자를 DB에 등록하지 못했습니다. 로그인 상태와 관리자 권한을 확인해 주세요.');
+        return;
+      }
+      const savedAt = new Date().toISOString();
       setManagedUsers((current) => {
-        const next = current.map((item) => item.id === newUser.id ? savedUser : item);
-        const normalized = normalizeManagedUsers(next);
+        const normalized = mergeManagedUsers(current, [savedUser]);
         localStorage.setItem(STORAGE_KEYS.managedUsers, JSON.stringify(normalized));
+        localStorage.setItem(STORAGE_KEYS.usersUpdatedAt, savedAt);
         return normalized;
       });
+      setUsersUpdatedAt(savedAt);
     });
   }
 
   function deleteManagedUser(id: string) {
-    const savedAt = new Date().toISOString();
     clearUserSaveFeedbackTimers();
     setUserSaveFeedbackPhase('idle');
-    setManagedUsers((current) => {
-      const next = current.filter((user) => user.id !== id).map((user, index) => ({ ...user, index: index + 1 }));
-      localStorage.setItem(STORAGE_KEYS.managedUsers, JSON.stringify(next));
-      localStorage.setItem(STORAGE_KEYS.usersUpdatedAt, savedAt);
-      return next;
-    });
-    setEquipmentPermissions((current) => {
-      const { [id]: _deletedUserPermissions, ...next } = current;
-      localStorage.setItem(STORAGE_KEYS.equipmentPermissions, JSON.stringify(next));
-      return next;
-    });
-    setUsersUpdatedAt(savedAt);
     void apiDelete<ManagedUser>(
       `/users/${encodeURIComponent(id)}`,
       localStorage.getItem(STORAGE_KEYS.sessionToken)
-    );
+    ).then((deletedUser) => {
+      if (!deletedUser) {
+        window.alert('사용자를 DB에서 삭제하지 못했습니다. 로그인 상태와 관리자 권한을 확인해 주세요.');
+        return;
+      }
+      const savedAt = new Date().toISOString();
+      setManagedUsers((current) => {
+        const next = current.filter((user) => user.id !== id).map((user, index) => ({ ...user, index: index + 1 }));
+        localStorage.setItem(STORAGE_KEYS.managedUsers, JSON.stringify(next));
+        localStorage.setItem(STORAGE_KEYS.usersUpdatedAt, savedAt);
+        return next;
+      });
+      setEquipmentPermissions((current) => {
+        const { [id]: _deletedUserPermissions, ...next } = current;
+        localStorage.setItem(STORAGE_KEYS.equipmentPermissions, JSON.stringify(next));
+        return next;
+      });
+      setUsersUpdatedAt(savedAt);
+    });
   }
 
   function importManagedUsers(rows: ManagedUser[]) {
@@ -7736,22 +7771,30 @@ export function App() {
   }
 
   function saveManagedUsers() {
-    const savedAt = new Date().toISOString();
-    const normalized = managedUsers.map((user, index) => ({ ...user, index: index + 1 }));
-    setManagedUsers(normalized);
-    localStorage.setItem(STORAGE_KEYS.managedUsers, JSON.stringify(normalized));
-    localStorage.setItem(STORAGE_KEYS.usersUpdatedAt, savedAt);
-    setUsersUpdatedAt(savedAt);
     clearUserSaveFeedbackTimers();
     setUserSaveFeedbackPhase('idle');
-    window.requestAnimationFrame(() => setUserSaveFeedbackPhase('feedback'));
-    userSaveFeedbackTimers.current = [
-      window.setTimeout(() => setUserSaveFeedbackPhase('returning'), 2600),
-      window.setTimeout(() => {
-        setUserSaveFeedbackPhase('idle');
-        userSaveFeedbackTimers.current = [];
-      }, 3500)
-    ];
+    const token = localStorage.getItem(STORAGE_KEYS.sessionToken);
+    const rows = managedUsers.map((user, index) => ({ ...user, index: index + 1 }));
+    void Promise.all(rows.map((user) => apiPost<ManagedUser>('/users', user, token))).then((savedUsers) => {
+      if (savedUsers.some((user) => !user)) {
+        window.alert('일부 사용자 정보를 DB에 저장하지 못했습니다. 로그인 상태와 관리자 권한을 확인해 주세요.');
+        return;
+      }
+      const savedAt = new Date().toISOString();
+      const normalized = normalizeManagedUsers(savedUsers.filter(Boolean) as ManagedUser[]);
+      setManagedUsers(normalized);
+      localStorage.setItem(STORAGE_KEYS.managedUsers, JSON.stringify(normalized));
+      localStorage.setItem(STORAGE_KEYS.usersUpdatedAt, savedAt);
+      setUsersUpdatedAt(savedAt);
+      window.requestAnimationFrame(() => setUserSaveFeedbackPhase('feedback'));
+      userSaveFeedbackTimers.current = [
+        window.setTimeout(() => setUserSaveFeedbackPhase('returning'), 2600),
+        window.setTimeout(() => {
+          setUserSaveFeedbackPhase('idle');
+          userSaveFeedbackTimers.current = [];
+        }, 3500)
+      ];
+    });
   }
 
   function saveEquipmentPermissions(userId: string, equipmentIds: string[]) {

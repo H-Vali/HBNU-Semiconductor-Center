@@ -12,7 +12,7 @@ const managedUserSchema = z.object({
   phone: z.string().default(''),
   email: z.string().email(),
   memo: z.string().default(''),
-  authProvider: z.enum(['Google', 'Manual']).default('Manual'),
+  authProvider: z.enum(['Google', 'Kakao', 'Manual']).default('Manual'),
   googleSubject: z.string().optional(),
   onboardingStatus: z.enum(['profile_pending', 'training_pending', 'active']).default('training_pending')
 });
@@ -48,6 +48,7 @@ function isConfiguredAdminEmail(email: string) {
 }
 
 function mapUserRow(row: Record<string, unknown>, index = 0): ManagedUser {
+  const authProvider = String(row.auth_provider ?? 'Manual');
   return {
     id: String(row.id),
     index,
@@ -58,7 +59,7 @@ function mapUserRow(row: Record<string, unknown>, index = 0): ManagedUser {
     phone: String(row.phone ?? ''),
     email: String(row.email),
     memo: String(row.memo ?? ''),
-    authProvider: String(row.auth_provider ?? 'Manual') === 'Google' ? 'Google' : 'Manual',
+    authProvider: authProvider === 'Google' || authProvider === 'Kakao' ? authProvider : 'Manual',
     googleSubject: row.google_subject ? String(row.google_subject) : undefined,
     onboardingStatus: row.onboarding_status === 'active' || row.onboarding_status === 'profile_pending'
       ? row.onboarding_status
