@@ -101,6 +101,42 @@ type ApiReservationEvent = {
   userId?: string;
   createdByRole?: string;
 };
+type ApiTrainingPurpose = 'research' | 'class' | 'other';
+type ApiTrainingRequestStatus = 'requested' | 'scheduled' | 'completed' | 'rejected';
+type ApiTrainingRequest = {
+  id: string;
+  equipmentId: string;
+  equipmentName: string;
+  applicantUserId: string;
+  applicantName: string;
+  applicantEmail: string;
+  applicantDepartment: string;
+  requestedAt: string;
+  preferredDate: string;
+  preferredStart: string;
+  preferredEnd: string;
+  preferredNote: string;
+  purpose: ApiTrainingPurpose;
+  message: string;
+  status: ApiTrainingRequestStatus;
+  scheduledDate?: string;
+  scheduledStart?: string;
+  scheduledEnd?: string;
+  scheduleChangeReason?: string;
+  handledBy?: string;
+  handledByName?: string;
+  rejectedReason?: string;
+  completedAt?: string;
+};
+type TrainingRequestInput = {
+  equipmentId: string;
+  preferredDate: string;
+  preferredStart: string;
+  preferredEnd: string;
+  preferredNote: string;
+  purpose: ApiTrainingPurpose;
+  message: string;
+};
 type ConsumableItem = {
   id: string;
   category: string;
@@ -3019,6 +3055,35 @@ const managerTrainingTabs: Array<{ status: ManagerTrainingRequestStatus; label: 
   { status: 'rejected', label: '반려' }
 ];
 
+function apiPurposeToTrainingPurpose(purpose: ApiTrainingPurpose): ManagerTrainingRequestView['purpose'] {
+  if (purpose === 'class') return '수업' as ManagerTrainingRequestView['purpose'];
+  if (purpose === 'other') return '기타' as ManagerTrainingRequestView['purpose'];
+  return '연구' as ManagerTrainingRequestView['purpose'];
+}
+
+function trainingPurposeToApi(purpose: ManagerTrainingRequestView['purpose']): ApiTrainingPurpose {
+  const value = String(purpose);
+  if (value.includes('수업')) return 'class';
+  if (value.includes('기타')) return 'other';
+  return 'research';
+}
+
+function trainingStatusToApplicationStatus(status: ApiTrainingRequestStatus): TrainingApplicationStatus {
+  if (status === 'completed') return 'completed';
+  if (status === 'scheduled') return 'scheduled';
+  return 'pending';
+}
+
+function splitTrainingPreferredDate(value: string) {
+  if (!value.includes('T')) {
+    return { date: value, start: '', end: '' };
+  }
+  const [date, start = ''] = value.split('T');
+  const [hour = '09', minute = '00'] = start.split(':');
+  const endHour = String(Math.min(Number(hour) + 1, 23)).padStart(2, '0');
+  return { date, start, end: `${endHour}:${minute}` };
+}
+
 function getDateInputOffset(days: number) {
   const date = new Date();
   date.setDate(date.getDate() + days);
@@ -3073,20 +3138,73 @@ function createManagerTrainingRequests(equipmentItems: EquipmentItem[], users: M
   });
 }
 
+function trainingRequestToApplication(request: ApiTrainingRequest, managerNameById: Map<string, string>): TrainingApplication {
+  const status = trainingStatusToApplicationStatus(request.status);
+  return {
+    id: request.id,
+    equipmentName: request.equipmentName,
+    status,
+    requestedAt: request.requestedAt.slice(0, 10),
+    managerName: request.handledBy ? managerNameById.get(request.handledBy) ?? request.handledByName ?? '담당자 미지정' : request.handledByName ?? '담당자 미지정',
+    scheduledAt: request.scheduledDate ? `${request.scheduledDate} ${request.scheduledStart ?? ''}`.trim() : undefined,
+    note: status === 'completed'
+      ? '예약 권한 부여됨'
+      : request.status === 'rejected'
+        ? request.rejectedReason ?? '반려됨'
+        : status === 'scheduled'
+          ? '교육 일정 확정'
+          : '담당자 승인 대기'
+  };
+}
+
+function trainingRequestToManagerView(
+  request: ApiTrainingRequest,
+  equipmentItems: EquipmentItem[],
+  users: ManagedUser[]
+): ManagerTrainingRequestView | null {
+  const equipment = equipmentItems.find((item) => item.id === request.equipmentId);
+  const applicant = users.find((user) => user.id === request.applicantUserId);
+  if (!equipment || !applicant) return null;
+  return {
+    id: request.id,
+    equipment,
+    applicant,
+    requestedAt: request.requestedAt,
+    preferredDate: request.preferredDate,
+    preferredStart: request.preferredStart,
+    preferredEnd: request.preferredEnd,
+    preferredNote: request.preferredNote,
+    purpose: apiPurposeToTrainingPurpose(request.purpose),
+    message: request.message,
+    status: request.status,
+    scheduledDate: request.scheduledDate,
+    scheduledStart: request.scheduledStart,
+    scheduledEnd: request.scheduledEnd,
+    scheduleChangeReason: request.scheduleChangeReason,
+    handledBy: request.handledBy,
+    rejectedReason: request.rejectedReason,
+    completedAt: request.completedAt
+  };
+}
+
 function TrainingPage({
   equipmentItems,
   users,
   sessionUser,
   currentUser,
   permissions,
-  onNavigate
+  trainingRequests,
+  onNavigate,
+  onCreateTrainingRequest
 }: {
   equipmentItems: EquipmentItem[];
   users: ManagedUser[];
   sessionUser: StoredSessionUser | null;
   currentUser: ManagedUser | null;
   permissions: EquipmentPermissionMap;
+  trainingRequests: ApiTrainingRequest[];
   onNavigate: (page: PageKey) => void;
+  onCreateTrainingRequest: (input: TrainingRequestInput) => Promise<ApiTrainingRequest | null>;
 }) {
   const currentUserPermissionIds = currentUser ? permissions[currentUser.id] ?? [] : [];
   const managerNameById = useMemo(() => new Map(users.map((user) => [user.id, user.name])), [users]);
@@ -3136,6 +3254,9 @@ function TrainingPage({
       }
     ].filter(Boolean) as TrainingApplication[];
   });
+  const displayedApplications = trainingRequests.length > 0
+    ? trainingRequests.map((request) => trainingRequestToApplication(request, managerNameById))
+    : applications;
 
   const filteredEquipment = useMemo(() => (
     requestableEquipment.filter((item) => item.group === selectedEquipmentGroup)
@@ -3147,7 +3268,7 @@ function TrainingPage({
   const canSubmitTrainingRequest = Boolean(selectedEquipment && preferredDate && message.trim());
   const activeStep = submittedTrainingRequest ? 3 : selectedEquipment ? 2 : 1;
 
-  function submitTrainingRequest(event: FormEvent<HTMLFormElement>) {
+  async function submitTrainingRequest(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!sessionUser) {
       setAccessNotice({
@@ -3172,16 +3293,20 @@ function TrainingPage({
     if (!selectedEquipment || !canSubmitTrainingRequest) return;
     const confirmed = window.confirm(`${selectedEquipment.name} 교육 신청을 담당자에게 전송하시겠습니까?`);
     if (!confirmed) return;
-    const nextApplication: TrainingApplication = {
-      id: `training-${Date.now()}`,
-      equipmentName: selectedEquipment.name,
-      status: 'pending',
-      requestedAt: new Date().toISOString().slice(0, 10),
-      managerName: selectedManagerName,
-      scheduledAt: preferredDate.replace('T', ' '),
-      note: `${purpose} 목적 신청`
-    };
-    setApplications((current) => [nextApplication, ...current]);
+    const preferred = splitTrainingPreferredDate(preferredDate);
+    const savedRequest = await onCreateTrainingRequest({
+      equipmentId: selectedEquipment.id,
+      preferredDate: preferred.date,
+      preferredStart: preferred.start,
+      preferredEnd: preferred.end,
+      preferredNote: selectedManagerName,
+      purpose: trainingPurposeToApi(purpose),
+      message: message.trim()
+    });
+    if (!savedRequest) {
+      window.alert('교육신청을 DB에 저장하지 못했습니다. 로그인 상태와 회원정보 등록 여부를 확인해 주세요.');
+      return;
+    }
     setPreferredDate('');
     setPurpose('연구');
     setMessage('');
@@ -3326,7 +3451,7 @@ function TrainingPage({
               <button type="button">전체 →</button>
             </div>
             <div className="training-application-summary">
-              {applications.length > 0 ? applications.map((application) => {
+              {displayedApplications.length > 0 ? displayedApplications.map((application) => {
                 const meta = trainingStatusMeta[application.status];
                 return (
                   <article key={application.id} className="training-status-row">
@@ -3378,16 +3503,22 @@ function TrainingManagementPage({
   users,
   equipmentItems,
   permissions,
+  trainingRequests,
   currentUser,
   sessionRole,
-  onGrantPermission
+  onScheduleTrainingRequest,
+  onRejectTrainingRequest,
+  onCompleteTrainingRequest
 }: {
   users: ManagedUser[];
   equipmentItems: EquipmentItem[];
   permissions: EquipmentPermissionMap;
+  trainingRequests: ApiTrainingRequest[];
   currentUser: ManagedUser | null;
   sessionRole: Role | null;
-  onGrantPermission: (userId: string, equipmentId: string) => void;
+  onScheduleTrainingRequest: (requestId: string, input: { scheduledDate: string; scheduledStart: string; scheduledEnd: string; scheduleChangeReason: string }) => Promise<ApiTrainingRequest | null>;
+  onRejectTrainingRequest: (requestId: string, rejectedReason: string) => Promise<ApiTrainingRequest | null>;
+  onCompleteTrainingRequest: (requestId: string) => Promise<ApiTrainingRequest | null>;
 }) {
   const manageableEquipment = useMemo(() => (
     sessionRole === 'ADMIN'
@@ -3398,10 +3529,12 @@ function TrainingManagementPage({
   ), [currentUser, equipmentItems, sessionRole]);
   const [selectedStatus, setSelectedStatus] = useState<ManagerTrainingRequestStatus>('requested');
   const [expandedRequestId, setExpandedRequestId] = useState('');
-  const [requestPatches, setRequestPatches] = useState<Record<string, ManagerTrainingPatch>>({});
   const [scheduleDrafts, setScheduleDrafts] = useState<Record<string, ManagerTrainingDraft>>({});
-  const requestSource = useMemo(() => createManagerTrainingRequests(manageableEquipment, users), [manageableEquipment, users]);
-  const requests = useMemo(() => requestSource.map((request) => ({ ...request, ...requestPatches[request.id] })), [requestPatches, requestSource]);
+  const requests = useMemo(() => (
+    trainingRequests
+      .map((request) => trainingRequestToManagerView(request, manageableEquipment, users))
+      .filter(Boolean) as ManagerTrainingRequestView[]
+  ), [manageableEquipment, trainingRequests, users]);
   const filteredRequests = requests.filter((request) => request.status === selectedStatus);
   const requestedCount = requests.filter((item) => item.status === 'requested').length;
   const scheduledCount = requests.filter((item) => item.status === 'scheduled').length;
@@ -3443,55 +3576,44 @@ function TrainingManagementPage({
     setScheduleDrafts((drafts) => ({ ...drafts, [requestId]: { ...current, ...patch } }));
   }
 
-  function scheduleRequest(request: ManagerTrainingRequestView) {
+  async function scheduleRequest(request: ManagerTrainingRequestView) {
     const draft = getScheduleDraft(request);
     if (!draft.date || !draft.start || !draft.end || draft.end <= draft.start) {
       window.alert('교육 종료 시간은 시작 시간보다 늦어야 합니다.');
       return;
     }
-    setRequestPatches((current) => ({
-      ...current,
-      [request.id]: {
-        ...current[request.id],
-        status: 'scheduled',
-        scheduledDate: draft.date,
-        scheduledStart: draft.start,
-        scheduledEnd: draft.end,
-        scheduleChangeReason: isScheduleChanged(request, draft) ? draft.changeReason : '',
-        handledBy: currentUser?.id ?? 'admin'
-      }
-    }));
+    const savedRequest = await onScheduleTrainingRequest(request.id, {
+      scheduledDate: draft.date,
+      scheduledStart: draft.start,
+      scheduledEnd: draft.end,
+      scheduleChangeReason: isScheduleChanged(request, draft) ? draft.changeReason : ''
+    });
+    if (!savedRequest) {
+      window.alert('교육 일정을 DB에 저장하지 못했습니다. 담당 권한을 확인해 주세요.');
+      return;
+    }
     setSelectedStatus('scheduled');
     window.alert(`${request.applicant.name} 신청자의 교육 일정이 확정되었습니다.`);
   }
 
-  function rejectRequest(request: ManagerTrainingRequestView) {
+  async function rejectRequest(request: ManagerTrainingRequestView) {
     const reason = window.prompt('반려 사유를 입력해주세요.');
     if (reason === null) return;
-    setRequestPatches((current) => ({
-      ...current,
-      [request.id]: {
-        ...current[request.id],
-        status: 'rejected',
-        rejectedReason: reason.trim() || '담당자 일정 조율 필요',
-        handledBy: currentUser?.id ?? 'admin'
-      }
-    }));
+    const savedRequest = await onRejectTrainingRequest(request.id, reason.trim() || '담당자 일정 조율 필요');
+    if (!savedRequest) {
+      window.alert('교육신청 반려 상태를 DB에 저장하지 못했습니다. 담당 권한을 확인해 주세요.');
+      return;
+    }
     setSelectedStatus('rejected');
   }
 
-  function completeRequest(request: ManagerTrainingRequestView) {
+  async function completeRequest(request: ManagerTrainingRequestView) {
     if (request.status !== 'scheduled') return;
-    onGrantPermission(request.applicant.id, request.equipment.id);
-    setRequestPatches((current) => ({
-      ...current,
-      [request.id]: {
-        ...current[request.id],
-        status: 'completed',
-        completedAt: new Date().toISOString(),
-        handledBy: currentUser?.id ?? 'admin'
-      }
-    }));
+    const savedRequest = await onCompleteTrainingRequest(request.id);
+    if (!savedRequest) {
+      window.alert('교육 이수 처리를 DB에 저장하지 못했습니다. 담당 권한을 확인해 주세요.');
+      return;
+    }
     setSelectedStatus('completed');
     window.alert(`${request.applicant.name} 신청자에게 ${request.equipment.name} 예약 권한이 부여되었습니다.`);
   }
@@ -7196,6 +7318,7 @@ export function App() {
     }));
     return [...previewTestReservations, ...baseEvents];
   });
+  const [trainingRequests, setTrainingRequests] = useState<ApiTrainingRequest[]>([]);
   const [penaltyRecords, setPenaltyRecords] = useState<PenaltyRecord[]>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.penaltyRecords);
@@ -7339,6 +7462,21 @@ export function App() {
       isMounted = false;
     };
   }, [equipmentItems]);
+
+  useEffect(() => {
+    const token = localStorage.getItem(STORAGE_KEYS.sessionToken);
+    if (!token || !sessionRole) {
+      setTrainingRequests([]);
+      return;
+    }
+    let isMounted = true;
+    void apiGet<ApiTrainingRequest[]>('/training-requests', token).then((items) => {
+      if (isMounted && items) setTrainingRequests(items);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [sessionRole]);
 
   function navigate(page: PageKey) {
     if (adminOnlyPages.has(page) && sessionRole !== 'ADMIN') {
@@ -7550,6 +7688,71 @@ export function App() {
       `/faqs/${encodeURIComponent(faqId)}`,
       localStorage.getItem(STORAGE_KEYS.sessionToken)
     );
+  }
+
+  function upsertTrainingRequest(request: ApiTrainingRequest) {
+    setTrainingRequests((current) => {
+      const exists = current.some((item) => item.id === request.id);
+      return exists
+        ? current.map((item) => item.id === request.id ? request : item)
+        : [request, ...current];
+    });
+  }
+
+  async function refreshEquipmentPermissions() {
+    const token = localStorage.getItem(STORAGE_KEYS.sessionToken);
+    if (!token || !sessionRole) return;
+    const snapshot = await apiGet<EquipmentPermissionSnapshot>('/equipment-permissions', token);
+    if (snapshot) applyEquipmentPermissionSnapshot(snapshot);
+  }
+
+  async function createTrainingRequest(input: TrainingRequestInput) {
+    const savedRequest = await apiPost<ApiTrainingRequest>(
+      '/training-requests',
+      input,
+      localStorage.getItem(STORAGE_KEYS.sessionToken)
+    );
+    if (savedRequest) upsertTrainingRequest(savedRequest);
+    return savedRequest;
+  }
+
+  async function scheduleTrainingRequest(requestId: string, input: { scheduledDate: string; scheduledStart: string; scheduledEnd: string; scheduleChangeReason: string }) {
+    const savedRequest = await apiPatch<ApiTrainingRequest>(
+      `/training-requests/${encodeURIComponent(requestId)}/schedule`,
+      input,
+      localStorage.getItem(STORAGE_KEYS.sessionToken)
+    );
+    if (savedRequest) upsertTrainingRequest(savedRequest);
+    return savedRequest;
+  }
+
+  async function rejectTrainingRequest(requestId: string, rejectedReason: string) {
+    const savedRequest = await apiPatch<ApiTrainingRequest>(
+      `/training-requests/${encodeURIComponent(requestId)}/reject`,
+      { rejectedReason },
+      localStorage.getItem(STORAGE_KEYS.sessionToken)
+    );
+    if (savedRequest) upsertTrainingRequest(savedRequest);
+    return savedRequest;
+  }
+
+  async function completeTrainingRequest(requestId: string) {
+    const savedRequest = await apiPatch<ApiTrainingRequest>(
+      `/training-requests/${encodeURIComponent(requestId)}/complete`,
+      {},
+      localStorage.getItem(STORAGE_KEYS.sessionToken)
+    );
+    if (savedRequest) {
+      upsertTrainingRequest(savedRequest);
+      void refreshEquipmentPermissions();
+      const token = localStorage.getItem(STORAGE_KEYS.sessionToken);
+      if (token) {
+        void apiGet<GoogleAuthResponse>('/auth/me', token).then((session) => {
+          if (session?.managedUser) registerAuthenticatedUser(session.managedUser);
+        });
+      }
+    }
+    return savedRequest;
   }
 
   function addReservation(event: ReservationEvent) {
@@ -7964,7 +8167,9 @@ export function App() {
               sessionUser={sessionUser}
               currentUser={currentManagedUser}
               permissions={equipmentPermissions}
+              trainingRequests={trainingRequests}
               onNavigate={navigate}
+              onCreateTrainingRequest={createTrainingRequest}
             />
           )}
           {activePage === 'trainingManagement' && (
@@ -7973,9 +8178,12 @@ export function App() {
                 users={managedUsers}
                 equipmentItems={activeEquipmentItems}
                 permissions={equipmentPermissions}
+                trainingRequests={trainingRequests}
                 currentUser={currentManagedUser}
                 sessionRole={sessionRole}
-                onGrantPermission={grantAssignedEquipmentPermission}
+                onScheduleTrainingRequest={scheduleTrainingRequest}
+                onRejectTrainingRequest={rejectTrainingRequest}
+                onCompleteTrainingRequest={completeTrainingRequest}
               />
             ) : (
               <PlaceholderPage title="접근 권한이 없습니다" />
