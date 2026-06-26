@@ -75,7 +75,7 @@ function toSessionUser(user: ManagedUser, role: Role = 'USER') {
   };
 }
 
-async function getPrimaryRole(userId: string): Promise<Role> {
+async function getGrantedPrimaryRole(userId: string): Promise<Role> {
   if (!hasDatabase()) return 'USER';
   const result = await query<{ name: Role }>(
     `select r.name
@@ -87,6 +87,17 @@ async function getPrimaryRole(userId: string): Promise<Role> {
     [userId]
   );
   return result.rows[0]?.name ?? 'USER';
+}
+
+async function hasManagedEquipment(userId: string) {
+  if (!hasDatabase()) return false;
+  const result = await query<{ count: string }>(
+    `select count(*)::text as count
+     from equipment
+     where manager_user_id = $1 and deleted_at is null`,
+    [userId]
+  );
+  return Number(result.rows[0]?.count ?? 0) > 0;
 }
 
 async function grantRole(userId: string, role: Role) {
@@ -103,6 +114,21 @@ async function grantConfiguredAdminRole(user: ManagedUser) {
   if (!isConfiguredAdminEmail(user.email)) return false;
   await grantRole(user.id, 'ADMIN');
   return true;
+}
+
+async function getEffectiveRole(user: ManagedUser): Promise<Role> {
+  if (await grantConfiguredAdminRole(user)) return 'ADMIN';
+
+  const grantedRole = await getGrantedPrimaryRole(user.id);
+  if (grantedRole === 'ADMIN') return 'ADMIN';
+  if (grantedRole === 'MANAGER') return 'MANAGER';
+
+  if (await hasManagedEquipment(user.id)) {
+    await grantRole(user.id, 'MANAGER');
+    return 'MANAGER';
+  }
+
+  return 'USER';
 }
 
 export async function listUsers() {
@@ -255,6 +281,21 @@ async function findUserByEmail(email: string) {
   return result.rows[0] ? mapUserRow(result.rows[0], 1) : null;
 }
 
+async function findUserById(id: string) {
+  if (!hasDatabase()) {
+    return fallbackUsers.find((user) => user.id === id) ?? null;
+  }
+  const result = await query<Record<string, unknown>>(
+    `select id, email, name, auth_provider, google_subject, department, lab_professor, phone, memo,
+      role_level, onboarding_status
+     from users
+     where id = $1 and deleted_at is null
+     limit 1`,
+    [id]
+  );
+  return result.rows[0] ? mapUserRow(result.rows[0], 1) : null;
+}
+
 async function verifyGoogleCredential(credential: string): Promise<RegistrationProfile> {
   const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`);
   if (!response.ok) {
@@ -299,8 +340,7 @@ export async function authenticateGoogle(input: unknown) {
     };
   }
 
-  const isAdmin = await grantConfiguredAdminRole(user);
-  const role = isAdmin ? 'ADMIN' : await getPrimaryRole(user.id);
+  const role = await getEffectiveRole(user);
   const sessionUser = toSessionUser(user, role);
   return {
     requiresRegistration: false,
@@ -336,8 +376,26 @@ export async function registerGoogleUser(input: unknown) {
     googleSubject: profile.googleSubject,
     onboardingStatus: 'training_pending'
   });
-  const isAdmin = await grantConfiguredAdminRole(user);
-  const sessionUser = toSessionUser(user, isAdmin ? 'ADMIN' : 'USER');
+  const role = await getEffectiveRole(user);
+  const sessionUser = toSessionUser(user, role);
+  return {
+    user: sessionUser,
+    managedUser: user,
+    token: signToken(sessionUser)
+  };
+}
+
+export async function getCurrentAuthSession(actor: { id?: string; email?: string }) {
+  const user = actor.id
+    ? await findUserById(actor.id) ?? (actor.email ? await findUserByEmail(actor.email) : null)
+    : actor.email
+      ? await findUserByEmail(actor.email)
+      : null;
+
+  if (!user) return null;
+
+  const role = await getEffectiveRole(user);
+  const sessionUser = toSessionUser(user, role);
   return {
     user: sessionUser,
     managedUser: user,

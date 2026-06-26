@@ -32,6 +32,7 @@ import {
   authenticateGoogle,
   createUser,
   deleteUser,
+  getCurrentAuthSession,
   listUsers,
   registerGoogleUser,
   updateUser
@@ -81,6 +82,16 @@ app.post('/auth/register', async (req, res, next) => {
     res.status(201).json(await registerGoogleUser(req.body));
   } catch (error) {
     next(error);
+  }
+});
+
+app.get('/auth/me', requireAuth, async (req, res, next) => {
+  try {
+    const session = await getCurrentAuthSession(req.user!);
+    if (!session) return res.status(404).json({ message: 'User not found' });
+    return res.json(session);
+  } catch (error) {
+    return next(error);
   }
 });
 

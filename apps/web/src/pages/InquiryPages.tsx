@@ -3,7 +3,7 @@ import { CalendarDays, CheckCircle2, Factory, GraduationCap, LayoutDashboard, Me
 import { STORAGE_KEYS } from '../appStorage';
 import { apiGet, apiPatch, apiPost } from '../apiClient';
 
-type Role = 'USER' | 'ADMIN';
+type Role = 'USER' | 'MANAGER' | 'ADMIN';
 
 function formatSeoulDateTime(value: string) {
   const date = new Date(value);

@@ -62,7 +62,7 @@ import { FaqPage, QnaPage, faqItems as initialFaqItems, type FaqItem } from './p
 import { apiDelete, apiGet, apiPatch, apiPost } from './apiClient';
 
 type PageKey = 'home' | 'notice' | 'operationNotice' | 'meetingNotice' | 'center' | 'facility' | 'equipment' | 'training' | 'trainingManagement' | 'faq' | 'qna' | 'reservations' | 'managerPermissions' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'equipmentAdmin' | 'penalties' | 'noticeAdmin' | 'educationAdmin' | 'login';
-type Role = 'USER' | 'ADMIN';
+type Role = 'USER' | 'MANAGER' | 'ADMIN';
 type UsagePeriod = '24H' | '1W' | '1M';
 type EquipmentRuntimeStatus = 'active' | 'maintenance' | 'idle';
 type ReservationStatus = 'pending' | 'approved' | 'maintenance' | 'external';
@@ -7126,6 +7126,32 @@ export function App() {
       return null;
     }
   });
+
+  useEffect(() => {
+    const token = localStorage.getItem(STORAGE_KEYS.sessionToken);
+    if (!token) return;
+
+    let isMounted = true;
+    void apiGet<GoogleAuthResponse>('/auth/me', token).then((session) => {
+      if (!isMounted) return;
+      if (!session?.user || !session.token) {
+        localStorage.removeItem(STORAGE_KEYS.sessionToken);
+        localStorage.removeItem(STORAGE_KEYS.sessionUser);
+        setSessionRole(null);
+        return;
+      }
+
+      localStorage.setItem(STORAGE_KEYS.sessionToken, session.token);
+      localStorage.setItem(STORAGE_KEYS.sessionUser, JSON.stringify(session.user));
+      if (session.managedUser) registerAuthenticatedUser(session.managedUser);
+      setSessionRole(session.user.role ?? 'USER');
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const [reservationEvents, setReservationEvents] = useState<ReservationEvent[]>(() => {
     const previewTestReservations = createRealtimeTestReservations(fallbackEquipment);
     const baseEvents = events.map((event) => ({
