@@ -41,6 +41,7 @@ dotenv.config();
 
 const app = express();
 const port = Number(process.env.PORT ?? 4000);
+const devLoginEnabled = process.env.ENABLE_DEV_LOGIN === 'true' && !isProductionRuntime;
 
 app.use(helmet());
 app.use(cors({ origin: process.env.CLIENT_ORIGIN ?? 'http://localhost:5173' }));
@@ -48,7 +49,7 @@ app.use(express.json());
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
-if (!isProductionRuntime) {
+if (devLoginEnabled) {
   app.post('/auth/dev-login', (req, res) => {
     const body = z.object({
       role: z.enum(['USER', 'MANAGER', 'ADMIN']).default('USER')
