@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import express from 'express';
 import helmet from 'helmet';
 import { z } from 'zod';
-import { isProductionRuntime, requireAuth, requireRole, signToken } from './auth.js';
+import { requireAuth, requireRole } from './auth.js';
 import {
   answerQnaItem,
   createFaq,
@@ -41,30 +41,12 @@ dotenv.config();
 
 const app = express();
 const port = Number(process.env.PORT ?? 4000);
-const devLoginEnabled = false;
 
 app.use(helmet());
 app.use(cors({ origin: process.env.CLIENT_ORIGIN ?? 'http://localhost:5173' }));
 app.use(express.json());
 
 app.get('/health', (_req, res) => res.json({ ok: true, api: 'apps/api', build: 'current-api' }));
-
-if (devLoginEnabled) {
-  app.post('/auth/dev-login', (req, res) => {
-    const body = z.object({
-      role: z.enum(['USER', 'MANAGER', 'ADMIN']).default('USER')
-    }).parse(req.body ?? {});
-
-    const user = {
-      id: 'dev-user',
-      email: body.role === 'ADMIN' ? 'admin@hbnu.ac.kr' : 'user@hbnu.ac.kr',
-      name: body.role === 'ADMIN' ? '관리자' : '연구원',
-      role: body.role
-    };
-
-    res.json({ user, token: signToken(user) });
-  });
-}
 
 app.post('/auth/google', async (req, res, next) => {
   try {
@@ -310,6 +292,14 @@ app.get('/admin/summary', requireAuth, requireRole(['ADMIN']), async (_req, res,
 });
 
 app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'type' in error &&
+    (error as { type?: unknown }).type === 'entity.parse.failed'
+  ) {
+    return res.status(400).json({ message: 'Malformed JSON request body' });
+  }
   if (error instanceof ReservationOverlapError) {
     return res.status(409).json({ message: error.message });
   }
