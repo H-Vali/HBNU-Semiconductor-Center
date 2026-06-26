@@ -130,6 +130,32 @@ const statements = [
   )`,
   `create index if not exists equipment_permission_events_user_idx on equipment_permission_events (user_id, created_at desc)`,
   `create index if not exists equipment_permission_events_equipment_idx on equipment_permission_events (equipment_id, created_at desc)`,
+  `create table if not exists training_requests (
+    id text primary key,
+    equipment_id text not null references equipment(id) on delete restrict,
+    applicant_user_id text not null references users(id) on delete cascade,
+    requested_at timestamptz not null default now(),
+    preferred_date text not null,
+    preferred_start text not null default '',
+    preferred_end text not null default '',
+    preferred_note text not null default '',
+    purpose text not null default 'research' check (purpose in ('research', 'class', 'other')),
+    message text not null default '',
+    status text not null default 'requested' check (status in ('requested', 'scheduled', 'completed', 'rejected')),
+    scheduled_date text,
+    scheduled_start text,
+    scheduled_end text,
+    schedule_change_reason text,
+    handled_by text references users(id) on delete set null,
+    rejected_reason text,
+    completed_at timestamptz,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now(),
+    deleted_at timestamptz
+  )`,
+  `create index if not exists training_requests_applicant_status_idx on training_requests (applicant_user_id, status, requested_at desc) where deleted_at is null`,
+  `create index if not exists training_requests_equipment_status_idx on training_requests (equipment_id, status, requested_at desc) where deleted_at is null`,
+  `create index if not exists training_requests_requested_at_idx on training_requests (requested_at desc) where deleted_at is null`,
   `do $$
   begin
     if not exists (

@@ -44,6 +44,14 @@ import {
   revokeEquipmentPermission,
   setUserEquipmentPermissions
 } from './permissions.js';
+import {
+  completeTrainingRequest,
+  createTrainingRequest,
+  ensureTrainingRequestSchema,
+  listTrainingRequests,
+  rejectTrainingRequest,
+  scheduleTrainingRequest
+} from './training.js';
 
 dotenv.config();
 
@@ -319,6 +327,55 @@ app.post('/equipment-permissions/revoke', requireAuth, requireRole(['ADMIN']), a
   }
 });
 
+app.get('/training-requests', requireAuth, async (req, res, next) => {
+  try {
+    res.json(await listTrainingRequests(req.user!, req.query));
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/training-requests', requireAuth, async (req, res, next) => {
+  try {
+    res.status(201).json(await createTrainingRequest(req.body, req.user!));
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.patch('/training-requests/:id/schedule', requireAuth, requireRole(['ADMIN', 'MANAGER']), async (req, res, next) => {
+  try {
+    const { id } = z.object({ id: z.string() }).parse(req.params);
+    const request = await scheduleTrainingRequest(id, req.body, req.user!);
+    if (!request) return res.status(404).json({ message: 'Training request not found' });
+    return res.json(request);
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.patch('/training-requests/:id/reject', requireAuth, requireRole(['ADMIN', 'MANAGER']), async (req, res, next) => {
+  try {
+    const { id } = z.object({ id: z.string() }).parse(req.params);
+    const request = await rejectTrainingRequest(id, req.body, req.user!);
+    if (!request) return res.status(404).json({ message: 'Training request not found' });
+    return res.json(request);
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.patch('/training-requests/:id/complete', requireAuth, requireRole(['ADMIN', 'MANAGER']), async (req, res, next) => {
+  try {
+    const { id } = z.object({ id: z.string() }).parse(req.params);
+    const request = await completeTrainingRequest(id, req.user!);
+    if (!request) return res.status(404).json({ message: 'Training request not found' });
+    return res.json(request);
+  } catch (error) {
+    return next(error);
+  }
+});
+
 app.get('/admin/summary', requireAuth, requireRole(['ADMIN']), async (_req, res, next) => {
   try {
     res.json({
@@ -354,7 +411,7 @@ app.use((error: unknown, _req: express.Request, res: express.Response, _next: ex
   return res.status(500).json({ message: 'Internal server error' });
 });
 
-ensureEquipmentPermissionSchema()
+Promise.all([ensureEquipmentPermissionSchema(), ensureTrainingRequestSchema()])
   .then(() => {
     app.listen(port, () => {
       console.log(`HBNU API listening on ${port}`);
