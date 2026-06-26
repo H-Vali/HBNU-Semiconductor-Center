@@ -16,7 +16,7 @@ type PermissionSnapshot = {
     id: string;
     action: 'REVOKE';
     actorId: string;
-    actorRole: 'ADMIN';
+    actorRole: 'ADMIN' | 'MANAGER' | 'SYSTEM';
     userId: string;
     equipmentId: string;
     reason: string;
@@ -141,7 +141,7 @@ function createSnapshot(rows: PermissionRow[], events: PermissionEventRow[]): Pe
         id: event.id,
         action: 'REVOKE',
         actorId: event.actorId ?? 'system',
-        actorRole: 'ADMIN',
+        actorRole: event.actorRole,
         userId: event.userId,
         equipmentId: event.equipmentId,
         reason: event.reason ?? '',
@@ -296,7 +296,7 @@ export async function revokeEquipmentPermission(input: unknown, actor: SessionUs
       id: `permission-history-${Date.now()}`,
       action: 'REVOKE',
       actorId: actor.id,
-      actorRole: 'ADMIN',
+      actorRole: actor.role === 'ADMIN' || actor.role === 'MANAGER' ? actor.role : 'SYSTEM',
       userId: body.userId,
       equipmentId: body.equipmentId,
       reason: body.reason,
@@ -305,7 +305,7 @@ export async function revokeEquipmentPermission(input: unknown, actor: SessionUs
     return createFallbackSnapshot();
   }
 
-  await query(
+  const revokeResult = await query(
     `update equipment_permissions
      set revoked_at = now(),
       revoked_by = $3,
@@ -313,7 +313,9 @@ export async function revokeEquipmentPermission(input: unknown, actor: SessionUs
      where user_id = $1 and equipment_id = $2 and revoked_at is null`,
     [body.userId, body.equipmentId, actor.id, body.reason]
   );
-  await writePermissionEvent('REVOKE', actor, body.userId, body.equipmentId, body.reason);
+  if (revokeResult.rowCount && revokeResult.rowCount > 0) {
+    await writePermissionEvent('REVOKE', actor, body.userId, body.equipmentId, body.reason);
+  }
   return listEquipmentPermissions(actor);
 }
 

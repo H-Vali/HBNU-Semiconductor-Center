@@ -170,7 +170,7 @@ type EquipmentPermissionHistoryRecord = {
   id: string;
   action: 'REVOKE';
   actorId: string;
-  actorRole: 'ADMIN';
+  actorRole: 'ADMIN' | 'MANAGER' | 'SYSTEM';
   userId: string;
   equipmentId: string;
   reason: string;
@@ -3879,7 +3879,7 @@ function AdminEducationPermissionPanel({
   equipmentItems: EquipmentItem[];
   permissions: EquipmentPermissionMap;
   permissionGrantMeta: EquipmentPermissionGrantMetaMap;
-  onRevokePermission: (userId: string, equipmentId: string, reason: string) => void;
+  onRevokePermission: (userId: string, equipmentId: string, reason: string) => Promise<boolean>;
 }) {
   const [equipmentSearch, setEquipmentSearch] = useState('');
   const [userSearch, setUserSearch] = useState('');
@@ -3941,10 +3941,10 @@ function AdminEducationPermissionPanel({
     setRevokeReason('');
   }
 
-  function confirmRevoke() {
+  async function confirmRevoke() {
     if (!pendingRevoke || !revokeReason.trim()) return;
-    onRevokePermission(pendingRevoke.user.id, pendingRevoke.equipment.id, revokeReason);
-    cancelRevoke();
+    const saved = await onRevokePermission(pendingRevoke.user.id, pendingRevoke.equipment.id, revokeReason);
+    if (saved) cancelRevoke();
   }
 
   if (!selectedEquipment) {
@@ -6447,7 +6447,7 @@ function ManagerPermissionGrantPage({
   permissionGrantMeta: EquipmentPermissionGrantMetaMap;
   currentUser: ManagedUser | null;
   sessionRole: Role | null;
-  onGrantPermission: (userId: string, equipmentId: string) => void;
+  onGrantPermission: (userId: string, equipmentId: string) => Promise<boolean>;
 }) {
   const manageableEquipment = useMemo(() => (
     sessionRole === 'ADMIN'
@@ -6485,11 +6485,13 @@ function ManagerPermissionGrantPage({
     setPendingGrant({ user: targetUser, equipment: selectedEquipment });
   }
 
-  function confirmGrantPermission() {
+  async function confirmGrantPermission() {
     if (!pendingGrant) return;
-    onGrantPermission(pendingGrant.user.id, pendingGrant.equipment.id);
-    setSelectedUserId('');
-    setPendingGrant(null);
+    const saved = await onGrantPermission(pendingGrant.user.id, pendingGrant.equipment.id);
+    if (saved) {
+      setSelectedUserId('');
+      setPendingGrant(null);
+    }
   }
 
   if (manageableEquipment.length === 0) {
@@ -6642,7 +6644,7 @@ function PermissionManagementPage({
   equipmentItems: EquipmentItem[];
   permissions: EquipmentPermissionMap;
   managerUserIds: Set<string>;
-  onSavePermissions: (userId: string, equipmentIds: string[]) => void;
+  onSavePermissions: (userId: string, equipmentIds: string[]) => Promise<boolean>;
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [nameFilter, setNameFilter] = useState('');
@@ -6864,9 +6866,7 @@ function PermissionManagementPage({
           effectiveRoles={getPermissionRoleLevels(selectedUser, managerUserIds)}
           grantedEquipmentIds={permissions[selectedUser.id] ?? []}
           onClose={() => setSelectedUser(null)}
-          onSave={(equipmentIds) => {
-            onSavePermissions(selectedUser.id, equipmentIds);
-          }}
+          onSave={(equipmentIds) => onSavePermissions(selectedUser.id, equipmentIds)}
         />
       )}
     </section>
@@ -6885,7 +6885,7 @@ function PermissionModal({
   effectiveRoles: PermissionRoleLevel[];
   grantedEquipmentIds: string[];
   onClose: () => void;
-  onSave: (equipmentIds: string[]) => void;
+  onSave: (equipmentIds: string[]) => Promise<boolean>;
 }) {
   const [selectedIds, setSelectedIds] = useState(() => new Set(grantedEquipmentIds));
   const [saveFeedbackPhase, setSaveFeedbackPhase] = useState<'idle' | 'feedback' | 'returning'>('idle');
@@ -6914,10 +6914,11 @@ function PermissionModal({
     });
   }
 
-  function savePermissions() {
+  async function savePermissions() {
     clearPermissionSaveFeedbackTimers();
     setSaveFeedbackPhase('idle');
-    onSave(Array.from(selectedIds));
+    const saved = await onSave(Array.from(selectedIds));
+    if (!saved) return;
     window.requestAnimationFrame(() => setSaveFeedbackPhase('feedback'));
     saveFeedbackTimers.current = [
       window.setTimeout(() => setSaveFeedbackPhase('returning'), 2600),
@@ -7886,12 +7887,61 @@ export function App() {
   }
 
   function applyEquipmentPermissionSnapshot(snapshot: EquipmentPermissionSnapshot) {
-    setEquipmentPermissions(snapshot.permissions);
-    setEquipmentPermissionGrantMeta(snapshot.grantMeta);
-    setEquipmentPermissionHistory(snapshot.history);
-    localStorage.setItem(STORAGE_KEYS.equipmentPermissions, JSON.stringify(snapshot.permissions));
-    localStorage.setItem(STORAGE_KEYS.equipmentPermissionGrantMeta, JSON.stringify(snapshot.grantMeta));
-    localStorage.setItem(STORAGE_KEYS.equipmentPermissionHistory, JSON.stringify(snapshot.history));
+    if (sessionRole !== 'MANAGER') {
+      setEquipmentPermissions(snapshot.permissions);
+      setEquipmentPermissionGrantMeta(snapshot.grantMeta);
+      setEquipmentPermissionHistory(snapshot.history);
+      localStorage.setItem(STORAGE_KEYS.equipmentPermissions, JSON.stringify(snapshot.permissions));
+      localStorage.setItem(STORAGE_KEYS.equipmentPermissionGrantMeta, JSON.stringify(snapshot.grantMeta));
+      localStorage.setItem(STORAGE_KEYS.equipmentPermissionHistory, JSON.stringify(snapshot.history));
+      return;
+    }
+
+    const scopedEquipmentIds = new Set<string>();
+    if (currentManagedUser) {
+      activeEquipmentItems
+        .filter((item) => item.managerId === currentManagedUser.id)
+        .forEach((item) => scopedEquipmentIds.add(item.id));
+    }
+    Object.values(snapshot.permissions).forEach((equipmentIds) => {
+      equipmentIds.forEach((equipmentId) => scopedEquipmentIds.add(equipmentId));
+    });
+    Object.keys(snapshot.grantMeta).forEach((key) => {
+      const equipmentId = key.slice(key.lastIndexOf(':') + 1);
+      if (equipmentId) scopedEquipmentIds.add(equipmentId);
+    });
+
+    setEquipmentPermissions((current) => {
+      const next: EquipmentPermissionMap = {};
+      Object.entries(current).forEach(([userId, equipmentIds]) => {
+        const keptEquipmentIds = equipmentIds.filter((equipmentId) => !scopedEquipmentIds.has(equipmentId));
+        if (keptEquipmentIds.length > 0) next[userId] = keptEquipmentIds;
+      });
+      Object.entries(snapshot.permissions).forEach(([userId, equipmentIds]) => {
+        const merged = new Set([...(next[userId] ?? []), ...equipmentIds]);
+        next[userId] = Array.from(merged);
+      });
+      localStorage.setItem(STORAGE_KEYS.equipmentPermissions, JSON.stringify(next));
+      return next;
+    });
+    setEquipmentPermissionGrantMeta((current) => {
+      const next: EquipmentPermissionGrantMetaMap = Object.fromEntries(
+        Object.entries(current).filter(([key]) => {
+          const equipmentId = key.slice(key.lastIndexOf(':') + 1);
+          return !scopedEquipmentIds.has(equipmentId);
+        })
+      );
+      Object.assign(next, snapshot.grantMeta);
+      localStorage.setItem(STORAGE_KEYS.equipmentPermissionGrantMeta, JSON.stringify(next));
+      return next;
+    });
+    setEquipmentPermissionHistory((current) => {
+      const historyById = new Map<string, EquipmentPermissionHistoryRecord>();
+      [...snapshot.history, ...current].forEach((record) => historyById.set(record.id, record));
+      const next = Array.from(historyById.values()).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      localStorage.setItem(STORAGE_KEYS.equipmentPermissionHistory, JSON.stringify(next));
+      return next;
+    });
   }
 
   function updateConsumable(id: string, patch: Partial<ConsumableItem>) {
@@ -8077,18 +8127,18 @@ export function App() {
     });
   }
 
-  function saveEquipmentPermissions(userId: string, equipmentIds: string[]) {
-    void apiPut<EquipmentPermissionSnapshot>(
+  async function saveEquipmentPermissions(userId: string, equipmentIds: string[]) {
+    const snapshot = await apiPut<EquipmentPermissionSnapshot>(
       `/equipment-permissions/users/${encodeURIComponent(userId)}`,
       { equipmentIds },
       localStorage.getItem(STORAGE_KEYS.sessionToken)
-    ).then((snapshot) => {
+    );
       if (!snapshot) {
         window.alert('장비 권한을 DB에 저장하지 못했습니다. 관리자 권한을 확인해 주세요.');
-        return;
+        return false;
       }
       applyEquipmentPermissionSnapshot(snapshot);
-    });
+      return true;
   }
 
   function registerAuthenticatedUser(user: ManagedUser) {
@@ -8111,34 +8161,34 @@ export function App() {
   );
   const canManageAssignedPermissions = sessionRole === 'ADMIN' || Boolean(currentManagedUser && managerUserIds.has(currentManagedUser.id));
 
-  function grantAssignedEquipmentPermission(userId: string, equipmentId: string) {
-    void apiPost<EquipmentPermissionSnapshot>(
+  async function grantAssignedEquipmentPermission(userId: string, equipmentId: string) {
+    const snapshot = await apiPost<EquipmentPermissionSnapshot>(
       '/equipment-permissions/grant',
       { userId, equipmentId },
       localStorage.getItem(STORAGE_KEYS.sessionToken)
-    ).then((snapshot) => {
+    );
       if (!snapshot) {
         window.alert('장비 권한을 부여하지 못했습니다. 담당 장비 범위와 권한을 확인해 주세요.');
-        return;
+        return false;
       }
       applyEquipmentPermissionSnapshot(snapshot);
-    });
+      return true;
   }
 
-  function revokeEquipmentPermissionByAdmin(userId: string, equipmentId: string, reason: string) {
+  async function revokeEquipmentPermissionByAdmin(userId: string, equipmentId: string, reason: string) {
     const normalizedReason = reason.trim();
-    if (!normalizedReason || sessionRole !== 'ADMIN') return;
-    void apiPost<EquipmentPermissionSnapshot>(
+    if (!normalizedReason || sessionRole !== 'ADMIN') return false;
+    const snapshot = await apiPost<EquipmentPermissionSnapshot>(
       '/equipment-permissions/revoke',
       { userId, equipmentId, reason: normalizedReason },
       localStorage.getItem(STORAGE_KEYS.sessionToken)
-    ).then((snapshot) => {
+    );
       if (!snapshot) {
         window.alert('장비 권한을 회수하지 못했습니다. 관리자 권한을 확인해 주세요.');
-        return;
+        return false;
       }
       applyEquipmentPermissionSnapshot(snapshot);
-    });
+      return true;
   }
 
   return (
