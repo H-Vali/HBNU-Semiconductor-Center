@@ -9293,6 +9293,16 @@ select {
   color: #0b1220;
 }
 
+.login-redesign-shell,
+.login-redesign-shell :is(h2, h3, p, span, strong, em, a, button, label, input) {
+  font-weight: 700;
+}
+
+.login-card-head h2,
+.login-stepper > h3 {
+  font-weight: 800;
+}
+
 @media (max-width: 980px) {
   .login-redesign-shell {
     grid-template-columns: 1fr;
