@@ -89,6 +89,7 @@ type ReservationEvent = {
   equipmentId?: string;
   userId?: string;
   createdBy?: string;
+  purpose?: string;
 };
 type ApiReservationEvent = {
   id: string;
@@ -536,7 +537,8 @@ function normalizeApiReservation(event: ApiReservationEvent): ReservationEvent {
     status: normalizeReservationStatus(event.status),
     equipmentId: event.equipmentId,
     userId: event.userId,
-    createdBy: event.createdByRole
+    createdBy: event.createdByRole,
+    purpose: event.purpose
   };
 }
 
@@ -2455,8 +2457,8 @@ function ReservationPage({
   currentUser: ManagedUser | null;
   permissions: EquipmentPermissionMap;
   onNavigate: (page: PageKey) => void;
-  onAddReservation: (event: ReservationEvent) => void;
-  onDeleteReservation: (reservationId: string) => void;
+  onAddReservation: (event: ReservationEvent) => Promise<boolean>;
+  onDeleteReservation: (reservationId: string) => Promise<boolean>;
 }) {
   const allEquipmentId = 'all-equipment';
   const [selectedEquipmentId, setSelectedEquipmentId] = useState(allEquipmentId);
@@ -2485,7 +2487,7 @@ function ReservationPage({
     });
   }, [equipmentItems, groupFilter, searchTerm]);
 
-  function confirmReservation(form: ReservationForm) {
+  async function confirmReservation(form: ReservationForm) {
     const equipment = equipmentItems.find((item) => item.id === form.equipmentId);
     if (!equipment || !isEquipmentAvailable(equipment)) return;
     if (!canReserveEquipment(equipment.id)) {
@@ -2493,8 +2495,9 @@ function ReservationPage({
       return;
     }
 
-    const purpose = form.purpose.trim() ? ` - ${form.purpose.trim()}` : '';
-    onAddReservation({
+    const reservationPurpose = form.purpose.trim();
+    const purpose = reservationPurpose ? ` - ${reservationPurpose}` : '';
+    const saved = await onAddReservation({
       id: `reservation-${Date.now()}`,
       title: `${equipment.name} 예약${purpose}`,
       start: toReservationDateTime(form.date, form.startTime),
@@ -2502,10 +2505,13 @@ function ReservationPage({
       status: sessionRole === 'ADMIN' ? 'approved' : 'pending',
       equipmentId: equipment.id,
       userId: currentUser?.id ?? sessionUser?.id,
-      createdBy: sessionRole === 'ADMIN' ? 'ADMIN' : 'USER'
+      createdBy: sessionRole === 'ADMIN' ? 'ADMIN' : 'USER',
+      purpose: reservationPurpose || `${equipment.name} 예약`
     });
-    setSelectedEquipmentId(equipment.id);
-    setShowReservationModal(false);
+    if (saved) {
+      setSelectedEquipmentId(equipment.id);
+      setShowReservationModal(false);
+    }
   }
 
   function canReserveEquipment(equipmentId: string) {
@@ -2795,8 +2801,8 @@ function ReservationModalV2({
   selectedEquipmentId: string;
   initialDate: string;
   onClose: () => void;
-  onConfirm: (form: ReservationForm) => void;
-  onDeleteReservation?: (reservationId: string) => void;
+  onConfirm: (form: ReservationForm) => void | Promise<void>;
+  onDeleteReservation?: (reservationId: string) => void | Promise<boolean>;
   allowMaintenanceReservation?: boolean;
   titleSuffix?: string;
 }) {
@@ -4100,8 +4106,8 @@ function AdminPage({
 }: {
   equipmentItems: EquipmentItem[];
   calendarEvents: ReservationEvent[];
-  onAddReservation: (event: ReservationEvent) => void;
-  onDeleteReservation: (reservationId: string) => void;
+  onAddReservation: (event: ReservationEvent) => Promise<boolean>;
+  onDeleteReservation: (reservationId: string) => Promise<boolean>;
   onNavigate: (page: PageKey) => void;
   consumablesUpdatedAt: string;
   usersUpdatedAt: string;
@@ -4136,24 +4142,28 @@ function AdminPage({
     전월대비: `${item.delta > 0 ? '+' : ''}${item.delta}%`
   }));
 
-  function confirmAdminReservation(form: ReservationForm) {
+  async function confirmAdminReservation(form: ReservationForm) {
     const equipment = equipmentItems.find((item) => item.id === form.equipmentId);
     if (!equipment) return;
-    const purpose = form.purpose.trim() ? ` - ${form.purpose.trim()}` : '';
+    const reservationPurpose = form.purpose.trim();
+    const purpose = reservationPurpose ? ` - ${reservationPurpose}` : '';
     const isMaintenance = form.reservationType === 'maintenance';
     const isExternal = !isMaintenance && form.userType === 'external';
     const reservationStatus: ReservationStatus = isMaintenance ? 'maintenance' : isExternal ? 'external' : 'approved';
-    onAddReservation({
+    const saved = await onAddReservation({
       id: `admin-reservation-${Date.now()}`,
       title: `${equipment.name} ${isMaintenance ? '장비 점검' : isExternal ? '외부 기업 예약' : '관리자 예약'}${purpose}`,
       start: toReservationDateTime(form.date, form.startTime),
       end: toReservationDateTime(getReservationEndDate(form), form.endTime),
       status: reservationStatus,
       equipmentId: equipment.id,
-      createdBy: 'ADMIN'
+      createdBy: 'ADMIN',
+      purpose: reservationPurpose || (isMaintenance ? '장비 점검' : isExternal ? '외부 기업 예약' : '관리자 예약')
     });
-    setSelectedAdminDate(form.date);
-    setShowReservationModal(false);
+    if (saved) {
+      setSelectedAdminDate(form.date);
+      setShowReservationModal(false);
+    }
   }
 
   function moveAdminCalendarToToday() {
@@ -4843,7 +4853,7 @@ function MyPage({
 }: {
   equipmentItems: EquipmentItem[];
   calendarEvents: ReservationEvent[];
-  onCancelReservation: (reservationId: string) => void;
+  onCancelReservation: (reservationId: string) => Promise<boolean>;
 }) {
   const myReservations = calendarEvents
     .filter((event) => event.createdBy !== 'ADMIN')
@@ -4904,7 +4914,7 @@ function MyPageV2({
   managerUserIds: Set<string>;
   permissions: EquipmentPermissionMap;
   penalties: PenaltyRecord[];
-  onCancelReservation: (reservationId: string) => void;
+  onCancelReservation: (reservationId: string) => Promise<boolean>;
   onNavigate: (page: PageKey) => void;
 }) {
   const [reservationFilter, setReservationFilter] = useState<'all' | 'upcoming' | 'past'>('all');
@@ -4950,10 +4960,10 @@ function MyPageV2({
     { key: 'past', title: '지난 예약', items: pastReservations, empty: '지난 예약 내역이 없습니다.' }
   ].filter((group) => reservationFilter === 'all' || reservationFilter === group.key);
 
-  function confirmCancelReservation() {
+  async function confirmCancelReservation() {
     if (!cancelTarget) return;
-    onCancelReservation(cancelTarget.id);
-    setCancelTarget(null);
+    const canceled = await onCancelReservation(cancelTarget.id);
+    if (canceled) setCancelTarget(null);
   }
 
   function renderReservationRow(event: ReservationEvent, past = false) {
@@ -7780,27 +7790,39 @@ export function App() {
     return savedRequest;
   }
 
-  function addReservation(event: ReservationEvent) {
-    void apiPost<ApiReservationEvent>('/reservations', {
+  async function addReservation(event: ReservationEvent) {
+    const savedEvent = await apiPost<ApiReservationEvent>('/reservations', {
       equipmentId: event.equipmentId,
       title: event.title,
       startsAt: toApiReservationDateTime(event.start),
       endsAt: toApiReservationDateTime(event.end),
-      purpose: event.title,
+      purpose: event.purpose ?? event.title,
       userId: event.userId ?? sessionUser?.id,
       status: event.status
-    }, localStorage.getItem(STORAGE_KEYS.sessionToken)).then((savedEvent) => {
-      if (!savedEvent) {
-        window.alert('예약을 DB에 저장하지 못했습니다. 장비 권한, 교육 이수 상태 또는 중복 예약 여부를 확인해 주세요.');
-        return;
-      }
-      setReservationEvents((current) => [...current, normalizeApiReservation(savedEvent)]);
-    });
+    }, localStorage.getItem(STORAGE_KEYS.sessionToken));
+    if (!savedEvent) {
+      window.alert('예약을 DB에 저장하지 못했습니다. 장비 권한, 교육 이수 상태 또는 중복 예약 여부를 확인해 주세요.');
+      return false;
+    }
+    setReservationEvents((current) => [...current, normalizeApiReservation(savedEvent)]);
+    return true;
   }
 
-  function deleteReservation(reservationId: string) {
+  async function deleteReservation(reservationId: string) {
+    if (reservationId.startsWith('preview-live-test-reservation-')) {
+      setReservationEvents((current) => current.filter((event) => event.id !== reservationId));
+      return true;
+    }
+    const deletedEvent = await apiDelete<ApiReservationEvent>(
+      `/reservations/${encodeURIComponent(reservationId)}`,
+      localStorage.getItem(STORAGE_KEYS.sessionToken)
+    );
+    if (!deletedEvent) {
+      window.alert('예약 삭제에 실패했습니다. 권한 또는 예약 상태를 확인해 주세요.');
+      return false;
+    }
     setReservationEvents((current) => current.filter((event) => event.id !== reservationId));
-    void apiDelete<ApiReservationEvent>(`/reservations/${reservationId}`, localStorage.getItem(STORAGE_KEYS.sessionToken));
+    return true;
   }
 
   function dismissPreviewPenaltyDemo() {
