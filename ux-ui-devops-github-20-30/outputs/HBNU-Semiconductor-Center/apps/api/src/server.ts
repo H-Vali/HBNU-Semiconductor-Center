@@ -17,6 +17,10 @@ app.use(express.json());
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
+app.post('/auth/dev-login', (_req, res) => {
+  res.status(404).json({ message: 'Not found' });
+});
+
 app.post('/auth/dev-login', (req, res) => {
   const body = z.object({
     role: z.enum(['USER', 'MANAGER', 'ADMIN']).default('USER')
