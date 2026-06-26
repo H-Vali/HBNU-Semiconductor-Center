@@ -102,6 +102,34 @@ const statements = [
   )`,
   `create index if not exists reservations_equipment_time_idx on reservations (equipment_id, starts_at, ends_at) where deleted_at is null`,
   `create index if not exists reservations_user_time_idx on reservations (user_id, starts_at desc) where deleted_at is null`,
+  `create table if not exists equipment_permissions (
+    user_id text not null references users(id) on delete cascade,
+    equipment_id text not null references equipment(id) on delete restrict,
+    granted_at timestamptz not null default now(),
+    granted_by text references users(id) on delete set null,
+    granted_by_role text not null default 'SYSTEM' check (granted_by_role in ('ADMIN', 'MANAGER', 'SYSTEM')),
+    source_request_id text,
+    revoked_at timestamptz,
+    revoked_by text references users(id) on delete set null,
+    revoke_reason text,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now(),
+    primary key (user_id, equipment_id)
+  )`,
+  `create index if not exists equipment_permissions_user_active_idx on equipment_permissions (user_id) where revoked_at is null`,
+  `create index if not exists equipment_permissions_equipment_active_idx on equipment_permissions (equipment_id) where revoked_at is null`,
+  `create table if not exists equipment_permission_events (
+    id text primary key,
+    action text not null check (action in ('GRANT', 'REVOKE')),
+    actor_id text references users(id) on delete set null,
+    actor_role text not null default 'SYSTEM' check (actor_role in ('ADMIN', 'MANAGER', 'SYSTEM')),
+    user_id text not null references users(id) on delete cascade,
+    equipment_id text not null references equipment(id) on delete restrict,
+    reason text,
+    created_at timestamptz not null default now()
+  )`,
+  `create index if not exists equipment_permission_events_user_idx on equipment_permission_events (user_id, created_at desc)`,
+  `create index if not exists equipment_permission_events_equipment_idx on equipment_permission_events (equipment_id, created_at desc)`,
   `do $$
   begin
     if not exists (

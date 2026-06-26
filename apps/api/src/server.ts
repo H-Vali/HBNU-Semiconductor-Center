@@ -36,6 +36,14 @@ import {
   registerGoogleUser,
   updateUser
 } from './users.js';
+import {
+  PermissionDeniedError,
+  ensureEquipmentPermissionSchema,
+  grantEquipmentPermission,
+  listEquipmentPermissions,
+  revokeEquipmentPermission,
+  setUserEquipmentPermissions
+} from './permissions.js';
 
 dotenv.config();
 
@@ -278,6 +286,39 @@ app.post('/reservations', requireAuth, async (req, res, next) => {
   }
 });
 
+app.get('/equipment-permissions', requireAuth, requireRole(['ADMIN', 'MANAGER']), async (_req, res, next) => {
+  try {
+    res.json(await listEquipmentPermissions());
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.put('/equipment-permissions/users/:userId', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
+  try {
+    const { userId } = z.object({ userId: z.string() }).parse(req.params);
+    res.json(await setUserEquipmentPermissions(userId, req.body, req.user!));
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/equipment-permissions/grant', requireAuth, requireRole(['ADMIN', 'MANAGER']), async (req, res, next) => {
+  try {
+    res.status(201).json(await grantEquipmentPermission(req.body, req.user!));
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/equipment-permissions/revoke', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
+  try {
+    res.json(await revokeEquipmentPermission(req.body, req.user!));
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.get('/admin/summary', requireAuth, requireRole(['ADMIN']), async (_req, res, next) => {
   try {
     res.json({
@@ -303,6 +344,9 @@ app.use((error: unknown, _req: express.Request, res: express.Response, _next: ex
   if (error instanceof ReservationOverlapError) {
     return res.status(409).json({ message: error.message });
   }
+  if (error instanceof PermissionDeniedError) {
+    return res.status(403).json({ message: error.message });
+  }
   if (error instanceof z.ZodError) {
     return res.status(400).json({ message: 'Invalid request body', issues: error.issues });
   }
@@ -310,6 +354,13 @@ app.use((error: unknown, _req: express.Request, res: express.Response, _next: ex
   return res.status(500).json({ message: 'Internal server error' });
 });
 
-app.listen(port, () => {
-  console.log(`HBNU API listening on ${port}`);
-});
+ensureEquipmentPermissionSchema()
+  .then(() => {
+    app.listen(port, () => {
+      console.log(`HBNU API listening on ${port}`);
+    });
+  })
+  .catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
