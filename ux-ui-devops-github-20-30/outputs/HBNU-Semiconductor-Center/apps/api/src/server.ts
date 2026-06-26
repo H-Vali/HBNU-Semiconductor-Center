@@ -15,7 +15,7 @@ app.use(helmet());
 app.use(cors({ origin: process.env.CLIENT_ORIGIN ?? 'http://localhost:5173' }));
 app.use(express.json());
 
-app.get('/health', (_req, res) => res.json({ ok: true }));
+app.get('/health', (_req, res) => res.json({ ok: true, api: 'nested-legacy-api', build: 'nested-src' }));
 
 app.post('/auth/dev-login', (_req, res) => {
   res.status(404).json({ message: 'Not found' });
