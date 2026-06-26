@@ -1452,16 +1452,19 @@ function Hero({
             )}
           </div>
           <div className="hero-reservation-list">
-            {needsAccountAction ? (
+            {accountStatus === 'guest' ? (
+              <div className="hero-reservation-row is-message is-guest-message">
+                <strong>로그인 후 시스템 이용이 가능합니다.</strong>
+                <button type="button" className="hero-reservation-action" onClick={onReservationAction}>
+                  로그인 안내
+                </button>
+              </div>
+            ) : needsAccountAction ? (
               <div className="hero-reservation-row is-message">
                 <time>-</time>
-                <strong>
-                  {accountStatus === 'guest'
-                    ? '로그인 후 시스템 이용이 가능합니다.'
-                    : '회원정보 등록 후 예약 현황을 확인할 수 있습니다.'}
-                </strong>
+                <strong>회원정보 등록 후 예약 현황을 확인할 수 있습니다.</strong>
                 <button type="button" className="hero-reservation-action" onClick={onReservationAction}>
-                  {accountStatus === 'guest' ? '로그인 안내' : '회원가입 필요'}
+                  회원가입 필요
                 </button>
               </div>
             ) : (
