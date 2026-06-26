@@ -19,6 +19,7 @@ import {
 } from './content.js';
 import {
   ReservationOverlapError,
+  ReservationPermissionError,
   cancelReservation,
   createEquipment,
   createReservation,
@@ -309,9 +310,9 @@ app.post('/reservations', requireAuth, async (req, res, next) => {
   }
 });
 
-app.get('/equipment-permissions', requireAuth, requireRole(['ADMIN', 'MANAGER']), async (_req, res, next) => {
+app.get('/equipment-permissions', requireAuth, async (req, res, next) => {
   try {
-    res.json(await listEquipmentPermissions());
+    res.json(await listEquipmentPermissions(req.user!));
   } catch (error) {
     next(error);
   }
@@ -415,6 +416,9 @@ app.use((error: unknown, _req: express.Request, res: express.Response, _next: ex
   }
   if (error instanceof ReservationOverlapError) {
     return res.status(409).json({ message: error.message });
+  }
+  if (error instanceof ReservationPermissionError) {
+    return res.status(403).json({ message: error.message });
   }
   if (error instanceof PermissionDeniedError) {
     return res.status(403).json({ message: error.message });

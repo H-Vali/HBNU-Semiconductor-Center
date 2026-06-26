@@ -192,25 +192,57 @@ async function writePermissionEvent(
   );
 }
 
-export async function listEquipmentPermissions() {
-  if (!hasDatabase()) return createFallbackSnapshot();
+function scopeSnapshot(snapshot: PermissionSnapshot, actor?: SessionUser): PermissionSnapshot {
+  if (!actor || actor.role !== 'USER') return snapshot;
+  const ownPermissions = snapshot.permissions[actor.id] ?? [];
+  const ownPermissionKeys = new Set(ownPermissions.map((equipmentId) => permissionKey(actor.id, equipmentId)));
+  return {
+    permissions: ownPermissions.length > 0 ? { [actor.id]: ownPermissions } : {},
+    grantMeta: Object.fromEntries(
+      Object.entries(snapshot.grantMeta).filter(([key]) => ownPermissionKeys.has(key))
+    ),
+    history: []
+  };
+}
+
+export async function listEquipmentPermissions(actor?: SessionUser) {
+  if (!hasDatabase()) return scopeSnapshot(createFallbackSnapshot(), actor);
+
+  const params: unknown[] = [];
+  const permissionWhere = ['ep.revoked_at is null'];
+  const eventWhere: string[] = [];
+
+  if (actor?.role === 'USER') {
+    params.push(actor.id);
+    permissionWhere.push(`ep.user_id = $${params.length}`);
+    eventWhere.push(`epe.user_id = $${params.length}`);
+  } else if (actor?.role === 'MANAGER') {
+    params.push(actor.id);
+    permissionWhere.push(`e.manager_user_id = $${params.length}`);
+    eventWhere.push(`e.manager_user_id = $${params.length}`);
+  }
 
   const permissions = await query<PermissionRow>(
-    `select user_id as "userId",
-      equipment_id as "equipmentId",
-      granted_at as "grantedAt",
-      granted_by_role as "grantedByRole",
-      source_request_id as "sourceRequestId"
-     from equipment_permissions
-     where revoked_at is null
-     order by granted_at asc`
+    `select ep.user_id as "userId",
+      ep.equipment_id as "equipmentId",
+      ep.granted_at as "grantedAt",
+      ep.granted_by_role as "grantedByRole",
+      ep.source_request_id as "sourceRequestId"
+     from equipment_permissions ep
+     join equipment e on e.id = ep.equipment_id and e.deleted_at is null
+     where ${permissionWhere.join(' and ')}
+     order by ep.granted_at asc`,
+    params
   );
   const events = await query<PermissionEventRow>(
-    `select id, action, actor_id as "actorId", actor_role as "actorRole",
-      user_id as "userId", equipment_id as "equipmentId", reason, created_at as "createdAt"
-     from equipment_permission_events
-     order by created_at desc
-     limit 300`
+    `select epe.id, epe.action, epe.actor_id as "actorId", epe.actor_role as "actorRole",
+      epe.user_id as "userId", epe.equipment_id as "equipmentId", epe.reason, epe.created_at as "createdAt"
+     from equipment_permission_events epe
+     join equipment e on e.id = epe.equipment_id and e.deleted_at is null
+     ${eventWhere.length > 0 ? `where ${eventWhere.join(' and ')}` : ''}
+     order by epe.created_at desc
+     limit 300`,
+    params
   );
   return createSnapshot(permissions.rows, events.rows);
 }
@@ -249,7 +281,7 @@ export async function grantEquipmentPermission(input: unknown, actor: SessionUse
     [body.userId, body.equipmentId, actor.id, actor.role, body.sourceRequestId ?? null]
   );
   await writePermissionEvent('GRANT', actor, body.userId, body.equipmentId);
-  return listEquipmentPermissions();
+  return listEquipmentPermissions(actor);
 }
 
 export async function revokeEquipmentPermission(input: unknown, actor: SessionUser) {
@@ -282,14 +314,14 @@ export async function revokeEquipmentPermission(input: unknown, actor: SessionUs
     [body.userId, body.equipmentId, actor.id, body.reason]
   );
   await writePermissionEvent('REVOKE', actor, body.userId, body.equipmentId, body.reason);
-  return listEquipmentPermissions();
+  return listEquipmentPermissions(actor);
 }
 
 export async function setUserEquipmentPermissions(userId: string, input: unknown, actor: SessionUser) {
   const body = permissionSetSchema.parse(input);
   const equipmentIds = Array.from(new Set(body.equipmentIds));
 
-  const current = await listEquipmentPermissions();
+  const current = await listEquipmentPermissions(actor);
   const currentEquipmentIds = current.permissions[userId] ?? [];
   const toGrant = equipmentIds.filter((equipmentId) => !currentEquipmentIds.includes(equipmentId));
   const toRevoke = currentEquipmentIds.filter((equipmentId) => !equipmentIds.includes(equipmentId));
@@ -301,5 +333,21 @@ export async function setUserEquipmentPermissions(userId: string, input: unknown
     await revokeEquipmentPermission({ userId, equipmentId, reason: '관리자 권한 일괄 수정' }, actor);
   }
 
-  return listEquipmentPermissions();
+  return listEquipmentPermissions(actor);
+}
+
+export async function hasActiveEquipmentPermission(userId: string, equipmentId: string) {
+  if (!hasDatabase()) {
+    return (fallbackPermissions[userId] ?? []).includes(equipmentId);
+  }
+
+  const result = await query<{ hasPermission: boolean }>(
+    `select exists (
+      select 1
+      from equipment_permissions
+      where user_id = $1 and equipment_id = $2 and revoked_at is null
+    ) as "hasPermission"`,
+    [userId, equipmentId]
+  );
+  return Boolean(result.rows[0]?.hasPermission);
 }

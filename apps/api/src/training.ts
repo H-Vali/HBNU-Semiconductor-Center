@@ -458,5 +458,12 @@ export async function completeTrainingRequest(id: string, actor: SessionUser) {
     { userId: request.applicantUserId, equipmentId: request.equipmentId, sourceRequestId: id },
     actor
   );
+  await query(
+    `update users
+     set onboarding_status = 'active',
+      updated_at = now()
+     where id = $1 and deleted_at is null`,
+    [request.applicantUserId]
+  );
   return getTrainingRequest(id);
 }

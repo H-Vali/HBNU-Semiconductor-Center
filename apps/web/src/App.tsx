@@ -59,7 +59,7 @@ import { STORAGE_KEYS } from './appStorage';
 import { initialConsumablesData, initialManagedUsersData } from './mockData';
 import { NoticeAdminPage, NoticePage, getNoticeCategoryTone, meetingNoticeItems, normalizeNoticeItems, noticeBoardMeta, noticeItems, operationNoticeItems, type NoticeBoardKey, type NoticeItem } from './pages/NoticePages';
 import { FaqPage, QnaPage, faqItems as initialFaqItems, type FaqItem } from './pages/InquiryPages';
-import { apiDelete, apiGet, apiPatch, apiPost } from './apiClient';
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from './apiClient';
 
 type PageKey = 'home' | 'notice' | 'operationNotice' | 'meetingNotice' | 'center' | 'facility' | 'equipment' | 'training' | 'trainingManagement' | 'faq' | 'qna' | 'reservations' | 'managerPermissions' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'equipmentAdmin' | 'penalties' | 'noticeAdmin' | 'educationAdmin' | 'login';
 type Role = 'USER' | 'MANAGER' | 'ADMIN';
@@ -138,6 +138,11 @@ type EquipmentPermissionHistoryRecord = {
   equipmentId: string;
   reason: string;
   createdAt: string;
+};
+type EquipmentPermissionSnapshot = {
+  permissions: EquipmentPermissionMap;
+  grantMeta: EquipmentPermissionGrantMetaMap;
+  history: EquipmentPermissionHistoryRecord[];
 };
 type PenaltyRecord = {
   id: string;
@@ -2428,9 +2433,10 @@ function ReservationPage({
   const selectedEquipmentAvailable = selectedEquipmentId === allEquipmentId || isEquipmentAvailable(selectedEquipment);
   const firstAvailableEquipmentId = equipmentItems.find(isEquipmentAvailable)?.id ?? '';
   const currentUserPermissionIds = currentUser ? permissions[currentUser.id] ?? [] : [];
+  const currentUserCanReserve = currentUser?.onboardingStatus === 'active';
   const reservableEquipmentItems = sessionRole === 'ADMIN'
     ? equipmentItems.filter(isEquipmentAvailable)
-    : equipmentItems.filter((item) => isEquipmentAvailable(item) && currentUserPermissionIds.includes(item.id));
+    : equipmentItems.filter((item) => isEquipmentAvailable(item) && currentUserCanReserve && currentUserPermissionIds.includes(item.id));
   const firstReservableEquipmentId = reservableEquipmentItems[0]?.id ?? firstAvailableEquipmentId;
   const todayKey = getSeoulDateKey();
   const isAllLive = calendarEvents.some((event) => isReservationActive(event));
@@ -2468,7 +2474,7 @@ function ReservationPage({
 
   function canReserveEquipment(equipmentId: string) {
     if (sessionRole === 'ADMIN') return true;
-    return Boolean(sessionUser && currentUser && currentUserPermissionIds.includes(equipmentId));
+    return Boolean(sessionUser && currentUser && currentUserCanReserve && currentUserPermissionIds.includes(equipmentId));
   }
 
   function showReservationRequirement(equipment?: EquipmentItem) {
@@ -7309,6 +7315,18 @@ export function App() {
   }, [sessionRole]);
 
   useEffect(() => {
+    const token = localStorage.getItem(STORAGE_KEYS.sessionToken);
+    if (!token || !sessionRole) return;
+    let isMounted = true;
+    void apiGet<EquipmentPermissionSnapshot>('/equipment-permissions', token).then((snapshot) => {
+      if (isMounted && snapshot) applyEquipmentPermissionSnapshot(snapshot);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [sessionRole]);
+
+  useEffect(() => {
     let isMounted = true;
     void apiGet<ApiReservationEvent[]>('/reservations').then((items) => {
       if (!isMounted || !items) return;
@@ -7535,20 +7553,20 @@ export function App() {
   }
 
   function addReservation(event: ReservationEvent) {
-    const nextEvent = { ...event, userId: event.userId ?? sessionUser?.id };
-    setReservationEvents((current) => [...current, nextEvent]);
     void apiPost<ApiReservationEvent>('/reservations', {
       equipmentId: event.equipmentId,
       title: event.title,
       startsAt: toApiReservationDateTime(event.start),
       endsAt: toApiReservationDateTime(event.end),
       purpose: event.title,
+      userId: event.userId ?? sessionUser?.id,
       status: event.status
     }, localStorage.getItem(STORAGE_KEYS.sessionToken)).then((savedEvent) => {
-      if (!savedEvent) return;
-      setReservationEvents((current) => current.map((item) => (
-        item.id === event.id ? normalizeApiReservation(savedEvent) : item
-      )));
+      if (!savedEvent) {
+        window.alert('예약을 DB에 저장하지 못했습니다. 장비 권한, 교육 이수 상태 또는 중복 예약 여부를 확인해 주세요.');
+        return;
+      }
+      setReservationEvents((current) => [...current, normalizeApiReservation(savedEvent)]);
     });
   }
 
@@ -7612,6 +7630,15 @@ export function App() {
   function clearUserSaveFeedbackTimers() {
     userSaveFeedbackTimers.current.forEach((timer) => window.clearTimeout(timer));
     userSaveFeedbackTimers.current = [];
+  }
+
+  function applyEquipmentPermissionSnapshot(snapshot: EquipmentPermissionSnapshot) {
+    setEquipmentPermissions(snapshot.permissions);
+    setEquipmentPermissionGrantMeta(snapshot.grantMeta);
+    setEquipmentPermissionHistory(snapshot.history);
+    localStorage.setItem(STORAGE_KEYS.equipmentPermissions, JSON.stringify(snapshot.permissions));
+    localStorage.setItem(STORAGE_KEYS.equipmentPermissionGrantMeta, JSON.stringify(snapshot.grantMeta));
+    localStorage.setItem(STORAGE_KEYS.equipmentPermissionHistory, JSON.stringify(snapshot.history));
   }
 
   function updateConsumable(id: string, patch: Partial<ConsumableItem>) {
@@ -7798,10 +7825,16 @@ export function App() {
   }
 
   function saveEquipmentPermissions(userId: string, equipmentIds: string[]) {
-    setEquipmentPermissions((current) => {
-      const next = { ...current, [userId]: equipmentIds };
-      localStorage.setItem(STORAGE_KEYS.equipmentPermissions, JSON.stringify(next));
-      return next;
+    void apiPut<EquipmentPermissionSnapshot>(
+      `/equipment-permissions/users/${encodeURIComponent(userId)}`,
+      { equipmentIds },
+      localStorage.getItem(STORAGE_KEYS.sessionToken)
+    ).then((snapshot) => {
+      if (!snapshot) {
+        window.alert('장비 권한을 DB에 저장하지 못했습니다. 관리자 권한을 확인해 주세요.');
+        return;
+      }
+      applyEquipmentPermissionSnapshot(snapshot);
     });
   }
 
@@ -7826,58 +7859,32 @@ export function App() {
   const canManageAssignedPermissions = sessionRole === 'ADMIN' || Boolean(currentManagedUser && managerUserIds.has(currentManagedUser.id));
 
   function grantAssignedEquipmentPermission(userId: string, equipmentId: string) {
-    setEquipmentPermissions((current) => {
-      const currentUserPermissions = current[userId] ?? [];
-      const alreadyGranted = currentUserPermissions.includes(equipmentId);
-      const next = {
-        ...current,
-        [userId]: alreadyGranted
-          ? currentUserPermissions
-          : [...currentUserPermissions, equipmentId]
-      };
-      localStorage.setItem(STORAGE_KEYS.equipmentPermissions, JSON.stringify(next));
-      if (!alreadyGranted) {
-        setEquipmentPermissionGrantMeta((currentMeta) => {
-          const nextMeta = {
-            ...currentMeta,
-            [getPermissionGrantKey(userId, equipmentId)]: {
-              grantedAt: new Date().toISOString(),
-              grantedByRole: sessionRole === 'ADMIN' ? 'ADMIN' as const : 'MANAGER' as const
-            }
-          };
-          localStorage.setItem(STORAGE_KEYS.equipmentPermissionGrantMeta, JSON.stringify(nextMeta));
-          return nextMeta;
-        });
+    void apiPost<EquipmentPermissionSnapshot>(
+      '/equipment-permissions/grant',
+      { userId, equipmentId },
+      localStorage.getItem(STORAGE_KEYS.sessionToken)
+    ).then((snapshot) => {
+      if (!snapshot) {
+        window.alert('장비 권한을 부여하지 못했습니다. 담당 장비 범위와 권한을 확인해 주세요.');
+        return;
       }
-      return next;
+      applyEquipmentPermissionSnapshot(snapshot);
     });
   }
 
   function revokeEquipmentPermissionByAdmin(userId: string, equipmentId: string, reason: string) {
     const normalizedReason = reason.trim();
     if (!normalizedReason || sessionRole !== 'ADMIN') return;
-    setEquipmentPermissions((current) => {
-      const currentUserPermissions = current[userId] ?? [];
-      if (!currentUserPermissions.includes(equipmentId)) return current;
-      const nextPermissions = currentUserPermissions.filter((id) => id !== equipmentId);
-      const next = { ...current, [userId]: nextPermissions };
-      localStorage.setItem(STORAGE_KEYS.equipmentPermissions, JSON.stringify(next));
-      return next;
-    });
-    const record: EquipmentPermissionHistoryRecord = {
-      id: `permission-history-${Date.now()}`,
-      action: 'REVOKE',
-      actorId: currentManagedUser?.id ?? 'admin',
-      actorRole: 'ADMIN',
-      userId,
-      equipmentId,
-      reason: normalizedReason,
-      createdAt: new Date().toISOString()
-    };
-    setEquipmentPermissionHistory((current) => {
-      const next = [record, ...current];
-      localStorage.setItem(STORAGE_KEYS.equipmentPermissionHistory, JSON.stringify(next));
-      return next;
+    void apiPost<EquipmentPermissionSnapshot>(
+      '/equipment-permissions/revoke',
+      { userId, equipmentId, reason: normalizedReason },
+      localStorage.getItem(STORAGE_KEYS.sessionToken)
+    ).then((snapshot) => {
+      if (!snapshot) {
+        window.alert('장비 권한을 회수하지 못했습니다. 관리자 권한을 확인해 주세요.');
+        return;
+      }
+      applyEquipmentPermissionSnapshot(snapshot);
     });
   }
 

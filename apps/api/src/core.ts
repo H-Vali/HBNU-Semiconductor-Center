@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { SessionUser } from './auth.js';
 import { equipment as fallbackEquipment, reservations as fallbackReservations } from './data.js';
 import { hasDatabase, query, transaction } from './db.js';
+import { hasActiveEquipmentPermission } from './permissions.js';
 
 type Equipment = typeof fallbackEquipment[number];
 type MutableEquipment = Equipment & {
@@ -26,6 +27,13 @@ export class ReservationOverlapError extends Error {
   constructor() {
     super('Reservation overlaps existing booking');
     this.name = 'ReservationOverlapError';
+  }
+}
+
+export class ReservationPermissionError extends Error {
+  constructor() {
+    super('Equipment reservation permission required');
+    this.name = 'ReservationPermissionError';
   }
 }
 
@@ -203,6 +211,31 @@ function canAssignReservationOwner(user?: SessionUser) {
 
 function canCancelAnyReservation(user: SessionUser) {
   return user.role === 'ADMIN';
+}
+
+async function canCreateReservation(body: CreateReservationInput, user?: SessionUser) {
+  if (!user) return false;
+  if (user.role === 'ADMIN' || user.role === 'MANAGER') return true;
+  if (body.userId && body.userId !== user.id) return false;
+
+  if (!hasDatabase()) {
+    return hasActiveEquipmentPermission(user.id, body.equipmentId);
+  }
+
+  const result = await query<{ onboardingStatus: string; hasPermission: boolean }>(
+    `select u.onboarding_status as "onboardingStatus",
+      exists (
+        select 1
+        from equipment_permissions ep
+        where ep.user_id = u.id and ep.equipment_id = $2 and ep.revoked_at is null
+      ) as "hasPermission"
+     from users u
+     where u.id = $1 and u.deleted_at is null
+     limit 1`,
+    [user.id, body.equipmentId]
+  );
+  const row = result.rows[0];
+  return row?.onboardingStatus === 'active' && row.hasPermission;
 }
 
 export async function listEquipment() {
@@ -415,6 +448,9 @@ export async function listReservations() {
 
 export async function createReservation(input: unknown, user?: SessionUser) {
   const body = createReservationSchema.parse(input);
+  if (!await canCreateReservation(body, user)) {
+    throw new ReservationPermissionError();
+  }
   const canAssignOwner = canAssignReservationOwner(user);
   const ownerId = canAssignOwner ? (body.userId ?? user?.id ?? null) : (user?.id ?? null);
   const status = canAssignOwner ? (body.status ?? 'pending') : 'pending';

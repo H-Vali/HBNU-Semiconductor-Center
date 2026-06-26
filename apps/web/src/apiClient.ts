@@ -43,6 +43,14 @@ export function apiPost<T>(path: string, body: unknown, authToken?: string | nul
   });
 }
 
+export function apiPut<T>(path: string, body: unknown, authToken?: string | null) {
+  return apiRequest<T>(path, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+    authToken
+  });
+}
+
 export function apiPatch<T>(path: string, body: unknown, authToken?: string | null) {
   return apiRequest<T>(path, {
     method: 'PATCH',
