@@ -1,4 +1,7 @@
-const apiBaseUrl = ((import.meta as ImportMeta & { env?: Record<string, string> }).env?.VITE_API_URL) ?? 'http://localhost:4000';
+const defaultApiBaseUrl = typeof window !== 'undefined' && window.location.hostname.includes('github.io')
+  ? 'https://hbnu-semiconductor-center-api.onrender.com'
+  : 'http://localhost:4000';
+const apiBaseUrl = ((import.meta as ImportMeta & { env?: Record<string, string> }).env?.VITE_API_URL) ?? defaultApiBaseUrl;
 
 type ApiOptions = RequestInit & {
   authToken?: string | null;

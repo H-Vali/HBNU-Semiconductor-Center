@@ -205,8 +205,30 @@ type GoogleIdentityWindow = Window & typeof globalThis & {
   };
 };
 
-const apiUrl = ((import.meta as ImportMeta & { env?: Record<string, string> }).env?.VITE_API_URL) ?? 'http://localhost:4000';
-const googleClientId = ((import.meta as ImportMeta & { env?: Record<string, string> }).env?.VITE_GOOGLE_CLIENT_ID) ?? '';
+const defaultApiUrl = typeof window !== 'undefined' && window.location.hostname.includes('github.io')
+  ? 'https://hbnu-semiconductor-center-api.onrender.com'
+  : 'http://localhost:4000';
+const apiUrl = ((import.meta as ImportMeta & { env?: Record<string, string> }).env?.VITE_API_URL) ?? defaultApiUrl;
+const bundledGoogleClientId = ((import.meta as ImportMeta & { env?: Record<string, string> }).env?.VITE_GOOGLE_CLIENT_ID) ?? '';
+
+function useGoogleClientId() {
+  const [resolvedGoogleClientId, setResolvedGoogleClientId] = useState(bundledGoogleClientId);
+
+  useEffect(() => {
+    if (resolvedGoogleClientId) return;
+    let isMounted = true;
+    void apiGet<{ googleClientId?: string }>('/auth/config').then((config) => {
+      if (isMounted && config?.googleClientId) {
+        setResolvedGoogleClientId(config.googleClientId);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [resolvedGoogleClientId]);
+
+  return resolvedGoogleClientId;
+}
 
 function loadGoogleIdentityScript() {
   const googleWindow = window as GoogleIdentityWindow;
@@ -4258,6 +4280,7 @@ function LegacyLoginPage({
     email: ''
   });
   const googleButtonRef = useRef<HTMLDivElement | null>(null);
+  const googleClientId = useGoogleClientId();
 
   useEffect(() => {
     if (!googleClientId || !googleButtonRef.current) return;
@@ -4289,7 +4312,7 @@ function LegacyLoginPage({
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [googleClientId]);
 
   function completeLogin(data: GoogleAuthResponse) {
     if (!data.user || !data.token) return false;
@@ -4455,6 +4478,7 @@ function LoginPage({
     email: ''
   });
   const googleButtonRef = useRef<HTMLDivElement | null>(null);
+  const googleClientId = useGoogleClientId();
 
   useEffect(() => {
     if (!googleClientId || !googleButtonRef.current) return;
@@ -4486,7 +4510,7 @@ function LoginPage({
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [googleClientId]);
 
   function completeLogin(data: GoogleAuthResponse) {
     if (!data.user || !data.token) return false;

@@ -64,6 +64,10 @@ app.use(express.json());
 
 app.get('/health', (_req, res) => res.json({ ok: true, api: 'apps/api', build: 'current-api' }));
 
+app.get('/auth/config', (_req, res) => {
+  res.json({ googleClientId: process.env.GOOGLE_CLIENT_ID ?? '' });
+});
+
 app.post('/auth/google', async (req, res, next) => {
   try {
     res.json(await authenticateGoogle(req.body));
