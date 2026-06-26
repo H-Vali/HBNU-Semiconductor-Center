@@ -7403,17 +7403,22 @@ export function App() {
     let isMounted = true;
     void apiGet<NoticeItem[]>('/notices?board=operation').then((items) => {
       if (isMounted && items) {
-        setManagedOperationNotices(normalizeNoticeItems(items));
+        const next = normalizeNoticeItems(items);
+        setManagedOperationNotices(next);
+        localStorage.setItem(noticeBoardMeta.operation.storageKey, JSON.stringify(next));
       }
     });
     void apiGet<NoticeItem[]>('/notices?board=meeting').then((items) => {
       if (isMounted && items) {
-        setManagedMeetingNotices(normalizeNoticeItems(items));
+        const next = normalizeNoticeItems(items);
+        setManagedMeetingNotices(next);
+        localStorage.setItem(noticeBoardMeta.meeting.storageKey, JSON.stringify(next));
       }
     });
     void apiGet<FaqItem[]>('/faqs').then((items) => {
       if (isMounted && items) {
         setManagedFaqItems(items);
+        localStorage.setItem(STORAGE_KEYS.faqItems, JSON.stringify(items));
       }
     });
     return () => {
@@ -7622,35 +7627,45 @@ export function App() {
   }
 
   function addNotice(board: NoticeBoardKey, item: NoticeItem) {
-    updateNoticeBoard(board, (current) => [item, ...current]);
     void apiPost<NoticeItem>('/notices', {
       ...item,
       board
     }, localStorage.getItem(STORAGE_KEYS.sessionToken)).then((savedNotice) => {
-      if (!savedNotice) return;
-      updateNoticeBoard(board, (current) => current.map((notice) => (
-        notice.id === item.id ? savedNotice : notice
-      )));
+      if (!savedNotice) {
+        window.alert('공지 저장에 실패했습니다. 다시 시도해 주세요.');
+        return;
+      }
+      updateNoticeBoard(board, (current) => [savedNotice, ...current.filter((notice) => notice.id !== savedNotice.id)]);
     });
   }
 
   function updateNotice(board: NoticeBoardKey, noticeId: string, patch: Partial<NoticeItem>) {
-    updateNoticeBoard(board, (current) => current.map((item) => (
-      item.id === noticeId ? { ...item, ...patch } : item
-    )));
     void apiPatch<NoticeItem>(
       `/notices/${encodeURIComponent(noticeId)}`,
       patch,
       localStorage.getItem(STORAGE_KEYS.sessionToken)
-    );
+    ).then((savedNotice) => {
+      if (!savedNotice) {
+        window.alert('공지 수정에 실패했습니다. 다시 시도해 주세요.');
+        return;
+      }
+      updateNoticeBoard(board, (current) => current.map((item) => (
+        item.id === noticeId ? savedNotice : item
+      )));
+    });
   }
 
   function deleteNotice(board: NoticeBoardKey, noticeId: string) {
-    updateNoticeBoard(board, (current) => current.filter((item) => item.id !== noticeId));
     void apiDelete<NoticeItem>(
       `/notices/${encodeURIComponent(noticeId)}`,
       localStorage.getItem(STORAGE_KEYS.sessionToken)
-    );
+    ).then((deletedNotice) => {
+      if (!deletedNotice) {
+        window.alert('공지 삭제에 실패했습니다. 다시 시도해 주세요.');
+        return;
+      }
+      updateNoticeBoard(board, (current) => current.filter((item) => item.id !== noticeId));
+    });
   }
 
   function updateFaqItems(updater: (items: FaqItem[]) => FaqItem[]) {
@@ -7662,32 +7677,42 @@ export function App() {
   }
 
   function addFaq(item: FaqItem) {
-    updateFaqItems((current) => [item, ...current]);
     void apiPost<FaqItem>('/faqs', item, localStorage.getItem(STORAGE_KEYS.sessionToken)).then((savedFaq) => {
-      if (!savedFaq) return;
-      updateFaqItems((current) => current.map((faq) => (
-        faq.id === item.id ? savedFaq : faq
-      )));
+      if (!savedFaq) {
+        window.alert('FAQ 저장에 실패했습니다. 다시 시도해 주세요.');
+        return;
+      }
+      updateFaqItems((current) => [savedFaq, ...current.filter((faq) => faq.id !== savedFaq.id)]);
     });
   }
 
   function updateFaq(faqId: string, patch: Partial<FaqItem>) {
-    updateFaqItems((current) => current.map((item) => (
-      item.id === faqId ? { ...item, ...patch } : item
-    )));
     void apiPatch<FaqItem>(
       `/faqs/${encodeURIComponent(faqId)}`,
       patch,
       localStorage.getItem(STORAGE_KEYS.sessionToken)
-    );
+    ).then((savedFaq) => {
+      if (!savedFaq) {
+        window.alert('FAQ 수정에 실패했습니다. 다시 시도해 주세요.');
+        return;
+      }
+      updateFaqItems((current) => current.map((item) => (
+        item.id === faqId ? savedFaq : item
+      )));
+    });
   }
 
   function deleteFaq(faqId: string) {
-    updateFaqItems((current) => current.filter((item) => item.id !== faqId));
     void apiDelete<FaqItem>(
       `/faqs/${encodeURIComponent(faqId)}`,
       localStorage.getItem(STORAGE_KEYS.sessionToken)
-    );
+    ).then((deletedFaq) => {
+      if (!deletedFaq) {
+        window.alert('FAQ 삭제에 실패했습니다. 다시 시도해 주세요.');
+        return;
+      }
+      updateFaqItems((current) => current.filter((item) => item.id !== faqId));
+    });
   }
 
   function upsertTrainingRequest(request: ApiTrainingRequest) {

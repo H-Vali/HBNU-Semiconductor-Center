@@ -228,6 +228,7 @@ export function QnaPage({ sessionRole }: { sessionRole: Role | null }) {
     void apiGet<QnaItem[]>('/qna').then((items) => {
       if (isMounted && items) {
         setQnaItems(items);
+        localStorage.setItem(STORAGE_KEYS.qnaItems, JSON.stringify(items));
       }
     });
     return () => {
@@ -251,21 +252,15 @@ export function QnaPage({ sessionRole }: { sessionRole: Role | null }) {
       status: '답변대기',
       createdAt
     };
-    const nextItems = [
-      newQuestion,
-      ...qnaItems
-    ];
-    persistQnaItems(nextItems);
-    setSelectedQnaId(newQuestion.id);
-    setCurrentPage(1);
-    setShowCreateModal(false);
     void apiPost<QnaItem>('/qna', newQuestion).then((savedQuestion) => {
-      if (!savedQuestion) return;
-      setQnaItems((current) => {
-        const next = current.map((item) => item.id === newQuestion.id ? savedQuestion : item);
-        localStorage.setItem(STORAGE_KEYS.qnaItems, JSON.stringify(next));
-        return next;
-      });
+      if (!savedQuestion) {
+        window.alert('Q&A 등록에 실패했습니다. 다시 시도해 주세요.');
+        return;
+      }
+      persistQnaItems([savedQuestion, ...qnaItems.filter((item) => item.id !== savedQuestion.id)]);
+      setSelectedQnaId(savedQuestion.id);
+      setCurrentPage(1);
+      setShowCreateModal(false);
     });
   }
 
@@ -336,7 +331,14 @@ export function QnaPage({ sessionRole }: { sessionRole: Role | null }) {
       answeredAt,
       answeredBy: '관리자'
     }, localStorage.getItem(STORAGE_KEYS.sessionToken)).then((savedQuestion) => {
-      if (!savedQuestion) return;
+      if (!savedQuestion) {
+        persistQnaItems(qnaItems);
+        answerSaveTimers.current.forEach((timer) => window.clearTimeout(timer));
+        answerSaveTimers.current = [];
+        setAnswerSavePhase('idle');
+        window.alert('Q&A 답변 저장에 실패했습니다. 다시 시도해 주세요.');
+        return;
+      }
       setQnaItems((current) => {
         const next = current.map((item) => item.id === savedQuestion.id ? savedQuestion : item);
         localStorage.setItem(STORAGE_KEYS.qnaItems, JSON.stringify(next));
