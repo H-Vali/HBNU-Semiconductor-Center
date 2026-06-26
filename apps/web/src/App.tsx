@@ -5990,9 +5990,9 @@ function EquipmentAdminPage({
 }: {
   equipmentItems: EquipmentItem[];
   users: ManagedUser[];
-  onAddEquipment: (item: EquipmentItem) => void;
-  onDeleteEquipment: (equipmentId: string) => void;
-  onUpdateEquipment: (equipmentId: string, patch: Partial<EquipmentItem>) => void;
+  onAddEquipment: (item: EquipmentItem) => Promise<boolean>;
+  onDeleteEquipment: (equipmentId: string) => Promise<boolean>;
+  onUpdateEquipment: (equipmentId: string, patch: Partial<EquipmentItem>) => Promise<boolean>;
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [groupFilter, setGroupFilter] = useState<'전체' | EquipmentGroup>('전체');
@@ -6181,9 +6181,9 @@ function EquipmentAdminPage({
           users={users}
           mode="edit"
           onClose={() => setSelectedEquipment(null)}
-          onSave={(patch) => {
-            onUpdateEquipment(selectedEquipment.id, patch);
-            setSelectedEquipment(null);
+          onSave={async (patch) => {
+            const saved = await onUpdateEquipment(selectedEquipment.id, patch);
+            if (saved) setSelectedEquipment(null);
           }}
         />
       )}
@@ -6193,9 +6193,9 @@ function EquipmentAdminPage({
           users={users}
           mode="create"
           onClose={() => setShowCreateModal(false)}
-          onSave={(patch) => {
+          onSave={async (patch) => {
             const group = patch.group ?? 'process';
-            onAddEquipment({
+            const saved = await onAddEquipment({
               ...createEquipmentDraft(),
               ...patch,
               id: `eq-${Date.now()}`,
@@ -6212,7 +6212,7 @@ function EquipmentAdminPage({
               utilization: 0,
               usageHours: 0
             });
-            setShowCreateModal(false);
+            if (saved) setShowCreateModal(false);
           }}
         />
       )}
@@ -6220,10 +6220,11 @@ function EquipmentAdminPage({
         <EquipmentSelectionDeleteModal
           items={selectedItems}
           onCancel={() => setDeleteSelectionOpen(false)}
-          onConfirm={() => {
-            selectedItems.forEach((item) => onDeleteEquipment(item.id));
-            setSelectedEquipmentIds(new Set());
-            setDeleteSelectionOpen(false);
+          onConfirm={async () => {
+            const results = await Promise.all(selectedItems.map((item) => onDeleteEquipment(item.id)));
+            const deletedIds = new Set(selectedItems.filter((_, index) => results[index]).map((item) => item.id));
+            setSelectedEquipmentIds((current) => new Set([...current].filter((id) => !deletedIds.has(id))));
+            if (results.every(Boolean)) setDeleteSelectionOpen(false);
           }}
         />
       )}
@@ -6242,7 +6243,7 @@ function EquipmentEditModal({
   users: ManagedUser[];
   mode?: 'create' | 'edit';
   onClose: () => void;
-  onSave: (patch: Partial<EquipmentItem>) => void;
+  onSave: (patch: Partial<EquipmentItem>) => void | Promise<void>;
 }) {
   const [form, setForm] = useState({
     name: equipment.name,
@@ -6271,10 +6272,10 @@ function EquipmentEditModal({
     reader.readAsDataURL(file);
   }
 
-  function submit(event: FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!form.name.trim() || !form.model.trim() || !form.location.trim()) return;
-    onSave({
+    await onSave({
       name: form.name.trim(),
       model: form.model.trim(),
       location: form.location.trim(),
@@ -6399,7 +6400,7 @@ function EquipmentSelectionDeleteModal({
 }: {
   items: EquipmentItem[];
   onCancel: () => void;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
 }) {
   return (
     <div className="user-add-modal-backdrop" role="presentation">
@@ -7552,50 +7553,51 @@ export function App() {
     navigate('equipment');
   }
 
-  function addEquipment(item: EquipmentItem) {
-    setEquipmentItems((current) => [...current, item]);
-    void apiPost<ApiEquipmentItem>(
+  async function addEquipment(item: EquipmentItem) {
+    const savedItem = await apiPost<ApiEquipmentItem>(
       '/equipment',
       toApiEquipmentPayload(item),
       localStorage.getItem(STORAGE_KEYS.sessionToken)
-    ).then((savedItem) => {
-      if (!savedItem) return;
-      setEquipmentItems((current) => current.map((entry, index) => (
-        entry.id === item.id ? normalizeEquipment(savedItem, index) : entry
-      )));
-    });
+    );
+    if (!savedItem) {
+      window.alert('장비 등록에 실패했습니다. 입력값 또는 관리자 권한을 확인해 주세요.');
+      return false;
+    }
+    setEquipmentItems((current) => [...current, normalizeEquipment(savedItem, current.length)]);
+    return true;
   }
 
-  function deleteEquipment(equipmentId: string) {
-    setDeletedEquipmentIds((current) => current.includes(equipmentId) ? current : [...current, equipmentId]);
-    void apiDelete<ApiEquipmentItem>(
+  async function deleteEquipment(equipmentId: string) {
+    const deletedItem = await apiDelete<ApiEquipmentItem>(
       `/equipment/${encodeURIComponent(equipmentId)}`,
       localStorage.getItem(STORAGE_KEYS.sessionToken)
     );
+    if (!deletedItem) {
+      window.alert('장비 삭제에 실패했습니다. 관리자 권한 또는 장비 상태를 확인해 주세요.');
+      return false;
+    }
+    setDeletedEquipmentIds((current) => current.includes(equipmentId) ? current : [...current, equipmentId]);
+    return true;
   }
 
-  function updateEquipment(equipmentId: string, patch: Partial<EquipmentItem>) {
-    setEquipmentItems((current) => {
-      const next = current.map((item) => (
-        item.id === equipmentId ? { ...item, ...patch } : item
-      ));
-      const currentOverrides = getEquipmentOverrides();
-      localStorage.setItem(STORAGE_KEYS.equipmentOverrides, JSON.stringify({
-        ...currentOverrides,
-        [equipmentId]: { ...(currentOverrides[equipmentId] ?? {}), ...patch }
-      }));
-      return next;
-    });
-    void apiPatch<ApiEquipmentItem>(
+  async function updateEquipment(equipmentId: string, patch: Partial<EquipmentItem>) {
+    const savedItem = await apiPatch<ApiEquipmentItem>(
       `/equipment/${encodeURIComponent(equipmentId)}`,
       toApiEquipmentPayload(patch),
       localStorage.getItem(STORAGE_KEYS.sessionToken)
-    ).then((savedItem) => {
-      if (!savedItem) return;
-      setEquipmentItems((current) => current.map((item, index) => (
-        item.id === equipmentId ? normalizeEquipment(savedItem, index) : item
-      )));
-    });
+    );
+    if (!savedItem) {
+      window.alert('장비 수정에 실패했습니다. 입력값 또는 관리자 권한을 확인해 주세요.');
+      return false;
+    }
+    setEquipmentItems((current) => current.map((item, index) => (
+      item.id === equipmentId ? normalizeEquipment(savedItem, index) : item
+    )));
+    const currentOverrides = getEquipmentOverrides();
+    localStorage.setItem(STORAGE_KEYS.equipmentOverrides, JSON.stringify({
+      ...currentOverrides,
+      [equipmentId]: { ...(currentOverrides[equipmentId] ?? {}), ...patch }
+    }));
     if ('managerId' in patch) {
       setEquipmentPermissions((current) => {
         const next: EquipmentPermissionMap = Object.fromEntries(
@@ -7624,6 +7626,7 @@ export function App() {
         return next;
       });
     }
+    return true;
   }
 
   function updateNoticeBoard(board: NoticeBoardKey, updater: (items: NoticeItem[]) => NoticeItem[]) {
