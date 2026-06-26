@@ -1359,13 +1359,13 @@ function Hero({
   const roleToneClass = getRoleToneClass(userRole);
   const needsAccountAction = accountStatus !== 'ready';
   const statusBadgeLabel = accountStatus === 'guest'
-    ? 'Google 로그인 필요'
+    ? '읽기 전용'
     : accountStatus === 'profileRequired'
       ? '회원정보 등록 필요'
       : formatProfessorLab(userLab);
 
   return (
-    <section className="hero-panel relative overflow-hidden">
+    <section className={`hero-panel relative overflow-hidden ${accountStatus === 'guest' ? 'is-guest-session' : ''}`}>
       <div className="hero-intro">
         <div className="hero-logo-watermarks" aria-hidden="true">
           <span className="hero-logo-watermark is-primary"><HanbatLogoMark /></span>
@@ -1399,10 +1399,10 @@ function Hero({
             );
           })}
         </div>
-        <div className="hero-user-summary" aria-label="사용자 예약 요약">
+        <div className={`hero-user-summary ${accountStatus === 'guest' ? 'is-guest' : accountStatus === 'profileRequired' ? 'is-profile-required' : ''}`} aria-label="사용자 예약 요약">
           <div className="hero-user-summary-head">
             {accountStatus === 'guest' ? (
-              <h3>로그인이 필요합니다.</h3>
+              <h3>비로그인 방문자</h3>
             ) : accountStatus === 'profileRequired' ? (
               <h3>회원정보 등록이 필요합니다.</h3>
             ) : (
@@ -1414,7 +1414,11 @@ function Hero({
           </div>
           <div className="hero-user-permissions" aria-label="사용자 역할 및 장비 권한">
             {accountStatus === 'guest' ? (
-              <span className="hero-permission-badge is-empty">로그인 후 교육신청과 예약을 이용할 수 있습니다.</span>
+              <>
+                <span className="hero-role-badge is-guest">VISITOR</span>
+                <span className="hero-permission-badge is-readonly">공지·장비현황 열람 가능</span>
+                <span className="hero-permission-badge is-locked">예약·교육신청 제한</span>
+              </>
             ) : accountStatus === 'profileRequired' ? (
               <span className="hero-permission-badge is-empty">회원정보 등록 후 교육신청을 이용할 수 있습니다.</span>
             ) : (
@@ -1450,11 +1454,11 @@ function Hero({
                 <time>-</time>
                 <strong>
                   {accountStatus === 'guest'
-                    ? 'Google 로그인 후 예약 현황을 확인할 수 있습니다.'
+                    ? '현재는 읽기 전용입니다. 로그인 후 예약과 교육신청을 이용할 수 있습니다.'
                     : '회원정보 등록 후 예약 현황을 확인할 수 있습니다.'}
                 </strong>
                 <button type="button" className="hero-reservation-action" onClick={onReservationAction}>
-                  {accountStatus === 'guest' ? '로그인 필요' : '회원가입 필요'}
+                  {accountStatus === 'guest' ? '로그인 안내' : '회원가입 필요'}
                 </button>
               </div>
             ) : (
@@ -1473,7 +1477,7 @@ function Hero({
             )}
           </div>
           <div className="hero-user-summary-foot">
-            <span>{needsAccountAction ? '로그인 후 예약 기능 이용 가능' : '오늘 이용 예약 2건'}</span>
+            <span>{accountStatus === 'guest' ? '현재 권한: 방문자 · 읽기 전용' : needsAccountAction ? '로그인 후 예약 기능 이용 가능' : '오늘 이용 예약 2건'}</span>
             <button type="button" aria-label="내 예약 전체 보기" onClick={onReservationAction}>
               {needsAccountAction ? '조건 확인' : '전체 보기'}
             </button>
@@ -6994,6 +6998,7 @@ export function App() {
   const { items: equipmentItems, setItems: setEquipmentItems, source } = useEquipmentData();
   const [activePage, setActivePage] = useState<PageKey>('home');
   const [loading, setLoading] = useState(false);
+  const [globalAccessNotice, setGlobalAccessNotice] = useState<AccessRequirementNotice | null>(null);
   const [initialGroup, setInitialGroup] = useState<EquipmentGroup>('process');
   const [deletedEquipmentIds, setDeletedEquipmentIds] = useState<string[]>([]);
   const [selectedConsumableMonth, setSelectedConsumableMonth] = useState('2026-06');
@@ -7207,6 +7212,36 @@ export function App() {
   function navigate(page: PageKey) {
     if (adminOnlyPages.has(page) && sessionRole !== 'ADMIN') {
       setActivePage('home');
+      return;
+    }
+    if (!sessionUser && page === 'reservations') {
+      setGlobalAccessNotice({
+        title: '로그인이 필요합니다.',
+        message: '장비사용예약은 로그인한 사용자만 이용할 수 있습니다.',
+        detail: '비로그인 방문자는 장비현황과 공지사항을 읽기 전용으로 확인할 수 있으며, 예약 신청은 Google 본인인증 후 가능합니다.',
+        primaryLabel: '로그인하기',
+        onPrimary: () => navigate('login')
+      });
+      return;
+    }
+    if (!sessionUser && page === 'training') {
+      setGlobalAccessNotice({
+        title: '로그인이 필요합니다.',
+        message: '교육신청은 로그인한 사용자만 신청할 수 있습니다.',
+        detail: '비로그인 방문자는 교육신청 화면에 진입할 수 없으며, 로그인 후 회원정보 등록을 마치면 장비 담당자에게 교육을 요청할 수 있습니다.',
+        primaryLabel: '로그인하기',
+        onPrimary: () => navigate('login')
+      });
+      return;
+    }
+    if (!sessionUser && page === 'mypage') {
+      setGlobalAccessNotice({
+        title: '로그인이 필요합니다.',
+        message: '마이페이지는 로그인 후 이용할 수 있습니다.',
+        detail: '비로그인 방문자는 공지사항, 센터소개, 장비현황, FAQ/Q&A 목록만 읽기 전용으로 확인할 수 있습니다.',
+        primaryLabel: '로그인하기',
+        onPrimary: () => navigate('login')
+      });
       return;
     }
     if (page === 'reservations' && sessionRole !== 'ADMIN' && activeSessionPenalty) {
@@ -7971,6 +8006,9 @@ export function App() {
       )}
       {showPreviewPenaltyDemo && !activeSessionPenalty && (
         <PenaltyNoticeModal penalty={previewPenaltyDemo} onClose={dismissPreviewPenaltyDemo} />
+      )}
+      {globalAccessNotice && (
+        <AccessRequirementModal notice={globalAccessNotice} onClose={() => setGlobalAccessNotice(null)} />
       )}
     </div>
   );

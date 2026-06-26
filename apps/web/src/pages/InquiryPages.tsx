@@ -374,7 +374,16 @@ export function QnaPage({ sessionRole }: { sessionRole: Role | null }) {
             <input value={searchTerm} onChange={(event) => updateSearchTerm(event.target.value)} placeholder="소속, 제목, 문의내용, 답변 검색" />
           </span>
         </label>
-        <button type="button" onClick={() => setShowCreateModal(true)}>질문 등록</button>
+        <button
+          type="button"
+          onClick={() => {
+            if (sessionRole) setShowCreateModal(true);
+          }}
+          disabled={!sessionRole}
+          title={!sessionRole ? '로그인 후 질문을 등록할 수 있습니다.' : undefined}
+        >
+          {sessionRole ? '질문 등록' : '로그인 후 질문 등록'}
+        </button>
       </div>
 
       <div className="qna-table-wrap">

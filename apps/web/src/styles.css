@@ -95,6 +95,13 @@ select {
   background: #0b1220;
 }
 
+.hero-panel.is-guest-session {
+  border-color: rgba(95, 217, 201, 0.2);
+  background:
+    linear-gradient(135deg, rgba(95, 217, 201, 0.08), transparent 34%),
+    #0b1220;
+}
+
 .hero-logo-watermarks {
   pointer-events: none;
   position: absolute;
@@ -237,6 +244,14 @@ select {
   padding: 1.15rem 1.25rem;
 }
 
+.hero-user-summary.is-guest {
+  border-color: rgba(95, 217, 201, 0.28);
+  background:
+    linear-gradient(135deg, rgba(52, 214, 176, 0.13), transparent 42%),
+    rgba(17, 25, 43, 0.68);
+  box-shadow: inset 0 0 0 1px rgba(95, 217, 201, 0.05);
+}
+
 .hero-user-summary-head {
   display: flex;
   align-items: center;
@@ -319,6 +334,12 @@ select {
   color: #cbd5e1;
 }
 
+.hero-role-badge.is-guest {
+  border-color: rgba(95, 217, 201, 0.54);
+  background: rgba(20, 184, 166, 0.14);
+  color: #99f6e4;
+}
+
 .hero-permission-badge.is-process {
   border-color: rgba(168, 85, 247, 0.5);
   background: rgba(88, 28, 135, 0.26);
@@ -335,6 +356,18 @@ select {
   border-color: rgba(52, 214, 176, 0.56);
   background: rgba(20, 184, 166, 0.18);
   color: #99f6e4;
+}
+
+.hero-permission-badge.is-readonly {
+  border-color: rgba(96, 165, 250, 0.44);
+  background: rgba(37, 99, 235, 0.16);
+  color: #bfdbfe;
+}
+
+.hero-permission-badge.is-locked {
+  border-color: rgba(251, 191, 36, 0.44);
+  background: rgba(180, 83, 9, 0.16);
+  color: #fde68a;
 }
 
 .hero-permission-badge.is-more,
@@ -6994,6 +7027,14 @@ select {
 .qna-compose button:hover {
   background: #3b82f6;
   transform: translateY(-1px);
+}
+
+.qna-compose button:disabled {
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .qna-table-wrap {
