@@ -7783,12 +7783,11 @@ export function App() {
     );
     if (savedRequest) {
       upsertTrainingRequest(savedRequest);
-      void refreshEquipmentPermissions();
+      await refreshEquipmentPermissions();
       const token = localStorage.getItem(STORAGE_KEYS.sessionToken);
       if (token) {
-        void apiGet<GoogleAuthResponse>('/auth/me', token).then((session) => {
-          if (session?.managedUser) registerAuthenticatedUser(session.managedUser);
-        });
+        const session = await apiGet<GoogleAuthResponse>('/auth/me', token);
+        if (session?.managedUser) registerAuthenticatedUser(session.managedUser);
       }
     }
     return savedRequest;

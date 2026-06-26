@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { SessionUser } from './auth.js';
-import { hasDatabase, query } from './db.js';
+import { hasDatabase, query, transaction } from './db.js';
 import { equipment as fallbackEquipment } from './data.js';
 import { PermissionDeniedError, grantEquipmentPermission } from './permissions.js';
 
@@ -89,6 +89,13 @@ const rejectTrainingRequestSchema = z.object({
 });
 
 const fallbackTrainingRequests: TrainingRequest[] = [];
+
+export class TrainingRequestStateError extends Error {
+  constructor(message = 'Training request cannot be completed from its current status') {
+    super(message);
+    this.name = 'TrainingRequestStateError';
+  }
+}
 
 const trainingRequestSchemaStatements = [
   `create table if not exists training_requests (
@@ -430,6 +437,9 @@ export async function completeTrainingRequest(id: string, actor: SessionUser) {
   const request = await getTrainingRequest(id);
   if (!request) return null;
   await assertTrainingScope(actor, request.equipmentId);
+  if (request.status !== 'scheduled' && request.status !== 'completed') {
+    throw new TrainingRequestStateError();
+  }
 
   if (!hasDatabase()) {
     const completed = updateFallbackTrainingRequest(id, {
@@ -445,25 +455,62 @@ export async function completeTrainingRequest(id: string, actor: SessionUser) {
     return completed;
   }
 
-  await query(
-    `update training_requests
-     set status = 'completed',
-      handled_by = $2,
-      completed_at = now(),
-      updated_at = now()
-     where id = $1 and deleted_at is null`,
-    [id, actor.id]
-  );
-  await grantEquipmentPermission(
-    { userId: request.applicantUserId, equipmentId: request.equipmentId, sourceRequestId: id },
-    actor
-  );
-  await query(
-    `update users
-     set onboarding_status = 'active',
-      updated_at = now()
-     where id = $1 and deleted_at is null`,
-    [request.applicantUserId]
-  );
+  await transaction(async (client) => {
+    const completed = await client.query(
+      `update training_requests
+       set status = 'completed',
+        handled_by = $2,
+        completed_at = coalesce(completed_at, now()),
+        updated_at = now()
+       where id = $1 and deleted_at is null and status in ('scheduled', 'completed')`,
+      [id, actor.id]
+    );
+    if (completed.rowCount === 0) {
+      throw new TrainingRequestStateError();
+    }
+
+    await client.query(
+      `insert into equipment_permissions (
+        user_id, equipment_id, granted_at, granted_by, granted_by_role, source_request_id,
+        revoked_at, revoked_by, revoke_reason
+      )
+      values ($1, $2, now(), $3, $4, $5, null, null, null)
+      on conflict (user_id, equipment_id) do update
+      set granted_at = now(),
+        granted_by = excluded.granted_by,
+        granted_by_role = excluded.granted_by_role,
+        source_request_id = excluded.source_request_id,
+        revoked_at = null,
+        revoked_by = null,
+        revoke_reason = null`,
+      [
+        request.applicantUserId,
+        request.equipmentId,
+        actor.id,
+        actor.role === 'ADMIN' || actor.role === 'MANAGER' ? actor.role : 'SYSTEM',
+        id
+      ]
+    );
+    await client.query(
+      `insert into equipment_permission_events (
+        id, action, actor_id, actor_role, user_id, equipment_id, reason
+      )
+      values ($1, 'GRANT', $2, $3, $4, $5, null)`,
+      [
+        `permission-event-${randomUUID()}`,
+        actor.id,
+        actor.role === 'ADMIN' || actor.role === 'MANAGER' ? actor.role : 'SYSTEM',
+        request.applicantUserId,
+        request.equipmentId
+      ]
+    );
+    await client.query(
+      `update users
+       set onboarding_status = 'active',
+        updated_at = now()
+       where id = $1 and deleted_at is null`,
+      [request.applicantUserId]
+    );
+  });
   return getTrainingRequest(id);
 }

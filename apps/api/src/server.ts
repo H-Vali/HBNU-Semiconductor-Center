@@ -52,7 +52,8 @@ import {
   ensureTrainingRequestSchema,
   listTrainingRequests,
   rejectTrainingRequest,
-  scheduleTrainingRequest
+  scheduleTrainingRequest,
+  TrainingRequestStateError
 } from './training.js';
 
 dotenv.config();
@@ -422,6 +423,9 @@ app.use((error: unknown, _req: express.Request, res: express.Response, _next: ex
   }
   if (error instanceof PermissionDeniedError) {
     return res.status(403).json({ message: error.message });
+  }
+  if (error instanceof TrainingRequestStateError) {
+    return res.status(409).json({ message: error.message });
   }
   if (error instanceof z.ZodError) {
     return res.status(400).json({ message: 'Invalid request body', issues: error.issues });
