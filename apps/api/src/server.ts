@@ -41,7 +41,7 @@ dotenv.config();
 
 const app = express();
 const port = Number(process.env.PORT ?? 4000);
-const devLoginEnabled = process.env.NODE_ENV === 'development' && process.env.ENABLE_DEV_LOGIN === 'true';
+const devLoginEnabled = false;
 
 app.use(helmet());
 app.use(cors({ origin: process.env.CLIENT_ORIGIN ?? 'http://localhost:5173' }));
