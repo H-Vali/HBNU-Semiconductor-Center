@@ -1358,11 +1358,9 @@ function Hero({
   const hiddenPermissionCount = Math.max(grantedEquipmentItems.length - collapsedPermissionItems.length, 0);
   const roleToneClass = getRoleToneClass(userRole);
   const needsAccountAction = accountStatus !== 'ready';
-  const statusBadgeLabel = accountStatus === 'guest'
-    ? '읽기 전용'
-    : accountStatus === 'profileRequired'
-      ? '회원정보 등록 필요'
-      : formatProfessorLab(userLab);
+  const statusBadgeLabel = accountStatus === 'profileRequired'
+    ? '회원정보 등록 필요'
+    : formatProfessorLab(userLab);
 
   return (
     <section className={`hero-panel relative overflow-hidden ${accountStatus === 'guest' ? 'is-guest-session' : ''}`}>
@@ -1402,15 +1400,17 @@ function Hero({
         <div className={`hero-user-summary ${accountStatus === 'guest' ? 'is-guest' : accountStatus === 'profileRequired' ? 'is-profile-required' : ''}`} aria-label="사용자 예약 요약">
           <div className="hero-user-summary-head">
             {accountStatus === 'guest' ? (
-              <h3>비로그인 방문자</h3>
+              <h3>로그인이 필요합니다.</h3>
             ) : accountStatus === 'profileRequired' ? (
               <h3>회원정보 등록이 필요합니다.</h3>
             ) : (
               <h3><strong>{userName}</strong> 님 환영합니다.</h3>
             )}
-            <span style={{ borderColor: `${getProfessorTone(userLab)}66`, backgroundColor: `${getProfessorTone(userLab)}1f`, color: getProfessorTone(userLab) }}>
-              {statusBadgeLabel}
-            </span>
+            {accountStatus !== 'guest' && (
+              <span style={{ borderColor: `${getProfessorTone(userLab)}66`, backgroundColor: `${getProfessorTone(userLab)}1f`, color: getProfessorTone(userLab) }}>
+                {statusBadgeLabel}
+              </span>
+            )}
           </div>
           <div className="hero-user-permissions" aria-label="사용자 역할 및 장비 권한">
             {accountStatus === 'guest' ? (
@@ -1454,7 +1454,7 @@ function Hero({
                 <time>-</time>
                 <strong>
                   {accountStatus === 'guest'
-                    ? '현재는 읽기 전용입니다. 로그인 후 예약과 교육신청을 이용할 수 있습니다.'
+                    ? '로그인 후 시스템 이용이 가능합니다.'
                     : '회원정보 등록 후 예약 현황을 확인할 수 있습니다.'}
                 </strong>
                 <button type="button" className="hero-reservation-action" onClick={onReservationAction}>
@@ -1476,12 +1476,14 @@ function Hero({
               </>
             )}
           </div>
-          <div className="hero-user-summary-foot">
-            <span>{accountStatus === 'guest' ? '현재 권한: 방문자 · 읽기 전용' : needsAccountAction ? '로그인 후 예약 기능 이용 가능' : '오늘 이용 예약 2건'}</span>
-            <button type="button" aria-label="내 예약 전체 보기" onClick={onReservationAction}>
-              {needsAccountAction ? '조건 확인' : '전체 보기'}
-            </button>
-          </div>
+          {accountStatus !== 'guest' && (
+            <div className="hero-user-summary-foot">
+              <span>{needsAccountAction ? '로그인 후 예약 기능 이용 가능' : '오늘 이용 예약 2건'}</span>
+              <button type="button" aria-label="내 예약 전체 보기" onClick={onReservationAction}>
+                {needsAccountAction ? '조건 확인' : '전체 보기'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
       <div className="hero-metrics-panel">
