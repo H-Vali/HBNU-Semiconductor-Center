@@ -10,6 +10,7 @@ import { ensureAuditLogSchema, listAuditLogs, writeAuditLog } from './auditLog.j
 import { createFileAsset, deleteFileAsset, ensureFileAssetSchema, listFileAssets } from './fileAssets.js';
 import { buildEquipmentUsageAnalyticsWorkbook } from './equipmentUsageAnalytics.js';
 import { ensureFeatureFlagSchema, isFeatureEnabled } from './features.js';
+import { getDashboardMetrics } from './dashboardMetrics.js';
 import {
   answerQnaItem,
   createFaq,
@@ -111,6 +112,14 @@ const healthPayload = { ok: true, api: 'apps/api', build: 'current-api' };
 app.head('/', (_req, res) => res.status(204).end());
 app.get('/', (_req, res) => res.json(healthPayload));
 app.get('/health', (_req, res) => res.json(healthPayload));
+
+app.get('/dashboard/metrics', async (_req, res, next) => {
+  try {
+    res.json(await getDashboardMetrics());
+  } catch (error) {
+    next(error);
+  }
+});
 
 app.get('/auth/config', (_req, res) => {
   res.json({ googleClientId: process.env.GOOGLE_CLIENT_ID ?? '' });

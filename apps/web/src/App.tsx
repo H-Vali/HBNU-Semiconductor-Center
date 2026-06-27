@@ -105,6 +105,12 @@ type ApiReservationEvent = {
   createdByRole?: string;
   mine?: boolean;
 };
+type DashboardMetrics = {
+  monthlyUptimeHours: number;
+  monthlyUptimeDeltaPercent: number;
+  certifiedUsers: number;
+  totalUsers: number;
+};
 type ApiTrainingPurpose = 'research' | 'class' | 'other';
 type ApiTrainingRequestStatus = 'requested' | 'scheduled' | 'completed' | 'rejected';
 type ApiTrainingRequest = {
@@ -267,7 +273,10 @@ type GoogleIdentityWindow = Window & typeof globalThis & {
   };
 };
 
-const defaultApiUrl = typeof window !== 'undefined' && window.location.hostname.includes('github.io')
+const defaultApiUrl = typeof window !== 'undefined' && (
+  window.location.hostname.includes('github.io') ||
+  window.location.hostname.includes('pages.dev')
+)
   ? 'https://hbnu-semiconductor-center-api.onrender.com'
   : 'http://localhost:4000';
 const apiUrl = ((import.meta as ImportMeta & { env?: Record<string, string> }).env?.VITE_API_URL) ?? defaultApiUrl;
@@ -673,6 +682,36 @@ function useEquipmentData() {
   }, []);
 
   return { items, setItems, source };
+}
+
+const defaultDashboardMetrics: DashboardMetrics = {
+  monthlyUptimeHours: 0,
+  monthlyUptimeDeltaPercent: 0,
+  certifiedUsers: 0,
+  totalUsers: 0
+};
+
+function useDashboardMetrics() {
+  const [metrics, setMetrics] = useState<DashboardMetrics>(defaultDashboardMetrics);
+
+  useEffect(() => {
+    let isMounted = true;
+    void apiGet<DashboardMetrics>('/dashboard/metrics').then((items) => {
+      if (isMounted && items) {
+        setMetrics({
+          monthlyUptimeHours: Number(items.monthlyUptimeHours) || 0,
+          monthlyUptimeDeltaPercent: Number(items.monthlyUptimeDeltaPercent) || 0,
+          certifiedUsers: Number(items.certifiedUsers) || 0,
+          totalUsers: Number(items.totalUsers) || 0
+        });
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  return metrics;
 }
 
 function downloadCsv(filename: string, rows: Array<Record<string, string | number>>) {
@@ -1421,7 +1460,8 @@ function Hero({
   isAdmin,
   accountStatus,
   notices,
-  dashboardReservations
+  dashboardReservations,
+  dashboardMetrics
 }: {
   onNavigate: (page: PageKey) => void;
   onReservationAction: () => void;
@@ -1434,6 +1474,7 @@ function Hero({
   accountStatus: 'guest' | 'profileRequired' | 'ready';
   notices: NoticeItem[];
   dashboardReservations: ReservationEvent[];
+  dashboardMetrics: DashboardMetrics;
 }) {
   const [showAllPermissions, setShowAllPermissions] = useState(false);
   const collapsedPermissionItems = grantedEquipmentItems.slice(0, 3);
@@ -1583,7 +1624,7 @@ function Hero({
       <div className="hero-metrics-panel">
         <div>
           <p className="hero-section-label">운영 지표</p>
-          <StatGrid equipmentItems={equipmentItems} />
+          <StatGrid equipmentItems={equipmentItems} metrics={dashboardMetrics} />
         </div>
         <DashboardNoticePanel notices={notices} onNavigate={onNavigate} />
       </div>
@@ -1621,15 +1662,18 @@ function DashboardNoticePanel({ notices, onNavigate }: { notices: NoticeItem[]; 
   );
 }
 
-function StatGrid({ equipmentItems }: { equipmentItems: EquipmentItem[] }) {
-  const totalHours = monthlyUsage[monthlyUsage.length - 1].hours;
-  const monthlyDelta = monthlyUsage[monthlyUsage.length - 1].delta;
-  const averageUtilization = Math.round(equipmentItems.reduce((sum, item) => sum + item.utilization, 0) / equipmentItems.length);
+function StatGrid({ equipmentItems, metrics }: { equipmentItems: EquipmentItem[]; metrics: DashboardMetrics }) {
+  const totalHours = metrics.monthlyUptimeHours;
+  const monthlyDelta = metrics.monthlyUptimeDeltaPercent;
+  const averageUtilization = equipmentItems.length > 0
+    ? Math.round(equipmentItems.reduce((sum, item) => sum + item.utilization, 0) / equipmentItems.length)
+    : 0;
+  const educationDetail = metrics.totalUsers > 0 ? `전체 ${metrics.totalUsers.toLocaleString()}명 기준` : '등록 사용자 없음';
 
   const statCards = [
-    { label: '운영 장비', value: `${equipmentItems.length}`, unit: '종', detail: '공정·검사·계측·패키징', icon: Wrench, type: 'text' as const },
-    { label: '월간 가동시간', value: `${totalHours.toLocaleString()}`, unit: 'h', detail: `전월 대비 ${monthlyDelta > 0 ? '+' : ''}${monthlyDelta}%`, icon: Gauge, type: 'trend' as const },
-    { label: '교육 인증', value: '312', unit: '명', detail: '최근 30일 신규 27명', icon: CheckCircle2, type: 'text' as const },
+    { label: '운영 장비', value: `${equipmentItems.length}`, unit: '종', detail: '공정·검사계측패키징', icon: Wrench, type: 'text' as const },
+    { label: '월간 가동시간', value: `${Math.round(totalHours).toLocaleString()}`, unit: 'h', detail: `전월 대비 ${monthlyDelta > 0 ? '+' : ''}${monthlyDelta}%`, icon: Gauge, type: 'trend' as const },
+    { label: '교육 인증', value: `${metrics.certifiedUsers.toLocaleString()}`, unit: '명', detail: educationDetail, icon: CheckCircle2, type: 'text' as const },
     { label: 'FAB 가동률', value: `${averageUtilization}`, unit: '%', detail: 'Cleanroom active', icon: Cpu, type: 'gauge' as const }
   ];
 
@@ -2165,6 +2209,7 @@ function Dashboard({
   currentUser,
   equipmentPermissions,
   notices,
+  dashboardMetrics,
   onNavigate
 }: {
   equipmentItems: EquipmentItem[];
@@ -2176,6 +2221,7 @@ function Dashboard({
   currentUser: ManagedUser | null;
   equipmentPermissions: EquipmentPermissionMap;
   notices: NoticeItem[];
+  dashboardMetrics: DashboardMetrics;
   onNavigate: (page: PageKey) => void;
 }) {
   const [accessNotice, setAccessNotice] = useState<AccessRequirementNotice | null>(null);
@@ -2237,6 +2283,7 @@ function Dashboard({
         accountStatus={accountStatus}
         notices={notices}
         dashboardReservations={dashboardReservations}
+        dashboardMetrics={dashboardMetrics}
       />
       <AutoRotatingEquipmentStatus
         equipmentItems={equipmentItems}
@@ -7303,6 +7350,7 @@ function PlaceholderPage({ title }: { title: string }) {
 
 export function App() {
   const { items: equipmentItems, setItems: setEquipmentItems, source } = useEquipmentData();
+  const dashboardMetrics = useDashboardMetrics();
   const [activePage, setActivePage] = useState<PageKey>('home');
   const [loading, setLoading] = useState(false);
   const [globalAccessNotice, setGlobalAccessNotice] = useState<AccessRequirementNotice | null>(null);
@@ -8221,6 +8269,7 @@ export function App() {
                 currentUser={currentManagedUser}
                 equipmentPermissions={equipmentPermissions}
                 notices={[...managedOperationNotices, ...managedMeetingNotices].sort((a, b) => b.date.localeCompare(a.date))}
+                dashboardMetrics={dashboardMetrics}
                 onNavigate={navigate}
               />
             </>
