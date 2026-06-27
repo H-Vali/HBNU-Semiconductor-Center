@@ -1420,7 +1420,8 @@ function Hero({
   grantedEquipmentItems,
   isAdmin,
   accountStatus,
-  notices
+  notices,
+  dashboardReservations
 }: {
   onNavigate: (page: PageKey) => void;
   onReservationAction: () => void;
@@ -1432,6 +1433,7 @@ function Hero({
   isAdmin: boolean;
   accountStatus: 'guest' | 'profileRequired' | 'ready';
   notices: NoticeItem[];
+  dashboardReservations: ReservationEvent[];
 }) {
   const [showAllPermissions, setShowAllPermissions] = useState(false);
   const collapsedPermissionItems = grantedEquipmentItems.slice(0, 3);
@@ -1439,6 +1441,7 @@ function Hero({
   const hiddenPermissionCount = Math.max(grantedEquipmentItems.length - collapsedPermissionItems.length, 0);
   const roleToneClass = getRoleToneClass(userRole);
   const needsAccountAction = accountStatus !== 'ready';
+  const visibleDashboardReservations = dashboardReservations.slice(0, 2);
   const statusBadgeLabel = accountStatus === 'profileRequired'
     ? '회원정보 등록 필요'
     : formatProfessorLab(userLab);
@@ -1508,8 +1511,7 @@ function Hero({
             ) : (
               <>
                 <span className={`hero-role-badge ${roleToneClass}`}>{isAdmin ? 'ADMIN' : userRole}</span>
-                {isAdmin && <span className="hero-permission-badge is-admin">전체 장비 접근</span>}
-                {visiblePermissionItems.length > 0 ? (
+                {!isAdmin && visiblePermissionItems.length > 0 ? (
                   <>
                     {visiblePermissionItems.map((item) => (
                       <span key={item.id} className={`hero-permission-badge is-${item.group}`}>{item.name}</span>
@@ -1526,9 +1528,9 @@ function Hero({
                       </button>
                     )}
                   </>
-                ) : (
+                ) : !isAdmin ? (
                   <span className="hero-permission-badge is-empty">부여된 장비 권한 없음</span>
-                )}
+                ) : null}
               </>
             )}
           </div>
@@ -1548,26 +1550,31 @@ function Hero({
                   회원가입 필요
                 </button>
               </div>
-            ) : (
+            ) : visibleDashboardReservations.length > 0 ? (
               <>
-                <div className="hero-reservation-row">
-                  <time>14:00</time>
-                  <strong>mini SEM</strong>
-                  <button type="button" className="hero-reservation-action" onClick={onReservationAction}>이용 예약</button>
-                </div>
-                <div className="hero-reservation-row">
-                  <time>16:30</time>
-                  <strong>반도체검사기</strong>
-                  <button type="button" className="hero-reservation-action" onClick={onReservationAction}>이용 예약</button>
-                </div>
+                {visibleDashboardReservations.map((event) => (
+                  <div key={event.id} className="hero-reservation-row">
+                    <time>{formatReservationTime(event.start)}</time>
+                    <strong>{getReservationEquipmentName(event, equipmentItems)}</strong>
+                    <button type="button" className="hero-reservation-action" onClick={onReservationAction}>전체 보기</button>
+                  </div>
+                ))}
               </>
+            ) : (
+              <div className="hero-reservation-row is-message">
+                <time>-</time>
+                <strong>오늘 예정된 예약이 없습니다.</strong>
+                <button type="button" className="hero-reservation-action" onClick={onReservationAction}>
+                  예약하기
+                </button>
+              </div>
             )}
           </div>
           {accountStatus !== 'guest' && (
             <div className="hero-user-summary-foot">
-              <span>{needsAccountAction ? '로그인 후 예약 기능 이용 가능' : '오늘 이용 예약 2건'}</span>
+              <span>{needsAccountAction ? '로그인 후 예약 기능 이용 가능' : dashboardReservations.length > 0 ? `오늘 이용 예약 ${dashboardReservations.length}건` : '오늘 이용 예약 없음'}</span>
               <button type="button" aria-label="내 예약 전체 보기" onClick={onReservationAction}>
-                {needsAccountAction ? '조건 확인' : '전체 보기'}
+                {needsAccountAction ? '조건 확인' : dashboardReservations.length > 0 ? '전체 보기' : '예약하기'}
               </button>
             </div>
           )}
@@ -2181,6 +2188,16 @@ function Dashboard({
     ? getPreviewEquipmentPermissionIds()
     : dashboardUser ? equipmentPermissions[dashboardUser.id] ?? [] : [];
   const grantedEquipmentItems = equipmentItems.filter((item) => grantedEquipmentIds.includes(item.id));
+  const todayKey = getSeoulDateKey();
+  const sessionUserId = sessionUser?.id ?? currentUser?.id;
+  const dashboardReservations = accountStatus === 'ready'
+    ? calendarEvents
+      .filter((event) => event.createdBy !== 'ADMIN')
+      .filter((event) => event.status !== 'canceled' && event.status !== 'rejected')
+      .filter((event) => event.mine || (Boolean(sessionUserId) && event.userId === sessionUserId))
+      .filter((event) => getSeoulDateKey(new Date(event.start)) === todayKey)
+      .sort((first, second) => first.start.localeCompare(second.start))
+    : [];
 
   function showDashboardReservationRequirement() {
     if (!sessionUser) {
@@ -2219,6 +2236,7 @@ function Dashboard({
         isAdmin={sessionRole === 'ADMIN'}
         accountStatus={accountStatus}
         notices={notices}
+        dashboardReservations={dashboardReservations}
       />
       <AutoRotatingEquipmentStatus
         equipmentItems={equipmentItems}
