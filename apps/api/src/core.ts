@@ -201,6 +201,40 @@ function mapReservation(row: ReservationRow) {
   };
 }
 
+type ReservationView = ReturnType<typeof mapReservation>;
+
+function mapFallbackReservation(row: FallbackReservation): ReservationView {
+  const status = reservationStatusSchema.safeParse(row.status);
+  return {
+    id: row.id,
+    equipmentId: row.equipmentId,
+    userId: row.userId,
+    title: row.title,
+    purpose: row.purpose ?? row.title,
+    startsAt: normalizeDate(row.startsAt),
+    endsAt: normalizeDate(row.endsAt),
+    status: status.success ? status.data : 'pending',
+    createdByRole: row.createdByRole
+  };
+}
+
+function projectReservations(rows: ReservationView[], actor?: SessionUser) {
+  if (actor?.role === 'ADMIN') return rows;
+  return rows.map((reservation) => ({
+    id: reservation.id,
+    equipmentId: reservation.equipmentId,
+    title: '예약',
+    startsAt: reservation.startsAt,
+    endsAt: reservation.endsAt,
+    status: reservation.status,
+    ...(actor && reservation.userId === actor.id ? { userId: actor.id, mine: true } : {})
+  }));
+}
+
+function projectReservation(reservation: ReservationView, actor?: SessionUser) {
+  return projectReservations([reservation], actor)[0];
+}
+
 function hasReservationOverlap(input: CreateReservationInput, reservations: FallbackReservation[]) {
   const blockingStatuses = new Set(['pending', 'approved', 'maintenance', 'external']);
   return reservations.some((reservation) =>
@@ -502,8 +536,8 @@ export async function deleteEquipment(id: string) {
   return result.rows[0] ? mapEquipment(result.rows[0]) : null;
 }
 
-export async function listReservations() {
-  if (!hasDatabase()) return mutableFallbackReservations;
+export async function listReservations(actor?: SessionUser) {
+  if (!hasDatabase()) return projectReservations(mutableFallbackReservations.map(mapFallbackReservation), actor);
   const result = await query<ReservationRow>(
     `select id, equipment_id as "equipmentId", user_id as "userId", title, purpose,
       starts_at as "startsAt", ends_at as "endsAt", status, created_by_role as "createdByRole"
@@ -511,7 +545,7 @@ export async function listReservations() {
      where deleted_at is null
      order by starts_at desc`
   );
-  return result.rows.map(mapReservation);
+  return projectReservations(result.rows.map(mapReservation), actor);
 }
 
 export async function createReservation(input: unknown, user?: SessionUser) {
@@ -538,7 +572,7 @@ export async function createReservation(input: unknown, user?: SessionUser) {
       createdByRole: user?.role
     };
     mutableFallbackReservations.push(reservation);
-    return reservation;
+    return projectReservation(mapFallbackReservation(reservation), user);
   }
 
   try {
@@ -562,7 +596,7 @@ export async function createReservation(input: unknown, user?: SessionUser) {
           user?.role ?? null
         ]
       );
-      return mapReservation(result.rows[0]);
+      return projectReservation(mapReservation(result.rows[0]), user);
     });
   } catch (error) {
     if (typeof error === 'object' && error && 'code' in error && error.code === '23P01') {
@@ -582,7 +616,7 @@ export async function cancelReservation(id: string, user: SessionUser) {
     ));
     if (index === -1) return null;
     const [removed] = mutableFallbackReservations.splice(index, 1);
-    return removed;
+    return projectReservation(mapFallbackReservation(removed), user);
   }
 
   const result = await query<ReservationRow>(
@@ -593,7 +627,7 @@ export async function cancelReservation(id: string, user: SessionUser) {
        starts_at as "startsAt", ends_at as "endsAt", status, created_by_role as "createdByRole"`,
     [id, canCancelAny, user.id]
   );
-  return result.rows[0] ? mapReservation(result.rows[0]) : null;
+  return result.rows[0] ? projectReservation(mapReservation(result.rows[0]), user) : null;
 }
 
 export async function updateReservationStatus(id: string, input: unknown, user: SessionUser) {
@@ -609,7 +643,7 @@ export async function updateReservationStatus(id: string, input: unknown, user: 
       ...mutableFallbackReservations[index],
       status: body.status
     };
-    return mutableFallbackReservations[index];
+    return projectReservation(mapFallbackReservation(mutableFallbackReservations[index]), user);
   }
 
   const result = await query<ReservationRow>(
@@ -627,5 +661,5 @@ export async function updateReservationStatus(id: string, input: unknown, user: 
     }
     throw error;
   });
-  return result.rows[0] ? mapReservation(result.rows[0]) : null;
+  return result.rows[0] ? projectReservation(mapReservation(result.rows[0]), user) : null;
 }

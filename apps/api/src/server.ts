@@ -345,9 +345,9 @@ app.patch('/qna/:id/answer', requireAuth, requireRole(['ADMIN']), async (req, re
   }
 });
 
-app.get('/reservations', async (_req, res, next) => {
+app.get('/reservations', requireAuth, async (req, res, next) => {
   try {
-    res.json(await listReservations());
+    res.json(await listReservations(req.user!));
   } catch (error) {
     next(error);
   }

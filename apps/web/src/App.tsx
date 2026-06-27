@@ -91,10 +91,11 @@ type ReservationEvent = {
   userId?: string;
   createdBy?: string;
   purpose?: string;
+  mine?: boolean;
 };
 type ApiReservationEvent = {
   id: string;
-  title: string;
+  title?: string;
   purpose?: string;
   startsAt: string;
   endsAt?: string;
@@ -102,6 +103,7 @@ type ApiReservationEvent = {
   equipmentId?: string;
   userId?: string;
   createdByRole?: string;
+  mine?: boolean;
 };
 type ApiTrainingPurpose = 'research' | 'class' | 'other';
 type ApiTrainingRequestStatus = 'requested' | 'scheduled' | 'completed' | 'rejected';
@@ -403,6 +405,13 @@ function getEventEquipmentId(event: ReservationEvent, equipmentItems: EquipmentI
   return event.equipmentId ?? equipmentItems.find((item) => event.title.includes(item.name))?.id ?? '';
 }
 
+function getReservationEquipmentName(event: ReservationEvent, equipmentItems: EquipmentItem[]) {
+  const equipmentId = getEventEquipmentId(event, equipmentItems);
+  const equipmentName = equipmentItems.find((item) => item.id === equipmentId)?.name;
+  if (equipmentName) return equipmentName;
+  return event.title === '예약' ? '예약 장비' : event.title.split(' 예약')[0];
+}
+
 function isEventForEquipment(event: ReservationEvent, equipment: EquipmentItem | undefined, equipmentItems: EquipmentItem[]) {
   if (!equipment) return true;
   return getEventEquipmentId(event, equipmentItems) === equipment.id || event.title.includes(equipment.name);
@@ -528,14 +537,15 @@ function createRealtimeTestReservations(equipmentItems: EquipmentItem[]): Reserv
 function normalizeApiReservation(event: ApiReservationEvent): ReservationEvent {
   return {
     id: event.id,
-    title: event.title,
+    title: event.title ?? '예약',
     start: fromApiReservationDateTime(event.startsAt) ?? event.startsAt,
     end: fromApiReservationDateTime(event.endsAt),
     status: normalizeReservationStatus(event.status),
     equipmentId: event.equipmentId,
     userId: event.userId,
     createdBy: event.createdByRole,
-    purpose: event.purpose
+    purpose: event.purpose,
+    mine: event.mine
   };
 }
 
@@ -5016,7 +5026,7 @@ function MyPage({
         <div className="mypage-reservation-list">
           {myReservations.length > 0 ? (
             myReservations.map((event) => {
-              const equipmentName = equipmentItems.find((item) => item.id === getEventEquipmentId(event, equipmentItems))?.name ?? event.title.split(' 예약')[0];
+              const equipmentName = getReservationEquipmentName(event, equipmentItems);
               return (
                 <div key={event.id} className={`mypage-reservation-card ${isReservationActive(event) ? 'is-live' : ''}`}>
                   <div>
@@ -5080,7 +5090,7 @@ function MyPageV2({
   const sessionUserId = sessionUser?.id ?? managedUser?.id;
   const myReservations = calendarEvents
     .filter((event) => event.createdBy !== 'ADMIN')
-    .filter((event) => isAdminSession || (Boolean(sessionUserId) && event.userId === sessionUserId))
+    .filter((event) => isAdminSession || event.mine || (Boolean(sessionUserId) && event.userId === sessionUserId))
     .sort((first, second) => first.start.localeCompare(second.start));
   const upcomingReservations = myReservations
     .filter((event) => new Date(event.end ?? event.start) > now)
@@ -5124,8 +5134,8 @@ function MyPageV2({
   }
 
   function renderReservationRow(event: ReservationEvent, past = false) {
-    const equipmentName = equipmentItems.find((item) => item.id === getEventEquipmentId(event, equipmentItems))?.name ?? event.title.split(' 예약')[0];
-    const canCancelReservation = isAdminSession || (Boolean(sessionUserId) && event.userId === sessionUserId);
+    const equipmentName = getReservationEquipmentName(event, equipmentItems);
+    const canCancelReservation = isAdminSession || event.mine || (Boolean(sessionUserId) && event.userId === sessionUserId);
     const canCancel = !past && new Date(event.start) > now && canCancelReservation;
     const inProgress = !past && new Date(event.start) <= now;
     return (
@@ -7554,15 +7564,20 @@ export function App() {
   }, [sessionRole]);
 
   useEffect(() => {
+    const token = localStorage.getItem(STORAGE_KEYS.sessionToken);
+    if (!token || !sessionRole) {
+      setReservationEvents([]);
+      return;
+    }
     let isMounted = true;
-    void apiGet<ApiReservationEvent[]>('/reservations').then((items) => {
+    void apiGet<ApiReservationEvent[]>('/reservations', token).then((items) => {
       if (!isMounted || !items) return;
       setReservationEvents(items.map(normalizeApiReservation));
     });
     return () => {
       isMounted = false;
     };
-  }, [equipmentItems]);
+  }, [sessionRole, equipmentItems]);
 
   useEffect(() => {
     const token = localStorage.getItem(STORAGE_KEYS.sessionToken);
