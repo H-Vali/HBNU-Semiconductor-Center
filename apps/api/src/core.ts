@@ -249,32 +249,60 @@ async function getReservationEquipmentStatus(equipmentId: string) {
   return result.rows[0]?.status ?? null;
 }
 
+async function isEquipmentManager(user: SessionUser, equipmentId: string) {
+  if (user.role !== 'MANAGER') return false;
+  if (!hasDatabase()) {
+    return mutableFallbackEquipment.some((entry) => (
+      entry.id === equipmentId && (entry.managerUserId ?? entry.managerId) === user.id
+    ));
+  }
+
+  const result = await query<{ isManager: boolean }>(
+    `select exists (
+      select 1
+      from equipment
+      where id = $1 and manager_user_id = $2 and deleted_at is null
+    ) as "isManager"`,
+    [equipmentId, user.id]
+  );
+  return Boolean(result.rows[0]?.isManager);
+}
+
 async function canCreateReservation(body: CreateReservationInput, user?: SessionUser) {
   if (!user) return false;
   const equipmentStatus = await getReservationEquipmentStatus(body.equipmentId);
   if (!equipmentStatus) return false;
-  if (user.role === 'ADMIN' || user.role === 'MANAGER') return true;
+  if (user.role === 'ADMIN') return true;
   if (body.userId && body.userId !== user.id) return false;
   if (equipmentStatus !== 'available') return false;
+  if (await isEquipmentManager(user, body.equipmentId)) return true;
 
   if (!hasDatabase()) {
     return hasActiveEquipmentPermission(user.id, body.equipmentId);
   }
 
-  const result = await query<{ onboardingStatus: string; hasPermission: boolean }>(
+  const result = await query<{ onboardingStatus: string; hasPermission: boolean; hasAdminGrantedPermission: boolean }>(
     `select u.onboarding_status as "onboardingStatus",
       exists (
         select 1
         from equipment_permissions ep
         where ep.user_id = u.id and ep.equipment_id = $2 and ep.revoked_at is null
-      ) as "hasPermission"
+      ) as "hasPermission",
+      exists (
+        select 1
+        from equipment_permissions ep
+        where ep.user_id = u.id
+          and ep.equipment_id = $2
+          and ep.revoked_at is null
+          and ep.granted_by_role = 'ADMIN'
+      ) as "hasAdminGrantedPermission"
      from users u
      where u.id = $1 and u.deleted_at is null
      limit 1`,
     [user.id, body.equipmentId]
   );
   const row = result.rows[0];
-  return row?.onboardingStatus === 'active' && row.hasPermission;
+  return Boolean(row?.hasAdminGrantedPermission || (row?.onboardingStatus === 'active' && row.hasPermission));
 }
 
 export async function listEquipment() {

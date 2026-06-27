@@ -2433,6 +2433,7 @@ function ReservationPage({
   sessionUser,
   currentUser,
   permissions,
+  permissionGrantMeta,
   onNavigate,
   onAddReservation,
   onDeleteReservation
@@ -2443,6 +2444,7 @@ function ReservationPage({
   sessionUser: StoredSessionUser | null;
   currentUser: ManagedUser | null;
   permissions: EquipmentPermissionMap;
+  permissionGrantMeta: EquipmentPermissionGrantMetaMap;
   onNavigate: (page: PageKey) => void;
   onAddReservation: (event: ReservationEvent) => Promise<boolean>;
   onDeleteReservation: (reservationId: string) => Promise<boolean>;
@@ -2459,9 +2461,26 @@ function ReservationPage({
   const firstAvailableEquipmentId = equipmentItems.find(isEquipmentAvailable)?.id ?? '';
   const currentUserPermissionIds = currentUser ? permissions[currentUser.id] ?? [] : [];
   const currentUserCanReserve = currentUser?.onboardingStatus === 'active';
+  const isAssignedEquipmentManager = (equipmentId: string) => (
+    sessionRole === 'MANAGER' &&
+    Boolean(currentUser?.id) &&
+    equipmentItems.some((item) => item.id === equipmentId && item.managerId === currentUser?.id)
+  );
+  const hasAdminGrantedEquipmentPermission = (equipmentId: string) => (
+    Boolean(currentUser?.id) &&
+    currentUserPermissionIds.includes(equipmentId) &&
+    permissionGrantMeta[getPermissionGrantKey(currentUser!.id, equipmentId)]?.grantedByRole === 'ADMIN'
+  );
   const reservableEquipmentItems = sessionRole === 'ADMIN'
     ? equipmentItems.filter(isEquipmentAvailable)
-    : equipmentItems.filter((item) => isEquipmentAvailable(item) && currentUserCanReserve && currentUserPermissionIds.includes(item.id));
+    : equipmentItems.filter((item) => (
+        isEquipmentAvailable(item) &&
+        (
+          isAssignedEquipmentManager(item.id) ||
+          hasAdminGrantedEquipmentPermission(item.id) ||
+          (currentUserCanReserve && currentUserPermissionIds.includes(item.id))
+        )
+      ));
   const firstReservableEquipmentId = reservableEquipmentItems[0]?.id ?? firstAvailableEquipmentId;
   const todayKey = getSeoulDateKey();
   const isAllLive = calendarEvents.some((event) => isReservationActive(event));
@@ -2503,7 +2522,15 @@ function ReservationPage({
 
   function canReserveEquipment(equipmentId: string) {
     if (sessionRole === 'ADMIN') return true;
-    return Boolean(sessionUser && currentUser && currentUserCanReserve && currentUserPermissionIds.includes(equipmentId));
+    return Boolean(
+      sessionUser &&
+      currentUser &&
+      (
+        isAssignedEquipmentManager(equipmentId) ||
+        hasAdminGrantedEquipmentPermission(equipmentId) ||
+        (currentUserCanReserve && currentUserPermissionIds.includes(equipmentId))
+      )
+    );
   }
 
   function showReservationRequirement(equipment?: EquipmentItem) {
@@ -5020,6 +5047,7 @@ function MyPageV2({
   sessionRole,
   managerUserIds,
   permissions,
+  permissionGrantMeta,
   penalties,
   onCancelReservation,
   onNavigate
@@ -5031,6 +5059,7 @@ function MyPageV2({
   sessionRole: Role | null;
   managerUserIds: Set<string>;
   permissions: EquipmentPermissionMap;
+  permissionGrantMeta: EquipmentPermissionGrantMetaMap;
   penalties: PenaltyRecord[];
   onCancelReservation: (reservationId: string) => Promise<boolean>;
   onNavigate: (page: PageKey) => void;
@@ -5066,11 +5095,18 @@ function MyPageV2({
   const penaltyCount = userPenaltyRecords.length;
   const penaltyLimit = 3;
   const permissionIds = managedUser ? permissions[managedUser.id] ?? [] : [];
-  const completedTrainingSource = equipmentItems.filter((item) => permissionIds.includes(item.id));
-  const trainingItems = completedTrainingSource.map((item) => ({
-    equipmentName: item.name,
-    completed: true
-  }));
+  const accessItems = equipmentItems
+    .map((item) => {
+      const isAssignedManager = Boolean(managedUser?.id) && item.managerId === managedUser?.id;
+      const grantRole = managedUser?.id ? permissionGrantMeta[getPermissionGrantKey(managedUser.id, item.id)]?.grantedByRole : undefined;
+      const hasPermission = permissionIds.includes(item.id);
+      if (!isAssignedManager && !hasPermission) return null;
+      return {
+        equipmentName: item.name,
+        label: isAssignedManager ? '담당자' : grantRole === 'ADMIN' ? '관리자 부여' : '이수'
+      };
+    })
+    .filter(Boolean) as Array<{ equipmentName: string; label: string }>;
   const visibleGroups = [
     { key: 'upcoming', title: '다가오는 예약', items: upcomingReservations, empty: '예정된 예약이 없습니다.' },
     { key: 'past', title: '지난 예약', items: pastReservations, empty: '지난 예약 내역이 없습니다.' }
@@ -5211,16 +5247,16 @@ function MyPageV2({
           </div>
         </div>
         <div className="mypage-training-grid">
-          {trainingItems.map((item) => (
+          {accessItems.map((item) => (
             <div key={item.equipmentName} className="mypage-training-item">
               <strong>{item.equipmentName}</strong>
               <span className="mypage-training-badge is-complete">
-                이수
+                {item.label}
               </span>
             </div>
           ))}
         </div>
-        {trainingItems.length === 0 && (
+        {accessItems.length === 0 && (
           <div className="mypage-empty-state">
             <p>아직 장비 사용 교육 이수 권한이 없습니다. 교육신청 후 관리자 승인/이수 처리가 완료되면 장비별 권한이 표시됩니다.</p>
             <button type="button" onClick={() => onNavigate('training')}>교육신청 바로가기</button>
@@ -8303,6 +8339,7 @@ export function App() {
                 sessionUser={sessionUser}
                 currentUser={currentManagedUser}
                 permissions={equipmentPermissions}
+                permissionGrantMeta={equipmentPermissionGrantMeta}
                 onNavigate={navigate}
                 onAddReservation={addReservation}
                 onDeleteReservation={deleteReservation}
@@ -8506,6 +8543,7 @@ export function App() {
               sessionRole={sessionRole}
               managerUserIds={managerUserIds}
               permissions={equipmentPermissions}
+              permissionGrantMeta={equipmentPermissionGrantMeta}
               penalties={penaltyRecords}
               onCancelReservation={deleteReservation}
               onNavigate={navigate}
