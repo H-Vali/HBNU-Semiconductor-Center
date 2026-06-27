@@ -2,6 +2,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
 import helmet from 'helmet';
+import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { requireAuth, requireRole } from './auth.js';
 import {
@@ -63,6 +64,31 @@ const port = Number(process.env.PORT ?? 4000);
 
 app.use(helmet());
 app.use(cors({ origin: process.env.CLIENT_ORIGIN ?? 'http://localhost:5173' }));
+
+app.use((req, res, next) => {
+  const startedAt = Date.now();
+  const requestId = req.header('x-request-id') || randomUUID();
+  res.locals.requestId = requestId;
+  res.setHeader('x-request-id', requestId);
+
+  res.on('finish', () => {
+    const durationMs = Date.now() - startedAt;
+    const logLevel = res.statusCode >= 500 ? 'error' : res.statusCode >= 400 ? 'warn' : 'info';
+    const logEntry = {
+      level: logLevel,
+      type: 'request',
+      requestId,
+      method: req.method,
+      path: req.originalUrl,
+      statusCode: res.statusCode,
+      durationMs
+    };
+    console[logLevel === 'error' ? 'error' : logLevel === 'warn' ? 'warn' : 'log'](JSON.stringify(logEntry));
+  });
+
+  next();
+});
+
 app.use(express.json());
 
 app.get('/health', (_req, res) => res.json({ ok: true, api: 'apps/api', build: 'current-api' }));
@@ -406,32 +432,53 @@ app.get('/admin/summary', requireAuth, requireRole(['ADMIN']), async (_req, res,
   }
 });
 
-app.use((error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+function logApiError(error: unknown, req: express.Request, res: express.Response) {
+  const knownError = error instanceof Error ? error : null;
+  console.error(JSON.stringify({
+    level: 'error',
+    type: 'exception',
+    requestId: res.locals.requestId,
+    method: req.method,
+    path: req.originalUrl,
+    name: knownError?.name ?? 'UnknownError',
+    message: knownError?.message ?? String(error),
+    stack: process.env.NODE_ENV === 'production' ? undefined : knownError?.stack
+  }));
+}
+
+function errorResponse(res: express.Response, statusCode: number, body: Record<string, unknown>) {
+  return res.status(statusCode).json({
+    ...body,
+    requestId: res.locals.requestId
+  });
+}
+
+app.use((error: unknown, req: express.Request, res: express.Response, _next: express.NextFunction) => {
   if (
     typeof error === 'object' &&
     error !== null &&
     'type' in error &&
     (error as { type?: unknown }).type === 'entity.parse.failed'
   ) {
-    return res.status(400).json({ message: 'Malformed JSON request body' });
+    return errorResponse(res, 400, { message: 'Malformed JSON request body' });
   }
   if (error instanceof ReservationOverlapError) {
-    return res.status(409).json({ message: error.message });
+    return errorResponse(res, 409, { message: error.message });
   }
   if (error instanceof ReservationPermissionError) {
-    return res.status(403).json({ message: error.message });
+    return errorResponse(res, 403, { message: error.message });
   }
   if (error instanceof PermissionDeniedError) {
-    return res.status(403).json({ message: error.message });
+    return errorResponse(res, 403, { message: error.message });
   }
   if (error instanceof TrainingRequestStateError) {
-    return res.status(409).json({ message: error.message });
+    return errorResponse(res, 409, { message: error.message });
   }
   if (error instanceof z.ZodError) {
-    return res.status(400).json({ message: 'Invalid request body', issues: error.issues });
+    return errorResponse(res, 400, { message: 'Invalid request body', issues: error.issues });
   }
-  console.error(error);
-  return res.status(500).json({ message: 'Internal server error' });
+  logApiError(error, req, res);
+  return errorResponse(res, 500, { message: 'Internal server error' });
 });
 
 Promise.all([ensureEquipmentPermissionSchema(), ensureTrainingRequestSchema()])
