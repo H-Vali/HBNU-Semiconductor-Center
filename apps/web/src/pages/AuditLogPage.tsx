@@ -33,10 +33,14 @@ const actionLabels: Record<string, string> = {
   RESERVATION_STATUS_UPDATE: '예약 상태 변경',
   EQUIPMENT_PERMISSION_GRANT: '장비 권한 부여',
   EQUIPMENT_PERMISSION_REVOKE: '장비 권한 회수',
+  EQUIPMENT_PERMISSION_SET: '장비 권한 일괄 저장',
   TRAINING_REQUEST_CREATE: '교육 신청',
   TRAINING_REQUEST_SCHEDULE: '교육 일정 확정',
   TRAINING_REQUEST_REJECT: '교육 신청 반려',
   TRAINING_REQUEST_COMPLETE: '교육 이수 처리',
+  CONSUMABLES_SAVE: '소모품 저장',
+  FILE_ASSET_CREATE: '파일 메타데이터 등록',
+  FILE_ASSET_DELETE: '파일 메타데이터 삭제',
   PENALTY_CREATE: '패널티 등록',
   PENALTY_REVOKE: '패널티 해제'
 };

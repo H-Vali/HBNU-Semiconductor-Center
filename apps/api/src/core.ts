@@ -202,9 +202,10 @@ function mapReservation(row: ReservationRow) {
 }
 
 function hasReservationOverlap(input: CreateReservationInput, reservations: FallbackReservation[]) {
+  const blockingStatuses = new Set(['pending', 'approved', 'maintenance', 'external']);
   return reservations.some((reservation) =>
     reservation.equipmentId === input.equipmentId &&
-    reservation.status !== 'canceled' &&
+    blockingStatuses.has(reservation.status) &&
     new Date(input.startsAt) < new Date(reservation.endsAt) &&
     new Date(input.endsAt) > new Date(reservation.startsAt)
   );
@@ -620,6 +621,11 @@ export async function updateReservationStatus(id: string, input: unknown, user: 
      returning id, equipment_id as "equipmentId", user_id as "userId", title, purpose,
        starts_at as "startsAt", ends_at as "endsAt", status, created_by_role as "createdByRole"`,
     [id, body.status]
-  );
+  ).catch((error) => {
+    if (typeof error === 'object' && error && 'code' in error && error.code === '23P01') {
+      throw new ReservationOverlapError();
+    }
+    throw error;
+  });
   return result.rows[0] ? mapReservation(result.rows[0]) : null;
 }

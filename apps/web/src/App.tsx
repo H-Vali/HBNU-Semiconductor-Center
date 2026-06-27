@@ -7378,30 +7378,9 @@ export function App() {
   const [usersUpdatedAt, setUsersUpdatedAt] = useState(() => (
     localStorage.getItem(STORAGE_KEYS.usersUpdatedAt) ?? new Date().toISOString()
   ));
-  const [managedOperationNotices, setManagedOperationNotices] = useState<NoticeItem[]>(() => {
-    try {
-      const stored = localStorage.getItem(noticeBoardMeta.operation.storageKey);
-      return stored ? normalizeNoticeItems(JSON.parse(stored) as NoticeItem[]) : normalizeNoticeItems(operationNoticeItems);
-    } catch {
-      return normalizeNoticeItems(operationNoticeItems);
-    }
-  });
-  const [managedMeetingNotices, setManagedMeetingNotices] = useState<NoticeItem[]>(() => {
-    try {
-      const stored = localStorage.getItem(noticeBoardMeta.meeting.storageKey);
-      return stored ? normalizeNoticeItems(JSON.parse(stored) as NoticeItem[]) : normalizeNoticeItems(meetingNoticeItems);
-    } catch {
-      return normalizeNoticeItems(meetingNoticeItems);
-    }
-  });
-  const [managedFaqItems, setManagedFaqItems] = useState<FaqItem[]>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEYS.faqItems);
-      return stored ? JSON.parse(stored) as FaqItem[] : initialFaqItems;
-    } catch {
-      return initialFaqItems;
-    }
-  });
+  const [managedOperationNotices, setManagedOperationNotices] = useState<NoticeItem[]>(() => normalizeNoticeItems(operationNoticeItems));
+  const [managedMeetingNotices, setManagedMeetingNotices] = useState<NoticeItem[]>(() => normalizeNoticeItems(meetingNoticeItems));
+  const [managedFaqItems, setManagedFaqItems] = useState<FaqItem[]>(initialFaqItems);
   const [equipmentPermissions, setEquipmentPermissions] = useState<EquipmentPermissionMap>({});
   const [equipmentPermissionGrantMeta, setEquipmentPermissionGrantMeta] = useState<EquipmentPermissionGrantMetaMap>({});
   const [, setEquipmentPermissionHistory] = useState<EquipmentPermissionHistoryRecord[]>([]);
@@ -7524,20 +7503,17 @@ export function App() {
       if (isMounted && items) {
         const next = normalizeNoticeItems(items);
         setManagedOperationNotices(next);
-        localStorage.setItem(noticeBoardMeta.operation.storageKey, JSON.stringify(next));
       }
     });
     void apiGet<NoticeItem[]>('/notices?board=meeting').then((items) => {
       if (isMounted && items) {
         const next = normalizeNoticeItems(items);
         setManagedMeetingNotices(next);
-        localStorage.setItem(noticeBoardMeta.meeting.storageKey, JSON.stringify(next));
       }
     });
     void apiGet<FaqItem[]>('/faqs').then((items) => {
       if (isMounted && items) {
         setManagedFaqItems(items);
-        localStorage.setItem(STORAGE_KEYS.faqItems, JSON.stringify(items));
       }
     });
     return () => {
@@ -7753,10 +7729,8 @@ export function App() {
 
   function updateNoticeBoard(board: NoticeBoardKey, updater: (items: NoticeItem[]) => NoticeItem[]) {
     const setItems = board === 'operation' ? setManagedOperationNotices : setManagedMeetingNotices;
-    const storageKey = noticeBoardMeta[board].storageKey;
     setItems((current) => {
       const next = normalizeNoticeItems(updater(current));
-      localStorage.setItem(storageKey, JSON.stringify(next));
       return next;
     });
   }
@@ -7806,7 +7780,6 @@ export function App() {
   function updateFaqItems(updater: (items: FaqItem[]) => FaqItem[]) {
     setManagedFaqItems((current) => {
       const next = updater(current);
-      localStorage.setItem(STORAGE_KEYS.faqItems, JSON.stringify(next));
       return next;
     });
   }

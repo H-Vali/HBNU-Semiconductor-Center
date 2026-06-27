@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { requireAuth, requireRole } from './auth.js';
 import { getAdminSummary } from './adminSummary.js';
 import { ensureAuditLogSchema, listAuditLogs, writeAuditLog } from './auditLog.js';
+import { createFileAsset, deleteFileAsset, ensureFileAssetSchema, listFileAssets } from './fileAssets.js';
 import {
   answerQnaItem,
   createFaq,
@@ -399,6 +400,50 @@ app.get('/audit-logs', requireAuth, requireRole(['ADMIN']), async (req, res, nex
   }
 });
 
+app.get('/file-assets', async (req, res, next) => {
+  try {
+    const query = z.object({
+      ownerType: z.string().min(1),
+      ownerId: z.string().min(1)
+    }).parse(req.query);
+    res.json(await listFileAssets(query));
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/file-assets', requireAuth, requireRole(['ADMIN', 'MANAGER']), async (req, res, next) => {
+  try {
+    const file = await createFileAsset(req.body, req.user!);
+    await writeAuditLog(req.user!, 'FILE_ASSET_CREATE', 'file_asset', file.id, {
+      ownerType: file.ownerType,
+      ownerId: file.ownerId,
+      storageProvider: file.storageProvider,
+      storageKey: file.storageKey
+    });
+    res.status(201).json(file);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete('/file-assets/:id', requireAuth, requireRole(['ADMIN', 'MANAGER']), async (req, res, next) => {
+  try {
+    const { id } = z.object({ id: z.string().min(1) }).parse(req.params);
+    const file = await deleteFileAsset(id, req.user!);
+    if (!file) return res.status(404).json({ message: 'File asset not found' });
+    await writeAuditLog(req.user!, 'FILE_ASSET_DELETE', 'file_asset', id, {
+      ownerType: file.ownerType,
+      ownerId: file.ownerId,
+      storageProvider: file.storageProvider,
+      storageKey: file.storageKey
+    });
+    res.json(file);
+  } catch (error) {
+    next(error);
+  }
+});
+
 app.get('/equipment-permissions', requireAuth, async (req, res, next) => {
   try {
     res.json(await listEquipmentPermissions(req.user!));
@@ -410,7 +455,12 @@ app.get('/equipment-permissions', requireAuth, async (req, res, next) => {
 app.put('/equipment-permissions/users/:userId', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
   try {
     const { userId } = z.object({ userId: z.string() }).parse(req.params);
-    res.json(await setUserEquipmentPermissions(userId, req.body, req.user!));
+    const snapshot = await setUserEquipmentPermissions(userId, req.body, req.user!);
+    await writeAuditLog(req.user!, 'EQUIPMENT_PERMISSION_SET', 'user', userId, {
+      userId,
+      equipmentIds: Array.isArray(req.body?.equipmentIds) ? req.body.equipmentIds : []
+    });
+    res.json(snapshot);
   } catch (error) {
     next(error);
   }
@@ -533,7 +583,12 @@ app.get('/consumables', requireAuth, requireRole(['ADMIN']), async (req, res, ne
 app.put('/consumables/:month', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
   try {
     const { month } = z.object({ month: z.string().min(1) }).parse(req.params);
-    res.json(await saveConsumables(month, req.body));
+    const items = await saveConsumables(month, req.body);
+    await writeAuditLog(req.user!, 'CONSUMABLES_SAVE', 'consumables', month, {
+      month,
+      count: items.length
+    });
+    res.json(items);
   } catch (error) {
     next(error);
   }
@@ -622,7 +677,7 @@ app.use((error: unknown, req: express.Request, res: express.Response, _next: exp
   return errorResponse(res, 500, { message: 'Internal server error' });
 });
 
-Promise.all([ensureEquipmentPermissionSchema(), ensureTrainingRequestSchema(), ensureOperationalDataSchema(), ensureAuditLogSchema()])
+Promise.all([ensureEquipmentPermissionSchema(), ensureTrainingRequestSchema(), ensureOperationalDataSchema(), ensureAuditLogSchema(), ensureFileAssetSchema()])
   .then(() => {
     app.listen(port, () => {
       console.log(`HBNU API listening on ${port}`);
