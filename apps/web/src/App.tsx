@@ -4928,7 +4928,7 @@ function MyPageV2({
   const sessionUserId = sessionUser?.id ?? managedUser?.id;
   const myReservations = calendarEvents
     .filter((event) => event.createdBy !== 'ADMIN')
-    .filter((event) => isAdminSession || !event.userId || event.userId === sessionUserId)
+    .filter((event) => isAdminSession || (Boolean(sessionUserId) && event.userId === sessionUserId))
     .sort((first, second) => first.start.localeCompare(second.start));
   const upcomingReservations = myReservations
     .filter((event) => new Date(event.end ?? event.start) > now)
@@ -4948,9 +4948,7 @@ function MyPageV2({
   const penaltyCount = userPenaltyRecords.length;
   const penaltyLimit = 3;
   const permissionIds = managedUser ? permissions[managedUser.id] ?? [] : [];
-  const completedTrainingSource = permissionIds.length > 0
-    ? equipmentItems.filter((item) => permissionIds.includes(item.id))
-    : equipmentItems.slice(0, 8);
+  const completedTrainingSource = equipmentItems.filter((item) => permissionIds.includes(item.id));
   const trainingItems = completedTrainingSource.map((item) => ({
     equipmentName: item.name,
     completed: true
@@ -5104,6 +5102,12 @@ function MyPageV2({
             </div>
           ))}
         </div>
+        {trainingItems.length === 0 && (
+          <div className="mypage-empty-state">
+            <p>아직 장비 사용 교육 이수 권한이 없습니다. 교육신청 후 관리자 승인/이수 처리가 완료되면 장비별 권한이 표시됩니다.</p>
+            <button type="button" onClick={() => onNavigate('training')}>교육신청 바로가기</button>
+          </div>
+        )}
         <div className="mypage-penalty-row">
           <div>
             <ShieldCheck size={17} />
