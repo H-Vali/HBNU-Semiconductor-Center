@@ -6300,6 +6300,37 @@ select {
   gap: 0.65rem;
 }
 
+.notice-empty-state,
+.notice-empty-detail {
+  display: grid;
+  gap: 0.45rem;
+  border-radius: 13px;
+  border: 1px dashed rgba(148, 163, 184, 0.24);
+  background: rgba(15, 23, 42, 0.54);
+  padding: 1.1rem;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  font-weight: 750;
+}
+
+.notice-empty-state strong,
+.notice-empty-detail strong {
+  color: #f8fafc;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.notice-empty-detail {
+  min-height: 13rem;
+  align-content: center;
+  justify-items: center;
+  text-align: center;
+}
+
+.notice-empty-detail svg {
+  color: #5fd9c9;
+}
+
 .notice-row {
   display: grid;
   grid-template-columns: 3rem minmax(0, 1fr) auto;

@@ -175,6 +175,10 @@ export function NoticePage({
   useEffect(() => {
     if (items[0] && !items.some((notice) => notice.id === selectedNoticeId)) {
       setSelectedNoticeId(items[0].id);
+      return;
+    }
+    if (items.length === 0 && selectedNoticeId) {
+      setSelectedNoticeId('');
     }
   }, [items, selectedNoticeId]);
 
@@ -208,7 +212,7 @@ export function NoticePage({
               <button
                 key={notice.id}
                 type="button"
-                className={`notice-row ${selectedNotice.id === notice.id ? 'is-selected' : ''}`}
+                className={`notice-row ${selectedNotice?.id === notice.id ? 'is-selected' : ''}`}
                 onClick={() => setSelectedNoticeId(notice.id)}
               >
                 <span className="notice-index">{String(index + 1).padStart(2, '0')}</span>
@@ -225,10 +229,18 @@ export function NoticePage({
                 </span>
               </button>
             ))}
+            {items.length === 0 && (
+              <div className="notice-empty-state">
+                <strong>등록된 공지가 없습니다.</strong>
+                <span>관리자 페이지에서 공지를 등록하면 이 영역에 표시됩니다.</span>
+              </div>
+            )}
           </div>
         </div>
 
         <article className="notice-detail-panel">
+          {selectedNotice ? (
+            <>
           <div className="notice-detail-head">
             <span className={`notice-category-badge ${getNoticeCategoryTone(selectedNotice.category)}`}>{selectedNotice.category}</span>
             {isImportantNotice(selectedNotice) && <em>중요 공지</em>}
@@ -259,6 +271,14 @@ export function NoticePage({
               )}
             </div>
           </div>
+            </>
+          ) : (
+            <div className="notice-empty-detail">
+              <BookOpen size={22} />
+              <strong>선택할 공지가 없습니다.</strong>
+              <span>현재 등록된 공지가 없으므로 상세 내용을 표시할 수 없습니다.</span>
+            </div>
+          )}
         </article>
       </div>
     </section>
