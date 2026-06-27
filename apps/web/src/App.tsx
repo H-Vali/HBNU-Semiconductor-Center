@@ -1400,7 +1400,8 @@ function Hero({
   userRole,
   grantedEquipmentItems,
   isAdmin,
-  accountStatus
+  accountStatus,
+  notices
 }: {
   onNavigate: (page: PageKey) => void;
   onReservationAction: () => void;
@@ -1411,6 +1412,7 @@ function Hero({
   grantedEquipmentItems: EquipmentItem[];
   isAdmin: boolean;
   accountStatus: 'guest' | 'profileRequired' | 'ready';
+  notices: NoticeItem[];
 }) {
   const [showAllPermissions, setShowAllPermissions] = useState(false);
   const collapsedPermissionItems = grantedEquipmentItems.slice(0, 3);
@@ -1557,14 +1559,14 @@ function Hero({
           <p className="hero-section-label">운영 지표</p>
           <StatGrid equipmentItems={equipmentItems} />
         </div>
-        <DashboardNoticePanel onNavigate={onNavigate} />
+        <DashboardNoticePanel notices={notices} onNavigate={onNavigate} />
       </div>
     </section>
   );
 }
 
-function DashboardNoticePanel({ onNavigate }: { onNavigate: (page: PageKey) => void }) {
-  const dashboardNotices = noticeItems.slice(0, 4);
+function DashboardNoticePanel({ notices, onNavigate }: { notices: NoticeItem[]; onNavigate: (page: PageKey) => void }) {
+  const dashboardNotices = notices.slice(0, 4);
 
   return (
     <div className="dashboard-notice-panel">
@@ -2134,6 +2136,7 @@ function Dashboard({
   sessionUser,
   currentUser,
   equipmentPermissions,
+  notices,
   onNavigate
 }: {
   equipmentItems: EquipmentItem[];
@@ -2144,6 +2147,7 @@ function Dashboard({
   sessionUser: StoredSessionUser | null;
   currentUser: ManagedUser | null;
   equipmentPermissions: EquipmentPermissionMap;
+  notices: NoticeItem[];
   onNavigate: (page: PageKey) => void;
 }) {
   const [accessNotice, setAccessNotice] = useState<AccessRequirementNotice | null>(null);
@@ -2193,6 +2197,7 @@ function Dashboard({
         grantedEquipmentItems={grantedEquipmentItems}
         isAdmin={sessionRole === 'ADMIN'}
         accountStatus={accountStatus}
+        notices={notices}
       />
       <AutoRotatingEquipmentStatus
         equipmentItems={equipmentItems}
@@ -8299,6 +8304,7 @@ export function App() {
                 sessionUser={sessionUser}
                 currentUser={currentManagedUser}
                 equipmentPermissions={equipmentPermissions}
+                notices={[...managedOperationNotices, ...managedMeetingNotices].sort((a, b) => b.date.localeCompare(a.date))}
                 onNavigate={navigate}
               />
             </>
