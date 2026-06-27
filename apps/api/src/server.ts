@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { requireAuth, requireRole } from './auth.js';
+import { getAdminSummary } from './adminSummary.js';
 import {
   answerQnaItem,
   createFaq,
@@ -425,12 +426,7 @@ app.patch('/training-requests/:id/complete', requireAuth, requireRole(['ADMIN', 
 
 app.get('/admin/summary', requireAuth, requireRole(['ADMIN']), async (_req, res, next) => {
   try {
-    res.json({
-      users: 128,
-      pendingReservations: 9,
-      educationRequests: 17,
-      equipmentOnline: (await listEquipment()).length
-    });
+    res.json(await getAdminSummary());
   } catch (error) {
     next(error);
   }
