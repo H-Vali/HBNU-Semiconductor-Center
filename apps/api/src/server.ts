@@ -36,6 +36,7 @@ import {
 } from './core.js';
 import {
   authenticateGoogle,
+  authenticateGoogleAccessToken,
   createUser,
   deleteUser,
   getCurrentAuthSession,
@@ -116,6 +117,14 @@ app.get('/auth/config', (_req, res) => {
 app.post('/auth/google', async (req, res, next) => {
   try {
     res.json(await authenticateGoogle(req.body));
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/auth/google/access-token', async (req, res, next) => {
+  try {
+    res.json(await authenticateGoogleAccessToken(req.body));
   } catch (error) {
     next(error);
   }

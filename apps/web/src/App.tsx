@@ -231,6 +231,16 @@ type GoogleCredentialResponse = {
   credential?: string;
 };
 
+type GoogleOAuthTokenResponse = {
+  access_token?: string;
+  error?: string;
+  error_description?: string;
+};
+
+type GoogleTokenClient = {
+  requestAccessToken: (overrideConfig?: { prompt?: string }) => void;
+};
+
 type AccessRequirementNotice = {
   title: string;
   message: string;
@@ -245,6 +255,13 @@ type GoogleIdentityWindow = Window & typeof globalThis & {
       id: {
         initialize: (config: { client_id: string; callback: (response: GoogleCredentialResponse) => void }) => void;
         renderButton: (parent: HTMLElement, options: Record<string, string | number | boolean>) => void;
+      };
+      oauth2?: {
+        initTokenClient: (config: {
+          client_id: string;
+          scope: string;
+          callback: (response: GoogleOAuthTokenResponse) => void;
+        }) => GoogleTokenClient;
       };
     };
   };
@@ -4646,33 +4663,27 @@ function LoginPage({
     phone: '',
     email: ''
   });
-  const googleButtonRef = useRef<HTMLDivElement | null>(null);
+  const googleTokenClientRef = useRef<GoogleTokenClient | null>(null);
   const googleClientId = useGoogleClientId();
 
   useEffect(() => {
-    if (!googleClientId || !googleButtonRef.current) return;
+    if (!googleClientId) return;
     let isMounted = true;
     void loadGoogleIdentityScript().then(() => {
-      if (!isMounted || !googleButtonRef.current) return;
+      if (!isMounted) return;
       const googleWindow = window as GoogleIdentityWindow;
-      googleWindow.google?.accounts.id.initialize({
+      const tokenClient = googleWindow.google?.accounts.oauth2?.initTokenClient({
         client_id: googleClientId,
+        scope: 'openid email profile',
         callback: (response) => {
-          if (response.credential) {
-            void submitGoogleCredential(response.credential);
+          if (response.access_token) {
+            void submitGoogleAccessToken(response.access_token);
           } else {
-            setMessage('Google 인증 응답을 받지 못했습니다.');
+            setMessage(response.error_description || response.error || 'Google 인증 응답을 받지 못했습니다.');
           }
         }
       });
-      googleWindow.google?.accounts.id.renderButton(googleButtonRef.current, {
-        type: 'standard',
-        theme: 'filled_black',
-        size: 'large',
-        text: 'continue_with',
-        shape: 'pill',
-        width: 360
-      });
+      googleTokenClientRef.current = tokenClient ?? null;
     }).catch(() => {
       if (isMounted) setMessage('Google 인증 버튼을 불러오지 못했습니다.');
     });
@@ -4722,14 +4733,41 @@ function LoginPage({
     completeLogin(response);
   }
 
+  async function submitGoogleAccessToken(accessToken: string) {
+    setMessage('Google 인증 정보를 확인하는 중입니다.');
+    const response = await apiPost<GoogleAuthResponse>('/auth/google/access-token', { accessToken });
+    if (!response) {
+      setMessage('Google 인증 확인에 실패했습니다. Google Client ID와 Render API 설정을 확인해 주세요.');
+      return;
+    }
+    if (response.requiresRegistration && response.registrationToken && response.profile) {
+      setAuthState({ kind: 'needsRegistration' });
+      setPendingRegistration({ token: response.registrationToken, profile: response.profile });
+      setRegistrationForm({
+        name: response.profile.name ?? '',
+        department: '',
+        labProfessor: '',
+        phone: '',
+        email: response.profile.email
+      });
+      setMessage('본인인증이 완료되었습니다. 회원정보를 등록해 주세요.');
+      return;
+    }
+    completeLogin(response);
+  }
+
   function handleGoogleLogin() {
     if (!googleClientId) {
       setMessage('Google Client ID가 아직 설정되지 않았습니다. VITE_GOOGLE_CLIENT_ID와 GOOGLE_CLIENT_ID 등록 후 실제 인증이 활성화됩니다.');
       return;
     }
-    setMessage('Google 버튼을 눌러 본인인증을 진행해 주세요.');
+    if (!googleTokenClientRef.current) {
+      setMessage('Google 인증 모듈을 준비하는 중입니다. 잠시 후 다시 시도해 주세요.');
+      return;
+    }
+    setMessage('Google 계정 선택 창을 여는 중입니다.');
+    googleTokenClientRef.current.requestAccessToken({ prompt: 'select_account' });
   }
-
   async function handleRegistrationSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!pendingRegistration) return;
@@ -4792,7 +4830,6 @@ function LoginPage({
               </span>
               <ArrowRight size={18} />
             </div>
-            <div className="login-google-native" ref={googleButtonRef} />
           </div>
         ) : (
           <button type="button" className="login-google-card is-disabled" onClick={handleGoogleLogin}>

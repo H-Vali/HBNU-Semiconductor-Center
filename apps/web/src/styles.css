@@ -9300,28 +9300,6 @@ select {
   color: #5e6b7e;
 }
 
-.login-google-native {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  display: block;
-  opacity: 0.001;
-}
-
-.login-google-native > div {
-  position: absolute !important;
-  inset: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-}
-
-.login-google-native iframe {
-  width: 100% !important;
-  min-width: 100% !important;
-  height: 100% !important;
-  min-height: 100% !important;
-}
-
 .login-status-chip {
   display: grid;
   gap: 0.55rem;

@@ -26,6 +26,20 @@ const googleTokenInfoSchema = z.object({
   iss: z.string().optional()
 });
 
+const googleAccessTokenInfoSchema = z.object({
+  aud: z.string().optional(),
+  audience: z.string().optional(),
+  sub: z.string().optional(),
+  user_id: z.string().optional()
+});
+
+const googleUserInfoSchema = z.object({
+  sub: z.string(),
+  email: z.string().email(),
+  email_verified: z.union([z.boolean(), z.string()]).optional(),
+  name: z.string().optional()
+});
+
 type ManagedUser = z.infer<typeof managedUserSchema> & { id: string; index: number };
 
 const fallbackUsers: ManagedUser[] = [];
@@ -326,7 +340,49 @@ async function verifyGoogleCredential(credential: string): Promise<RegistrationP
 
 export async function authenticateGoogle(input: unknown) {
   const body = z.object({ credential: z.string().min(1) }).parse(input);
-  const profile = await verifyGoogleCredential(body.credential);
+  return completeGoogleAuthentication(await verifyGoogleCredential(body.credential));
+}
+
+async function verifyGoogleAccessToken(accessToken: string): Promise<RegistrationProfile> {
+  const expectedAudience = process.env.GOOGLE_CLIENT_ID;
+  if (!expectedAudience) {
+    throw new Error('GOOGLE_CLIENT_ID is not configured');
+  }
+
+  const tokenInfoResponse = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${encodeURIComponent(accessToken)}`);
+  if (!tokenInfoResponse.ok) {
+    throw new Error('Google access token verification failed');
+  }
+  const tokenInfo = googleAccessTokenInfoSchema.parse(await tokenInfoResponse.json());
+  if ((tokenInfo.aud ?? tokenInfo.audience) !== expectedAudience) {
+    throw new Error('Google access token audience mismatch');
+  }
+
+  const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  if (!userInfoResponse.ok) {
+    throw new Error('Google user info request failed');
+  }
+  const userInfo = googleUserInfoSchema.parse(await userInfoResponse.json());
+  if (userInfo.email_verified !== true && userInfo.email_verified !== 'true') {
+    throw new Error('Google email is not verified');
+  }
+
+  return {
+    googleSubject: userInfo.sub || tokenInfo.sub || tokenInfo.user_id || userInfo.email,
+    email: userInfo.email,
+    name: userInfo.name ?? userInfo.email.split('@')[0],
+    provider: 'Google'
+  };
+}
+
+export async function authenticateGoogleAccessToken(input: unknown) {
+  const body = z.object({ accessToken: z.string().min(1) }).parse(input);
+  return completeGoogleAuthentication(await verifyGoogleAccessToken(body.accessToken));
+}
+
+async function completeGoogleAuthentication(profile: RegistrationProfile) {
   const user = await findUserByGoogleSubject(profile.googleSubject) ?? await findUserByEmail(profile.email);
 
   if (!user) {
