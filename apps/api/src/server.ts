@@ -148,7 +148,9 @@ app.get('/users', requireAuth, requireRole(['ADMIN']), async (_req, res, next) =
 
 app.post('/users', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
   try {
-    res.status(201).json(await createUser(req.body));
+    const user = await createUser(req.body);
+    await writeAuditLog(req.user!, 'USER_CREATE', 'user', user.id, { email: user.email, name: user.name });
+    res.status(201).json(user);
   } catch (error) {
     next(error);
   }
@@ -159,6 +161,7 @@ app.patch('/users/:id', requireAuth, requireRole(['ADMIN']), async (req, res, ne
     const { id } = z.object({ id: z.string() }).parse(req.params);
     const user = await updateUser(id, req.body);
     if (!user) return res.status(404).json({ message: 'User not found' });
+    await writeAuditLog(req.user!, 'USER_UPDATE', 'user', id, { email: user.email, name: user.name });
     return res.json(user);
   } catch (error) {
     next(error);
@@ -196,7 +199,9 @@ app.get('/equipment/:id', async (req, res, next) => {
 
 app.post('/equipment', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
   try {
-    res.status(201).json(await createEquipment(req.body));
+    const item = await createEquipment(req.body);
+    await writeAuditLog(req.user!, 'EQUIPMENT_CREATE', 'equipment', item.id, { name: item.name });
+    res.status(201).json(item);
   } catch (error) {
     next(error);
   }
@@ -207,6 +212,7 @@ app.patch('/equipment/:id', requireAuth, requireRole(['ADMIN']), async (req, res
     const { id } = z.object({ id: z.string() }).parse(req.params);
     const item = await updateEquipment(id, req.body);
     if (!item) return res.status(404).json({ message: 'Equipment not found' });
+    await writeAuditLog(req.user!, 'EQUIPMENT_UPDATE', 'equipment', id, { name: item.name });
     return res.json(item);
   } catch (error) {
     return next(error);
@@ -218,6 +224,7 @@ app.delete('/equipment/:id', requireAuth, requireRole(['ADMIN']), async (req, re
     const { id } = z.object({ id: z.string() }).parse(req.params);
     const item = await deleteEquipment(id);
     if (!item) return res.status(404).json({ message: 'Equipment not found' });
+    await writeAuditLog(req.user!, 'EQUIPMENT_DELETE', 'equipment', id, { name: item.name });
     return res.json(item);
   } catch (error) {
     return next(error);
@@ -235,7 +242,9 @@ app.get('/notices', async (req, res, next) => {
 
 app.post('/notices', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
   try {
-    res.status(201).json(await createNotice(req.body));
+    const notice = await createNotice(req.body);
+    await writeAuditLog(req.user!, 'NOTICE_CREATE', 'notice', notice.id, { title: notice.title, board: notice.board });
+    res.status(201).json(notice);
   } catch (error) {
     next(error);
   }
@@ -246,6 +255,7 @@ app.patch('/notices/:id', requireAuth, requireRole(['ADMIN']), async (req, res, 
     const { id } = z.object({ id: z.string() }).parse(req.params);
     const notice = await updateNotice(id, req.body);
     if (!notice) return res.status(404).json({ message: 'Notice not found' });
+    await writeAuditLog(req.user!, 'NOTICE_UPDATE', 'notice', id, { title: notice.title, board: notice.board });
     return res.json(notice);
   } catch (error) {
     next(error);
@@ -257,6 +267,7 @@ app.delete('/notices/:id', requireAuth, requireRole(['ADMIN']), async (req, res,
     const { id } = z.object({ id: z.string() }).parse(req.params);
     const notice = await deleteNotice(id);
     if (!notice) return res.status(404).json({ message: 'Notice not found' });
+    await writeAuditLog(req.user!, 'NOTICE_DELETE', 'notice', id, { title: notice.title, board: notice.board });
     return res.json(notice);
   } catch (error) {
     next(error);
@@ -273,7 +284,9 @@ app.get('/faqs', async (_req, res, next) => {
 
 app.post('/faqs', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
   try {
-    res.status(201).json(await createFaq(req.body));
+    const faq = await createFaq(req.body);
+    await writeAuditLog(req.user!, 'FAQ_CREATE', 'faq', faq.id, { question: faq.question });
+    res.status(201).json(faq);
   } catch (error) {
     next(error);
   }
@@ -284,6 +297,7 @@ app.patch('/faqs/:id', requireAuth, requireRole(['ADMIN']), async (req, res, nex
     const { id } = z.object({ id: z.string() }).parse(req.params);
     const faq = await updateFaq(id, req.body);
     if (!faq) return res.status(404).json({ message: 'FAQ not found' });
+    await writeAuditLog(req.user!, 'FAQ_UPDATE', 'faq', id, { question: faq.question });
     return res.json(faq);
   } catch (error) {
     next(error);
@@ -295,6 +309,7 @@ app.delete('/faqs/:id', requireAuth, requireRole(['ADMIN']), async (req, res, ne
     const { id } = z.object({ id: z.string() }).parse(req.params);
     const faq = await deleteFaq(id);
     if (!faq) return res.status(404).json({ message: 'FAQ not found' });
+    await writeAuditLog(req.user!, 'FAQ_DELETE', 'faq', id, { question: faq.question });
     return res.json(faq);
   } catch (error) {
     next(error);
@@ -322,6 +337,7 @@ app.patch('/qna/:id/answer', requireAuth, requireRole(['ADMIN']), async (req, re
     const { id } = z.object({ id: z.string() }).parse(req.params);
     const item = await answerQnaItem(id, req.body);
     if (!item) return res.status(404).json({ message: 'Q&A item not found' });
+    await writeAuditLog(req.user!, 'QNA_ANSWER', 'qna', id, { title: item.title, status: item.status });
     return res.json(item);
   } catch (error) {
     next(error);
@@ -437,7 +453,13 @@ app.get('/training-requests', requireAuth, async (req, res, next) => {
 
 app.post('/training-requests', requireAuth, async (req, res, next) => {
   try {
-    res.status(201).json(await createTrainingRequest(req.body, req.user!));
+    const request = await createTrainingRequest(req.body, req.user!);
+    await writeAuditLog(req.user!, 'TRAINING_REQUEST_CREATE', 'training_request', request.id, {
+      equipmentId: request.equipmentId,
+      applicantId: request.applicantUserId,
+      status: request.status
+    });
+    res.status(201).json(request);
   } catch (error) {
     next(error);
   }
@@ -448,6 +470,11 @@ app.patch('/training-requests/:id/schedule', requireAuth, requireRole(['ADMIN', 
     const { id } = z.object({ id: z.string() }).parse(req.params);
     const request = await scheduleTrainingRequest(id, req.body, req.user!);
     if (!request) return res.status(404).json({ message: 'Training request not found' });
+    await writeAuditLog(req.user!, 'TRAINING_REQUEST_SCHEDULE', 'training_request', id, {
+      equipmentId: request.equipmentId,
+      applicantId: request.applicantUserId,
+      scheduledDate: request.scheduledDate
+    });
     return res.json(request);
   } catch (error) {
     return next(error);
@@ -459,6 +486,11 @@ app.patch('/training-requests/:id/reject', requireAuth, requireRole(['ADMIN', 'M
     const { id } = z.object({ id: z.string() }).parse(req.params);
     const request = await rejectTrainingRequest(id, req.body, req.user!);
     if (!request) return res.status(404).json({ message: 'Training request not found' });
+    await writeAuditLog(req.user!, 'TRAINING_REQUEST_REJECT', 'training_request', id, {
+      equipmentId: request.equipmentId,
+      applicantId: request.applicantUserId,
+      rejectedReason: request.rejectedReason
+    });
     return res.json(request);
   } catch (error) {
     return next(error);
@@ -470,6 +502,11 @@ app.patch('/training-requests/:id/complete', requireAuth, requireRole(['ADMIN', 
     const { id } = z.object({ id: z.string() }).parse(req.params);
     const request = await completeTrainingRequest(id, req.user!);
     if (!request) return res.status(404).json({ message: 'Training request not found' });
+    await writeAuditLog(req.user!, 'TRAINING_REQUEST_COMPLETE', 'training_request', id, {
+      equipmentId: request.equipmentId,
+      applicantId: request.applicantUserId,
+      status: request.status
+    });
     return res.json(request);
   } catch (error) {
     return next(error);

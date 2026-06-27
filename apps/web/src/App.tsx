@@ -59,10 +59,11 @@ import { STORAGE_KEYS } from './appStorage';
 import { initialConsumablesData, initialManagedUsersData } from './mockData';
 import { NoticeAdminPage, NoticePage, getNoticeCategoryTone, meetingNoticeItems, normalizeNoticeItems, noticeBoardMeta, noticeItems, operationNoticeItems, type NoticeBoardKey, type NoticeItem } from './pages/NoticePages';
 import { FaqPage, QnaPage, faqItems as initialFaqItems, type FaqItem } from './pages/InquiryPages';
+import { AuditLogPage } from './pages/AuditLogPage';
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from './apiClient';
 import { getReservationStatusLabel, normalizeReservationStatus, type ReservationStatus } from './utils/reservationStatus';
 
-type PageKey = 'home' | 'notice' | 'operationNotice' | 'meetingNotice' | 'center' | 'facility' | 'equipment' | 'training' | 'trainingManagement' | 'faq' | 'qna' | 'reservations' | 'managerPermissions' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'equipmentAdmin' | 'penalties' | 'noticeAdmin' | 'educationAdmin' | 'login';
+type PageKey = 'home' | 'notice' | 'operationNotice' | 'meetingNotice' | 'center' | 'facility' | 'equipment' | 'training' | 'trainingManagement' | 'faq' | 'qna' | 'reservations' | 'reservationManagement' | 'managerPermissions' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'equipmentAdmin' | 'penalties' | 'noticeAdmin' | 'educationAdmin' | 'auditLogs' | 'login';
 type Role = 'USER' | 'MANAGER' | 'ADMIN';
 type UsagePeriod = '24H' | '1W' | '1M';
 type EquipmentRuntimeStatus = 'active' | 'maintenance' | 'idle';
@@ -305,7 +306,7 @@ const adminMenu: Array<{ label: string; page: PageKey; icon: typeof ShieldCheck 
   { label: '관리자', page: 'admin', icon: ShieldCheck }
 ];
 
-const adminOnlyPages = new Set<PageKey>(['admin', 'users', 'permissions', 'consumables', 'equipmentAdmin', 'penalties', 'noticeAdmin', 'educationAdmin']);
+const adminOnlyPages = new Set<PageKey>(['admin', 'users', 'permissions', 'consumables', 'equipmentAdmin', 'penalties', 'noticeAdmin', 'educationAdmin', 'auditLogs']);
 
 const quickLinks: Array<{ label: string; page: PageKey; icon: typeof CalendarDays }> = [
   { label: '장비 사용 예약', page: 'reservations', icon: CalendarDays },
@@ -1143,7 +1144,7 @@ function SidebarNavigation({
 }) {
   const noticePages: PageKey[] = ['notice', 'operationNotice', 'meetingNotice'];
   const inquiryPages: PageKey[] = ['faq', 'qna'];
-  const reservationPages: PageKey[] = ['reservations', 'managerPermissions'];
+  const reservationPages: PageKey[] = ['reservations', 'reservationManagement', 'managerPermissions'];
   const trainingPages: PageKey[] = ['training', 'trainingManagement'];
   const [noticeOpen, setNoticeOpen] = useState(() => noticePages.includes(activePage));
   const [inquiryOpen, setInquiryOpen] = useState(() => inquiryPages.includes(activePage));
@@ -1284,6 +1285,14 @@ function SidebarNavigation({
                     >
                       <LockKeyhole size={15} />
                       <span>사용권한부여(담당)</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`sidebar-subnav-item ${activePage === 'reservationManagement' ? 'is-active' : ''}`}
+                      onClick={() => onNavigate('reservationManagement')}
+                    >
+                      <CheckCircle2 size={15} />
+                      <span>예약 승인관리</span>
                     </button>
                   </>
                 )
@@ -3846,6 +3855,105 @@ function TrainingManagementPage({
   );
 }
 
+function ReservationManagementPage({
+  equipmentItems,
+  calendarEvents,
+  currentUser,
+  sessionRole,
+  onUpdateReservationStatus
+}: {
+  equipmentItems: EquipmentItem[];
+  calendarEvents: ReservationEvent[];
+  currentUser: ManagedUser | null;
+  sessionRole: Role | null;
+  onUpdateReservationStatus: (reservationId: string, status: ReservationStatus, reason?: string) => Promise<boolean>;
+}) {
+  const [statusFilter, setStatusFilter] = useState<ReservationStatus | 'all'>('pending');
+  const equipmentById = useMemo(() => new Map(equipmentItems.map((item) => [item.id, item])), [equipmentItems]);
+  const manageableEquipmentIds = useMemo(() => {
+    if (sessionRole === 'ADMIN') return new Set(equipmentItems.map((item) => item.id));
+    if (!currentUser) return new Set<string>();
+    return new Set(equipmentItems.filter((item) => item.managerId === currentUser.id).map((item) => item.id));
+  }, [currentUser, equipmentItems, sessionRole]);
+  const manageableReservations = useMemo(() => (
+    calendarEvents
+      .filter((event) => manageableEquipmentIds.has(getEventEquipmentId(event, equipmentItems)))
+      .filter((event) => event.status !== 'maintenance' && event.status !== 'external')
+      .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
+  ), [calendarEvents, equipmentItems, manageableEquipmentIds]);
+  const visibleReservations = statusFilter === 'all'
+    ? manageableReservations
+    : manageableReservations.filter((event) => (event.status ?? 'approved') === statusFilter);
+  const tabs: Array<{ status: ReservationStatus | 'all'; label: string }> = [
+    { status: 'pending', label: '승인 대기' },
+    { status: 'approved', label: '승인 완료' },
+    { status: 'rejected', label: '반려' },
+    { status: 'all', label: '전체' }
+  ];
+
+  async function rejectReservation(reservationId: string) {
+    const reason = window.prompt('예약 반려 사유를 입력해 주세요.') ?? '';
+    await onUpdateReservationStatus(reservationId, 'rejected', reason);
+  }
+
+  return (
+    <section className="space-y-5">
+      <div className="rounded-lg border border-white/10 bg-surface/85 p-6">
+        <p className="text-xs font-extrabold uppercase text-cyan-300">Reservation Approval</p>
+        <h2 className="text-2xl font-black text-white">예약 승인관리</h2>
+        <p className="mt-2 text-sm text-slate-400">
+          {sessionRole === 'ADMIN'
+            ? '관리자는 전체 장비 예약을 승인, 반려, 재승인할 수 있습니다.'
+            : '담당자는 본인이 배정된 장비 예약만 승인, 반려, 재승인할 수 있습니다.'}
+        </p>
+        <div className="mt-5 flex flex-wrap gap-2" role="tablist" aria-label="예약 상태 필터">
+          {tabs.map((tab) => (
+            <button
+              key={tab.status}
+              type="button"
+              className={`reservation-status-tab ${statusFilter === tab.status ? 'is-active' : ''}`}
+              onClick={() => setStatusFilter(tab.status)}
+            >
+              {tab.label}
+              <span>{tab.status === 'all' ? manageableReservations.length : manageableReservations.filter((event) => (event.status ?? 'approved') === tab.status).length}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="admin-reservation-list">
+        {visibleReservations.length > 0 ? visibleReservations.map((event) => {
+          const equipment = equipmentById.get(getEventEquipmentId(event, equipmentItems));
+          return (
+            <article key={event.id} className={`admin-reservation-row ${isReservationActive(event) ? 'is-live' : ''} ${event.status === 'rejected' ? 'is-rejected' : ''} ${event.status === 'canceled' ? 'is-canceled' : ''}`}>
+              <div>
+                <strong>{equipment?.name ?? event.title}</strong>
+                <span>{event.start.slice(0, 10)} · {formatReservationTime(event.start)}{event.end ? ` - ${formatReservationTime(event.end)}` : ''}</span>
+                <em>{event.title} · {getReservationStatusLabel(event.status)}</em>
+              </div>
+              <div className="admin-reservation-actions">
+                {event.status === 'pending' && (
+                  <>
+                    <button type="button" className="reservation-mini-approve" onClick={() => onUpdateReservationStatus(event.id, 'approved')}>승인</button>
+                    <button type="button" className="reservation-mini-danger" onClick={() => void rejectReservation(event.id)}>반려</button>
+                  </>
+                )}
+                {event.status === 'rejected' && (
+                  <button type="button" className="reservation-mini-approve" onClick={() => onUpdateReservationStatus(event.id, 'approved')}>다시 승인</button>
+                )}
+              </div>
+            </article>
+          );
+        }) : (
+          <div className="rounded-lg border border-white/10 bg-surface/85 p-8 text-center text-sm font-bold text-slate-400">
+            표시할 예약이 없습니다.
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function AdminEducationPermissionPanel({
   users,
   equipmentItems,
@@ -4307,7 +4415,8 @@ function AdminPage({
           { title: '권한관리', page: 'permissions' as PageKey, icon: LockKeyhole },
           { title: '소모품관리', page: 'consumables' as PageKey, icon: PackageCheck, updatedAt: consumablesUpdatedAt },
           { title: '페널티 관리', page: 'penalties' as PageKey, icon: Ban },
-          { title: '교육관리', page: 'educationAdmin' as PageKey, icon: GraduationCap }
+          { title: '교육관리', page: 'educationAdmin' as PageKey, icon: GraduationCap },
+          { title: '감사 로그', page: 'auditLogs' as PageKey, icon: Clock3 }
         ].map((item) => {
           const Icon = item.icon;
           return (
@@ -8200,6 +8309,19 @@ export function App() {
               />
             )
           )}
+          {activePage === 'reservationManagement' && (
+            canManageAssignedPermissions ? (
+              <ReservationManagementPage
+                equipmentItems={activeEquipmentItems}
+                calendarEvents={reservationEvents}
+                currentUser={currentManagedUser}
+                sessionRole={sessionRole}
+                onUpdateReservationStatus={updateReservationStatus}
+              />
+            ) : (
+              <PlaceholderPage title="접근 권한이 없습니다" />
+            )
+          )}
           {activePage === 'training' && (
             <TrainingPage
               equipmentItems={activeEquipmentItems}
@@ -8256,6 +8378,13 @@ export function App() {
                 permissionGrantMeta={equipmentPermissionGrantMeta}
                 onRevokePermission={revokeEquipmentPermissionByAdmin}
               />
+            ) : (
+              <PlaceholderPage title="접근 권한이 없습니다" />
+            )
+          )}
+          {activePage === 'auditLogs' && (
+            sessionRole === 'ADMIN' ? (
+              <AuditLogPage />
             ) : (
               <PlaceholderPage title="접근 권한이 없습니다" />
             )
