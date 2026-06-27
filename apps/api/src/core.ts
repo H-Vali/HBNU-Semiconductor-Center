@@ -82,7 +82,7 @@ const createReservationSchema = z.object({
 });
 
 const reservationStatusUpdateSchema = z.object({
-  status: z.enum(['pending', 'approved', 'rejected', 'canceled']),
+  status: reservationStatusSchema,
   reason: z.string().trim().optional()
 });
 
@@ -555,7 +555,9 @@ export async function createReservation(input: unknown, user?: SessionUser) {
   }
   const canAssignOwner = canAssignReservationOwner(user);
   const ownerId = canAssignOwner ? (body.userId ?? user?.id ?? null) : (user?.id ?? null);
-  const status = canAssignOwner ? (body.status ?? 'pending') : 'pending';
+  const status = canAssignOwner && (body.status === 'maintenance' || body.status === 'external')
+    ? body.status
+    : 'approved';
   const reservationId = `r-${randomUUID()}`;
 
   if (!hasDatabase()) {
