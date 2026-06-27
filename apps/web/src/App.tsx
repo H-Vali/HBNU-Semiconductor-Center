@@ -60,12 +60,12 @@ import { initialConsumablesData, initialManagedUsersData } from './mockData';
 import { NoticeAdminPage, NoticePage, getNoticeCategoryTone, meetingNoticeItems, normalizeNoticeItems, noticeBoardMeta, noticeItems, operationNoticeItems, type NoticeBoardKey, type NoticeItem } from './pages/NoticePages';
 import { FaqPage, QnaPage, faqItems as initialFaqItems, type FaqItem } from './pages/InquiryPages';
 import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from './apiClient';
+import { getReservationStatusLabel, normalizeReservationStatus, type ReservationStatus } from './utils/reservationStatus';
 
 type PageKey = 'home' | 'notice' | 'operationNotice' | 'meetingNotice' | 'center' | 'facility' | 'equipment' | 'training' | 'trainingManagement' | 'faq' | 'qna' | 'reservations' | 'managerPermissions' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'equipmentAdmin' | 'penalties' | 'noticeAdmin' | 'educationAdmin' | 'login';
 type Role = 'USER' | 'MANAGER' | 'ADMIN';
 type UsagePeriod = '24H' | '1W' | '1M';
 type EquipmentRuntimeStatus = 'active' | 'maintenance' | 'idle';
-type ReservationStatus = 'pending' | 'approved' | 'maintenance' | 'external';
 type PenaltyType = '1주 사용정지' | '2주 사용정지' | '1개월 정지' | '영구정지';
 type PenaltyCategory = '장비활용관련' | '안전관련' | '학생자치기구 관련' | '사고 유발';
 type EquipmentStatus = 'available' | 'unavailable';
@@ -419,10 +419,6 @@ function isMaintenanceReservation(event: ReservationEvent) {
 
 function isExternalReservation(event: ReservationEvent) {
   return event.status === 'external';
-}
-
-function normalizeReservationStatus(status: unknown): ReservationStatus {
-  return status === 'maintenance' || status === 'external' || status === 'approved' || status === 'pending' ? status : 'approved';
 }
 
 function getRealtimeCategoryLabel(item: EquipmentItem) {
@@ -2002,7 +1998,7 @@ function AutoRotatingEquipmentStatus({
               className={`auto-status-grid ${isActive ? 'is-active' : ''}`}
               role="tabpanel"
               aria-hidden={!isActive}
-              aria-label={`${slide.title} ${slide.count}醫??λ퉬 ?곹깭`}
+              aria-label={`${slide.title} ${slide.count}종 장비 상태`}
               style={{ '--auto-status-accent': slide.accent } as CSSProperties}
             >
               {slide.items.map(({ item, activeEvent, status }) => {
@@ -4082,6 +4078,7 @@ function AdminPage({
   calendarEvents,
   onAddReservation,
   onDeleteReservation,
+  onUpdateReservationStatus,
   onNavigate,
   consumablesUpdatedAt,
   usersUpdatedAt
@@ -4090,6 +4087,7 @@ function AdminPage({
   calendarEvents: ReservationEvent[];
   onAddReservation: (event: ReservationEvent) => Promise<boolean>;
   onDeleteReservation: (reservationId: string) => Promise<boolean>;
+  onUpdateReservationStatus: (reservationId: string, status: ReservationStatus, reason?: string) => Promise<boolean>;
   onNavigate: (page: PageKey) => void;
   consumablesUpdatedAt: string;
   usersUpdatedAt: string;
@@ -4215,11 +4213,25 @@ function AdminPage({
               selectedDayReservations.map((event) => {
                 const equipment = equipmentItems.find((item) => getEventEquipmentId(event, equipmentItems) === item.id);
                 return (
-                  <div key={event.id} className={`admin-reservation-row ${isReservationActive(event) ? 'is-live' : ''} ${isMaintenanceReservation(event) ? 'is-maintenance' : ''} ${isExternalReservation(event) ? 'is-external' : ''}`}>
+                  <div key={event.id} className={`admin-reservation-row ${isReservationActive(event) ? 'is-live' : ''} ${isMaintenanceReservation(event) ? 'is-maintenance' : ''} ${isExternalReservation(event) ? 'is-external' : ''} ${event.status === 'rejected' ? 'is-rejected' : ''} ${event.status === 'canceled' ? 'is-canceled' : ''}`}>
                     <div>
                       <strong>{equipment?.name ?? event.title}</strong>
                       <span>{formatReservationTime(event.start)}{event.end ? ` - ${formatReservationTime(event.end)}` : ''}</span>
-                      <em>{event.title}</em>
+                      <em>{event.title} · {getReservationStatusLabel(event.status)}</em>
+                    </div>
+                    <div className="admin-reservation-actions">
+                      {event.status === 'pending' && (
+                        <>
+                          <button type="button" className="reservation-mini-approve" onClick={() => onUpdateReservationStatus(event.id, 'approved')}>승인</button>
+                          <button type="button" className="reservation-mini-danger" onClick={() => {
+                            const reason = window.prompt('예약 반려 사유를 입력해주세요.') ?? '';
+                            void onUpdateReservationStatus(event.id, 'rejected', reason);
+                          }}>반려</button>
+                        </>
+                      )}
+                      {event.status === 'rejected' && (
+                        <button type="button" className="reservation-mini-approve" onClick={() => onUpdateReservationStatus(event.id, 'approved')}>다시 승인</button>
+                      )}
                     </div>
                     <button className="reservation-mini-danger" onClick={() => onDeleteReservation(event.id)}>예약 삭제</button>
                   </div>
@@ -4245,10 +4257,25 @@ function AdminPage({
         </div>
         <div className="admin-reservation-list">
           {calendarEvents.map((event) => (
-            <div key={event.id} className={`admin-reservation-row ${isReservationActive(event) ? 'is-live' : ''} ${isMaintenanceReservation(event) ? 'is-maintenance' : ''} ${isExternalReservation(event) ? 'is-external' : ''}`}>
+            <div key={event.id} className={`admin-reservation-row ${isReservationActive(event) ? 'is-live' : ''} ${isMaintenanceReservation(event) ? 'is-maintenance' : ''} ${isExternalReservation(event) ? 'is-external' : ''} ${event.status === 'rejected' ? 'is-rejected' : ''} ${event.status === 'canceled' ? 'is-canceled' : ''}`}>
               <div>
                 <strong>{event.title}</strong>
+                <em>{getReservationStatusLabel(event.status)}</em>
                 <span>{event.start.slice(0, 10)} · {formatReservationTime(event.start)}{event.end ? ` - ${formatReservationTime(event.end)}` : ''}</span>
+              </div>
+              <div className="admin-reservation-actions">
+                {event.status === 'pending' && (
+                  <>
+                    <button type="button" className="reservation-mini-approve" onClick={() => onUpdateReservationStatus(event.id, 'approved')}>승인</button>
+                    <button type="button" className="reservation-mini-danger" onClick={() => {
+                      const reason = window.prompt('예약 반려 사유를 입력해 주세요.') ?? '';
+                      void onUpdateReservationStatus(event.id, 'rejected', reason);
+                    }}>반려</button>
+                  </>
+                )}
+                {event.status === 'rejected' && (
+                  <button type="button" className="reservation-mini-approve" onClick={() => onUpdateReservationStatus(event.id, 'approved')}>다시 승인</button>
+                )}
               </div>
               <button className="reservation-mini-danger" onClick={() => onDeleteReservation(event.id)}>예약 삭제</button>
             </div>
@@ -7768,6 +7795,22 @@ export function App() {
     return true;
   }
 
+  async function updateReservationStatus(reservationId: string, status: ReservationStatus, reason?: string) {
+    const savedEvent = await apiPatch<ApiReservationEvent>(
+      `/reservations/${encodeURIComponent(reservationId)}/status`,
+      { status, reason },
+      localStorage.getItem(STORAGE_KEYS.sessionToken)
+    );
+    if (!savedEvent) {
+      window.alert('예약 상태를 DB에 저장하지 못했습니다. 관리자/담당자 권한을 확인해 주세요.');
+      return false;
+    }
+    setReservationEvents((current) => current.map((event) => (
+      event.id === reservationId ? normalizeApiReservation(savedEvent) : event
+    )));
+    return true;
+  }
+
   function dismissPreviewPenaltyDemo() {
     localStorage.setItem(STORAGE_KEYS.previewPenaltyDemoDismissed, 'true');
     setShowPreviewPenaltyDemo(false);
@@ -8195,6 +8238,7 @@ export function App() {
                 calendarEvents={reservationEvents}
                 onAddReservation={addReservation}
                 onDeleteReservation={deleteReservation}
+                onUpdateReservationStatus={updateReservationStatus}
                 onNavigate={navigate}
                 consumablesUpdatedAt={consumablesUpdatedAt}
                 usersUpdatedAt={usersUpdatedAt}

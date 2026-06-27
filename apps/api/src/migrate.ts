@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import { initialFaqs, initialNotices, initialQnaItems } from './content.js';
+import { auditLogSchemaStatements } from './auditLog.js';
 import { closeDatabase, query } from './db.js';
 import { equipment, reservations } from './data.js';
 import { operationalDataSchemaStatements } from './operationalData.js';
@@ -101,6 +102,8 @@ const statements = [
     deleted_at timestamptz,
     check (starts_at < ends_at)
   )`,
+  `alter table reservations drop constraint if exists reservations_status_check`,
+  `alter table reservations add constraint reservations_status_check check (status in ('pending', 'approved', 'rejected', 'maintenance', 'external', 'canceled'))`,
   `create index if not exists reservations_equipment_time_idx on reservations (equipment_id, starts_at, ends_at) where deleted_at is null`,
   `create index if not exists reservations_user_time_idx on reservations (user_id, starts_at desc) where deleted_at is null`,
   `create table if not exists equipment_permissions (
@@ -212,7 +215,8 @@ const statements = [
     deleted_at timestamptz
   )`,
   `create index if not exists qna_items_created_idx on qna_items (created_at desc) where deleted_at is null`,
-  ...operationalDataSchemaStatements
+  ...operationalDataSchemaStatements,
+  ...auditLogSchemaStatements
 ];
 
 const defaultRoles = [

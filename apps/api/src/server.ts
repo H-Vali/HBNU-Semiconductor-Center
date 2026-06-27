@@ -6,6 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { requireAuth, requireRole } from './auth.js';
 import { getAdminSummary } from './adminSummary.js';
+import { ensureAuditLogSchema, listAuditLogs, writeAuditLog } from './auditLog.js';
 import {
   answerQnaItem,
   createFaq,
@@ -29,6 +30,7 @@ import {
   getEquipment,
   listEquipment,
   listReservations,
+  updateReservationStatus,
   updateEquipment
 } from './core.js';
 import {
@@ -168,6 +170,7 @@ app.delete('/users/:id', requireAuth, requireRole(['ADMIN']), async (req, res, n
     const { id } = z.object({ id: z.string() }).parse(req.params);
     const user = await deleteUser(id);
     if (!user) return res.status(404).json({ message: 'User not found' });
+    await writeAuditLog(req.user!, 'USER_DELETE', 'user', id, { email: user.email, name: user.name });
     return res.json(user);
   } catch (error) {
     next(error);
@@ -337,6 +340,7 @@ app.delete('/reservations/:id', requireAuth, async (req, res, next) => {
     const { id } = z.object({ id: z.string() }).parse(req.params);
     const reservation = await cancelReservation(id, req.user!);
     if (!reservation) return res.status(404).json({ message: 'Reservation not found' });
+    await writeAuditLog(req.user!, 'RESERVATION_CANCEL', 'reservation', id, { status: reservation.status });
     return res.json(reservation);
   } catch (error) {
     next(error);
@@ -344,7 +348,36 @@ app.delete('/reservations/:id', requireAuth, async (req, res, next) => {
 });
 app.post('/reservations', requireAuth, async (req, res, next) => {
   try {
-    res.status(201).json(await createReservation(req.body, req.user));
+    const reservation = await createReservation(req.body, req.user);
+    await writeAuditLog(req.user!, 'RESERVATION_CREATE', 'reservation', reservation.id, {
+      equipmentId: reservation.equipmentId,
+      status: reservation.status
+    });
+    res.status(201).json(reservation);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.patch('/reservations/:id/status', requireAuth, requireRole(['ADMIN', 'MANAGER']), async (req, res, next) => {
+  try {
+    const { id } = z.object({ id: z.string() }).parse(req.params);
+    const reservation = await updateReservationStatus(id, req.body, req.user!);
+    if (!reservation) return res.status(404).json({ message: 'Reservation not found' });
+    await writeAuditLog(req.user!, 'RESERVATION_STATUS_UPDATE', 'reservation', id, {
+      status: reservation.status,
+      reason: typeof req.body?.reason === 'string' ? req.body.reason : undefined
+    });
+    return res.json(reservation);
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.get('/audit-logs', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
+  try {
+    const rawLimit = typeof req.query.limit === 'string' ? Number(req.query.limit) : 200;
+    res.json(await listAuditLogs(Number.isFinite(rawLimit) ? rawLimit : 200));
   } catch (error) {
     next(error);
   }
@@ -369,7 +402,12 @@ app.put('/equipment-permissions/users/:userId', requireAuth, requireRole(['ADMIN
 
 app.post('/equipment-permissions/grant', requireAuth, requireRole(['ADMIN', 'MANAGER']), async (req, res, next) => {
   try {
-    res.status(201).json(await grantEquipmentPermission(req.body, req.user!));
+    const snapshot = await grantEquipmentPermission(req.body, req.user!);
+    await writeAuditLog(req.user!, 'EQUIPMENT_PERMISSION_GRANT', 'equipment_permission', `${req.body?.userId ?? ''}:${req.body?.equipmentId ?? ''}`, {
+      userId: req.body?.userId,
+      equipmentId: req.body?.equipmentId
+    });
+    res.status(201).json(snapshot);
   } catch (error) {
     next(error);
   }
@@ -377,7 +415,13 @@ app.post('/equipment-permissions/grant', requireAuth, requireRole(['ADMIN', 'MAN
 
 app.post('/equipment-permissions/revoke', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
   try {
-    res.json(await revokeEquipmentPermission(req.body, req.user!));
+    const snapshot = await revokeEquipmentPermission(req.body, req.user!);
+    await writeAuditLog(req.user!, 'EQUIPMENT_PERMISSION_REVOKE', 'equipment_permission', `${req.body?.userId ?? ''}:${req.body?.equipmentId ?? ''}`, {
+      userId: req.body?.userId,
+      equipmentId: req.body?.equipmentId,
+      reason: req.body?.reason
+    });
+    res.json(snapshot);
   } catch (error) {
     next(error);
   }
@@ -468,7 +512,13 @@ app.get('/penalties', requireAuth, async (req, res, next) => {
 
 app.post('/penalties', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
   try {
-    res.status(201).json(await createPenalty(req.body, req.user!));
+    const penalty = await createPenalty(req.body, req.user!);
+    await writeAuditLog(req.user!, 'PENALTY_CREATE', 'penalty', penalty.id, {
+      userId: penalty.userId,
+      type: penalty.type,
+      category: penalty.category
+    });
+    res.status(201).json(penalty);
   } catch (error) {
     next(error);
   }
@@ -479,6 +529,7 @@ app.patch('/penalties/:id/revoke', requireAuth, requireRole(['ADMIN']), async (r
     const { id } = z.object({ id: z.string().min(1) }).parse(req.params);
     const penalty = await revokePenalty(id, req.user!);
     if (!penalty) return res.status(404).json({ message: 'Penalty record not found' });
+    await writeAuditLog(req.user!, 'PENALTY_REVOKE', 'penalty', id, { userId: penalty.userId });
     return res.json(penalty);
   } catch (error) {
     return next(error);
@@ -534,7 +585,7 @@ app.use((error: unknown, req: express.Request, res: express.Response, _next: exp
   return errorResponse(res, 500, { message: 'Internal server error' });
 });
 
-Promise.all([ensureEquipmentPermissionSchema(), ensureTrainingRequestSchema(), ensureOperationalDataSchema()])
+Promise.all([ensureEquipmentPermissionSchema(), ensureTrainingRequestSchema(), ensureOperationalDataSchema(), ensureAuditLogSchema()])
   .then(() => {
     app.listen(port, () => {
       console.log(`HBNU API listening on ${port}`);

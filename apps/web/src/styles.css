@@ -2993,6 +2993,25 @@ select {
   background: #ef4444;
 }
 
+.reservation-mini-approve {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.85rem;
+  border-radius: 6px;
+  border: 1px solid rgba(45, 212, 191, 0.34);
+  background: rgba(13, 148, 136, 0.82);
+  padding: 0.42rem 0.62rem;
+  color: #ecfeff;
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+.reservation-mini-approve:hover {
+  background: #14b8a6;
+  color: #06111f;
+}
+
 .admin-reservation-manager {
   display: grid;
   grid-template-columns: minmax(0, 1.08fr) minmax(22rem, 0.72fr);
@@ -3209,6 +3228,31 @@ select {
     linear-gradient(135deg, rgba(76, 29, 149, 0.55), rgba(30, 41, 59, 0.72)),
     radial-gradient(circle at top right, rgba(168, 85, 247, 0.15), transparent 30%);
   box-shadow: 0 0 22px rgba(168, 85, 247, 0.12);
+}
+
+.admin-reservation-row.is-rejected {
+  border-color: rgba(248, 113, 113, 0.36);
+  background:
+    linear-gradient(135deg, rgba(69, 10, 10, 0.44), rgba(30, 41, 59, 0.72)),
+    radial-gradient(circle at top right, rgba(248, 113, 113, 0.12), transparent 30%);
+}
+
+.admin-reservation-row.is-canceled {
+  opacity: 0.58;
+}
+
+.admin-reservation-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.admin-reservation-actions .reservation-mini-approve,
+.admin-reservation-actions .reservation-mini-danger {
+  margin-top: 0;
 }
 
 .admin-reservation-row strong,

@@ -37,7 +37,7 @@ export class ReservationPermissionError extends Error {
   }
 }
 
-const reservationStatusSchema = z.enum(['pending', 'approved', 'maintenance', 'external', 'canceled']);
+const reservationStatusSchema = z.enum(['pending', 'approved', 'rejected', 'maintenance', 'external', 'canceled']);
 const equipmentGroupSchema = z.enum(['process', 'metrology']);
 const equipmentStatusSchema = z.enum(['available', 'unavailable', 'maintenance']);
 
@@ -79,6 +79,11 @@ const createReservationSchema = z.object({
 }).refine((value) => new Date(value.startsAt) < new Date(value.endsAt), {
   message: 'Reservation end time must be after start time',
   path: ['endsAt']
+});
+
+const reservationStatusUpdateSchema = z.object({
+  status: z.enum(['pending', 'approved', 'rejected', 'canceled']),
+  reason: z.string().trim().optional()
 });
 
 type CreateReservationInput = z.infer<typeof createReservationSchema>;
@@ -211,6 +216,22 @@ function canAssignReservationOwner(user?: SessionUser) {
 
 function canCancelAnyReservation(user: SessionUser) {
   return user.role === 'ADMIN';
+}
+
+async function canManageReservationStatus(reservationId: string, user: SessionUser) {
+  if (user.role === 'ADMIN') return true;
+  if (user.role !== 'MANAGER') return false;
+  if (!hasDatabase()) return false;
+
+  const result = await query<{ managerUserId: string | null }>(
+    `select e.manager_user_id as "managerUserId"
+     from reservations r
+     join equipment e on e.id = r.equipment_id
+     where r.id = $1 and r.deleted_at is null and e.deleted_at is null
+     limit 1`,
+    [reservationId]
+  );
+  return result.rows[0]?.managerUserId === user.id;
 }
 
 async function getReservationEquipmentStatus(equipmentId: string) {
@@ -542,6 +563,35 @@ export async function cancelReservation(id: string, user: SessionUser) {
      returning id, equipment_id as "equipmentId", user_id as "userId", title, purpose,
        starts_at as "startsAt", ends_at as "endsAt", status, created_by_role as "createdByRole"`,
     [id, canCancelAny, user.id]
+  );
+  return result.rows[0] ? mapReservation(result.rows[0]) : null;
+}
+
+export async function updateReservationStatus(id: string, input: unknown, user: SessionUser) {
+  const body = reservationStatusUpdateSchema.parse(input);
+  if (!await canManageReservationStatus(id, user)) {
+    throw new ReservationPermissionError();
+  }
+
+  if (!hasDatabase()) {
+    const index = mutableFallbackReservations.findIndex((reservation) => reservation.id === id);
+    if (index === -1) return null;
+    mutableFallbackReservations[index] = {
+      ...mutableFallbackReservations[index],
+      status: body.status
+    };
+    return mutableFallbackReservations[index];
+  }
+
+  const result = await query<ReservationRow>(
+    `update reservations
+     set status = $2,
+      deleted_at = case when $2 = 'canceled' then now() else deleted_at end,
+      updated_at = now()
+     where id = $1 and deleted_at is null
+     returning id, equipment_id as "equipmentId", user_id as "userId", title, purpose,
+       starts_at as "startsAt", ends_at as "endsAt", status, created_by_role as "createdByRole"`,
+    [id, body.status]
   );
   return result.rows[0] ? mapReservation(result.rows[0]) : null;
 }
