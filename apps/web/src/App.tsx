@@ -1875,7 +1875,9 @@ function AutoRotatingEquipmentStatus({
     const sortedStatusItems = [...statusItems].sort((first, second) => statusOrder[first.status] - statusOrder[second.status]);
     const processItems = sortedStatusItems.filter((entry) => entry.item.group === 'process');
     const metrologyItems = sortedStatusItems.filter((entry) => entry.item.group === 'metrology');
-    const metrologyPages = [metrologyItems.slice(0, 8), metrologyItems.slice(8, 16)].filter((page) => page.length > 0);
+    const metrologyPages = metrologyItems.length > 0
+      ? [metrologyItems.slice(0, 8), metrologyItems.slice(8, 16)].filter((page) => page.length > 0)
+      : [[]];
     return [
       {
         id: 'process',
