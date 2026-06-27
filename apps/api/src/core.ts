@@ -213,10 +213,28 @@ function canCancelAnyReservation(user: SessionUser) {
   return user.role === 'ADMIN';
 }
 
+async function getReservationEquipmentStatus(equipmentId: string) {
+  if (!hasDatabase()) {
+    return mutableFallbackEquipment.find((entry) => entry.id === equipmentId)?.status ?? null;
+  }
+
+  const result = await query<{ status: string }>(
+    `select status
+     from equipment
+     where id = $1 and deleted_at is null
+     limit 1`,
+    [equipmentId]
+  );
+  return result.rows[0]?.status ?? null;
+}
+
 async function canCreateReservation(body: CreateReservationInput, user?: SessionUser) {
   if (!user) return false;
+  const equipmentStatus = await getReservationEquipmentStatus(body.equipmentId);
+  if (!equipmentStatus) return false;
   if (user.role === 'ADMIN' || user.role === 'MANAGER') return true;
   if (body.userId && body.userId !== user.id) return false;
+  if (equipmentStatus !== 'available') return false;
 
   if (!hasDatabase()) {
     return hasActiveEquipmentPermission(user.id, body.equipmentId);

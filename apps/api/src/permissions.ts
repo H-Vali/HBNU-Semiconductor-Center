@@ -161,7 +161,7 @@ function createFallbackSnapshot(): PermissionSnapshot {
 }
 
 async function assertEquipmentScope(actor: SessionUser, equipmentId: string) {
-  if (actor.role === 'ADMIN' || !hasDatabase()) return;
+  if (!hasDatabase()) return;
 
   const result = await query<{ managerUserId: string | null }>(
     `select manager_user_id as "managerUserId"
@@ -170,7 +170,24 @@ async function assertEquipmentScope(actor: SessionUser, equipmentId: string) {
     [equipmentId]
   );
 
-  if (result.rows[0]?.managerUserId !== actor.id) {
+  const equipment = result.rows[0];
+  if (!equipment || (actor.role !== 'ADMIN' && equipment.managerUserId !== actor.id)) {
+    throw new PermissionDeniedError();
+  }
+}
+
+async function assertActivePermissionTarget(userId: string) {
+  if (!hasDatabase()) return;
+
+  const result = await query<{ status: string }>(
+    `select status
+     from users
+     where id = $1 and deleted_at is null
+     limit 1`,
+    [userId]
+  );
+
+  if (result.rows[0]?.status !== 'active') {
     throw new PermissionDeniedError();
   }
 }
@@ -250,6 +267,7 @@ export async function listEquipmentPermissions(actor?: SessionUser) {
 export async function grantEquipmentPermission(input: unknown, actor: SessionUser) {
   const body = permissionGrantSchema.parse(input);
   await assertEquipmentScope(actor, body.equipmentId);
+  await assertActivePermissionTarget(body.userId);
 
   if (!hasDatabase()) {
     const current = fallbackPermissions[body.userId] ?? [];
@@ -286,6 +304,7 @@ export async function grantEquipmentPermission(input: unknown, actor: SessionUse
 
 export async function revokeEquipmentPermission(input: unknown, actor: SessionUser) {
   const body = permissionRevokeSchema.parse(input);
+  await assertEquipmentScope(actor, body.equipmentId);
 
   if (!hasDatabase()) {
     fallbackPermissions[body.userId] = (fallbackPermissions[body.userId] ?? []).filter(
