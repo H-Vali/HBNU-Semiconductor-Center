@@ -34,6 +34,14 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
           select 'current'::text as period, current_start as starts_at, next_start as ends_at from bounds
           union all
           select 'previous'::text as period, previous_start as starts_at, current_start as ends_at from bounds
+        ),
+        usage_reservations as (
+          select r.starts_at, r.ends_at
+          from reservations r
+          join equipment e on e.id = r.equipment_id and e.deleted_at is null
+          join users u on u.id = r.user_id and u.deleted_at is null and u.status = 'active'
+          where r.deleted_at is null
+            and r.status = 'approved'
         )
         select
           p.period as "period",
@@ -41,10 +49,8 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
             extract(epoch from (least(r.ends_at, p.ends_at) - greatest(r.starts_at, p.starts_at))) / 3600
           )::numeric, 1), 0)::text as "hours"
         from periods p
-        left join reservations r
-          on r.deleted_at is null
-         and r.status = 'approved'
-         and r.starts_at < p.ends_at
+        left join usage_reservations r
+          on r.starts_at < p.ends_at
          and r.ends_at > p.starts_at
         group by p.period`
     ),

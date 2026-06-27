@@ -258,8 +258,7 @@ async function seedReferenceData() {
             when users.onboarding_status = 'active' then users.onboarding_status
             else excluded.onboarding_status
           end,
-          updated_at = now(),
-          deleted_at = null
+          updated_at = now()
       returning id`,
       [
         user.id,
