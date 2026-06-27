@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import { initialFaqs, initialNotices, initialQnaItems } from './content.js';
 import { closeDatabase, query } from './db.js';
 import { equipment, reservations } from './data.js';
+import { operationalDataSchemaStatements } from './operationalData.js';
 import { initialUsers } from './usersSeed.js';
 
 dotenv.config();
@@ -210,7 +211,8 @@ const statements = [
     answered_by text,
     deleted_at timestamptz
   )`,
-  `create index if not exists qna_items_created_idx on qna_items (created_at desc) where deleted_at is null`
+  `create index if not exists qna_items_created_idx on qna_items (created_at desc) where deleted_at is null`,
+  ...operationalDataSchemaStatements
 ];
 
 const defaultRoles = [

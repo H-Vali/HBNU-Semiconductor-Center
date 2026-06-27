@@ -781,26 +781,8 @@ function getPreviewEquipmentPermissionIds() {
   return ['eq-1', 'eq-2', 'eq-5', 'eq-14', 'eq-16', 'eq-19'];
 }
 
-function createPreviewEquipmentPermissions(): EquipmentPermissionMap {
-  const previewUserId = initialManagedUsers[0]?.id;
-  if (!previewUserId) return {};
-  const previewEquipmentIds = fallbackEquipment
-    .filter((item) => getPreviewEquipmentPermissionIds().includes(item.id))
-    .map((item) => item.id);
-  return { [previewUserId]: previewEquipmentIds };
-}
-
 function getPermissionGrantKey(userId: string, equipmentId: string) {
   return `${userId}:${equipmentId}`;
-}
-
-function createPermissionGrantMetaFromPermissions(permissions: EquipmentPermissionMap) {
-  const fallbackGrantedAt = new Date().toISOString();
-  return Object.fromEntries(
-    Object.entries(permissions).flatMap(([userId, equipmentIds]) => (
-      equipmentIds.map((equipmentId) => [getPermissionGrantKey(userId, equipmentId), { grantedAt: fallbackGrantedAt }])
-    ))
-  );
 }
 function formatProfessorLab(professor: string) {
   const name = professor.replace(/교수님|교수|Prof\.|Lab/gi, '').trim() || '백근우';
@@ -7206,32 +7188,16 @@ export function App() {
   const [initialGroup, setInitialGroup] = useState<EquipmentGroup>('process');
   const [deletedEquipmentIds, setDeletedEquipmentIds] = useState<string[]>([]);
   const [selectedConsumableMonth, setSelectedConsumableMonth] = useState('2026-06');
-  const [monthlyConsumables, setMonthlyConsumables] = useState<Record<string, ConsumableItem[]>>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEYS.consumablesMonthlyData);
-      return stored ? JSON.parse(stored) : { '2026-06': cloneConsumables() };
-    } catch {
-      return { '2026-06': cloneConsumables() };
-    }
-  });
+  const [monthlyConsumables, setMonthlyConsumables] = useState<Record<string, ConsumableItem[]>>({ '2026-06': [] });
   const [consumablesUpdatedAt, setConsumablesUpdatedAt] = useState(() => (
-    localStorage.getItem(STORAGE_KEYS.consumablesUpdatedAt) ?? new Date().toISOString()
+    new Date().toISOString()
   ));
   const [hasUnsavedConsumables, setHasUnsavedConsumables] = useState(false);
   const [saveFeedbackPhase, setSaveFeedbackPhase] = useState<'idle' | 'feedback' | 'returning'>('idle');
   const saveFeedbackTimers = useRef<number[]>([]);
   const [userSaveFeedbackPhase, setUserSaveFeedbackPhase] = useState<'idle' | 'feedback' | 'returning'>('idle');
   const userSaveFeedbackTimers = useRef<number[]>([]);
-  const [managedUsers, setManagedUsers] = useState<ManagedUser[]>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEYS.managedUsers);
-      if (!stored) return cloneManagedUsers();
-      const parsed = JSON.parse(stored) as ManagedUser[];
-      return parsed.length >= initialManagedUsers.length ? parsed : cloneManagedUsers();
-    } catch {
-      return cloneManagedUsers();
-    }
-  });
+  const [managedUsers, setManagedUsers] = useState<ManagedUser[]>([]);
   const [usersUpdatedAt, setUsersUpdatedAt] = useState(() => (
     localStorage.getItem(STORAGE_KEYS.usersUpdatedAt) ?? new Date().toISOString()
   ));
@@ -7259,36 +7225,9 @@ export function App() {
       return initialFaqItems;
     }
   });
-  const [equipmentPermissions, setEquipmentPermissions] = useState<EquipmentPermissionMap>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEYS.equipmentPermissions);
-      if (!stored) return createPreviewEquipmentPermissions();
-      const parsed = JSON.parse(stored) as EquipmentPermissionMap;
-      const totalGranted = Object.values(parsed).reduce((sum, equipmentIds) => sum + equipmentIds.length, 0);
-      return totalGranted > 0 ? parsed : createPreviewEquipmentPermissions();
-    } catch {
-      return createPreviewEquipmentPermissions();
-    }
-  });
-  const [equipmentPermissionGrantMeta, setEquipmentPermissionGrantMeta] = useState<EquipmentPermissionGrantMetaMap>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEYS.equipmentPermissionGrantMeta);
-      if (stored) return JSON.parse(stored) as EquipmentPermissionGrantMetaMap;
-      const initialMeta = createPermissionGrantMetaFromPermissions(equipmentPermissions);
-      localStorage.setItem(STORAGE_KEYS.equipmentPermissionGrantMeta, JSON.stringify(initialMeta));
-      return initialMeta;
-    } catch {
-      return createPermissionGrantMetaFromPermissions(equipmentPermissions);
-    }
-  });
-  const [, setEquipmentPermissionHistory] = useState<EquipmentPermissionHistoryRecord[]>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEYS.equipmentPermissionHistory);
-      return stored ? JSON.parse(stored) as EquipmentPermissionHistoryRecord[] : [];
-    } catch {
-      return [];
-    }
-  });
+  const [equipmentPermissions, setEquipmentPermissions] = useState<EquipmentPermissionMap>({});
+  const [equipmentPermissionGrantMeta, setEquipmentPermissionGrantMeta] = useState<EquipmentPermissionGrantMetaMap>({});
+  const [, setEquipmentPermissionHistory] = useState<EquipmentPermissionHistoryRecord[]>([]);
   const [sessionRole, setSessionRole] = useState<Role | null>(() => {
     const stored = localStorage.getItem(STORAGE_KEYS.sessionUser);
     if (!stored) return null;
@@ -7310,6 +7249,11 @@ export function App() {
         localStorage.removeItem(STORAGE_KEYS.sessionToken);
         localStorage.removeItem(STORAGE_KEYS.sessionUser);
         setSessionRole(null);
+        setEquipmentPermissions({});
+        setEquipmentPermissionGrantMeta({});
+        setEquipmentPermissionHistory([]);
+        setTrainingRequests([]);
+        setPenaltyRecords([]);
         return;
       }
 
@@ -7324,29 +7268,11 @@ export function App() {
     };
   }, []);
 
-  const [reservationEvents, setReservationEvents] = useState<ReservationEvent[]>(() => {
-    const previewTestReservations = createRealtimeTestReservations(fallbackEquipment);
-    const baseEvents = events.map((event) => ({
-      ...event,
-      status: normalizeReservationStatus(event.status),
-      equipmentId: fallbackEquipment.find((item) => event.title.includes(item.name))?.id ?? '',
-      createdBy: 'USER'
-    }));
-    return [...previewTestReservations, ...baseEvents];
-  });
+  const [reservationEvents, setReservationEvents] = useState<ReservationEvent[]>([]);
   const [trainingRequests, setTrainingRequests] = useState<ApiTrainingRequest[]>([]);
-  const [penaltyRecords, setPenaltyRecords] = useState<PenaltyRecord[]>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEYS.penaltyRecords);
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [penaltyRecords, setPenaltyRecords] = useState<PenaltyRecord[]>([]);
   const [showPenaltyNotice, setShowPenaltyNotice] = useState(false);
-  const [showPreviewPenaltyDemo, setShowPreviewPenaltyDemo] = useState(() => (
-    localStorage.getItem(STORAGE_KEYS.previewPenaltyDemoDismissed) !== 'true'
-  ));
+  const [showPreviewPenaltyDemo, setShowPreviewPenaltyDemo] = useState(false);
   const sessionUser = getStoredSessionUser();
   const sessionUserName = (() => {
     try {
@@ -7447,11 +7373,9 @@ export function App() {
     let isMounted = true;
     void apiGet<ManagedUser[]>('/users', localStorage.getItem(STORAGE_KEYS.sessionToken)).then((items) => {
       if (!isMounted || !items?.length) return;
-      setManagedUsers((current) => {
-        const next = mergeManagedUsers(current, items);
-        localStorage.setItem(STORAGE_KEYS.managedUsers, JSON.stringify(next));
-        return next;
-      });
+      const next = normalizeManagedUsers(items);
+      setManagedUsers(next);
+      localStorage.setItem(STORAGE_KEYS.managedUsers, JSON.stringify(next));
     });
     return () => {
       isMounted = false;
@@ -7460,6 +7384,12 @@ export function App() {
 
   useEffect(() => {
     const token = localStorage.getItem(STORAGE_KEYS.sessionToken);
+    setEquipmentPermissions({});
+    setEquipmentPermissionGrantMeta({});
+    setEquipmentPermissionHistory([]);
+    localStorage.removeItem(STORAGE_KEYS.equipmentPermissions);
+    localStorage.removeItem(STORAGE_KEYS.equipmentPermissionGrantMeta);
+    localStorage.removeItem(STORAGE_KEYS.equipmentPermissionHistory);
     if (!token || !sessionRole) return;
     let isMounted = true;
     void apiGet<EquipmentPermissionSnapshot>('/equipment-permissions', token).then((snapshot) => {
@@ -7474,10 +7404,7 @@ export function App() {
     let isMounted = true;
     void apiGet<ApiReservationEvent[]>('/reservations').then((items) => {
       if (!isMounted || !items) return;
-      setReservationEvents([
-        ...createRealtimeTestReservations(equipmentItems),
-        ...items.map(normalizeApiReservation)
-      ]);
+      setReservationEvents(items.map(normalizeApiReservation));
     });
     return () => {
       isMounted = false;
@@ -7498,6 +7425,39 @@ export function App() {
       isMounted = false;
     };
   }, [sessionRole]);
+
+  useEffect(() => {
+    const token = localStorage.getItem(STORAGE_KEYS.sessionToken);
+    if (!token || !sessionRole) {
+      setPenaltyRecords([]);
+      return;
+    }
+    let isMounted = true;
+    void apiGet<PenaltyRecord[]>('/penalties', token).then((items) => {
+      if (isMounted && items) setPenaltyRecords(items);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [sessionRole]);
+
+  useEffect(() => {
+    if (sessionRole !== 'ADMIN') return;
+    let isMounted = true;
+    const token = localStorage.getItem(STORAGE_KEYS.sessionToken);
+    void apiGet<ConsumableItem[]>(
+      `/consumables?month=${encodeURIComponent(selectedConsumableMonth)}`,
+      token
+    ).then((items) => {
+      if (!isMounted || !items) return;
+      setMonthlyConsumables((current) => ({ ...current, [selectedConsumableMonth]: items }));
+      setConsumablesUpdatedAt(new Date().toISOString());
+      setHasUnsavedConsumables(false);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedConsumableMonth, sessionRole]);
 
   function navigate(page: PageKey) {
     if (adminOnlyPages.has(page) && sessionRole !== 'ADMIN') {
@@ -7549,7 +7509,15 @@ export function App() {
   function logout() {
     localStorage.removeItem(STORAGE_KEYS.sessionToken);
     localStorage.removeItem(STORAGE_KEYS.sessionUser);
+    localStorage.removeItem(STORAGE_KEYS.equipmentPermissions);
+    localStorage.removeItem(STORAGE_KEYS.equipmentPermissionGrantMeta);
+    localStorage.removeItem(STORAGE_KEYS.equipmentPermissionHistory);
     setSessionRole(null);
+    setEquipmentPermissions({});
+    setEquipmentPermissionGrantMeta({});
+    setEquipmentPermissionHistory([]);
+    setTrainingRequests([]);
+    setPenaltyRecords([]);
     navigate('login');
   }
 
@@ -7603,34 +7571,6 @@ export function App() {
       ...currentOverrides,
       [equipmentId]: { ...(currentOverrides[equipmentId] ?? {}), ...patch }
     }));
-    if ('managerId' in patch) {
-      setEquipmentPermissions((current) => {
-        const next: EquipmentPermissionMap = Object.fromEntries(
-          Object.entries(current).map(([userId, equipmentIds]) => [
-            userId,
-            equipmentIds.filter((id) => id !== equipmentId)
-          ])
-        );
-        if (patch.managerId) {
-          const currentManagerIds = next[patch.managerId] ?? [];
-          next[patch.managerId] = currentManagerIds.includes(equipmentId)
-            ? currentManagerIds
-            : [...currentManagerIds, equipmentId];
-        }
-        localStorage.setItem(STORAGE_KEYS.equipmentPermissions, JSON.stringify(next));
-        return next;
-      });
-      setEquipmentPermissionGrantMeta((current) => {
-        const next: EquipmentPermissionGrantMetaMap = Object.fromEntries(
-          Object.entries(current).filter(([key]) => !key.endsWith(`:${equipmentId}`))
-        );
-        if (patch.managerId) {
-          next[getPermissionGrantKey(patch.managerId, equipmentId)] = { grantedAt: new Date().toISOString() };
-        }
-        localStorage.setItem(STORAGE_KEYS.equipmentPermissionGrantMeta, JSON.stringify(next));
-        return next;
-      });
-    }
     return true;
   }
 
@@ -7816,10 +7756,6 @@ export function App() {
   }
 
   async function deleteReservation(reservationId: string) {
-    if (reservationId.startsWith('preview-live-test-reservation-')) {
-      setReservationEvents((current) => current.filter((event) => event.id !== reservationId));
-      return true;
-    }
     const deletedEvent = await apiDelete<ApiReservationEvent>(
       `/reservations/${encodeURIComponent(reservationId)}`,
       localStorage.getItem(STORAGE_KEYS.sessionToken)
@@ -7841,32 +7777,35 @@ export function App() {
     const user = managedUsers.find((item) => item.id === userId);
     if (!user) return;
     const startsAt = new Date().toISOString();
-    const nextPenalty: PenaltyRecord = {
-      id: `penalty-${Date.now()}`,
+    void apiPost<PenaltyRecord>('/penalties', {
       userId,
-      userName: user.name,
-      userEmail: user.email,
       type,
       category,
       reason,
       startsAt,
-      endsAt: getPenaltyEndsAt(type, startsAt),
-      createdAt: startsAt
-    };
-    setPenaltyRecords((current) => {
-      const next = [nextPenalty, ...current];
-      localStorage.setItem(STORAGE_KEYS.penaltyRecords, JSON.stringify(next));
-      return next;
+      endsAt: getPenaltyEndsAt(type, startsAt)
+    }, localStorage.getItem(STORAGE_KEYS.sessionToken)).then((savedPenalty) => {
+      if (!savedPenalty) {
+        window.alert('패널티 기록을 DB에 저장하지 못했습니다. 관리자 권한과 입력값을 확인해 주세요.');
+        return;
+      }
+      setPenaltyRecords((current) => [savedPenalty, ...current.filter((record) => record.id !== savedPenalty.id)]);
     });
   }
 
   function revokePenalty(penaltyId: string) {
-    setPenaltyRecords((current) => {
-      const next = current.map((record) => (
-        record.id === penaltyId ? { ...record, revokedAt: new Date().toISOString() } : record
-      ));
-      localStorage.setItem(STORAGE_KEYS.penaltyRecords, JSON.stringify(next));
-      return next;
+    void apiPatch<PenaltyRecord>(
+      `/penalties/${encodeURIComponent(penaltyId)}/revoke`,
+      {},
+      localStorage.getItem(STORAGE_KEYS.sessionToken)
+    ).then((savedPenalty) => {
+      if (!savedPenalty) {
+        window.alert('패널티 해제 상태를 DB에 저장하지 못했습니다. 관리자 권한을 확인해 주세요.');
+        return;
+      }
+      setPenaltyRecords((current) => current.map((record) => (
+        record.id === penaltyId ? savedPenalty : record
+      )));
     });
   }
 
@@ -7875,7 +7814,7 @@ export function App() {
     setMonthlyConsumables((current) => (
       current[month]
         ? current
-        : { ...current, [month]: cloneConsumables(current[selectedConsumableMonth] ?? initialConsumables) }
+        : { ...current, [month]: [] }
     ));
   }
 
@@ -7890,61 +7829,9 @@ export function App() {
   }
 
   function applyEquipmentPermissionSnapshot(snapshot: EquipmentPermissionSnapshot) {
-    if (sessionRole !== 'MANAGER') {
-      setEquipmentPermissions(snapshot.permissions);
-      setEquipmentPermissionGrantMeta(snapshot.grantMeta);
-      setEquipmentPermissionHistory(snapshot.history);
-      localStorage.setItem(STORAGE_KEYS.equipmentPermissions, JSON.stringify(snapshot.permissions));
-      localStorage.setItem(STORAGE_KEYS.equipmentPermissionGrantMeta, JSON.stringify(snapshot.grantMeta));
-      localStorage.setItem(STORAGE_KEYS.equipmentPermissionHistory, JSON.stringify(snapshot.history));
-      return;
-    }
-
-    const scopedEquipmentIds = new Set<string>();
-    if (currentManagedUser) {
-      activeEquipmentItems
-        .filter((item) => item.managerId === currentManagedUser.id)
-        .forEach((item) => scopedEquipmentIds.add(item.id));
-    }
-    Object.values(snapshot.permissions).forEach((equipmentIds) => {
-      equipmentIds.forEach((equipmentId) => scopedEquipmentIds.add(equipmentId));
-    });
-    Object.keys(snapshot.grantMeta).forEach((key) => {
-      const equipmentId = key.slice(key.lastIndexOf(':') + 1);
-      if (equipmentId) scopedEquipmentIds.add(equipmentId);
-    });
-
-    setEquipmentPermissions((current) => {
-      const next: EquipmentPermissionMap = {};
-      Object.entries(current).forEach(([userId, equipmentIds]) => {
-        const keptEquipmentIds = equipmentIds.filter((equipmentId) => !scopedEquipmentIds.has(equipmentId));
-        if (keptEquipmentIds.length > 0) next[userId] = keptEquipmentIds;
-      });
-      Object.entries(snapshot.permissions).forEach(([userId, equipmentIds]) => {
-        const merged = new Set([...(next[userId] ?? []), ...equipmentIds]);
-        next[userId] = Array.from(merged);
-      });
-      localStorage.setItem(STORAGE_KEYS.equipmentPermissions, JSON.stringify(next));
-      return next;
-    });
-    setEquipmentPermissionGrantMeta((current) => {
-      const next: EquipmentPermissionGrantMetaMap = Object.fromEntries(
-        Object.entries(current).filter(([key]) => {
-          const equipmentId = key.slice(key.lastIndexOf(':') + 1);
-          return !scopedEquipmentIds.has(equipmentId);
-        })
-      );
-      Object.assign(next, snapshot.grantMeta);
-      localStorage.setItem(STORAGE_KEYS.equipmentPermissionGrantMeta, JSON.stringify(next));
-      return next;
-    });
-    setEquipmentPermissionHistory((current) => {
-      const historyById = new Map<string, EquipmentPermissionHistoryRecord>();
-      [...snapshot.history, ...current].forEach((record) => historyById.set(record.id, record));
-      const next = Array.from(historyById.values()).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-      localStorage.setItem(STORAGE_KEYS.equipmentPermissionHistory, JSON.stringify(next));
-      return next;
-    });
+    setEquipmentPermissions(snapshot.permissions);
+    setEquipmentPermissionGrantMeta(snapshot.grantMeta);
+    setEquipmentPermissionHistory(snapshot.history);
   }
 
   function updateConsumable(id: string, patch: Partial<ConsumableItem>) {
@@ -7996,10 +7883,18 @@ export function App() {
     setSaveFeedbackPhase('idle');
   }
 
-  function saveConsumables() {
+  async function saveConsumables() {
+    const savedItems = await apiPut<ConsumableItem[]>(
+      `/consumables/${encodeURIComponent(selectedConsumableMonth)}`,
+      { items: monthlyConsumables[selectedConsumableMonth] ?? [] },
+      localStorage.getItem(STORAGE_KEYS.sessionToken)
+    );
+    if (!savedItems) {
+      window.alert('소모품 데이터를 DB에 저장하지 못했습니다. 관리자 권한과 입력값을 확인해 주세요.');
+      return;
+    }
     const savedAt = new Date().toISOString();
-    localStorage.setItem(STORAGE_KEYS.consumablesMonthlyData, JSON.stringify(monthlyConsumables));
-    localStorage.setItem(STORAGE_KEYS.consumablesUpdatedAt, savedAt);
+    setMonthlyConsumables((current) => ({ ...current, [selectedConsumableMonth]: savedItems }));
     setConsumablesUpdatedAt(savedAt);
     setHasUnsavedConsumables(false);
     clearSaveFeedbackTimers();
@@ -8089,7 +7984,6 @@ export function App() {
       });
       setEquipmentPermissions((current) => {
         const { [id]: _deletedUserPermissions, ...next } = current;
-        localStorage.setItem(STORAGE_KEYS.equipmentPermissions, JSON.stringify(next));
         return next;
       });
       setUsersUpdatedAt(savedAt);

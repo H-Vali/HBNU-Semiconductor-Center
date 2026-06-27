@@ -57,6 +57,14 @@ import {
   scheduleTrainingRequest,
   TrainingRequestStateError
 } from './training.js';
+import {
+  createPenalty,
+  ensureOperationalDataSchema,
+  listConsumables,
+  listPenalties,
+  revokePenalty,
+  saveConsumables
+} from './operationalData.js';
 
 dotenv.config();
 
@@ -432,6 +440,51 @@ app.get('/admin/summary', requireAuth, requireRole(['ADMIN']), async (_req, res,
   }
 });
 
+app.get('/consumables', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
+  try {
+    const month = z.string().min(1).parse(req.query.month ?? new Date().toISOString().slice(0, 7));
+    res.json(await listConsumables(month));
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.put('/consumables/:month', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
+  try {
+    const { month } = z.object({ month: z.string().min(1) }).parse(req.params);
+    res.json(await saveConsumables(month, req.body));
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/penalties', requireAuth, async (req, res, next) => {
+  try {
+    res.json(await listPenalties(req.user!));
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/penalties', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
+  try {
+    res.status(201).json(await createPenalty(req.body, req.user!));
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.patch('/penalties/:id/revoke', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
+  try {
+    const { id } = z.object({ id: z.string().min(1) }).parse(req.params);
+    const penalty = await revokePenalty(id, req.user!);
+    if (!penalty) return res.status(404).json({ message: 'Penalty record not found' });
+    return res.json(penalty);
+  } catch (error) {
+    return next(error);
+  }
+});
+
 function logApiError(error: unknown, req: express.Request, res: express.Response) {
   const knownError = error instanceof Error ? error : null;
   console.error(JSON.stringify({
@@ -481,7 +534,7 @@ app.use((error: unknown, req: express.Request, res: express.Response, _next: exp
   return errorResponse(res, 500, { message: 'Internal server error' });
 });
 
-Promise.all([ensureEquipmentPermissionSchema(), ensureTrainingRequestSchema()])
+Promise.all([ensureEquipmentPermissionSchema(), ensureTrainingRequestSchema(), ensureOperationalDataSchema()])
   .then(() => {
     app.listen(port, () => {
       console.log(`HBNU API listening on ${port}`);
