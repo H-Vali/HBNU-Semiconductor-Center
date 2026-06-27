@@ -61,7 +61,7 @@ async function resetQaData() {
     await client.query(`update training_requests set deleted_at = now(), updated_at = now() where deleted_at is null`);
     await client.query(`update notices set deleted_at = now(), updated_at = now() where deleted_at is null`);
     await client.query(`update faqs set deleted_at = now(), updated_at = now() where deleted_at is null`);
-    await client.query(`update qna_items set deleted_at = now(), updated_at = now() where deleted_at is null`);
+    await client.query(`update qna_items set deleted_at = now() where deleted_at is null`);
     await client.query(`update file_assets set deleted_at = now(), updated_at = now() where deleted_at is null`);
     await client.query(`
       update penalty_records
