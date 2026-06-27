@@ -91,7 +91,7 @@ const rejectTrainingRequestSchema = z.object({
 const fallbackTrainingRequests: TrainingRequest[] = [];
 
 export class TrainingRequestStateError extends Error {
-  constructor(message = 'Training request cannot be completed from its current status') {
+  constructor(message = 'Training request cannot be changed from its current status') {
     super(message);
     this.name = 'TrainingRequestStateError';
   }
@@ -372,11 +372,18 @@ function updateFallbackTrainingRequest(id: string, patch: Partial<TrainingReques
   return fallbackTrainingRequests[index];
 }
 
+function assertTrainingRequestCanBeHandled(request: TrainingRequest) {
+  if (request.status !== 'requested' && request.status !== 'scheduled') {
+    throw new TrainingRequestStateError();
+  }
+}
+
 export async function scheduleTrainingRequest(id: string, input: unknown, actor: SessionUser) {
   const body = scheduleTrainingRequestSchema.parse(input);
   const request = await getTrainingRequest(id);
   if (!request) return null;
   await assertTrainingScope(actor, request.equipmentId);
+  assertTrainingRequestCanBeHandled(request);
 
   if (!hasDatabase()) {
     return updateFallbackTrainingRequest(id, {
@@ -400,7 +407,7 @@ export async function scheduleTrainingRequest(id: string, input: unknown, actor:
       handled_by = $6,
       rejected_reason = null,
       updated_at = now()
-     where id = $1 and deleted_at is null`,
+     where id = $1 and deleted_at is null and status in ('requested', 'scheduled')`,
     [id, body.scheduledDate, body.scheduledStart, body.scheduledEnd, body.scheduleChangeReason, actor.id]
   );
   return getTrainingRequest(id);
@@ -411,6 +418,7 @@ export async function rejectTrainingRequest(id: string, input: unknown, actor: S
   const request = await getTrainingRequest(id);
   if (!request) return null;
   await assertTrainingScope(actor, request.equipmentId);
+  assertTrainingRequestCanBeHandled(request);
 
   if (!hasDatabase()) {
     return updateFallbackTrainingRequest(id, {
@@ -427,7 +435,7 @@ export async function rejectTrainingRequest(id: string, input: unknown, actor: S
       rejected_reason = $2,
       handled_by = $3,
       updated_at = now()
-     where id = $1 and deleted_at is null`,
+     where id = $1 and deleted_at is null and status in ('requested', 'scheduled')`,
     [id, body.rejectedReason, actor.id]
   );
   return getTrainingRequest(id);
