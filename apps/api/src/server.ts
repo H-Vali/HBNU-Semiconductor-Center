@@ -8,6 +8,8 @@ import { requireAuth, requireRole } from './auth.js';
 import { getAdminSummary } from './adminSummary.js';
 import { ensureAuditLogSchema, listAuditLogs, writeAuditLog } from './auditLog.js';
 import { createFileAsset, deleteFileAsset, ensureFileAssetSchema, listFileAssets } from './fileAssets.js';
+import { buildEquipmentUsageAnalyticsWorkbook } from './equipmentUsageAnalytics.js';
+import { ensureFeatureFlagSchema, isFeatureEnabled } from './features.js';
 import {
   answerQnaItem,
   createFaq,
@@ -580,6 +582,22 @@ app.get('/admin/summary', requireAuth, requireRole(['ADMIN']), async (_req, res,
   }
 });
 
+app.get('/hidden/equipment-usage-analytics/export', requireAuth, requireRole(['ADMIN']), async (_req, res, next) => {
+  try {
+    const featureKey = 'equipment_usage_analytics_export';
+    if (!(await isFeatureEnabled(featureKey))) {
+      return res.status(403).json({ message: 'Feature disabled', feature: featureKey });
+    }
+
+    const workbook = await buildEquipmentUsageAnalyticsWorkbook();
+    res.setHeader('Content-Type', 'application/vnd.ms-excel; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="equipment-usage-analytics.xls"');
+    return res.send(workbook);
+  } catch (error) {
+    return next(error);
+  }
+});
+
 app.get('/consumables', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
   try {
     const month = z.string().min(1).parse(req.query.month ?? new Date().toISOString().slice(0, 7));
@@ -686,7 +704,14 @@ app.use((error: unknown, req: express.Request, res: express.Response, _next: exp
   return errorResponse(res, 500, { message: 'Internal server error' });
 });
 
-Promise.all([ensureEquipmentPermissionSchema(), ensureTrainingRequestSchema(), ensureOperationalDataSchema(), ensureAuditLogSchema(), ensureFileAssetSchema()])
+Promise.all([
+  ensureEquipmentPermissionSchema(),
+  ensureTrainingRequestSchema(),
+  ensureOperationalDataSchema(),
+  ensureAuditLogSchema(),
+  ensureFileAssetSchema(),
+  ensureFeatureFlagSchema()
+])
   .then(() => {
     app.listen(port, () => {
       console.log(`HBNU API listening on ${port}`);
