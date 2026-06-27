@@ -7093,6 +7093,7 @@ function ConsumablesPage({
   onMonthChange,
   onUpdateConsumable,
   onAddConsumable,
+  onDeleteConsumable,
   onImportConsumables,
   onSave
 }: {
@@ -7102,6 +7103,7 @@ function ConsumablesPage({
   onMonthChange: (month: string) => void;
   onUpdateConsumable: (id: string, patch: Partial<ConsumableItem>) => void;
   onAddConsumable: () => void;
+  onDeleteConsumable: (id: string) => void;
   onImportConsumables: (month: string, rows: ConsumableItem[]) => void;
   onSave: () => void;
 }) {
@@ -7231,6 +7233,7 @@ function ConsumablesPage({
               <th>사용량</th>
               <th>최소 기준</th>
               <th>메모</th>
+              <th>관리</th>
             </tr>
           </thead>
           <tbody>
@@ -7248,6 +7251,17 @@ function ConsumablesPage({
                   <td><strong>{used}</strong></td>
                   <td><input type="number" value={item.minimum} onChange={(event) => updateNumber(item.id, 'minimum', event.target.value)} aria-label={`${item.name} 최소 기준`} /></td>
                   <td><input value={item.note} onChange={(event) => onUpdateConsumable(item.id, { note: event.target.value })} aria-label={`${item.name} 메모`} /></td>
+                  <td>
+                    <button
+                      type="button"
+                      className="consumable-delete-button"
+                      onClick={() => onDeleteConsumable(item.id)}
+                      aria-label={`${item.name} 삭제`}
+                    >
+                      <Trash2 size={16} />
+                      삭제
+                    </button>
+                  </td>
                 </tr>
               );
             })}
@@ -7956,6 +7970,16 @@ export function App() {
     });
   }
 
+  function deleteConsumable(id: string) {
+    setHasUnsavedConsumables(true);
+    clearSaveFeedbackTimers();
+    setSaveFeedbackPhase('idle');
+    setMonthlyConsumables((current) => ({
+      ...current,
+      [selectedConsumableMonth]: (current[selectedConsumableMonth] ?? cloneConsumables()).filter((item) => item.id !== id)
+    }));
+  }
+
   function importConsumables(month: string, rows: ConsumableItem[]) {
     if (rows.length === 0) return;
     setSelectedConsumableMonth(month);
@@ -8375,6 +8399,7 @@ export function App() {
                 onMonthChange={changeConsumableMonth}
                 onUpdateConsumable={updateConsumable}
                 onAddConsumable={addConsumable}
+                onDeleteConsumable={deleteConsumable}
                 onImportConsumables={importConsumables}
                 onSave={saveConsumables}
               />

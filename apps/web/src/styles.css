@@ -8232,7 +8232,7 @@ select {
 
 .consumables-table {
   width: 100%;
-  min-width: 1180px;
+  min-width: 1280px;
   border-collapse: collapse;
 }
 
@@ -8429,6 +8429,29 @@ select {
 
 .consumables-table input[type='number'] {
   max-width: 6rem;
+}
+
+.consumable-delete-button {
+  display: inline-flex;
+  min-height: 2.35rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border-radius: 8px;
+  border: 1px solid rgba(248, 113, 113, 0.42);
+  background: rgba(127, 29, 29, 0.26);
+  padding: 0 0.75rem;
+  color: #fecaca;
+  font-size: 0.82rem;
+  font-weight: 900;
+  white-space: nowrap;
+  transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.consumable-delete-button:hover {
+  border-color: rgba(248, 113, 113, 0.84);
+  background: rgba(185, 28, 28, 0.38);
+  color: #fff1f2;
 }
 
 .consumable-status {
