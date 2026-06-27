@@ -91,7 +91,11 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
-app.get('/health', (_req, res) => res.json({ ok: true, api: 'apps/api', build: 'current-api' }));
+const healthPayload = { ok: true, api: 'apps/api', build: 'current-api' };
+
+app.head('/', (_req, res) => res.status(204).end());
+app.get('/', (_req, res) => res.json(healthPayload));
+app.get('/health', (_req, res) => res.json(healthPayload));
 
 app.get('/auth/config', (_req, res) => {
   res.json({ googleClientId: process.env.GOOGLE_CLIENT_ID ?? '' });
