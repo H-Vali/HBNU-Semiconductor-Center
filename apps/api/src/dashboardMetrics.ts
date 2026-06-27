@@ -5,6 +5,7 @@ export type DashboardMetrics = {
   monthlyUptimeDeltaPercent: number;
   certifiedUsers: number;
   totalUsers: number;
+  metricsVersion?: string;
 };
 
 function toNumber(value: unknown) {
@@ -18,11 +19,12 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
       monthlyUptimeHours: 0,
       monthlyUptimeDeltaPercent: 0,
       certifiedUsers: 0,
-      totalUsers: 0
+      totalUsers: 0,
+      metricsVersion: 'active-equipment-uptime-v2'
     };
   }
 
-  const [uptime, education] = await Promise.all([
+  const [uptime, education, activeEquipment] = await Promise.all([
     query<{ period: 'current' | 'previous'; hours: string }>(
       `with bounds as (
           select
@@ -84,11 +86,17 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
         select
           (select count(distinct user_id)::text from certified) as "certifiedUsers",
           (select count(*)::text from active_users) as "totalUsers"`
+    ),
+    query<{ count: string }>(
+      `select count(*)::text as count
+       from equipment
+       where deleted_at is null`
     )
   ]);
 
-  const currentHours = toNumber(uptime.rows.find((row) => row.period === 'current')?.hours);
-  const previousHours = toNumber(uptime.rows.find((row) => row.period === 'previous')?.hours);
+  const hasActiveEquipment = toNumber(activeEquipment.rows[0]?.count) > 0;
+  const currentHours = hasActiveEquipment ? toNumber(uptime.rows.find((row) => row.period === 'current')?.hours) : 0;
+  const previousHours = hasActiveEquipment ? toNumber(uptime.rows.find((row) => row.period === 'previous')?.hours) : 0;
   const monthlyUptimeDeltaPercent = previousHours > 0
     ? Math.round(((currentHours - previousHours) / previousHours) * 100)
     : 0;
@@ -97,6 +105,7 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
     monthlyUptimeHours: currentHours,
     monthlyUptimeDeltaPercent,
     certifiedUsers: toNumber(education.rows[0]?.certifiedUsers),
-    totalUsers: toNumber(education.rows[0]?.totalUsers)
+    totalUsers: toNumber(education.rows[0]?.totalUsers),
+    metricsVersion: 'active-equipment-uptime-v2'
   };
 }
