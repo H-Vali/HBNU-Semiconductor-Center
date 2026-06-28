@@ -8,7 +8,7 @@ function getSeoulDateKey(date = new Date()) {
   return formatter.format(date);
 }
 
-type NoticeAttachment = {
+export type NoticeAttachment = {
   id: string;
   name: string;
   size: number;
@@ -331,7 +331,9 @@ export function NoticeAdminPage({
   onDeleteNotice,
   onAddFaq,
   onUpdateFaq,
-  onDeleteFaq
+  onDeleteFaq,
+  onUploadAttachments,
+  onDeleteAttachment
 }: {
   operationItems: NoticeItem[];
   meetingItems: NoticeItem[];
@@ -342,6 +344,8 @@ export function NoticeAdminPage({
   onAddFaq: (item: FaqItem) => void;
   onUpdateFaq: (faqId: string, patch: Partial<FaqItem>) => void;
   onDeleteFaq: (faqId: string) => void;
+  onUploadAttachments?: (noticeId: string, files: FileList | null) => Promise<NoticeAttachment[]>;
+  onDeleteAttachment?: (attachment: NoticeAttachment) => Promise<void>;
 }) {
   const [activeBoard, setActiveBoard] = useState<NoticeAdminSectionKey>('operation');
   const [selectedNoticeId, setSelectedNoticeId] = useState('');
@@ -375,10 +379,19 @@ export function NoticeAdminPage({
     const summary = String(form.get('summary') ?? '').trim();
     const body = String(form.get('body') ?? '').trim();
     if (!title || !summary || !body) return;
+    const id = `${activeBoard}-notice-${Date.now()}`;
     const fileInput = formElement.elements.namedItem('attachments') as HTMLInputElement | null;
-    const attachments = await readNoticeAttachments(fileInput?.files ?? null);
+    let attachments: NoticeAttachment[] = [];
+    try {
+      attachments = onUploadAttachments
+        ? await onUploadAttachments(id, fileInput?.files ?? null)
+        : await readNoticeAttachments(fileInput?.files ?? null);
+    } catch {
+      window.alert('첨부파일 업로드에 실패했습니다. 파일 형식 또는 용량을 확인해 주세요.');
+      return;
+    }
     const item: NoticeItem = {
-      id: `${activeBoard}-notice-${Date.now()}`,
+      id,
       category: normalizeNoticeCategory(form.get('category') ?? meta.category),
       title,
       date: formatNoticeDate(String(form.get('date') ?? getSeoulDateKey())),
@@ -416,7 +429,16 @@ export function NoticeAdminPage({
   async function addAttachments(event: ChangeEvent<HTMLInputElement>) {
     if (isFaqBoard || !selectedNotice) return;
     const noticeBoard = activeBoard as NoticeBoardKey;
-    const attachments = await readNoticeAttachments(event.target.files);
+    let attachments: NoticeAttachment[] = [];
+    try {
+      attachments = onUploadAttachments
+        ? await onUploadAttachments(selectedNotice.id, event.target.files)
+        : await readNoticeAttachments(event.target.files);
+    } catch {
+      event.target.value = '';
+      window.alert('첨부파일 업로드에 실패했습니다. 파일 형식 또는 용량을 확인해 주세요.');
+      return;
+    }
     event.target.value = '';
     if (!attachments.length) return;
     onUpdateNotice(noticeBoard, selectedNotice.id, {
@@ -424,9 +446,18 @@ export function NoticeAdminPage({
     });
   }
 
-  function removeAttachment(attachmentId: string) {
+  async function removeAttachment(attachmentId: string) {
     if (isFaqBoard || !selectedNotice) return;
     const noticeBoard = activeBoard as NoticeBoardKey;
+    const attachment = selectedNotice.attachments?.find((item) => item.id === attachmentId);
+    if (attachment && onDeleteAttachment) {
+      try {
+        await onDeleteAttachment(attachment);
+      } catch {
+        window.alert('첨부파일 삭제에 실패했습니다. 다시 시도해 주세요.');
+        return;
+      }
+    }
     onUpdateNotice(noticeBoard, selectedNotice.id, {
       attachments: (selectedNotice.attachments ?? []).filter((attachment) => attachment.id !== attachmentId)
     });
@@ -585,7 +616,7 @@ export function NoticeAdminPage({
                             <a href={attachment.dataUrl} download={attachment.name} aria-label={`${attachment.name} 다운로드`}>
                               <Download size={15} />
                             </a>
-                            <button type="button" onClick={() => removeAttachment(attachment.id)} aria-label={`${attachment.name} 첨부 삭제`}>
+                            <button type="button" onClick={() => void removeAttachment(attachment.id)} aria-label={`${attachment.name} 첨부 삭제`}>
                               <Trash2 size={15} />
                             </button>
                           </div>

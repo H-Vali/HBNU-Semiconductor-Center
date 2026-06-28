@@ -10,6 +10,11 @@ type ApiOptions = RequestInit & {
   authToken?: string | null;
 };
 
+export function getApiUrl(path: string) {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return `${apiBaseUrl}${normalizedPath}`;
+}
+
 async function apiRequest<T>(path: string, options: ApiOptions = {}): Promise<T | null> {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   const headers = new Headers(options.headers);
@@ -23,7 +28,7 @@ async function apiRequest<T>(path: string, options: ApiOptions = {}): Promise<T 
   }
 
   try {
-    const response = await fetch(`${apiBaseUrl}${normalizedPath}`, {
+    const response = await fetch(getApiUrl(normalizedPath), {
       ...options,
       headers
     });

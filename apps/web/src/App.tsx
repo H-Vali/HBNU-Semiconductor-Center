@@ -57,10 +57,10 @@ import {
 import { equipment as fallbackEquipment, events, monthlyUsage, type EquipmentGroup, type EquipmentItem } from './data';
 import { STORAGE_KEYS } from './appStorage';
 import { initialConsumablesData, initialManagedUsersData } from './mockData';
-import { NoticeAdminPage, NoticePage, getNoticeCategoryTone, meetingNoticeItems, normalizeNoticeItems, noticeBoardMeta, noticeItems, operationNoticeItems, type NoticeBoardKey, type NoticeItem } from './pages/NoticePages';
+import { NoticeAdminPage, NoticePage, getNoticeCategoryTone, meetingNoticeItems, normalizeNoticeItems, noticeBoardMeta, noticeItems, operationNoticeItems, type NoticeAttachment, type NoticeBoardKey, type NoticeItem } from './pages/NoticePages';
 import { FaqPage, QnaPage, faqItems as initialFaqItems, type FaqItem } from './pages/InquiryPages';
 import { AuditLogPage } from './pages/AuditLogPage';
-import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from './apiClient';
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut, getApiUrl } from './apiClient';
 import { getReservationStatusLabel, normalizeReservationStatus, type ReservationStatus } from './utils/reservationStatus';
 
 type PageKey = 'home' | 'notice' | 'operationNotice' | 'meetingNotice' | 'center' | 'facility' | 'equipment' | 'training' | 'trainingManagement' | 'faq' | 'qna' | 'reservations' | 'managerPermissions' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'equipmentAdmin' | 'penalties' | 'noticeAdmin' | 'educationAdmin' | 'auditLogs' | 'login';
@@ -81,6 +81,18 @@ type ReservationForm = {
   userType?: 'internal' | 'external';
 };
 type ApiEquipmentItem = Partial<EquipmentItem> & { imageUrl?: string; usageConditions?: string; managerUserId?: string | null };
+type FileAsset = {
+  id: string;
+  ownerType: 'notice' | 'equipment' | 'qna' | 'training' | 'user' | 'general';
+  ownerId: string;
+  purpose: string;
+  fileName: string;
+  contentType: string;
+  byteSize: number;
+  storageKey: string;
+  publicUrl?: string | null;
+  createdAt: string;
+};
 type ReservationEvent = {
   id: string;
   title: string;
@@ -383,6 +395,22 @@ function getSeoulDateKey(date = new Date()) {
   }).formatToParts(date);
   const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
   return `${values.year}-${values.month}-${values.day}`;
+}
+
+function readFileAsBase64(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result ?? '');
+      resolve(result.includes(',') ? result.split(',')[1] : result);
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+function toFileAssetDownloadUrl(asset: FileAsset) {
+  return asset.publicUrl || getApiUrl(`/file-assets/${encodeURIComponent(asset.id)}/download`);
 }
 
 function formatReservationTime(value?: string) {
@@ -6126,13 +6154,15 @@ function EquipmentAdminPage({
   users,
   onAddEquipment,
   onDeleteEquipment,
-  onUpdateEquipment
+  onUpdateEquipment,
+  onUploadEquipmentImage
 }: {
   equipmentItems: EquipmentItem[];
   users: ManagedUser[];
   onAddEquipment: (item: EquipmentItem) => Promise<boolean>;
   onDeleteEquipment: (equipmentId: string) => Promise<boolean>;
   onUpdateEquipment: (equipmentId: string, patch: Partial<EquipmentItem>) => Promise<boolean>;
+  onUploadEquipmentImage: (equipmentId: string, file: File) => Promise<string | null>;
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [groupFilter, setGroupFilter] = useState<'전체' | EquipmentGroup>('전체');
@@ -6320,6 +6350,7 @@ function EquipmentAdminPage({
           equipment={selectedEquipment}
           users={users}
           mode="edit"
+          onUploadImage={onUploadEquipmentImage}
           onClose={() => setSelectedEquipment(null)}
           onSave={async (patch) => {
             const saved = await onUpdateEquipment(selectedEquipment.id, patch);
@@ -6332,13 +6363,14 @@ function EquipmentAdminPage({
           equipment={createEquipmentDraft()}
           users={users}
           mode="create"
+          onUploadImage={onUploadEquipmentImage}
           onClose={() => setShowCreateModal(false)}
           onSave={async (patch) => {
             const group = patch.group ?? 'process';
             const saved = await onAddEquipment({
               ...createEquipmentDraft(),
               ...patch,
-              id: `eq-${Date.now()}`,
+              id: String(patch.id ?? `eq-${Date.now()}`),
               name: String(patch.name ?? '').trim(),
               model: String(patch.model ?? '').trim(),
               location: String(patch.location ?? '').trim(),
@@ -6377,12 +6409,14 @@ function EquipmentEditModal({
   users,
   mode = 'edit',
   onClose,
+  onUploadImage,
   onSave
 }: {
   equipment: EquipmentItem;
   users: ManagedUser[];
   mode?: 'create' | 'edit';
   onClose: () => void;
+  onUploadImage?: (equipmentId: string, file: File) => Promise<string | null>;
   onSave: (patch: Partial<EquipmentItem>) => void | Promise<void>;
 }) {
   const [form, setForm] = useState({
@@ -6399,6 +6433,7 @@ function EquipmentEditModal({
     vendorContactPosition: equipment.vendorContactPosition ?? '',
     vendorContactPhone: equipment.vendorContactPhone ?? ''
   });
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const managerCandidates = users.filter((user) => user.roleLevel === '교원' || user.roleLevel === '대표' || user.roleLevel === '일반');
 
   function updateField<Key extends keyof typeof form>(key: Key, value: (typeof form)[Key]) {
@@ -6407,6 +6442,7 @@ function EquipmentEditModal({
 
   function loadImage(file?: File) {
     if (!file || !file.type.startsWith('image/')) return;
+    setSelectedImageFile(file);
     const reader = new FileReader();
     reader.onload = () => updateField('image', String(reader.result));
     reader.readAsDataURL(file);
@@ -6415,7 +6451,17 @@ function EquipmentEditModal({
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!form.name.trim() || !form.model.trim() || !form.location.trim()) return;
+    let image = form.image;
+    if (selectedImageFile && onUploadImage) {
+      const uploadedImage = await onUploadImage(equipment.id, selectedImageFile);
+      if (!uploadedImage) {
+        window.alert('장비 이미지 업로드에 실패했습니다. 파일 형식 또는 용량을 확인해 주세요.');
+        return;
+      }
+      image = uploadedImage;
+    }
     await onSave({
+      ...(mode === 'create' ? { id: equipment.id } : {}),
       name: form.name.trim(),
       model: form.model.trim(),
       location: form.location.trim(),
@@ -6423,7 +6469,7 @@ function EquipmentEditModal({
       groupName: form.group === 'process' ? '공정' : '검사·계측·패키징',
       category: form.group === 'process' ? '공정 장비' : '검사·계측·패키징 장비',
       status: form.status,
-      image: form.image,
+      image,
       description: form.description.trim(),
       managerId: form.managerId || undefined,
       vendorName: form.vendorName.trim() || undefined,
@@ -7676,6 +7722,60 @@ export function App() {
     navigate('equipment');
   }
 
+  async function uploadFileAsset(input: {
+    ownerType: FileAsset['ownerType'];
+    ownerId: string;
+    purpose: string;
+    file: File;
+  }) {
+    const dataBase64 = await readFileAsBase64(input.file);
+    return apiPost<FileAsset>('/file-assets/upload', {
+      ownerType: input.ownerType,
+      ownerId: input.ownerId,
+      purpose: input.purpose,
+      fileName: input.file.name,
+      contentType: input.file.type || 'application/octet-stream',
+      dataBase64
+    }, localStorage.getItem(STORAGE_KEYS.sessionToken));
+  }
+
+  async function uploadNoticeAttachments(noticeId: string, files: FileList | null): Promise<NoticeAttachment[]> {
+    if (!files?.length) return [];
+    const assets = await Promise.all(Array.from(files).map((file) => (
+      uploadFileAsset({ ownerType: 'notice', ownerId: noticeId, purpose: 'attachment', file })
+    )));
+    if (assets.some((asset) => !asset)) {
+      throw new Error('Notice attachment upload failed');
+    }
+    return (assets.filter(Boolean) as FileAsset[]).map((asset) => ({
+      id: asset.id,
+      name: asset.fileName,
+      size: asset.byteSize,
+      type: asset.contentType,
+      dataUrl: toFileAssetDownloadUrl(asset),
+      uploadedAt: asset.createdAt
+    }));
+  }
+
+  async function deleteNoticeAttachment(attachment: NoticeAttachment) {
+    if (!attachment.id.startsWith('file-')) return;
+    const deletedAsset = await apiDelete<FileAsset>(
+      `/file-assets/${encodeURIComponent(attachment.id)}`,
+      localStorage.getItem(STORAGE_KEYS.sessionToken)
+    );
+    if (!deletedAsset) throw new Error('Notice attachment delete failed');
+  }
+
+  async function uploadEquipmentImage(equipmentId: string, file: File) {
+    const asset = await uploadFileAsset({
+      ownerType: 'equipment',
+      ownerId: equipmentId,
+      purpose: 'image',
+      file
+    });
+    return asset ? toFileAssetDownloadUrl(asset) : null;
+  }
+
   async function addEquipment(item: EquipmentItem) {
     const savedItem = await apiPost<ApiEquipmentItem>(
       '/equipment',
@@ -8434,6 +8534,7 @@ export function App() {
                 onAddEquipment={addEquipment}
                 onDeleteEquipment={deleteEquipment}
                 onUpdateEquipment={updateEquipment}
+                onUploadEquipmentImage={uploadEquipmentImage}
               />
             ) : (
               <PlaceholderPage title="접근 권한이 없습니다" />
@@ -8480,6 +8581,8 @@ export function App() {
                 onAddFaq={addFaq}
                 onUpdateFaq={updateFaq}
                 onDeleteFaq={deleteFaq}
+                onUploadAttachments={uploadNoticeAttachments}
+                onDeleteAttachment={deleteNoticeAttachment}
               />
             ) : (
               <PlaceholderPage title="접근 권한이 없습니다" />
