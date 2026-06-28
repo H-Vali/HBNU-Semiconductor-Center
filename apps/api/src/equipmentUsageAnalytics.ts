@@ -203,7 +203,7 @@ export async function buildEquipmentUsageAnalyticsWorkbook() {
 <body>
   <table>
     <tr class="title"><td colspan="10">HBNU 장비사용통계</td></tr>
-    <tr class="meta"><td colspan="10">생성일시: ${escapeHtml(generatedAt)} / 기준: 승인 완료 예약</td></tr>
+    <tr class="meta"><td colspan="10">생성일시: ${escapeHtml(generatedAt)} / 기준: 확정 예약</td></tr>
     <tr class="spacer"><td colspan="10"></td></tr>
     ${tableSection(
       '1. 장비별 총 사용시간',

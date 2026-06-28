@@ -61,6 +61,6 @@ export const equipment = equipmentRows.map((item, index) => ({
 
 export const reservations = [
   { id: 'r-1', equipmentId: 'eq-3', title: 'mini SEM 분석', startsAt: '2026-06-17T10:00:00+09:00', endsAt: '2026-06-17T12:00:00+09:00', status: 'approved' },
-  { id: 'r-2', equipmentId: 'eq-16', title: 'Spin Coater 공정', startsAt: '2026-06-18T14:00:00+09:00', endsAt: '2026-06-18T16:00:00+09:00', status: 'pending' },
+  { id: 'r-2', equipmentId: 'eq-16', title: 'Spin Coater 공정', startsAt: '2026-06-18T14:00:00+09:00', endsAt: '2026-06-18T16:00:00+09:00', status: 'approved' },
   { id: 'r-3', equipmentId: 'eq-9', title: '반도체검사기 측정', startsAt: '2026-06-21T09:30:00+09:00', endsAt: '2026-06-21T11:30:00+09:00', status: 'approved' }
 ];

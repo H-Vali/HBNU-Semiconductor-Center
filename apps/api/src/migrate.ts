@@ -97,7 +97,7 @@ const statements = [
     purpose text not null,
     starts_at timestamptz not null,
     ends_at timestamptz not null,
-    status text not null default 'pending' check (status in ('pending', 'approved', 'maintenance', 'external', 'canceled')),
+    status text not null default 'approved' check (status in ('approved', 'maintenance', 'external', 'canceled')),
     created_by_role text,
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now(),
@@ -105,7 +105,7 @@ const statements = [
     check (starts_at < ends_at)
   )`,
   `alter table reservations drop constraint if exists reservations_status_check`,
-  `alter table reservations add constraint reservations_status_check check (status in ('pending', 'approved', 'rejected', 'maintenance', 'external', 'canceled'))`,
+  `alter table reservations add constraint reservations_status_check check (status in ('approved', 'maintenance', 'external', 'canceled'))`,
   `create index if not exists reservations_equipment_time_idx on reservations (equipment_id, starts_at, ends_at) where deleted_at is null`,
   `create index if not exists reservations_user_time_idx on reservations (user_id, starts_at desc) where deleted_at is null`,
   `create table if not exists equipment_permissions (
@@ -173,7 +173,7 @@ const statements = [
           equipment_id with =,
           tstzrange(starts_at, ends_at, '[)') with &&
         )
-        where (deleted_at is null and status in ('pending', 'approved', 'maintenance', 'external'));
+        where (deleted_at is null and status in ('approved', 'maintenance', 'external'));
     end if;
   end $$`,
   `create table if not exists notices (

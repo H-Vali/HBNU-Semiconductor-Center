@@ -86,7 +86,28 @@ export async function ensureFileAssetSchema() {
   }
 }
 
-export async function listFileAssets(input: { ownerType?: string; ownerId?: string }) {
+export function canAccessFileAsset(
+  asset: Pick<FileAsset, 'ownerType' | 'ownerId' | 'createdBy'>,
+  user: SessionUser
+) {
+  if (user.role === 'ADMIN') return true;
+
+  switch (asset.ownerType) {
+    case 'notice':
+    case 'general':
+    case 'qna':
+    case 'equipment':
+      return true;
+    case 'training':
+      return asset.createdBy === user.id || user.role === 'MANAGER';
+    case 'user':
+      return asset.ownerId === user.id || asset.createdBy === user.id;
+    default:
+      return false;
+  }
+}
+
+export async function listFileAssets(input: { ownerType?: string; ownerId?: string }, actor: SessionUser) {
   if (!hasDatabase()) return [];
   const params: unknown[] = [];
   const where = ['deleted_at is null'];
@@ -120,7 +141,7 @@ export async function listFileAssets(input: { ownerType?: string; ownerId?: stri
     limit 300`,
     params
   );
-  return result.rows.map(normalizeFileAsset);
+  return result.rows.map(normalizeFileAsset).filter((asset) => canAccessFileAsset(asset, actor));
 }
 
 export async function createFileAsset(input: unknown, actor: SessionUser) {

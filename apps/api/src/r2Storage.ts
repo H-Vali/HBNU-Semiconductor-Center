@@ -54,8 +54,7 @@ function getR2Config() {
     endpoint: endpoint.replace(/\/$/, ''),
     accessKeyId,
     secretAccessKey,
-    bucketName,
-    publicBaseUrl: process.env.R2_PUBLIC_BASE_URL?.replace(/\/$/, '') || ''
+    bucketName
   };
 }
 
@@ -173,9 +172,4 @@ export async function getR2Object(storageKey: string) {
     contentType: response.headers.get('content-type') ?? 'application/octet-stream',
     buffer: Buffer.from(await response.arrayBuffer())
   };
-}
-
-export function getR2PublicUrl(storageKey: string) {
-  const { publicBaseUrl } = getR2Config();
-  return publicBaseUrl ? `${publicBaseUrl}/${encodeStoragePath(storageKey)}` : undefined;
 }

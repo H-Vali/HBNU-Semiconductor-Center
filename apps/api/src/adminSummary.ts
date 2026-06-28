@@ -5,7 +5,7 @@ import { listUsers } from './users.js';
 
 export type AdminSummary = {
   users: number;
-  pendingReservations: number;
+  activeReservations: number;
   educationRequests: number;
   equipmentOnline: number;
 };
@@ -25,16 +25,16 @@ export async function getAdminSummary(): Promise<AdminSummary> {
 
     return {
       users: users.length,
-      pendingReservations: reservations.filter((item) => item.status === 'pending').length,
+      activeReservations: reservations.filter((item) => item.status === 'approved' || item.status === 'maintenance' || item.status === 'external').length,
       educationRequests: trainingRequests.filter((item) => item.status === 'requested' || item.status === 'scheduled').length,
       equipmentOnline: equipment.filter((item) => item.status === 'available').length
     };
   }
 
-  const [users, pendingReservations, educationRequests, equipmentOnline] = await Promise.all([
+  const [users, activeReservations, educationRequests, equipmentOnline] = await Promise.all([
     query<{ count: string }>('select count(*)::text as count from users where deleted_at is null'),
     query<{ count: string }>(
-      "select count(*)::text as count from reservations where deleted_at is null and status = 'pending'"
+      "select count(*)::text as count from reservations where deleted_at is null and status in ('approved', 'maintenance', 'external')"
     ),
     query<{ count: string }>(
       "select count(*)::text as count from training_requests where deleted_at is null and status in ('requested', 'scheduled')"
@@ -46,7 +46,7 @@ export async function getAdminSummary(): Promise<AdminSummary> {
 
   return {
     users: countRows(users),
-    pendingReservations: countRows(pendingReservations),
+    activeReservations: countRows(activeReservations),
     educationRequests: countRows(educationRequests),
     equipmentOnline: countRows(equipmentOnline)
   };

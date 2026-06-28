@@ -7,11 +7,11 @@ import { z } from 'zod';
 import { requireAuth, requireRole } from './auth.js';
 import { getAdminSummary } from './adminSummary.js';
 import { ensureAuditLogSchema, listAuditLogs, writeAuditLog } from './auditLog.js';
-import { createFileAsset, deleteFileAsset, ensureFileAssetSchema, getFileAsset, listFileAssets } from './fileAssets.js';
+import { canAccessFileAsset, createFileAsset, deleteFileAsset, ensureFileAssetSchema, getFileAsset, listFileAssets } from './fileAssets.js';
 import { buildEquipmentUsageAnalyticsWorkbook } from './equipmentUsageAnalytics.js';
 import { ensureFeatureFlagSchema, isFeatureEnabled } from './features.js';
 import { getDashboardMetrics } from './dashboardMetrics.js';
-import { deleteR2Object, getR2Object, getR2PublicUrl, prepareR2Upload, putR2Object } from './r2Storage.js';
+import { deleteR2Object, getR2Object, prepareR2Upload, putR2Object } from './r2Storage.js';
 import {
   answerQnaItem,
   createFaq,
@@ -35,7 +35,6 @@ import {
   getEquipment,
   listEquipment,
   listReservations,
-  updateReservationStatus,
   updateEquipment
 } from './core.js';
 import {
@@ -106,7 +105,15 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json({ limit: '40mb' }));
+const defaultJsonParser = express.json({ limit: '1mb' });
+const uploadJsonParser = express.json({ limit: '40mb' });
+
+app.use((req, res, next) => {
+  if (req.method === 'POST' && req.path === '/file-assets/upload') {
+    return next();
+  }
+  return defaultJsonParser(req, res, next);
+});
 
 const healthPayload = { ok: true, api: 'apps/api', build: 'current-api' };
 
@@ -397,21 +404,6 @@ app.post('/reservations', requireAuth, async (req, res, next) => {
   }
 });
 
-app.patch('/reservations/:id/status', requireAuth, requireRole(['ADMIN', 'MANAGER']), async (req, res, next) => {
-  try {
-    const { id } = z.object({ id: z.string() }).parse(req.params);
-    const reservation = await updateReservationStatus(id, req.body, req.user!);
-    if (!reservation) return res.status(404).json({ message: 'Reservation not found' });
-    await writeAuditLog(req.user!, 'RESERVATION_STATUS_UPDATE', 'reservation', id, {
-      status: reservation.status,
-      reason: typeof req.body?.reason === 'string' ? req.body.reason : undefined
-    });
-    return res.json(reservation);
-  } catch (error) {
-    return next(error);
-  }
-});
-
 app.get('/audit-logs', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
   try {
     const rawLimit = typeof req.query.limit === 'string' ? Number(req.query.limit) : 200;
@@ -421,13 +413,13 @@ app.get('/audit-logs', requireAuth, requireRole(['ADMIN']), async (req, res, nex
   }
 });
 
-app.get('/file-assets', async (req, res, next) => {
+app.get('/file-assets', requireAuth, async (req, res, next) => {
   try {
     const query = z.object({
-      ownerType: z.string().min(1),
-      ownerId: z.string().min(1)
+      ownerType: z.string().min(1).optional(),
+      ownerId: z.string().min(1).optional()
     }).parse(req.query);
-    res.json(await listFileAssets(query));
+    res.json(await listFileAssets(query, req.user!));
   } catch (error) {
     next(error);
   }
@@ -448,7 +440,7 @@ app.post('/file-assets', requireAuth, requireRole(['ADMIN', 'MANAGER']), async (
   }
 });
 
-app.post('/file-assets/upload', requireAuth, requireRole(['ADMIN', 'MANAGER']), async (req, res, next) => {
+app.post('/file-assets/upload', requireAuth, requireRole(['ADMIN', 'MANAGER']), uploadJsonParser, async (req, res, next) => {
   try {
     const upload = prepareR2Upload(req.body);
     await putR2Object(upload.storageKey, upload.buffer, upload.body.contentType);
@@ -461,7 +453,6 @@ app.post('/file-assets/upload', requireAuth, requireRole(['ADMIN', 'MANAGER']), 
       byteSize: upload.buffer.byteLength,
       storageProvider: 'r2',
       storageKey: upload.storageKey,
-      publicUrl: getR2PublicUrl(upload.storageKey),
       checksum: upload.checksum
     }, req.user!);
     await writeAuditLog(req.user!, 'FILE_ASSET_UPLOAD', 'file_asset', file.id, {
@@ -476,16 +467,20 @@ app.post('/file-assets/upload', requireAuth, requireRole(['ADMIN', 'MANAGER']), 
   }
 });
 
-app.get('/file-assets/:id/download', async (req, res, next) => {
+app.get('/file-assets/:id/download', requireAuth, async (req, res, next) => {
   try {
     const { id } = z.object({ id: z.string().min(1) }).parse(req.params);
     const file = await getFileAsset(id);
-    if (!file) return res.status(404).json({ message: 'File asset not found' });
-    if (file.publicUrl) return res.redirect(file.publicUrl);
+    if (!file || !canAccessFileAsset(file, req.user!)) {
+      return res.status(404).json({ message: 'File not found' });
+    }
+
+    if (file.storageProvider === 'external' && file.publicUrl) return res.redirect(file.publicUrl);
 
     const object = await getR2Object(file.storageKey);
     res.setHeader('Content-Type', file.contentType || object.contentType);
     res.setHeader('Content-Length', String(object.buffer.byteLength));
+    res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(file.fileName)}"`);
     return res.send(object.buffer);
   } catch (error) {

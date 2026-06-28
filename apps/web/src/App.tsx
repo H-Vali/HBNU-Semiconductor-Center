@@ -410,7 +410,7 @@ function readFileAsBase64(file: File) {
 }
 
 function toFileAssetDownloadUrl(asset: FileAsset) {
-  return asset.publicUrl || getApiUrl(`/file-assets/${encodeURIComponent(asset.id)}/download`);
+  return getApiUrl(`/file-assets/${encodeURIComponent(asset.id)}/download`);
 }
 
 function formatReservationTime(value?: string) {
@@ -1530,7 +1530,7 @@ function Hero({
               <span>인프라 <em>통합 관리</em> 시스템</span>
           </h2>
           <p className="hero-copy">
-            장비 소개·교육 인증·예약 승인·사용률 분석을 통합한 운영 플랫폼입니다.
+            장비 소개·교육 인증·예약 관리·사용률 분석을 통합한 운영 플랫폼입니다.
           </p>
         </div>
         <div className="hero-action-group">
@@ -5027,7 +5027,7 @@ function MyPage({
                   <div>
                     <p>{event.start.slice(0, 10)} · {formatReservationTime(event.start)}{event.end ? ` - ${formatReservationTime(event.end)}` : ''}</p>
                     <h3>{equipmentName}</h3>
-                    <span>{event.status === 'approved' ? '승인 완료' : '승인 대기'}</span>
+                    <span>{getReservationStatusLabel(event.status)}</span>
                   </div>
                   <button onClick={() => onCancelReservation(event.id)}>예약 취소</button>
                 </div>
@@ -5268,7 +5268,7 @@ function MyPageV2({
         </div>
         {accessItems.length === 0 && (
           <div className="mypage-empty-state">
-            <p>아직 장비 사용 교육 이수 권한이 없습니다. 교육신청 후 관리자 승인/이수 처리가 완료되면 장비별 권한이 표시됩니다.</p>
+            <p>아직 장비 사용 교육 이수 권한이 없습니다. 교육신청 후 담당자 이수 처리가 완료되면 장비별 권한이 표시됩니다.</p>
             <button type="button" onClick={() => onNavigate('training')}>교육신청 바로가기</button>
           </div>
         )}

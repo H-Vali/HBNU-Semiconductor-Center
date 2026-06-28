@@ -30,7 +30,6 @@ const actionLabels: Record<string, string> = {
   QNA_ANSWER: 'Q&A 답변',
   RESERVATION_CREATE: '예약 생성',
   RESERVATION_CANCEL: '예약 취소',
-  RESERVATION_STATUS_UPDATE: '예약 상태 변경',
   EQUIPMENT_PERMISSION_GRANT: '장비 권한 부여',
   EQUIPMENT_PERMISSION_REVOKE: '장비 권한 회수',
   EQUIPMENT_PERMISSION_SET: '장비 권한 일괄 저장',

@@ -38,6 +38,7 @@ export class ReservationPermissionError extends Error {
 }
 
 const reservationStatusSchema = z.enum(['pending', 'approved', 'rejected', 'maintenance', 'external', 'canceled']);
+const createReservationStatusSchema = z.enum(['maintenance', 'external']);
 const equipmentGroupSchema = z.enum(['process', 'metrology']);
 const equipmentStatusSchema = z.enum(['available', 'unavailable', 'maintenance']);
 
@@ -75,15 +76,10 @@ const createReservationSchema = z.object({
   purpose: z.string().min(5),
   title: z.string().min(1).optional(),
   userId: z.string().min(1).optional(),
-  status: reservationStatusSchema.optional()
+  status: createReservationStatusSchema.optional()
 }).refine((value) => new Date(value.startsAt) < new Date(value.endsAt), {
   message: 'Reservation end time must be after start time',
   path: ['endsAt']
-});
-
-const reservationStatusUpdateSchema = z.object({
-  status: reservationStatusSchema,
-  reason: z.string().trim().optional()
 });
 
 type CreateReservationInput = z.infer<typeof createReservationSchema>;
@@ -213,7 +209,7 @@ function mapFallbackReservation(row: FallbackReservation): ReservationView {
     purpose: row.purpose ?? row.title,
     startsAt: normalizeDate(row.startsAt),
     endsAt: normalizeDate(row.endsAt),
-    status: status.success ? status.data : 'pending',
+    status: status.success ? status.data : 'approved',
     createdByRole: row.createdByRole
   };
 }
@@ -236,7 +232,7 @@ function projectReservation(reservation: ReservationView, actor?: SessionUser) {
 }
 
 function hasReservationOverlap(input: CreateReservationInput, reservations: FallbackReservation[]) {
-  const blockingStatuses = new Set(['pending', 'approved', 'maintenance', 'external']);
+  const blockingStatuses = new Set(['approved', 'maintenance', 'external']);
   return reservations.some((reservation) =>
     reservation.equipmentId === input.equipmentId &&
     blockingStatuses.has(reservation.status) &&
@@ -251,22 +247,6 @@ function canAssignReservationOwner(user?: SessionUser) {
 
 function canCancelAnyReservation(user: SessionUser) {
   return user.role === 'ADMIN';
-}
-
-async function canManageReservationStatus(reservationId: string, user: SessionUser) {
-  if (user.role === 'ADMIN') return true;
-  if (user.role !== 'MANAGER') return false;
-  if (!hasDatabase()) return false;
-
-  const result = await query<{ managerUserId: string | null }>(
-    `select e.manager_user_id as "managerUserId"
-     from reservations r
-     join equipment e on e.id = r.equipment_id
-     where r.id = $1 and r.deleted_at is null and e.deleted_at is null
-     limit 1`,
-    [reservationId]
-  );
-  return result.rows[0]?.managerUserId === user.id;
 }
 
 async function getReservationEquipmentStatus(equipmentId: string) {
@@ -629,39 +609,5 @@ export async function cancelReservation(id: string, user: SessionUser) {
        starts_at as "startsAt", ends_at as "endsAt", status, created_by_role as "createdByRole"`,
     [id, canCancelAny, user.id]
   );
-  return result.rows[0] ? projectReservation(mapReservation(result.rows[0]), user) : null;
-}
-
-export async function updateReservationStatus(id: string, input: unknown, user: SessionUser) {
-  const body = reservationStatusUpdateSchema.parse(input);
-  if (!await canManageReservationStatus(id, user)) {
-    throw new ReservationPermissionError();
-  }
-
-  if (!hasDatabase()) {
-    const index = mutableFallbackReservations.findIndex((reservation) => reservation.id === id);
-    if (index === -1) return null;
-    mutableFallbackReservations[index] = {
-      ...mutableFallbackReservations[index],
-      status: body.status
-    };
-    return projectReservation(mapFallbackReservation(mutableFallbackReservations[index]), user);
-  }
-
-  const result = await query<ReservationRow>(
-    `update reservations
-     set status = $2,
-      deleted_at = case when $2 = 'canceled' then now() else deleted_at end,
-      updated_at = now()
-     where id = $1 and deleted_at is null
-     returning id, equipment_id as "equipmentId", user_id as "userId", title, purpose,
-       starts_at as "startsAt", ends_at as "endsAt", status, created_by_role as "createdByRole"`,
-    [id, body.status]
-  ).catch((error) => {
-    if (typeof error === 'object' && error && 'code' in error && error.code === '23P01') {
-      throw new ReservationOverlapError();
-    }
-    throw error;
-  });
   return result.rows[0] ? projectReservation(mapReservation(result.rows[0]), user) : null;
 }

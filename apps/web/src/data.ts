@@ -94,6 +94,6 @@ export const monthlyUsage = [
 
 export const events = [
   { id: '1', title: 'mini SEM 분석', equipmentId: 'eq-3', start: '2026-06-17T10:00:00', end: '2026-06-17T12:00:00', status: 'approved' },
-  { id: '2', title: 'Spin Coater 공정', equipmentId: 'eq-16', start: '2026-06-18T14:00:00', end: '2026-06-18T16:00:00', status: 'pending' },
+  { id: '2', title: 'Spin Coater 공정', equipmentId: 'eq-16', start: '2026-06-18T14:00:00', end: '2026-06-18T16:00:00', status: 'approved' },
   { id: '3', title: '반도체검사기 측정', equipmentId: 'eq-9', start: '2026-06-21T09:30:00', end: '2026-06-21T11:30:00', status: 'approved' }
 ];
