@@ -73,3 +73,20 @@ export function apiDelete<T>(path: string, authToken?: string | null) {
     authToken
   });
 }
+
+export async function apiGetBlob(pathOrUrl: string, authToken?: string | null) {
+  const headers = new Headers();
+  headers.set('Accept', '*/*');
+  if (authToken) {
+    headers.set('Authorization', `Bearer ${authToken}`);
+  }
+
+  const targetUrl = /^https?:\/\//i.test(pathOrUrl) ? pathOrUrl : getApiUrl(pathOrUrl);
+  try {
+    const response = await fetch(targetUrl, { headers });
+    if (!response.ok) return null;
+    return await response.blob();
+  } catch {
+    return null;
+  }
+}

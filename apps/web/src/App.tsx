@@ -60,7 +60,7 @@ import { initialConsumablesData, initialManagedUsersData } from './mockData';
 import { NoticeAdminPage, NoticePage, getNoticeCategoryTone, meetingNoticeItems, normalizeNoticeItems, noticeBoardMeta, noticeItems, operationNoticeItems, type NoticeAttachment, type NoticeBoardKey, type NoticeItem } from './pages/NoticePages';
 import { FaqPage, QnaPage, faqItems as initialFaqItems, type FaqItem } from './pages/InquiryPages';
 import { AuditLogPage } from './pages/AuditLogPage';
-import { apiDelete, apiGet, apiPatch, apiPost, apiPut, getApiUrl } from './apiClient';
+import { apiDelete, apiGet, apiGetBlob, apiPatch, apiPost, apiPut, getApiUrl } from './apiClient';
 import { getReservationStatusLabel, normalizeReservationStatus, type ReservationStatus } from './utils/reservationStatus';
 
 type PageKey = 'home' | 'notice' | 'operationNotice' | 'meetingNotice' | 'center' | 'facility' | 'equipment' | 'training' | 'trainingManagement' | 'faq' | 'qna' | 'reservations' | 'managerPermissions' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'equipmentAdmin' | 'penalties' | 'noticeAdmin' | 'educationAdmin' | 'auditLogs' | 'login';
@@ -411,6 +411,36 @@ function readFileAsBase64(file: File) {
 
 function toFileAssetDownloadUrl(asset: FileAsset) {
   return getApiUrl(`/file-assets/${encodeURIComponent(asset.id)}/download`);
+}
+
+function isProtectedFileAssetUrl(src?: string) {
+  return Boolean(src && src.includes('/file-assets/') && src.includes('/download'));
+}
+
+function AuthenticatedImage({ src, alt, className }: { src?: string; alt: string; className?: string }) {
+  const [objectUrl, setObjectUrl] = useState('');
+
+  useEffect(() => {
+    if (!src || !isProtectedFileAssetUrl(src)) {
+      setObjectUrl('');
+      return;
+    }
+
+    let revoked = false;
+    let currentObjectUrl = '';
+    void apiGetBlob(src, localStorage.getItem(STORAGE_KEYS.sessionToken)).then((blob) => {
+      if (!blob || revoked) return;
+      currentObjectUrl = URL.createObjectURL(blob);
+      setObjectUrl(currentObjectUrl);
+    });
+
+    return () => {
+      revoked = true;
+      if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
+    };
+  }, [src]);
+
+  return <img className={className} src={objectUrl || (isProtectedFileAssetUrl(src) ? undefined : src)} alt={alt} />;
 }
 
 function formatReservationTime(value?: string) {
@@ -2363,7 +2393,7 @@ function EquipmentPage({
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {activeItems.map((item) => (
           <article key={item.id} className="overflow-hidden rounded-lg border border-white/10 bg-surface/85">
-            <img className="h-40 w-full object-cover" src={item.image} alt={item.name} />
+            <AuthenticatedImage className="h-40 w-full object-cover" src={item.image} alt={item.name} />
             <div className="p-4">
               <div className="mb-3 flex items-start justify-between gap-3">
                 <div>
@@ -6568,7 +6598,7 @@ function EquipmentEditModal({
             <span>선택 사항 · 권장 1200 × 675px · 파일 선택 또는 드래그 앤 드롭</span>
             <input type="file" accept="image/*" onChange={(event) => loadImage(event.target.files?.[0])} />
           </label>
-          {form.image && <img className="equipment-edit-preview is-wide" src={form.image} alt={`${form.name} 미리보기`} />}
+          {form.image && <AuthenticatedImage className="equipment-edit-preview is-wide" src={form.image} alt={`${form.name} 미리보기`} />}
         </div>
         <div className="user-add-modal-actions">
           <button type="button" className="is-cancel" onClick={onClose}>취소</button>

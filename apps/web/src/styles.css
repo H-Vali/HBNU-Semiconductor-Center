@@ -6491,14 +6491,21 @@ select {
   gap: 0.5rem;
 }
 
-.notice-attachment-list a {
+.notice-attachment-list a,
+.notice-attachment-download {
+  border: 0;
+  background: transparent;
+  padding: 0;
   color: #bae6fd;
   font-size: 0.86rem;
   font-weight: 850;
+  font-family: inherit;
   text-decoration: none;
+  cursor: pointer;
 }
 
-.notice-attachment-list a:hover {
+.notice-attachment-list a:hover,
+.notice-attachment-download:hover {
   color: #5eead4;
 }
 
@@ -6875,7 +6882,8 @@ select {
   transition: all 0.25s ease;
 }
 
-.notice-admin-attachment-actions a:hover {
+.notice-admin-attachment-actions a:hover,
+.notice-admin-attachment-actions .notice-admin-download-button:hover {
   border-color: rgba(45, 212, 191, 0.45);
   color: #5eead4;
 }

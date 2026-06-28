@@ -1,6 +1,7 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { BookOpen, Download, Plus, Search, Trash2, UploadCloud, X } from 'lucide-react';
 import { STORAGE_KEYS } from '../appStorage';
+import { apiGetBlob } from '../apiClient';
 import type { FaqCategory, FaqItem } from './InquiryPages';
 
 function getSeoulDateKey(date = new Date()) {
@@ -261,7 +262,7 @@ export function NoticePage({
                 <ul className="notice-attachment-list">
                   {selectedNotice.attachments?.map((attachment) => (
                     <li key={attachment.id}>
-                      <a href={attachment.dataUrl} download={attachment.name}>{attachment.name}</a>
+                      <button type="button" className="notice-attachment-download" onClick={() => void downloadNoticeAttachment(attachment)}>{attachment.name}</button>
                       <span>{formatFileSize(attachment.size)}</span>
                     </li>
                   ))}
@@ -320,6 +321,28 @@ function readNoticeAttachments(files: FileList | null): Promise<NoticeAttachment
     reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(file);
   })));
+}
+
+async function downloadNoticeAttachment(attachment: NoticeAttachment) {
+  if (attachment.dataUrl.startsWith('data:') || attachment.dataUrl.startsWith('blob:')) {
+    const anchor = document.createElement('a');
+    anchor.href = attachment.dataUrl;
+    anchor.download = attachment.name;
+    anchor.click();
+    return;
+  }
+
+  const blob = await apiGetBlob(attachment.dataUrl, localStorage.getItem(STORAGE_KEYS.sessionToken));
+  if (!blob) {
+    window.alert('첨부파일을 다운로드하지 못했습니다. 로그인 상태를 확인해 주세요.');
+    return;
+  }
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = objectUrl;
+  anchor.download = attachment.name;
+  anchor.click();
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
 }
 
 export function NoticeAdminPage({
@@ -613,9 +636,9 @@ export function NoticeAdminPage({
                             <span>{formatFileSize(attachment.size)} · {attachment.type || 'file'}</span>
                           </div>
                           <div className="notice-admin-attachment-actions">
-                            <a href={attachment.dataUrl} download={attachment.name} aria-label={`${attachment.name} 다운로드`}>
+                            <button type="button" className="notice-admin-download-button" onClick={() => void downloadNoticeAttachment(attachment)} aria-label={`${attachment.name} 다운로드`}>
                               <Download size={15} />
-                            </a>
+                            </button>
                             <button type="button" onClick={() => void removeAttachment(attachment.id)} aria-label={`${attachment.name} 첨부 삭제`}>
                               <Trash2 size={15} />
                             </button>
