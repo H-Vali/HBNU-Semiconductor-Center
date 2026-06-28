@@ -64,6 +64,8 @@ import { apiDelete, apiGet, apiGetBlob, apiPatch, apiPost, apiPut, getApiUrl } f
 import { getReservationStatusLabel, normalizeReservationStatus, type ReservationStatus } from './utils/reservationStatus';
 
 type PageKey = 'home' | 'notice' | 'operationNotice' | 'meetingNotice' | 'center' | 'facility' | 'equipment' | 'training' | 'trainingManagement' | 'faq' | 'qna' | 'reservations' | 'managerPermissions' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'equipmentAdmin' | 'penalties' | 'noticeAdmin' | 'educationAdmin' | 'auditLogs' | 'login';
+const pageKeys: PageKey[] = ['home', 'notice', 'operationNotice', 'meetingNotice', 'center', 'facility', 'equipment', 'training', 'trainingManagement', 'faq', 'qna', 'reservations', 'managerPermissions', 'mypage', 'admin', 'users', 'permissions', 'consumables', 'equipmentAdmin', 'penalties', 'noticeAdmin', 'educationAdmin', 'auditLogs', 'login'];
+const validPageKeys = new Set<PageKey>(pageKeys);
 type Role = 'USER' | 'MANAGER' | 'ADMIN';
 type UsagePeriod = '24H' | '1W' | '1M';
 type EquipmentRuntimeStatus = 'active' | 'maintenance' | 'idle';
@@ -441,6 +443,22 @@ function AuthenticatedImage({ src, alt, className }: { src?: string; alt: string
   }, [src]);
 
   return <img className={className} src={objectUrl || (isProtectedFileAssetUrl(src) ? undefined : src)} alt={alt} />;
+}
+
+function getPageFromBrowserUrl(): PageKey {
+  if (typeof window === 'undefined') return 'home';
+  const page = new URLSearchParams(window.location.search).get('page');
+  return validPageKeys.has(page as PageKey) ? page as PageKey : 'home';
+}
+
+function getPageUrl(page: PageKey) {
+  const url = new URL(window.location.href);
+  if (page === 'home') {
+    url.searchParams.delete('page');
+  } else {
+    url.searchParams.set('page', page);
+  }
+  return `${url.pathname}${url.search}${url.hash}`;
 }
 
 function formatReservationTime(value?: string) {
@@ -7427,7 +7445,7 @@ function PlaceholderPage({ title }: { title: string }) {
 export function App() {
   const { items: equipmentItems, setItems: setEquipmentItems, source } = useEquipmentData();
   const dashboardMetrics = useDashboardMetrics();
-  const [activePage, setActivePage] = useState<PageKey>('home');
+  const [activePage, setActivePage] = useState<PageKey>(() => getPageFromBrowserUrl());
   const [loading, setLoading] = useState(false);
   const [globalAccessNotice, setGlobalAccessNotice] = useState<AccessRequirementNotice | null>(null);
   const [initialGroup, setInitialGroup] = useState<EquipmentGroup>('process');
@@ -7461,6 +7479,20 @@ export function App() {
       return null;
     }
   });
+
+  useEffect(() => {
+    const currentPage = getPageFromBrowserUrl();
+    window.history.replaceState({ page: currentPage }, '', getPageUrl(currentPage));
+
+    function handlePopState() {
+      setLoading(false);
+      setActivePage(getPageFromBrowserUrl());
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    }
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem(STORAGE_KEYS.sessionToken);
@@ -7534,6 +7566,7 @@ export function App() {
 
   useEffect(() => {
     if (sessionRole !== 'ADMIN' && adminOnlyPages.has(activePage)) {
+      window.history.replaceState({ page: 'home' }, '', getPageUrl('home'));
       setActivePage('home');
     }
   }, [activePage, sessionRole]);
@@ -7557,6 +7590,7 @@ export function App() {
           message: '마이페이지는 로그인 후 이용할 수 있습니다.',
           detail: '비로그인 방문자는 공지사항, 센터소개, 장비현황, FAQ/Q&A 목록만 읽기 전용으로 확인할 수 있습니다.'
         };
+    window.history.replaceState({ page: 'home' }, '', getPageUrl('home'));
     setActivePage('home');
     setGlobalAccessNotice({
       ...notice,
@@ -7687,6 +7721,7 @@ export function App() {
 
   function navigate(page: PageKey) {
     if (adminOnlyPages.has(page) && sessionRole !== 'ADMIN') {
+      window.history.replaceState({ page: 'home' }, '', getPageUrl('home'));
       setActivePage('home');
       return;
     }
@@ -7724,9 +7759,14 @@ export function App() {
       setShowPenaltyNotice(true);
       return;
     }
+    if (page === activePage) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     setLoading(true);
     window.setTimeout(() => {
       setActivePage(page);
+      window.history.pushState({ page }, '', getPageUrl(page));
       setLoading(false);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 520);
