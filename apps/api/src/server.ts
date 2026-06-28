@@ -106,7 +106,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json({ limit: '25mb' }));
+app.use(express.json({ limit: '40mb' }));
 
 const healthPayload = { ok: true, api: 'apps/api', build: 'current-api' };
 

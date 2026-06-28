@@ -12,7 +12,7 @@ export const r2UploadSchema = z.object({
 
 export type R2UploadInput = z.infer<typeof r2UploadSchema>;
 
-const maxUploadBytes = 20 * 1024 * 1024;
+const maxUploadBytes = 30 * 1024 * 1024;
 const allowedContentTypes = new Set([
   'application/pdf',
   'image/jpeg',
@@ -22,7 +22,9 @@ const allowedContentTypes = new Set([
   'text/plain',
   'text/csv',
   'application/vnd.ms-excel',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation'
 ]);
 
 function sha256Hex(input: Buffer | string) {
