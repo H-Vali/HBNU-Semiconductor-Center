@@ -7,10 +7,11 @@ import { z } from 'zod';
 import { requireAuth, requireRole } from './auth.js';
 import { getAdminSummary } from './adminSummary.js';
 import { ensureAuditLogSchema, listAuditLogs, writeAuditLog } from './auditLog.js';
-import { createFileAsset, deleteFileAsset, ensureFileAssetSchema, listFileAssets } from './fileAssets.js';
+import { createFileAsset, deleteFileAsset, ensureFileAssetSchema, getFileAsset, listFileAssets } from './fileAssets.js';
 import { buildEquipmentUsageAnalyticsWorkbook } from './equipmentUsageAnalytics.js';
 import { ensureFeatureFlagSchema, isFeatureEnabled } from './features.js';
 import { getDashboardMetrics } from './dashboardMetrics.js';
+import { deleteR2Object, getR2Object, getR2PublicUrl, prepareR2Upload, putR2Object } from './r2Storage.js';
 import {
   answerQnaItem,
   createFaq,
@@ -105,7 +106,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json());
+app.use(express.json({ limit: '25mb' }));
 
 const healthPayload = { ok: true, api: 'apps/api', build: 'current-api' };
 
@@ -447,11 +448,67 @@ app.post('/file-assets', requireAuth, requireRole(['ADMIN', 'MANAGER']), async (
   }
 });
 
+app.post('/file-assets/upload', requireAuth, requireRole(['ADMIN', 'MANAGER']), async (req, res, next) => {
+  try {
+    const upload = prepareR2Upload(req.body);
+    await putR2Object(upload.storageKey, upload.buffer, upload.body.contentType);
+    const file = await createFileAsset({
+      ownerType: upload.body.ownerType,
+      ownerId: upload.body.ownerId,
+      purpose: upload.body.purpose,
+      fileName: upload.body.fileName,
+      contentType: upload.body.contentType,
+      byteSize: upload.buffer.byteLength,
+      storageProvider: 'r2',
+      storageKey: upload.storageKey,
+      publicUrl: getR2PublicUrl(upload.storageKey),
+      checksum: upload.checksum
+    }, req.user!);
+    await writeAuditLog(req.user!, 'FILE_ASSET_UPLOAD', 'file_asset', file.id, {
+      ownerType: file.ownerType,
+      ownerId: file.ownerId,
+      storageKey: file.storageKey,
+      byteSize: file.byteSize
+    });
+    res.status(201).json(file);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/file-assets/:id/download', async (req, res, next) => {
+  try {
+    const { id } = z.object({ id: z.string().min(1) }).parse(req.params);
+    const file = await getFileAsset(id);
+    if (!file) return res.status(404).json({ message: 'File asset not found' });
+    if (file.publicUrl) return res.redirect(file.publicUrl);
+
+    const object = await getR2Object(file.storageKey);
+    res.setHeader('Content-Type', file.contentType || object.contentType);
+    res.setHeader('Content-Length', String(object.buffer.byteLength));
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(file.fileName)}"`);
+    return res.send(object.buffer);
+  } catch (error) {
+    return next(error);
+  }
+});
+
 app.delete('/file-assets/:id', requireAuth, requireRole(['ADMIN', 'MANAGER']), async (req, res, next) => {
   try {
     const { id } = z.object({ id: z.string().min(1) }).parse(req.params);
     const file = await deleteFileAsset(id, req.user!);
     if (!file) return res.status(404).json({ message: 'File asset not found' });
+    if (file.storageProvider === 'r2') {
+      await deleteR2Object(file.storageKey).catch((error) => {
+        console.warn(JSON.stringify({
+          level: 'warn',
+          type: 'r2_delete_failed',
+          requestId: res.locals.requestId,
+          storageKey: file.storageKey,
+          message: error instanceof Error ? error.message : String(error)
+        }));
+      });
+    }
     await writeAuditLog(req.user!, 'FILE_ASSET_DELETE', 'file_asset', id, {
       ownerType: file.ownerType,
       ownerId: file.ownerId,

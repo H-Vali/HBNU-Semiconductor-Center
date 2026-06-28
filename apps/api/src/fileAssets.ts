@@ -199,3 +199,28 @@ export async function deleteFileAsset(id: string, actor: SessionUser) {
   );
   return result.rows[0] ? normalizeFileAsset(result.rows[0]) : null;
 }
+
+export async function getFileAsset(id: string) {
+  if (!hasDatabase()) return null;
+  const result = await query<FileAssetRow>(
+    `select
+      id,
+      owner_type as "ownerType",
+      owner_id as "ownerId",
+      purpose,
+      file_name as "fileName",
+      content_type as "contentType",
+      byte_size as "byteSize",
+      storage_provider as "storageProvider",
+      storage_key as "storageKey",
+      public_url as "publicUrl",
+      checksum,
+      created_by as "createdBy",
+      created_at as "createdAt"
+    from file_assets
+    where id = $1 and deleted_at is null
+    limit 1`,
+    [id]
+  );
+  return result.rows[0] ? normalizeFileAsset(result.rows[0]) : null;
+}
