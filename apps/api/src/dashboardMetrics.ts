@@ -20,41 +20,15 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
       monthlyUptimeDeltaPercent: 0,
       certifiedUsers: 0,
       totalUsers: 0,
-      metricsVersion: 'active-equipment-uptime-v2'
+      metricsVersion: 'equipment-setting-usage-hours-v1'
     };
   }
 
-  const [uptime, education, activeEquipment] = await Promise.all([
-    query<{ period: 'current' | 'previous'; hours: string }>(
-      `with bounds as (
-          select
-            (date_trunc('month', now() at time zone 'Asia/Seoul') at time zone 'Asia/Seoul') as current_start,
-            ((date_trunc('month', now() at time zone 'Asia/Seoul') + interval '1 month') at time zone 'Asia/Seoul') as next_start,
-            ((date_trunc('month', now() at time zone 'Asia/Seoul') - interval '1 month') at time zone 'Asia/Seoul') as previous_start
-        ),
-        periods as (
-          select 'current'::text as period, current_start as starts_at, next_start as ends_at from bounds
-          union all
-          select 'previous'::text as period, previous_start as starts_at, current_start as ends_at from bounds
-        ),
-        usage_reservations as (
-          select r.starts_at, r.ends_at
-          from reservations r
-          join equipment e on e.id = r.equipment_id and e.deleted_at is null
-          join users u on u.id = r.user_id and u.deleted_at is null and u.status = 'active'
-          where r.deleted_at is null
-            and r.status = 'approved'
-        )
-        select
-          p.period as "period",
-          coalesce(round(sum(
-            extract(epoch from (least(r.ends_at, p.ends_at) - greatest(r.starts_at, p.starts_at))) / 3600
-          )::numeric, 1), 0)::text as "hours"
-        from periods p
-        left join usage_reservations r
-          on r.starts_at < p.ends_at
-         and r.ends_at > p.starts_at
-        group by p.period`
+  const [usage, education] = await Promise.all([
+    query<{ hours: string }>(
+      `select coalesce(sum(greatest(usage_hours, 0)), 0)::text as "hours"
+       from equipment
+       where deleted_at is null`
     ),
     query<{ certifiedUsers: string; totalUsers: string }>(
       `with active_users as (
@@ -86,26 +60,16 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
         select
           (select count(distinct user_id)::text from certified) as "certifiedUsers",
           (select count(*)::text from active_users) as "totalUsers"`
-    ),
-    query<{ count: string }>(
-      `select count(*)::text as count
-       from equipment
-       where deleted_at is null`
     )
   ]);
 
-  const hasActiveEquipment = toNumber(activeEquipment.rows[0]?.count) > 0;
-  const currentHours = hasActiveEquipment ? toNumber(uptime.rows.find((row) => row.period === 'current')?.hours) : 0;
-  const previousHours = hasActiveEquipment ? toNumber(uptime.rows.find((row) => row.period === 'previous')?.hours) : 0;
-  const monthlyUptimeDeltaPercent = previousHours > 0
-    ? Math.round(((currentHours - previousHours) / previousHours) * 100)
-    : 0;
+  const currentHours = toNumber(usage.rows[0]?.hours);
 
   return {
     monthlyUptimeHours: currentHours,
-    monthlyUptimeDeltaPercent,
+    monthlyUptimeDeltaPercent: 0,
     certifiedUsers: toNumber(education.rows[0]?.certifiedUsers),
     totalUsers: toNumber(education.rows[0]?.totalUsers),
-    metricsVersion: 'active-equipment-uptime-v2'
+    metricsVersion: 'equipment-setting-usage-hours-v1'
   };
 }
