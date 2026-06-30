@@ -701,6 +701,9 @@ function CalendarReservationEventLabel({ timeText, title }: { timeText: string; 
 }
 
 function renderReservationCalendarEvent(arg: EventContentArg) {
+  if (arg.event.extendedProps.hideLabel) {
+    return null;
+  }
   return <CalendarReservationEventLabel timeText="" title={arg.event.title || '예약'} />;
 }
 
@@ -747,19 +750,38 @@ function getReservationCalendarTitle(event: ReservationEvent, equipmentItems: Eq
   return timeRange ? `${baseTitle} (${timeRange})` : baseTitle;
 }
 
+function formatReservationCalendarDate(dateKey: string) {
+  const [, month, day] = dateKey.split('-');
+  return `${Number(month)}.${Number(day)}`;
+}
+
+function getMultiDayReservationCalendarTitle(event: ReservationEvent, equipmentItems: EquipmentItem[]) {
+  const baseTitle = event.title && event.title !== '예약'
+    ? event.title
+    : `${getReservationEquipmentName(event, equipmentItems)} 예약`;
+  const startDate = formatReservationCalendarDate(event.start.slice(0, 10));
+  const endDate = formatReservationCalendarDate(getReservationEndDateKey(event));
+  const startTime = formatReservationTime(event.start);
+  const endTime = formatReservationTime(event.end);
+  const dateTimeRange = endTime
+    ? `${startDate} / ${startTime} ~${endDate} / ${endTime}`
+    : `${startDate} / ${startTime} ~${endDate}`;
+  return `${baseTitle} (${dateTimeRange})`;
+}
+
 function buildReservationCalendarEvents(events: ReservationEvent[], equipmentItems: EquipmentItem[]) {
   return events.flatMap((event) => {
     const multiDay = isMultiDayReservation(event);
-    const title = getReservationCalendarTitle(event, equipmentItems);
     const startDateKey = event.start.slice(0, 10);
     const endDateKey = getReservationEndDateKey(event);
     if (multiDay) {
       const dateKeys = getDateKeysInRange(startDateKey, endDateKey);
+      const title = getMultiDayReservationCalendarTitle(event, equipmentItems);
       return dateKeys.map((dateKey, index) => ({
         ...event,
         id: `${event.id}-calendar-${dateKey}`,
         groupId: event.id,
-        title,
+        title: index === 0 ? title : '',
         start: dateKey,
         end: addDaysToDateKey(dateKey, 1),
         allDay: true,
@@ -769,10 +791,12 @@ function buildReservationCalendarEvents(events: ReservationEvent[], equipmentIte
         originalReservationId: event.id,
         multiDaySegment: true,
         segmentStart: index === 0,
-        segmentEnd: index === dateKeys.length - 1
+        segmentEnd: index === dateKeys.length - 1,
+        hideLabel: index > 0
       }));
     }
 
+    const title = getReservationCalendarTitle(event, equipmentItems);
     return {
       ...event,
       title,
