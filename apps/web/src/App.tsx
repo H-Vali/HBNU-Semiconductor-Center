@@ -701,9 +701,6 @@ function CalendarReservationEventLabel({ timeText, title }: { timeText: string; 
 }
 
 function renderReservationCalendarEvent(arg: EventContentArg) {
-  if (arg.event.extendedProps.hideLabel) {
-    return null;
-  }
   return <CalendarReservationEventLabel timeText="" title={arg.event.title || '예약'} />;
 }
 
@@ -714,16 +711,6 @@ function addDaysToDateKey(dateKey: string, days: number) {
   const nextMonth = String(date.getMonth() + 1).padStart(2, '0');
   const nextDay = String(date.getDate()).padStart(2, '0');
   return `${nextYear}-${nextMonth}-${nextDay}`;
-}
-
-function getDateKeysInRange(startDateKey: string, endDateKey: string) {
-  const dateKeys: string[] = [];
-  let currentDateKey = startDateKey;
-  while (currentDateKey <= endDateKey) {
-    dateKeys.push(currentDateKey);
-    currentDateKey = addDaysToDateKey(currentDateKey, 1);
-  }
-  return dateKeys;
 }
 
 function getReservationEndDateKey(event: ReservationEvent) {
@@ -775,25 +762,18 @@ function buildReservationCalendarEvents(events: ReservationEvent[], equipmentIte
     const startDateKey = event.start.slice(0, 10);
     const endDateKey = getReservationEndDateKey(event);
     if (multiDay) {
-      const dateKeys = getDateKeysInRange(startDateKey, endDateKey);
       const title = getMultiDayReservationCalendarTitle(event, equipmentItems);
-      return dateKeys.map((dateKey, index) => ({
+      return {
         ...event,
-        id: `${event.id}-calendar-${dateKey}`,
-        groupId: event.id,
-        title: index === 0 ? title : '',
-        start: dateKey,
-        end: addDaysToDateKey(dateKey, 1),
+        title,
+        start: startDateKey,
+        end: addDaysToDateKey(endDateKey, 1),
         allDay: true,
         display: 'block',
         originalStart: event.start,
         originalEnd: event.end ?? event.start,
-        originalReservationId: event.id,
-        multiDaySegment: true,
-        segmentStart: index === 0,
-        segmentEnd: index === dateKeys.length - 1,
-        hideLabel: index > 0
-      }));
+        originalReservationId: event.id
+      };
     }
 
     const title = getReservationCalendarTitle(event, equipmentItems);
@@ -831,9 +811,6 @@ function getReservationCalendarEventClassNames(arg: CalendarEventClassArg) {
   return [
     arg.event.extendedProps.status === 'maintenance' ? 'is-maintenance-event' : '',
     arg.event.extendedProps.status === 'external' ? 'is-external-event' : '',
-    arg.event.extendedProps.multiDaySegment ? 'is-multi-day-segment' : '',
-    arg.event.extendedProps.segmentStart ? 'is-segment-start' : '',
-    arg.event.extendedProps.segmentEnd ? 'is-segment-end' : '',
     isReservationCalendarEventLive(arg) ? 'is-live-event' : ''
   ].filter(Boolean);
 }

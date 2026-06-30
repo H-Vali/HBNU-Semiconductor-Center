@@ -2188,45 +2188,6 @@ select {
   padding: 0.08rem 0.35rem;
 }
 
-.fc .fc-daygrid-event.is-multi-day-segment {
-  position: relative;
-  margin-left: 0;
-  margin-right: 0;
-  border-radius: 0;
-  overflow: visible;
-}
-
-.fc .fc-daygrid-event.is-multi-day-segment.is-segment-start {
-  z-index: 3;
-  border-bottom-left-radius: 6px;
-  border-top-left-radius: 6px;
-}
-
-.fc .fc-daygrid-event.is-multi-day-segment:not(.is-segment-start) {
-  z-index: 1;
-}
-
-.fc .fc-daygrid-event.is-multi-day-segment.is-segment-end {
-  border-bottom-right-radius: 6px;
-  border-top-right-radius: 6px;
-}
-
-.fc .fc-daygrid-event.is-multi-day-segment .fc-event-main {
-  overflow: visible;
-}
-
-.fc .fc-daygrid-event.is-multi-day-segment.is-segment-start .calendar-event-slide,
-.fc .fc-daygrid-event.is-multi-day-segment.is-segment-start .calendar-event-slide-window,
-.fc .fc-daygrid-event.is-multi-day-segment.is-segment-start .calendar-event-slide-track {
-  width: max-content;
-  max-width: none;
-  overflow: visible;
-}
-
-.fc .fc-daygrid-event.is-multi-day-segment.is-segment-start .calendar-event-slide.is-overflowing .calendar-event-slide-track {
-  animation: none;
-}
-
 .fc .fc-daygrid-block-event .fc-event-main {
   display: flex;
   align-items: center;
