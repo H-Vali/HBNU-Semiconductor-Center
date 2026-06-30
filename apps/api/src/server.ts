@@ -137,7 +137,12 @@ app.use((req, res, next) => {
   return defaultJsonParser(req, res, next);
 });
 
-const healthPayload = { ok: true, api: 'apps/api', build: 'current-api' };
+const healthPayload = {
+  ok: true,
+  api: 'apps/api',
+  build: process.env.RENDER_GIT_COMMIT ?? process.env.COMMIT_SHA ?? 'local',
+  schema: 'core-schema-sequential-v1'
+};
 
 app.head('/', (_req, res) => res.status(204).end());
 app.get('/', (_req, res) => res.json(healthPayload));
@@ -741,6 +746,16 @@ app.patch('/penalties/:id/revoke', requireAuth, requireRole(['ADMIN']), async (r
 
 function logApiError(error: unknown, req: express.Request, res: express.Response) {
   const knownError = error instanceof Error ? error : null;
+  const databaseError = typeof error === 'object' && error !== null
+    ? error as {
+      code?: unknown;
+      detail?: unknown;
+      table?: unknown;
+      column?: unknown;
+      constraint?: unknown;
+      routine?: unknown;
+    }
+    : null;
   console.error(JSON.stringify({
     level: 'error',
     type: 'exception',
@@ -749,6 +764,12 @@ function logApiError(error: unknown, req: express.Request, res: express.Response
     path: req.originalUrl,
     name: knownError?.name ?? 'UnknownError',
     message: knownError?.message ?? String(error),
+    code: typeof databaseError?.code === 'string' ? databaseError.code : undefined,
+    detail: typeof databaseError?.detail === 'string' ? databaseError.detail : undefined,
+    table: typeof databaseError?.table === 'string' ? databaseError.table : undefined,
+    column: typeof databaseError?.column === 'string' ? databaseError.column : undefined,
+    constraint: typeof databaseError?.constraint === 'string' ? databaseError.constraint : undefined,
+    routine: typeof databaseError?.routine === 'string' ? databaseError.routine : undefined,
     stack: process.env.NODE_ENV === 'production' ? undefined : knownError?.stack
   }));
 }
@@ -788,21 +809,22 @@ app.use((error: unknown, req: express.Request, res: express.Response, _next: exp
   return errorResponse(res, 500, { message: 'Internal server error' });
 });
 
-Promise.all([
-  ensureCoreSchema(),
-  ensureEquipmentPermissionSchema(),
-  ensureTrainingRequestSchema(),
-  ensureOperationalDataSchema(),
-  ensureAuditLogSchema(),
-  ensureFileAssetSchema(),
-  ensureFeatureFlagSchema()
-])
-  .then(() => {
-    app.listen(port, () => {
-      console.log(`HBNU API listening on ${port}`);
-    });
-  })
-  .catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
+async function startServer() {
+  await ensureCoreSchema();
+  await Promise.all([
+    ensureEquipmentPermissionSchema(),
+    ensureTrainingRequestSchema(),
+    ensureOperationalDataSchema(),
+    ensureAuditLogSchema(),
+    ensureFileAssetSchema(),
+    ensureFeatureFlagSchema()
+  ]);
+  app.listen(port, () => {
+    console.log(`HBNU API listening on ${port}`);
   });
+}
+
+startServer().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});
