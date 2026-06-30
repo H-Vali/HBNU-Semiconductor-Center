@@ -2184,6 +2184,7 @@ select {
 }
 
 .fc .fc-daygrid-event.is-multi-day-range {
+  width: 100%;
   max-width: none;
   z-index: 3;
   text-align: center;
