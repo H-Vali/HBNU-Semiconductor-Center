@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ChangeEvent, type DragEvent, type FormEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ChangeEvent, type DragEvent, type FormEvent, type ReactNode } from 'react';
 import FullCalendar from '@fullcalendar/react';
+import type { EventContentArg } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import {
@@ -649,6 +650,58 @@ function normalizeApiReservation(event: ApiReservationEvent): ReservationEvent {
     purpose: event.purpose,
     mine: event.mine
   };
+}
+
+function CalendarReservationEventLabel({ timeText, title }: { timeText: string; title: string }) {
+  const windowRef = useRef<HTMLSpanElement | null>(null);
+  const copyRef = useRef<HTMLSpanElement | null>(null);
+  const [isOverflowing, setIsOverflowing] = useState(false);
+  const label = `${timeText ? `${timeText} ` : ''}${title}`;
+
+  useLayoutEffect(() => {
+    const windowElement = windowRef.current;
+    const copyElement = copyRef.current;
+    if (!windowElement || !copyElement) return;
+
+    const updateOverflow = () => {
+      setIsOverflowing(copyElement.scrollWidth > windowElement.clientWidth + 2);
+    };
+
+    updateOverflow();
+    const resizeObserver = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(updateOverflow) : null;
+    resizeObserver?.observe(windowElement);
+    resizeObserver?.observe(copyElement);
+    window.addEventListener('resize', updateOverflow);
+
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener('resize', updateOverflow);
+    };
+  }, [label]);
+
+  const duration = Math.max(7, Math.min(18, label.length * 0.42));
+  const slideStyle = { '--reservation-event-duration': `${duration}s` } as CSSProperties;
+  const renderContent = () => (
+    <span className="calendar-event-slide-copy">
+      {timeText && <span className="calendar-event-time">{timeText}</span>}
+      <span className="calendar-event-title">{title}</span>
+    </span>
+  );
+
+  return (
+    <span className={`calendar-event-slide ${isOverflowing ? 'is-overflowing' : ''}`} title={label} style={isOverflowing ? slideStyle : undefined}>
+      <span className="calendar-event-slide-window" ref={windowRef}>
+        <span className="calendar-event-slide-track">
+          <span ref={copyRef}>{renderContent()}</span>
+          {isOverflowing && <span aria-hidden="true">{renderContent()}</span>}
+        </span>
+      </span>
+    </span>
+  );
+}
+
+function renderReservationCalendarEvent(arg: EventContentArg) {
+  return <CalendarReservationEventLabel timeText={arg.timeText} title={arg.event.title || '예약'} />;
 }
 
 function getSeoulClockParts() {
@@ -2844,6 +2897,7 @@ function ReservationPage({
             arg.event.extendedProps.status === 'external' ? 'is-external-event' : '',
             arg.event.start && arg.event.end && arg.event.start.getTime() <= Date.now() && Date.now() < arg.event.end.getTime() ? 'is-live-event' : ''
           ].filter(Boolean)}
+          eventContent={renderReservationCalendarEvent}
           events={calendarEvents.filter((event) => isEventForEquipment(event, selectedEquipment, equipmentItems))}
         />
       </div>
@@ -4401,6 +4455,7 @@ function AdminPage({
               arg.event.extendedProps.status === 'external' ? 'is-external-event' : '',
               arg.event.start && arg.event.end && arg.event.start.getTime() <= Date.now() && Date.now() < arg.event.end.getTime() ? 'is-live-event' : ''
             ].filter(Boolean)}
+            eventContent={renderReservationCalendarEvent}
             events={calendarEvents}
           />
         </div>

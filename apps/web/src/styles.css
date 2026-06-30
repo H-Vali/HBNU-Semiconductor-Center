@@ -2172,6 +2172,75 @@ select {
   font-weight: 800;
 }
 
+.fc .fc-daygrid-event-harness,
+.fc .fc-daygrid-event {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.fc .fc-daygrid-event {
+  display: flex;
+  align-items: center;
+}
+
+.fc .fc-event-main {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.calendar-event-slide {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  align-items: center;
+  overflow: hidden;
+  color: inherit;
+  font-weight: 800;
+}
+
+.calendar-event-slide-window {
+  display: block;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+.calendar-event-slide-track {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+.calendar-event-slide-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.24rem;
+  white-space: nowrap;
+}
+
+.calendar-event-time {
+  flex: 0 0 auto;
+  font-weight: 900;
+}
+
+.calendar-event-title {
+  flex: 0 0 auto;
+}
+
+.calendar-event-slide.is-overflowing .calendar-event-slide-track {
+  max-width: none;
+  gap: 2rem;
+  animation: reservationEventMarquee var(--reservation-event-duration, 9s) linear infinite;
+}
+
+.calendar-event-slide.is-overflowing:hover .calendar-event-slide-track {
+  animation-play-state: paused;
+}
+
 .fc .fc-daygrid-day-frame {
   position: relative;
   min-height: 7rem;
@@ -2306,6 +2375,17 @@ select {
 
   100% {
     box-shadow: 0 0 0 0 rgba(248, 113, 113, 0);
+  }
+}
+
+@keyframes reservationEventMarquee {
+  0%,
+  16% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(calc(-50% - 1rem));
   }
 }
 
