@@ -8063,7 +8063,7 @@ export function App() {
       endsAt: toApiReservationDateTime(event.end),
       purpose: event.purpose ?? event.title,
       userId: event.userId ?? sessionUser?.id,
-      status: event.status
+      status: event.status === 'maintenance' || event.status === 'external' ? event.status : undefined
     }, localStorage.getItem(STORAGE_KEYS.sessionToken));
     if (!result.ok) {
       if (result.status === 409) {

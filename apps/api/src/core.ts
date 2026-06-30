@@ -38,7 +38,7 @@ export class ReservationPermissionError extends Error {
 }
 
 const reservationStatusSchema = z.enum(['pending', 'approved', 'rejected', 'maintenance', 'external', 'canceled']);
-const createReservationStatusSchema = z.enum(['maintenance', 'external']);
+const createReservationStatusSchema = z.enum(['approved', 'maintenance', 'external']);
 const equipmentGroupSchema = z.enum(['process', 'metrology']);
 const equipmentStatusSchema = z.enum(['available', 'unavailable', 'maintenance']);
 
