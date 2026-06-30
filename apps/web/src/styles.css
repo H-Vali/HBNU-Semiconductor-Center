@@ -2177,22 +2177,52 @@ select {
 }
 
 .fc .fc-daygrid-event {
+  position: relative;
   display: flex;
   max-width: 100%;
   align-items: center;
   overflow: hidden;
+  border-color: rgba(82, 224, 176, 0.45);
+  background: #16243c;
+  color: #e8eef6;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.16);
+}
+
+.fc .fc-daygrid-event::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 3px;
+  border-radius: 3px;
+  background: #52e0b0;
 }
 
 .fc .fc-daygrid-event.is-multi-day-range {
   width: 100%;
+  min-height: 24px;
   max-width: none;
   z-index: 3;
+  justify-content: center;
+  border-color: #54a3ff;
+  background: #2f6bd1;
+  color: #fff;
   text-align: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+}
+
+.fc .fc-daygrid-event.is-multi-day-range::before {
+  display: none;
 }
 
 .fc .fc-daygrid-block-event {
   border-radius: 6px;
-  padding: 0.08rem 0.35rem;
+  padding: 0.14rem 0.5rem 0.14rem 0.58rem;
+}
+
+.fc .fc-daygrid-block-event.is-multi-day-range {
+  padding: 0 0.6rem;
 }
 
 .fc .fc-daygrid-block-event .fc-event-main {
@@ -2353,60 +2383,60 @@ select {
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-.fc .fc-event.is-live-event {
-  position: relative;
-  border-color: rgba(248, 113, 113, 0.9);
-  background: rgba(127, 29, 29, 0.88);
-  box-shadow: 0 0 18px rgba(239, 68, 68, 0.32);
-}
-
-.fc .fc-event.is-live-event::before {
-  content: "";
-  display: inline-block;
-  width: 0.58rem;
-  height: 0.58rem;
-  margin: 0 0.32rem 0 0.12rem;
-  border-radius: 999px;
-  background: #ef4444;
-  box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.72);
-  animation: liveReservationPulse 1.25s ease-out infinite;
-  vertical-align: middle;
-}
-
 .fc .fc-event.is-maintenance-event {
-  border-color: rgba(245, 158, 11, 0.9);
-  background: rgba(146, 64, 14, 0.92);
-  color: #fff7ed;
-  box-shadow: 0 0 16px rgba(245, 158, 11, 0.22);
+  border-color: rgba(245, 209, 66, 0.48);
+  background: #16243c;
+  color: #fff8d1;
 }
 
 .fc .fc-event.is-maintenance-event::before {
-  content: "";
-  display: inline-block;
-  width: 0.5rem;
-  height: 0.5rem;
-  margin: 0 0.32rem 0 0.12rem;
-  border-radius: 999px;
-  background: #fbbf24;
-  vertical-align: middle;
+  background: #f5d142;
 }
 
-.fc .fc-event.is-external-event {
-  border-color: rgba(168, 85, 247, 0.92);
-  background: rgba(109, 40, 217, 0.9);
-  color: #f5f3ff;
-  box-shadow: 0 0 16px rgba(168, 85, 247, 0.24);
+.fc .fc-event.is-confirmed-event {
+  border-color: rgba(82, 224, 176, 0.45);
+  background: #16243c;
+  color: #e8eef6;
 }
 
-.fc .fc-event.is-external-event::before {
-  content: "";
+.fc .fc-event.is-confirmed-event::before {
+  background: #52e0b0;
+}
+
+.reservation-calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.85rem;
+  margin-top: 0.75rem;
+  color: #9fb1ce;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.reservation-calendar-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.34rem;
+}
+
+.reservation-calendar-legend i {
   display: inline-block;
-  width: 0.5rem;
-  height: 0.5rem;
-  margin: 0 0.32rem 0 0.12rem;
+  width: 0.72rem;
+  height: 0.72rem;
   border-radius: 999px;
-  background: #c084fc;
-  vertical-align: middle;
+}
+
+.reservation-calendar-legend i.is-confirmed {
+  background: #52e0b0;
+}
+
+.reservation-calendar-legend i.is-maintenance {
+  background: #f5d142;
+}
+
+.reservation-calendar-legend i.is-long {
+  background: #2f6bd1;
 }
 
 @keyframes liveReservationPulse {

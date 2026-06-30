@@ -104,6 +104,7 @@ type ReservationEvent = {
   status?: ReservationStatus;
   equipmentId?: string;
   userId?: string;
+  userName?: string;
   createdBy?: string;
   purpose?: string;
   mine?: boolean;
@@ -117,6 +118,7 @@ type ApiReservationEvent = {
   status?: ReservationStatus;
   equipmentId?: string;
   userId?: string;
+  userName?: string;
   createdByRole?: string;
   mine?: boolean;
 };
@@ -646,6 +648,7 @@ function normalizeApiReservation(event: ApiReservationEvent): ReservationEvent {
     status: normalizeReservationStatus(event.status),
     equipmentId: event.equipmentId,
     userId: event.userId,
+    userName: event.userName,
     createdBy: event.createdByRole,
     purpose: event.purpose,
     mine: event.mine
@@ -744,13 +747,11 @@ function reservationCoversDate(dateKey: string, event: ReservationEvent) {
 }
 
 function getReservationCalendarTitle(event: ReservationEvent, equipmentItems: EquipmentItem[]) {
-  const baseTitle = event.title && event.title !== '예약'
-    ? event.title
-    : `${getReservationEquipmentName(event, equipmentItems)} 예약`;
+  const baseTitle = getReservationCalendarBaseLabel(event, equipmentItems);
   const startTime = formatReservationTime(event.start);
   const endTime = formatReservationTime(event.end);
   const timeRange = startTime && endTime ? `${startTime}~${endTime}` : startTime || endTime;
-  return timeRange ? `${baseTitle} (${timeRange})` : baseTitle;
+  return timeRange ? `${timeRange} ${baseTitle}` : baseTitle;
 }
 
 function formatReservationCalendarDate(dateKey: string) {
@@ -759,9 +760,7 @@ function formatReservationCalendarDate(dateKey: string) {
 }
 
 function getMultiDayReservationCalendarTitle(event: ReservationEvent, equipmentItems: EquipmentItem[]) {
-  const baseTitle = event.title && event.title !== '예약'
-    ? event.title
-    : `${getReservationEquipmentName(event, equipmentItems)} 예약`;
+  const baseTitle = getReservationCalendarBaseLabel(event, equipmentItems);
   const startDate = formatReservationCalendarDate(event.start.slice(0, 10));
   const endDate = formatReservationCalendarDate(getReservationEndDateKey(event));
   const startTime = formatReservationTime(event.start);
@@ -770,6 +769,20 @@ function getMultiDayReservationCalendarTitle(event: ReservationEvent, equipmentI
     ? `${startDate} / ${startTime} ~ ${endDate} / ${endTime}`
     : `${startDate} / ${startTime} ~${endDate}`;
   return `${baseTitle} (${dateTimeRange})`;
+}
+
+function getReservationCalendarUserLabel(event: ReservationEvent) {
+  if (event.status === 'maintenance') return '점검';
+  if (event.status === 'external') return '외부';
+  if (event.userName) return event.userName;
+  if (event.mine) return '나';
+  if (event.createdBy === 'ADMIN') return '관리자';
+  if (event.createdBy === 'MANAGER') return '담당자';
+  return '예약자';
+}
+
+function getReservationCalendarBaseLabel(event: ReservationEvent, equipmentItems: EquipmentItem[]) {
+  return `${getReservationEquipmentName(event, equipmentItems)} / ${getReservationCalendarUserLabel(event)}`;
 }
 
 function buildReservationCalendarEvents(events: ReservationEvent[], equipmentItems: EquipmentItem[]) {
@@ -815,22 +828,23 @@ type CalendarEventClassArg = {
   };
 };
 
-function isReservationCalendarEventLive(arg: CalendarEventClassArg) {
-  const originalStart = typeof arg.event.extendedProps.originalStart === 'string' ? arg.event.extendedProps.originalStart : undefined;
-  const originalEnd = typeof arg.event.extendedProps.originalEnd === 'string' ? arg.event.extendedProps.originalEnd : undefined;
-  const startTime = originalStart ? new Date(originalStart).getTime() : arg.event.start?.getTime();
-  const endTime = originalEnd ? new Date(originalEnd).getTime() : arg.event.end?.getTime();
-  const now = Date.now();
-  return typeof startTime === 'number' && typeof endTime === 'number' && startTime <= now && now < endTime;
+function getReservationCalendarEventClassNames(arg: CalendarEventClassArg) {
+  const isMultiDay = Boolean(arg.event.extendedProps.multiDayRange);
+  return [
+    isMultiDay ? 'is-multi-day-range' : '',
+    !isMultiDay && arg.event.extendedProps.status === 'maintenance' ? 'is-maintenance-event' : '',
+    !isMultiDay && arg.event.extendedProps.status !== 'maintenance' ? 'is-confirmed-event' : ''
+  ].filter(Boolean);
 }
 
-function getReservationCalendarEventClassNames(arg: CalendarEventClassArg) {
-  return [
-    arg.event.extendedProps.status === 'maintenance' ? 'is-maintenance-event' : '',
-    arg.event.extendedProps.status === 'external' ? 'is-external-event' : '',
-    arg.event.extendedProps.multiDayRange ? 'is-multi-day-range' : '',
-    isReservationCalendarEventLive(arg) ? 'is-live-event' : ''
-  ].filter(Boolean);
+function ReservationCalendarLegend() {
+  return (
+    <div className="reservation-calendar-legend" aria-label="예약 캘린더 범례">
+      <span><i className="is-confirmed" />예약 확정</span>
+      <span><i className="is-maintenance" />점검 중</span>
+      <span><i className="is-long" />장기 예약</span>
+    </div>
+  );
 }
 
 function getSeoulClockParts() {
@@ -3029,12 +3043,16 @@ function ReservationPage({
           height="auto"
           displayEventTime={false}
           eventDisplay="block"
+          dayMaxEvents={3}
+          dayMaxEventRows={3}
+          moreLinkClick="popover"
           dayCellClassNames={(arg) => (getSeoulDateKey(arg.date) === todayKey ? ['seoul-today'] : [])}
           dateClick={(arg) => openReservation(arg.dateStr)}
           eventClassNames={getReservationCalendarEventClassNames}
           eventContent={renderReservationCalendarEvent}
           events={reservationCalendarDisplayEvents}
         />
+        <ReservationCalendarLegend />
       </div>
       {showReservationModal && (
         <ReservationModalV2
@@ -4545,8 +4563,8 @@ function AdminPage({
             contentHeight="auto"
             displayEventTime={false}
             eventDisplay="block"
-            dayMaxEvents={2}
-            dayMaxEventRows={2}
+            dayMaxEvents={3}
+            dayMaxEventRows={3}
             moreLinkClick="popover"
             headerToolbar={{ left: 'title', center: '', right: 'adminToday prev,next' }}
             customButtons={{
@@ -4567,6 +4585,7 @@ function AdminPage({
             eventContent={renderReservationCalendarEvent}
             events={adminCalendarDisplayEvents}
           />
+          <ReservationCalendarLegend />
         </div>
         <aside className="admin-reservation-detail">
           <div className="admin-reservation-panel-head">

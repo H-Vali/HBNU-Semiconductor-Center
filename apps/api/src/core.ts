@@ -227,6 +227,7 @@ type ReservationRow = {
   id: string;
   equipmentId: string;
   userId: string | null;
+  userName: string | null;
   title: string;
   purpose: string;
   startsAt: Date | string;
@@ -303,6 +304,7 @@ function mapReservation(row: ReservationRow) {
     id: row.id,
     equipmentId: row.equipmentId,
     userId: row.userId ?? undefined,
+    userName: row.userName ?? undefined,
     title: row.title,
     purpose: row.purpose,
     startsAt: normalizeDate(row.startsAt),
@@ -320,6 +322,7 @@ function mapFallbackReservation(row: FallbackReservation): ReservationView {
     id: row.id,
     equipmentId: row.equipmentId,
     userId: row.userId,
+    userName: undefined,
     title: row.title,
     purpose: row.purpose ?? row.title,
     startsAt: normalizeDate(row.startsAt),
@@ -338,7 +341,7 @@ function projectReservations(rows: ReservationView[], actor?: SessionUser) {
     startsAt: reservation.startsAt,
     endsAt: reservation.endsAt,
     status: reservation.status,
-    ...(actor && reservation.userId === actor.id ? { userId: actor.id, mine: true } : {})
+    ...(actor && reservation.userId === actor.id ? { userId: actor.id, userName: actor.name, mine: true } : {})
   }));
 }
 
@@ -637,9 +640,11 @@ export async function listReservations(actor?: SessionUser) {
   }
   const result = await query<ReservationRow>(
     `select r.id, r.equipment_id as "equipmentId", r.user_id as "userId", r.title, r.purpose,
+      u.name as "userName",
       r.starts_at as "startsAt", r.ends_at as "endsAt", r.status, r.created_by_role as "createdByRole"
      from reservations r
      join equipment e on e.id = r.equipment_id and e.deleted_at is null
+     left join users u on u.id = r.user_id and u.deleted_at is null
      where r.deleted_at is null
      order by r.starts_at desc`
   );
@@ -699,6 +704,7 @@ export async function createReservation(input: unknown, user?: SessionUser) {
         )
         values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         returning id, equipment_id as "equipmentId", user_id as "userId", title, purpose,
+          null::text as "userName",
           starts_at as "startsAt", ends_at as "endsAt", status, created_by_role as "createdByRole"`,
         [
           reservationId,
@@ -740,6 +746,7 @@ export async function cancelReservation(id: string, user: SessionUser) {
      set status = 'canceled', deleted_at = now(), updated_at = now()
      where id = $1 and deleted_at is null and ($2 = true or user_id = $3)
      returning id, equipment_id as "equipmentId", user_id as "userId", title, purpose,
+       null::text as "userName",
        starts_at as "startsAt", ends_at as "endsAt", status, created_by_role as "createdByRole"`,
     [id, canCancelAny, user.id]
   );
