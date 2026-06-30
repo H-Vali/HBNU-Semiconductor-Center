@@ -10,7 +10,8 @@
     "feature": "node dist/manageFeature.js",
     "check:r2": "node dist/checkR2.js",
     "migrate": "node dist/migrate.js",
-    "reset:qa": "node dist/resetQaData.js"
+    "reset:qa": "node dist/resetQaData.js",
+    "reset:qa-users": "node dist/resetQaUsers.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
