@@ -652,7 +652,17 @@ function normalizeApiReservation(event: ApiReservationEvent): ReservationEvent {
   };
 }
 
-function CalendarReservationEventLabel({ timeText, title }: { timeText: string; title: string }) {
+function CalendarReservationEventLabel({
+  timeText,
+  title,
+  centered = false,
+  marquee = true
+}: {
+  timeText: string;
+  title: string;
+  centered?: boolean;
+  marquee?: boolean;
+}) {
   const windowRef = useRef<HTMLSpanElement | null>(null);
   const copyRef = useRef<HTMLSpanElement | null>(null);
   const [isOverflowing, setIsOverflowing] = useState(false);
@@ -687,13 +697,18 @@ function CalendarReservationEventLabel({ timeText, title }: { timeText: string; 
       <span className="calendar-event-title">{title}</span>
     </span>
   );
+  const shouldMarquee = marquee && isOverflowing;
 
   return (
-    <span className={`calendar-event-slide ${isOverflowing ? 'is-overflowing' : ''}`} title={label} style={isOverflowing ? slideStyle : undefined}>
+    <span
+      className={`calendar-event-slide ${shouldMarquee ? 'is-overflowing' : ''} ${centered ? 'is-centered' : ''}`}
+      title={label}
+      style={shouldMarquee ? slideStyle : undefined}
+    >
       <span className="calendar-event-slide-window" ref={windowRef}>
         <span className="calendar-event-slide-track">
           <span ref={copyRef}>{renderContent()}</span>
-          {isOverflowing && <span aria-hidden="true">{renderContent()}</span>}
+          {shouldMarquee && <span aria-hidden="true">{renderContent()}</span>}
         </span>
       </span>
     </span>
@@ -701,7 +716,8 @@ function CalendarReservationEventLabel({ timeText, title }: { timeText: string; 
 }
 
 function renderReservationCalendarEvent(arg: EventContentArg) {
-  return <CalendarReservationEventLabel timeText="" title={arg.event.title || '예약'} />;
+  const isMultiDayRange = Boolean(arg.event.extendedProps.multiDayRange);
+  return <CalendarReservationEventLabel timeText="" title={arg.event.title || '예약'} centered={isMultiDayRange} marquee={!isMultiDayRange} />;
 }
 
 function addDaysToDateKey(dateKey: string, days: number) {
@@ -751,7 +767,7 @@ function getMultiDayReservationCalendarTitle(event: ReservationEvent, equipmentI
   const startTime = formatReservationTime(event.start);
   const endTime = formatReservationTime(event.end);
   const dateTimeRange = endTime
-    ? `${startDate} / ${startTime} ~${endDate} / ${endTime}`
+    ? `${startDate} / ${startTime} ~ ${endDate} / ${endTime}`
     : `${startDate} / ${startTime} ~${endDate}`;
   return `${baseTitle} (${dateTimeRange})`;
 }

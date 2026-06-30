@@ -2185,6 +2185,8 @@ select {
 
 .fc .fc-daygrid-event.is-multi-day-range {
   max-width: none;
+  z-index: 3;
+  text-align: center;
 }
 
 .fc .fc-daygrid-block-event {
@@ -2195,6 +2197,10 @@ select {
 .fc .fc-daygrid-block-event .fc-event-main {
   display: flex;
   align-items: center;
+}
+
+.fc .fc-daygrid-event.is-multi-day-range .fc-event-main {
+  justify-content: center;
 }
 
 .fc .fc-event-main {
@@ -2255,10 +2261,34 @@ select {
   animation-play-state: paused;
 }
 
+.calendar-event-slide.is-centered {
+  justify-content: center;
+  text-align: center;
+}
+
+.calendar-event-slide.is-centered .calendar-event-slide-track {
+  width: 100%;
+  justify-content: center;
+}
+
+.calendar-event-slide.is-centered .calendar-event-slide-track > span,
+.calendar-event-slide.is-centered .calendar-event-slide-copy {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.calendar-event-slide.is-centered .calendar-event-title {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .fc .fc-daygrid-day-frame {
   position: relative;
   min-height: 7rem;
-  overflow: hidden;
+  overflow: visible;
   transition: transform 0.22s ease, background 0.22s ease, box-shadow 0.22s ease;
 }
 
@@ -3259,7 +3289,7 @@ select {
 
 .admin-reservation-calendar .fc .fc-daygrid-day-events {
   max-height: 2.15rem;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .admin-reservation-calendar .fc .fc-daygrid-event {
