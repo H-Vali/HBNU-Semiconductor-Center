@@ -57,8 +57,8 @@ import {
 import { equipment as fallbackEquipment, events, monthlyUsage, type EquipmentGroup, type EquipmentItem } from './data';
 import { STORAGE_KEYS } from './appStorage';
 import { initialConsumablesData, initialManagedUsersData } from './mockData';
-import { NoticeAdminPage, NoticePage, getNoticeCategoryTone, meetingNoticeItems, normalizeNoticeItems, noticeBoardMeta, noticeItems, operationNoticeItems, type NoticeAttachment, type NoticeBoardKey, type NoticeItem } from './pages/NoticePages';
-import { FaqPage, QnaPage, faqItems as initialFaqItems, type FaqItem } from './pages/InquiryPages';
+import { NoticeAdminPage, NoticePage, getNoticeCategoryTone, normalizeNoticeItems, noticeBoardMeta, type NoticeAttachment, type NoticeBoardKey, type NoticeItem } from './pages/NoticePages';
+import { FaqPage, QnaPage, type FaqItem } from './pages/InquiryPages';
 import { AuditLogPage } from './pages/AuditLogPage';
 import { apiDelete, apiGet, apiGetBlob, apiPatch, apiPost, apiPut, getApiUrl } from './apiClient';
 import { getReservationStatusLabel, normalizeReservationStatus, type ReservationStatus } from './utils/reservationStatus';
@@ -3443,9 +3443,7 @@ function TrainingPage({
       }
     ].filter(Boolean) as TrainingApplication[];
   });
-  const displayedApplications = trainingRequests.length > 0
-    ? trainingRequests.map((request) => trainingRequestToApplication(request, managerNameById))
-    : applications;
+  const displayedApplications = trainingRequests.map((request) => trainingRequestToApplication(request, managerNameById));
 
   const filteredEquipment = useMemo(() => (
     requestableEquipment.filter((item) => item.group === selectedEquipmentGroup)
@@ -7466,9 +7464,9 @@ export function App() {
   const [usersUpdatedAt, setUsersUpdatedAt] = useState(() => (
     localStorage.getItem(STORAGE_KEYS.usersUpdatedAt) ?? new Date().toISOString()
   ));
-  const [managedOperationNotices, setManagedOperationNotices] = useState<NoticeItem[]>(() => normalizeNoticeItems(operationNoticeItems));
-  const [managedMeetingNotices, setManagedMeetingNotices] = useState<NoticeItem[]>(() => normalizeNoticeItems(meetingNoticeItems));
-  const [managedFaqItems, setManagedFaqItems] = useState<FaqItem[]>(initialFaqItems);
+  const [managedOperationNotices, setManagedOperationNotices] = useState<NoticeItem[]>([]);
+  const [managedMeetingNotices, setManagedMeetingNotices] = useState<NoticeItem[]>([]);
+  const [managedFaqItems, setManagedFaqItems] = useState<FaqItem[]>([]);
   const [equipmentPermissions, setEquipmentPermissions] = useState<EquipmentPermissionMap>({});
   const [equipmentPermissionGrantMeta, setEquipmentPermissionGrantMeta] = useState<EquipmentPermissionGrantMetaMap>({});
   const [, setEquipmentPermissionHistory] = useState<EquipmentPermissionHistoryRecord[]>([]);

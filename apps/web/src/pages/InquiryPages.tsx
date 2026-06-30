@@ -202,14 +202,7 @@ function QnaCreateModal({
 const QNA_PAGE_SIZE = 5;
 
 export function QnaPage({ sessionRole }: { sessionRole: Role | null }) {
-  const [qnaItems, setQnaItems] = useState<QnaItem[]>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEYS.qnaItems);
-      return stored ? JSON.parse(stored) : initialQnaItems;
-    } catch {
-      return initialQnaItems;
-    }
-  });
+  const [qnaItems, setQnaItems] = useState<QnaItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedQnaId, setSelectedQnaId] = useState<string | null>(null);
