@@ -3547,40 +3547,12 @@ function TrainingPage({
   const [message, setMessage] = useState('');
   const [accessNotice, setAccessNotice] = useState<AccessRequirementNotice | null>(null);
   const [submittedTrainingRequest, setSubmittedTrainingRequest] = useState(false);
-  const [applications, setApplications] = useState<TrainingApplication[]>(() => {
-    const pendingEquipment = equipmentItems.find((item) => !currentUserPermissionIds.includes(item.id)) ?? equipmentItems[0];
-    const scheduledEquipment = equipmentItems.find((item) => item.id !== pendingEquipment?.id && !currentUserPermissionIds.includes(item.id)) ?? equipmentItems[1];
-    const completedEquipment = grantedEquipment[0] ?? equipmentItems.find((item) => item.id !== pendingEquipment?.id && item.id !== scheduledEquipment?.id) ?? equipmentItems[2];
-    return [
-      pendingEquipment && {
-        id: 'training-preview-pending',
-        equipmentName: pendingEquipment.name,
-        status: 'pending' as const,
-        requestedAt: '2026-06-25',
-        managerName: pendingEquipment.managerId ? managerNameById.get(pendingEquipment.managerId) ?? '담당자 미지정' : '담당자 미지정',
-        note: '담당자 승인 대기'
-      },
-      scheduledEquipment && {
-        id: 'training-preview-scheduled',
-        equipmentName: scheduledEquipment.name,
-        status: 'scheduled' as const,
-        requestedAt: '2026-06-24',
-        managerName: scheduledEquipment.managerId ? managerNameById.get(scheduledEquipment.managerId) ?? '담당자 미지정' : '담당자 미지정',
-        scheduledAt: '2026-07-02 14:00',
-        note: '교육 일정 확정'
-      },
-      completedEquipment && {
-        id: 'training-preview-completed',
-        equipmentName: completedEquipment.name,
-        status: 'completed' as const,
-        requestedAt: '2026-06-18',
-        managerName: completedEquipment.managerId ? managerNameById.get(completedEquipment.managerId) ?? '담당자 미지정' : '담당자 미지정',
-        scheduledAt: '2026-06-21 10:00',
-        note: '예약 권한 부여됨'
-      }
-    ].filter(Boolean) as TrainingApplication[];
-  });
-  const displayedApplications = trainingRequests.map((request) => trainingRequestToApplication(request, managerNameById));
+  const activeEquipmentIds = useMemo(() => new Set(equipmentItems.map((item) => item.id)), [equipmentItems]);
+  const displayedApplications = useMemo(() => (
+    trainingRequests
+      .filter((request) => activeEquipmentIds.has(request.equipmentId))
+      .map((request) => trainingRequestToApplication(request, managerNameById))
+  ), [activeEquipmentIds, managerNameById, trainingRequests]);
 
   const filteredEquipment = useMemo(() => (
     requestableEquipment.filter((item) => item.group === selectedEquipmentGroup)

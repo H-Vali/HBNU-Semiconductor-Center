@@ -197,7 +197,11 @@ export async function listTrainingRequests(actor: SessionUser, input: unknown) {
   if (!hasDatabase()) return filterFallbackRequests(actor, status);
 
   const params: unknown[] = [];
-  const where = ['tr.deleted_at is null'];
+  const where = [
+    'tr.deleted_at is null',
+    'e.deleted_at is null',
+    'u.deleted_at is null'
+  ];
 
   if (status) {
     params.push(status);
@@ -277,6 +281,17 @@ export async function createTrainingRequest(input: unknown, actor: SessionUser) 
     return request;
   }
 
+  const equipmentResult = await query<{ name: string }>(
+    `select name
+     from equipment
+     where id = $1 and deleted_at is null`,
+    [body.equipmentId]
+  );
+  const equipment = equipmentResult.rows[0];
+  if (!equipment) {
+    throw new PermissionDeniedError();
+  }
+
   const result = await query<TrainingRequestRow>(
     `insert into training_requests (
       id, equipment_id, applicant_user_id, preferred_date, preferred_start,
@@ -321,7 +336,7 @@ export async function createTrainingRequest(input: unknown, actor: SessionUser) 
   );
   return mapTrainingRequest({
     ...result.rows[0],
-    equipmentName: result.rows[0].equipmentName ?? body.equipmentId,
+    equipmentName: equipment.name,
     applicantName: actor.name,
     applicantEmail: actor.email
   });
@@ -359,7 +374,10 @@ async function getTrainingRequest(id: string) {
      join equipment e on e.id = tr.equipment_id
      join users u on u.id = tr.applicant_user_id
      left join users handler on handler.id = tr.handled_by
-     where tr.id = $1 and tr.deleted_at is null`,
+     where tr.id = $1
+       and tr.deleted_at is null
+       and e.deleted_at is null
+       and u.deleted_at is null`,
     [id]
   );
   return result.rows[0] ? mapTrainingRequest(result.rows[0]) : null;
