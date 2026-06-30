@@ -355,7 +355,7 @@ async function downloadNoticeAttachment(attachment: NoticeAttachment) {
   }
   const objectUrl = URL.createObjectURL(result.blob);
   triggerNoticeAttachmentDownload(objectUrl, attachment.name);
-  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 30000);
 }
 
 export function NoticeAdminPage({
