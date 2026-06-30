@@ -77,9 +77,30 @@ dotenv.config();
 
 const app = express();
 const port = Number(process.env.PORT ?? 4000);
+const configuredClientOrigins = (process.env.CLIENT_ORIGIN ?? 'http://localhost:5173')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+function isAllowedClientOrigin(origin: string) {
+  try {
+    const url = new URL(origin);
+    return configuredClientOrigins.includes(origin) ||
+      url.hostname === 'localhost' ||
+      url.hostname === '127.0.0.1' ||
+      url.hostname.endsWith('.pages.dev');
+  } catch {
+    return false;
+  }
+}
 
 app.use(helmet());
-app.use(cors({ origin: process.env.CLIENT_ORIGIN ?? 'http://localhost:5173' }));
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || isAllowedClientOrigin(origin)) return callback(null, true);
+    return callback(null, false);
+  }
+}));
 
 app.use((req, res, next) => {
   const startedAt = Date.now();
@@ -481,7 +502,8 @@ app.get('/file-assets/:id/download', requireAuth, async (req, res, next) => {
     res.setHeader('Content-Type', file.contentType || object.contentType);
     res.setHeader('Content-Length', String(object.buffer.byteLength));
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(file.fileName)}"`);
+    const fallbackFileName = file.fileName.replace(/[^\x20-\x7E]/g, '_').replace(/["\\]/g, '_') || 'attachment';
+    res.setHeader('Content-Disposition', `attachment; filename="${fallbackFileName}"; filename*=UTF-8''${encodeURIComponent(file.fileName)}`);
     return res.send(object.buffer);
   } catch (error) {
     return next(error);

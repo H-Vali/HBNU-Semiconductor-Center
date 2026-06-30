@@ -734,7 +734,7 @@ function toApiEquipmentPayload(item: Partial<EquipmentItem>) {
 }
 
 function useEquipmentData() {
-  const [items, setItems] = useState<EquipmentItem[]>(() => applyEquipmentOverrides(fallbackEquipment));
+  const [items, setItems] = useState<EquipmentItem[]>([]);
   const [source, setSource] = useState<'api' | 'fallback'>('fallback');
 
   useEffect(() => {
@@ -746,10 +746,12 @@ function useEquipmentData() {
         return response.json();
       })
       .then((data: ApiEquipmentItem[]) => {
-        setItems(applyEquipmentOverrides(data.map(normalizeEquipment)));
+        localStorage.removeItem(STORAGE_KEYS.equipmentOverrides);
+        setItems(data.map(normalizeEquipment));
         setSource('api');
       })
-      .catch(() => {
+      .catch((error) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
         setItems(applyEquipmentOverrides(fallbackEquipment));
         setSource('fallback');
       });
@@ -7886,11 +7888,6 @@ export function App() {
     setEquipmentItems((current) => current.map((item, index) => (
       item.id === equipmentId ? normalizeEquipment(savedItem, index) : item
     )));
-    const currentOverrides = getEquipmentOverrides();
-    localStorage.setItem(STORAGE_KEYS.equipmentOverrides, JSON.stringify({
-      ...currentOverrides,
-      [equipmentId]: { ...(currentOverrides[equipmentId] ?? {}), ...patch }
-    }));
     return true;
   }
 
@@ -8521,7 +8518,7 @@ export function App() {
           {activePage === 'admin' && (
             sessionRole === 'ADMIN' ? (
               <AdminPage
-                equipmentItems={equipmentItems}
+                equipmentItems={activeEquipmentItems}
                 calendarEvents={reservationEvents}
                 onAddReservation={addReservation}
                 onDeleteReservation={deleteReservation}
