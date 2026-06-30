@@ -713,6 +713,16 @@ function addDaysToDateKey(dateKey: string, days: number) {
   return `${nextYear}-${nextMonth}-${nextDay}`;
 }
 
+function getDateKeysInRange(startDateKey: string, endDateKey: string) {
+  const dateKeys: string[] = [];
+  let currentDateKey = startDateKey;
+  while (currentDateKey <= endDateKey) {
+    dateKeys.push(currentDateKey);
+    currentDateKey = addDaysToDateKey(currentDateKey, 1);
+  }
+  return dateKeys;
+}
+
 function getReservationEndDateKey(event: ReservationEvent) {
   return (event.end ?? event.start).slice(0, 10);
 }
@@ -738,15 +748,37 @@ function getReservationCalendarTitle(event: ReservationEvent, equipmentItems: Eq
 }
 
 function buildReservationCalendarEvents(events: ReservationEvent[], equipmentItems: EquipmentItem[]) {
-  return events.map((event) => {
+  return events.flatMap((event) => {
     const multiDay = isMultiDayReservation(event);
+    const title = getReservationCalendarTitle(event, equipmentItems);
+    const startDateKey = event.start.slice(0, 10);
     const endDateKey = getReservationEndDateKey(event);
+    if (multiDay) {
+      const dateKeys = getDateKeysInRange(startDateKey, endDateKey);
+      return dateKeys.map((dateKey, index) => ({
+        ...event,
+        id: `${event.id}-calendar-${dateKey}`,
+        groupId: event.id,
+        title,
+        start: dateKey,
+        end: addDaysToDateKey(dateKey, 1),
+        allDay: true,
+        display: 'block',
+        originalStart: event.start,
+        originalEnd: event.end ?? event.start,
+        originalReservationId: event.id,
+        multiDaySegment: true,
+        segmentStart: index === 0,
+        segmentEnd: index === dateKeys.length - 1
+      }));
+    }
+
     return {
       ...event,
-      title: getReservationCalendarTitle(event, equipmentItems),
-      start: multiDay ? event.start.slice(0, 10) : event.start,
-      end: multiDay ? addDaysToDateKey(endDateKey, 1) : event.end,
-      allDay: multiDay,
+      title,
+      start: event.start,
+      end: event.end,
+      allDay: false,
       display: 'block',
       originalStart: event.start,
       originalEnd: event.end ?? event.start
@@ -769,6 +801,17 @@ function isReservationCalendarEventLive(arg: CalendarEventClassArg) {
   const endTime = originalEnd ? new Date(originalEnd).getTime() : arg.event.end?.getTime();
   const now = Date.now();
   return typeof startTime === 'number' && typeof endTime === 'number' && startTime <= now && now < endTime;
+}
+
+function getReservationCalendarEventClassNames(arg: CalendarEventClassArg) {
+  return [
+    arg.event.extendedProps.status === 'maintenance' ? 'is-maintenance-event' : '',
+    arg.event.extendedProps.status === 'external' ? 'is-external-event' : '',
+    arg.event.extendedProps.multiDaySegment ? 'is-multi-day-segment' : '',
+    arg.event.extendedProps.segmentStart ? 'is-segment-start' : '',
+    arg.event.extendedProps.segmentEnd ? 'is-segment-end' : '',
+    isReservationCalendarEventLive(arg) ? 'is-live-event' : ''
+  ].filter(Boolean);
 }
 
 function getSeoulClockParts() {
@@ -2969,11 +3012,7 @@ function ReservationPage({
           eventDisplay="block"
           dayCellClassNames={(arg) => (getSeoulDateKey(arg.date) === todayKey ? ['seoul-today'] : [])}
           dateClick={(arg) => openReservation(arg.dateStr)}
-          eventClassNames={(arg) => [
-            arg.event.extendedProps.status === 'maintenance' ? 'is-maintenance-event' : '',
-            arg.event.extendedProps.status === 'external' ? 'is-external-event' : '',
-            isReservationCalendarEventLive(arg) ? 'is-live-event' : ''
-          ].filter(Boolean)}
+          eventClassNames={getReservationCalendarEventClassNames}
           eventContent={renderReservationCalendarEvent}
           events={reservationCalendarDisplayEvents}
         />
@@ -4505,11 +4544,7 @@ function AdminPage({
               ].filter(Boolean);
             }}
             dateClick={(arg) => setSelectedAdminDate(arg.dateStr)}
-            eventClassNames={(arg) => [
-              arg.event.extendedProps.status === 'maintenance' ? 'is-maintenance-event' : '',
-              arg.event.extendedProps.status === 'external' ? 'is-external-event' : '',
-              isReservationCalendarEventLive(arg) ? 'is-live-event' : ''
-            ].filter(Boolean)}
+            eventClassNames={getReservationCalendarEventClassNames}
             eventContent={renderReservationCalendarEvent}
             events={adminCalendarDisplayEvents}
           />

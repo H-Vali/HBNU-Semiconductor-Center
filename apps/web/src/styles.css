@@ -2188,6 +2188,22 @@ select {
   padding: 0.08rem 0.35rem;
 }
 
+.fc .fc-daygrid-event.is-multi-day-segment {
+  margin-left: 0;
+  margin-right: 0;
+  border-radius: 0;
+}
+
+.fc .fc-daygrid-event.is-multi-day-segment.is-segment-start {
+  border-bottom-left-radius: 6px;
+  border-top-left-radius: 6px;
+}
+
+.fc .fc-daygrid-event.is-multi-day-segment.is-segment-end {
+  border-bottom-right-radius: 6px;
+  border-top-right-radius: 6px;
+}
+
 .fc .fc-daygrid-block-event .fc-event-main {
   display: flex;
   align-items: center;
