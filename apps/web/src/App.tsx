@@ -3000,6 +3000,7 @@ function ReservationModalV2({
     reservationType: 'use' as 'use' | 'maintenance',
     userType: 'internal' as 'internal' | 'external'
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const selectedModalEquipment = equipmentItems.find((item) => item.id === form.equipmentId);
   const selectedModalEquipmentAvailable = isEquipmentAvailable(selectedModalEquipment);
   const reservationStart = toReservationDateTime(form.date, form.startTime);
@@ -3029,7 +3030,7 @@ function ReservationModalV2({
       && reservationOverlaps(rangePanelStart, rangePanelEnd, event.start, event.end)
     ))
     .sort((first, second) => first.start.localeCompare(second.start));
-  const canSubmit = selectedModalEquipmentAvailable && hasValidRange && !rangeHasOverlap && availableStartTimes.includes(form.startTime) && endTimes.includes(form.endTime);
+  const canSubmit = !isSubmitting && selectedModalEquipmentAvailable && hasValidRange && !rangeHasOverlap && availableStartTimes.includes(form.startTime) && endTimes.includes(form.endTime);
 
   function updateStartTime(nextStart: string) {
     setForm((current) => {
@@ -3043,10 +3044,15 @@ function ReservationModalV2({
     });
   }
 
-  function submit(event: FormEvent) {
+  async function submit(event: FormEvent) {
     event.preventDefault();
     if (!canSubmit) return;
-    onConfirm(form);
+    setIsSubmitting(true);
+    try {
+      await onConfirm(form);
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (

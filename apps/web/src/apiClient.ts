@@ -75,6 +75,14 @@ export function apiDelete<T>(path: string, authToken?: string | null) {
 }
 
 export async function apiGetBlob(pathOrUrl: string, authToken?: string | null) {
+  const result = await apiGetBlobResult(pathOrUrl, authToken);
+  return result.ok ? result.blob : null;
+}
+
+export async function apiGetBlobResult(pathOrUrl: string, authToken?: string | null): Promise<
+  | { ok: true; blob: Blob }
+  | { ok: false; status?: number; message: string }
+> {
   const headers = new Headers();
   headers.set('Accept', '*/*');
   if (authToken) {
@@ -84,9 +92,18 @@ export async function apiGetBlob(pathOrUrl: string, authToken?: string | null) {
   const targetUrl = /^https?:\/\//i.test(pathOrUrl) ? pathOrUrl : getApiUrl(pathOrUrl);
   try {
     const response = await fetch(targetUrl, { headers });
-    if (!response.ok) return null;
-    return await response.blob();
-  } catch {
-    return null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        status: response.status,
+        message: await response.text().catch(() => response.statusText)
+      };
+    }
+    return { ok: true, blob: await response.blob() };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : String(error)
+    };
   }
 }

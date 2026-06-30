@@ -1,7 +1,7 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { BookOpen, Download, Plus, Search, Trash2, UploadCloud, X } from 'lucide-react';
 import { STORAGE_KEYS } from '../appStorage';
-import { apiGetBlob } from '../apiClient';
+import { apiGetBlobResult } from '../apiClient';
 import type { FaqCategory, FaqItem } from './InquiryPages';
 
 function getSeoulDateKey(date = new Date()) {
@@ -332,12 +332,20 @@ async function downloadNoticeAttachment(attachment: NoticeAttachment) {
     return;
   }
 
-  const blob = await apiGetBlob(attachment.dataUrl, localStorage.getItem(STORAGE_KEYS.sessionToken));
-  if (!blob) {
+  const result = await apiGetBlobResult(attachment.dataUrl, localStorage.getItem(STORAGE_KEYS.sessionToken));
+  if (!result.ok) {
+    if (result.status === 401 || result.status === 403) {
+      window.alert('첨부파일 다운로드는 Google 인증 로그인 후 이용할 수 있습니다. 다시 로그인해 주세요.');
+      return;
+    }
+    if (!result.status || result.status >= 500) {
+      window.alert('첨부파일을 다운로드하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+      return;
+    }
     window.alert('첨부파일을 다운로드하지 못했습니다. 로그인 상태를 확인해 주세요.');
     return;
   }
-  const objectUrl = URL.createObjectURL(blob);
+  const objectUrl = URL.createObjectURL(result.blob);
   const anchor = document.createElement('a');
   anchor.href = objectUrl;
   anchor.download = attachment.name;

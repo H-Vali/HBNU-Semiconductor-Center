@@ -87,6 +87,7 @@ type EquipmentInput = z.infer<typeof equipmentInputSchema>;
 type EquipmentPatch = z.infer<typeof equipmentPatchSchema>;
 
 const coreSchemaStatements = [
+  `create extension if not exists btree_gist`,
   `create table if not exists equipment (
     id text primary key,
     name text not null,
@@ -157,7 +158,26 @@ const coreSchemaStatements = [
   `alter table reservations add column if not exists deleted_at timestamptz`,
   `create index if not exists equipment_category_status_idx on equipment (category, status) where deleted_at is null`,
   `create index if not exists reservations_equipment_time_idx on reservations (equipment_id, starts_at, ends_at) where deleted_at is null`,
-  `create index if not exists reservations_user_time_idx on reservations (user_id, starts_at desc) where deleted_at is null`
+  `create index if not exists reservations_user_time_idx on reservations (user_id, starts_at desc) where deleted_at is null`,
+  `do $$
+  begin
+    if not exists (
+      select 1 from pg_constraint where conname = 'reservations_no_equipment_time_overlap'
+    ) then
+      begin
+        alter table reservations
+          add constraint reservations_no_equipment_time_overlap
+          exclude using gist (
+            equipment_id with =,
+            tstzrange(starts_at, ends_at, '[)') with &&
+          )
+          where (deleted_at is null and status in ('approved', 'maintenance', 'external'));
+      exception
+        when exclusion_violation then
+          raise warning 'Skipped reservations overlap constraint because existing rows overlap';
+      end;
+    end if;
+  end $$`
 ];
 
 export async function ensureCoreSchema() {
@@ -377,28 +397,19 @@ async function canCreateReservation(body: CreateReservationInput, user?: Session
     return hasActiveEquipmentPermission(user.id, body.equipmentId);
   }
 
-  const result = await query<{ onboardingStatus: string; hasPermission: boolean; hasAdminGrantedPermission: boolean }>(
-    `select u.onboarding_status as "onboardingStatus",
-      exists (
+  const result = await query<{ hasPermission: boolean }>(
+    `select exists (
         select 1
         from equipment_permissions ep
         where ep.user_id = u.id and ep.equipment_id = $2 and ep.revoked_at is null
-      ) as "hasPermission",
-      exists (
-        select 1
-        from equipment_permissions ep
-        where ep.user_id = u.id
-          and ep.equipment_id = $2
-          and ep.revoked_at is null
-          and ep.granted_by_role = 'ADMIN'
-      ) as "hasAdminGrantedPermission"
+      ) as "hasPermission"
      from users u
      where u.id = $1 and u.deleted_at is null
      limit 1`,
     [user.id, body.equipmentId]
   );
   const row = result.rows[0];
-  return Boolean(row?.hasAdminGrantedPermission || (row?.onboardingStatus === 'active' && row.hasPermission));
+  return Boolean(row?.hasPermission);
 }
 
 export async function listEquipment() {
@@ -643,6 +654,20 @@ export async function createReservation(input: unknown, user?: SessionUser) {
 
   try {
     return await transaction(async (client) => {
+      await client.query('select pg_advisory_xact_lock(hashtext($1))', [body.equipmentId]);
+
+      const overlap = await client.query<{ id: string }>(
+        `select id
+         from reservations
+         where equipment_id = $1
+           and deleted_at is null
+           and status in ('approved', 'maintenance', 'external')
+           and tstzrange(starts_at, ends_at, '[)') && tstzrange($2::timestamptz, $3::timestamptz, '[)')
+         limit 1`,
+        [body.equipmentId, body.startsAt, body.endsAt]
+      );
+      if (overlap.rowCount) throw new ReservationOverlapError();
+
       const result = await client.query<ReservationRow>(
         `insert into reservations (
           id, equipment_id, user_id, title, purpose, starts_at, ends_at, status, created_by_role
