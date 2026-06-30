@@ -32,6 +32,7 @@ import {
   createEquipment,
   createReservation,
   deleteEquipment,
+  ensureCoreSchema,
   getEquipment,
   listEquipment,
   listReservations,
@@ -788,6 +789,7 @@ app.use((error: unknown, req: express.Request, res: express.Response, _next: exp
 });
 
 Promise.all([
+  ensureCoreSchema(),
   ensureEquipmentPermissionSchema(),
   ensureTrainingRequestSchema(),
   ensureOperationalDataSchema(),

@@ -86,6 +86,87 @@ type CreateReservationInput = z.infer<typeof createReservationSchema>;
 type EquipmentInput = z.infer<typeof equipmentInputSchema>;
 type EquipmentPatch = z.infer<typeof equipmentPatchSchema>;
 
+const coreSchemaStatements = [
+  `create table if not exists equipment (
+    id text primary key,
+    name text not null,
+    model text,
+    category text not null default '',
+    group_key text not null default 'metrology',
+    group_name text not null default '',
+    location text not null default '',
+    image_url text,
+    features jsonb not null default '[]'::jsonb,
+    usage_conditions text not null default '',
+    description text,
+    vendor_name text,
+    vendor_contact_name text,
+    vendor_contact_position text,
+    vendor_contact_phone text,
+    utilization integer not null default 0,
+    usage_hours integer not null default 0,
+    status text not null default 'available',
+    manager_user_id text,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now(),
+    deleted_at timestamptz
+  )`,
+  `alter table equipment add column if not exists model text`,
+  `alter table equipment add column if not exists category text not null default ''`,
+  `alter table equipment add column if not exists group_key text not null default 'metrology'`,
+  `alter table equipment add column if not exists group_name text not null default ''`,
+  `alter table equipment add column if not exists location text not null default ''`,
+  `alter table equipment add column if not exists image_url text`,
+  `alter table equipment add column if not exists features jsonb not null default '[]'::jsonb`,
+  `alter table equipment add column if not exists usage_conditions text not null default ''`,
+  `alter table equipment add column if not exists description text`,
+  `alter table equipment add column if not exists vendor_name text`,
+  `alter table equipment add column if not exists vendor_contact_name text`,
+  `alter table equipment add column if not exists vendor_contact_position text`,
+  `alter table equipment add column if not exists vendor_contact_phone text`,
+  `alter table equipment add column if not exists utilization integer not null default 0`,
+  `alter table equipment add column if not exists usage_hours integer not null default 0`,
+  `alter table equipment add column if not exists status text not null default 'available'`,
+  `alter table equipment add column if not exists manager_user_id text`,
+  `alter table equipment add column if not exists created_at timestamptz not null default now()`,
+  `alter table equipment add column if not exists updated_at timestamptz not null default now()`,
+  `alter table equipment add column if not exists deleted_at timestamptz`,
+  `create table if not exists reservations (
+    id text primary key,
+    equipment_id text not null references equipment(id) on delete restrict,
+    user_id text,
+    title text not null,
+    purpose text not null,
+    starts_at timestamptz not null,
+    ends_at timestamptz not null,
+    status text not null default 'approved',
+    created_by_role text,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now(),
+    deleted_at timestamptz
+  )`,
+  `alter table reservations add column if not exists user_id text`,
+  `alter table reservations add column if not exists title text not null default ''`,
+  `alter table reservations add column if not exists purpose text not null default ''`,
+  `alter table reservations add column if not exists starts_at timestamptz`,
+  `alter table reservations add column if not exists ends_at timestamptz`,
+  `alter table reservations add column if not exists status text not null default 'approved'`,
+  `alter table reservations add column if not exists created_by_role text`,
+  `alter table reservations add column if not exists created_at timestamptz not null default now()`,
+  `alter table reservations add column if not exists updated_at timestamptz not null default now()`,
+  `alter table reservations add column if not exists deleted_at timestamptz`,
+  `create index if not exists equipment_category_status_idx on equipment (category, status) where deleted_at is null`,
+  `create index if not exists reservations_equipment_time_idx on reservations (equipment_id, starts_at, ends_at) where deleted_at is null`,
+  `create index if not exists reservations_user_time_idx on reservations (user_id, starts_at desc) where deleted_at is null`
+];
+
+export async function ensureCoreSchema() {
+  if (!hasDatabase()) return;
+  for (const statement of coreSchemaStatements) {
+    await query(statement);
+  }
+}
+
 type EquipmentRow = {
   id: string;
   name: string;
