@@ -5174,7 +5174,9 @@ function MyPage({
   calendarEvents: ReservationEvent[];
   onCancelReservation: (reservationId: string) => Promise<boolean>;
 }) {
+  const activeEquipmentIds = new Set(equipmentItems.map((item) => item.id));
   const myReservations = calendarEvents
+    .filter((event) => event.equipmentId && activeEquipmentIds.has(event.equipmentId))
     .filter((event) => event.createdBy !== 'ADMIN')
     .sort((first, second) => first.start.localeCompare(second.start));
 
@@ -5247,7 +5249,9 @@ function MyPageV2({
   const roles = getMyPageRoles(managedUser, sessionRole, managerUserIds);
   const isAdminSession = sessionRole === 'ADMIN';
   const sessionUserId = sessionUser?.id ?? managedUser?.id;
+  const activeEquipmentIds = useMemo(() => new Set(equipmentItems.map((item) => item.id)), [equipmentItems]);
   const myReservations = calendarEvents
+    .filter((event) => event.equipmentId && activeEquipmentIds.has(event.equipmentId))
     .filter((event) => event.createdBy !== 'ADMIN')
     .filter((event) => isAdminSession || event.mine || (Boolean(sessionUserId) && event.userId === sessionUserId))
     .sort((first, second) => first.start.localeCompare(second.start));
