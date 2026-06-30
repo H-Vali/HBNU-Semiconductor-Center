@@ -7795,6 +7795,8 @@ select {
   padding: 0 0.75rem;
   color: #f8fafc;
   font-weight: 800;
+  white-space: nowrap;
+  word-break: keep-all;
 }
 
 .permission-user-pill.is-wide {
@@ -8256,7 +8258,7 @@ select {
 }
 
 .users-table {
-  min-width: 1380px;
+  min-width: 1440px;
 }
 
 .users-table .user-col-index {
@@ -8264,7 +8266,13 @@ select {
 }
 
 .users-table .user-col-name {
-  width: 8rem;
+  width: 10rem;
+}
+
+.users-table th:nth-child(2),
+.users-table td:nth-child(2) {
+  min-width: 10rem;
+  white-space: nowrap;
 }
 
 .users-table .user-col-role {
@@ -8389,6 +8397,8 @@ select {
   color: #f8fafc;
   font-weight: 900;
   text-align: left;
+  white-space: nowrap;
+  word-break: keep-all;
   transition: color 0.22s ease;
 }
 
