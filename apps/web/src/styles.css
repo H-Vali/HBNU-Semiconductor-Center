@@ -2183,6 +2183,10 @@ select {
   overflow: hidden;
 }
 
+.fc .fc-daygrid-event.is-multi-day-range {
+  max-width: none;
+}
+
 .fc .fc-daygrid-block-event {
   border-radius: 6px;
   padding: 0.08rem 0.35rem;

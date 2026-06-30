@@ -772,7 +772,8 @@ function buildReservationCalendarEvents(events: ReservationEvent[], equipmentIte
         display: 'block',
         originalStart: event.start,
         originalEnd: event.end ?? event.start,
-        originalReservationId: event.id
+        originalReservationId: event.id,
+        multiDayRange: true
       };
     }
 
@@ -811,6 +812,7 @@ function getReservationCalendarEventClassNames(arg: CalendarEventClassArg) {
   return [
     arg.event.extendedProps.status === 'maintenance' ? 'is-maintenance-event' : '',
     arg.event.extendedProps.status === 'external' ? 'is-external-event' : '',
+    arg.event.extendedProps.multiDayRange ? 'is-multi-day-range' : '',
     isReservationCalendarEventLive(arg) ? 'is-live-event' : ''
   ].filter(Boolean);
 }
