@@ -412,7 +412,7 @@ export async function listEquipment() {
      from equipment
      where deleted_at is null
      order by
-      case when id ~ '^eq-[0-9]+$' then substring(id from '[0-9]+')::integer end nulls last,
+      case when id ~ '^eq-[0-9]+$' then substring(id from '[0-9]+')::bigint end nulls last,
       created_at asc,
       id`
   );
