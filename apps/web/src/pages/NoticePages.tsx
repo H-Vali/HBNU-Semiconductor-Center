@@ -323,12 +323,20 @@ function readNoticeAttachments(files: FileList | null): Promise<NoticeAttachment
   })));
 }
 
+function triggerNoticeAttachmentDownload(href: string, fileName: string) {
+  const anchor = document.createElement('a');
+  anchor.href = href;
+  anchor.download = fileName;
+  anchor.rel = 'noopener';
+  anchor.style.display = 'none';
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+}
+
 async function downloadNoticeAttachment(attachment: NoticeAttachment) {
   if (attachment.dataUrl.startsWith('data:') || attachment.dataUrl.startsWith('blob:')) {
-    const anchor = document.createElement('a');
-    anchor.href = attachment.dataUrl;
-    anchor.download = attachment.name;
-    anchor.click();
+    triggerNoticeAttachmentDownload(attachment.dataUrl, attachment.name);
     return;
   }
 
@@ -346,10 +354,7 @@ async function downloadNoticeAttachment(attachment: NoticeAttachment) {
     return;
   }
   const objectUrl = URL.createObjectURL(result.blob);
-  const anchor = document.createElement('a');
-  anchor.href = objectUrl;
-  anchor.download = attachment.name;
-  anchor.click();
+  triggerNoticeAttachmentDownload(objectUrl, attachment.name);
   window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
 }
 
