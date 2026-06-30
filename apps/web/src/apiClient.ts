@@ -10,12 +10,21 @@ type ApiOptions = RequestInit & {
   authToken?: string | null;
 };
 
+export type ApiResult<T> =
+  | { ok: true; data: T; status: number }
+  | { ok: false; status?: number; message: string };
+
 export function getApiUrl(path: string) {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   return `${apiBaseUrl}${normalizedPath}`;
 }
 
 async function apiRequest<T>(path: string, options: ApiOptions = {}): Promise<T | null> {
+  const result = await apiRequestResult<T>(path, options);
+  return result.ok ? result.data : null;
+}
+
+async function apiRequestResult<T>(path: string, options: ApiOptions = {}): Promise<ApiResult<T>> {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   const headers = new Headers(options.headers);
   headers.set('Accept', 'application/json');
@@ -32,10 +41,19 @@ async function apiRequest<T>(path: string, options: ApiOptions = {}): Promise<T 
       ...options,
       headers
     });
-    if (!response.ok) return null;
-    return await response.json() as T;
-  } catch {
-    return null;
+    if (!response.ok) {
+      return {
+        ok: false,
+        status: response.status,
+        message: await response.text().catch(() => response.statusText)
+      };
+    }
+    return { ok: true, status: response.status, data: await response.json() as T };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : String(error)
+    };
   }
 }
 
@@ -45,6 +63,14 @@ export function apiGet<T>(path: string, authToken?: string | null) {
 
 export function apiPost<T>(path: string, body: unknown, authToken?: string | null) {
   return apiRequest<T>(path, {
+    method: 'POST',
+    body: JSON.stringify(body),
+    authToken
+  });
+}
+
+export function apiPostResult<T>(path: string, body: unknown, authToken?: string | null) {
+  return apiRequestResult<T>(path, {
     method: 'POST',
     body: JSON.stringify(body),
     authToken

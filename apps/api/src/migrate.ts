@@ -164,16 +164,35 @@ const statements = [
   `create index if not exists training_requests_requested_at_idx on training_requests (requested_at desc) where deleted_at is null`,
   `do $$
   begin
+    if exists (
+      select 1
+      from pg_constraint
+      where conname = 'reservations_no_equipment_time_overlap'
+        and pg_get_constraintdef(oid) not ilike '%starts_at IS NOT NULL%'
+    ) then
+      alter table reservations drop constraint reservations_no_equipment_time_overlap;
+    end if;
+
     if not exists (
       select 1 from pg_constraint where conname = 'reservations_no_equipment_time_overlap'
     ) then
-      alter table reservations
-        add constraint reservations_no_equipment_time_overlap
-        exclude using gist (
-          equipment_id with =,
-          tstzrange(starts_at, ends_at, '[)') with &&
-        )
-        where (deleted_at is null and status in ('approved', 'maintenance', 'external'));
+      begin
+        alter table reservations
+          add constraint reservations_no_equipment_time_overlap
+          exclude using gist (
+            equipment_id with =,
+            tstzrange(starts_at, ends_at, '[)') with &&
+          )
+          where (
+            deleted_at is null
+            and starts_at is not null
+            and ends_at is not null
+            and status in ('approved', 'maintenance', 'external')
+          );
+      exception
+        when exclusion_violation then
+          raise warning 'Skipped reservations overlap constraint because existing rows overlap';
+      end;
     end if;
   end $$`,
   `create table if not exists notices (

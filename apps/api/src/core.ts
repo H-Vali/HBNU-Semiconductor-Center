@@ -161,6 +161,15 @@ const coreSchemaStatements = [
   `create index if not exists reservations_user_time_idx on reservations (user_id, starts_at desc) where deleted_at is null`,
   `do $$
   begin
+    if exists (
+      select 1
+      from pg_constraint
+      where conname = 'reservations_no_equipment_time_overlap'
+        and pg_get_constraintdef(oid) not ilike '%starts_at IS NOT NULL%'
+    ) then
+      alter table reservations drop constraint reservations_no_equipment_time_overlap;
+    end if;
+
     if not exists (
       select 1 from pg_constraint where conname = 'reservations_no_equipment_time_overlap'
     ) then
@@ -171,7 +180,12 @@ const coreSchemaStatements = [
             equipment_id with =,
             tstzrange(starts_at, ends_at, '[)') with &&
           )
-          where (deleted_at is null and status in ('approved', 'maintenance', 'external'));
+          where (
+            deleted_at is null
+            and starts_at is not null
+            and ends_at is not null
+            and status in ('approved', 'maintenance', 'external')
+          );
       exception
         when exclusion_violation then
           raise warning 'Skipped reservations overlap constraint because existing rows overlap';
@@ -661,6 +675,8 @@ export async function createReservation(input: unknown, user?: SessionUser) {
          from reservations
          where equipment_id = $1
            and deleted_at is null
+           and starts_at is not null
+           and ends_at is not null
            and status in ('approved', 'maintenance', 'external')
            and tstzrange(starts_at, ends_at, '[)') && tstzrange($2::timestamptz, $3::timestamptz, '[)')
          limit 1`,

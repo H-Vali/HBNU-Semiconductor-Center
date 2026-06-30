@@ -60,7 +60,7 @@ import { initialConsumablesData, initialManagedUsersData } from './mockData';
 import { NoticeAdminPage, NoticePage, getNoticeCategoryTone, normalizeNoticeItems, noticeBoardMeta, type NoticeAttachment, type NoticeBoardKey, type NoticeItem } from './pages/NoticePages';
 import { FaqPage, QnaPage, type FaqItem } from './pages/InquiryPages';
 import { AuditLogPage } from './pages/AuditLogPage';
-import { apiDelete, apiGet, apiGetBlob, apiPatch, apiPost, apiPut, getApiUrl } from './apiClient';
+import { apiDelete, apiGet, apiGetBlob, apiPatch, apiPost, apiPostResult, apiPut, getApiUrl } from './apiClient';
 import { getReservationStatusLabel, normalizeReservationStatus, type ReservationStatus } from './utils/reservationStatus';
 
 type PageKey = 'home' | 'notice' | 'operationNotice' | 'meetingNotice' | 'center' | 'facility' | 'equipment' | 'training' | 'trainingManagement' | 'faq' | 'qna' | 'reservations' | 'managerPermissions' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'equipmentAdmin' | 'penalties' | 'noticeAdmin' | 'educationAdmin' | 'auditLogs' | 'login';
@@ -8056,7 +8056,7 @@ export function App() {
   }
 
   async function addReservation(event: ReservationEvent) {
-    const savedEvent = await apiPost<ApiReservationEvent>('/reservations', {
+    const result = await apiPostResult<ApiReservationEvent>('/reservations', {
       equipmentId: event.equipmentId,
       title: event.title,
       startsAt: toApiReservationDateTime(event.start),
@@ -8065,6 +8065,23 @@ export function App() {
       userId: event.userId ?? sessionUser?.id,
       status: event.status
     }, localStorage.getItem(STORAGE_KEYS.sessionToken));
+    if (!result.ok) {
+      if (result.status === 409) {
+        window.alert('선택한 시간대에 이미 예약이 있습니다. 다른 시간을 선택해 주세요.');
+        return false;
+      }
+      if (result.status === 403) {
+        window.alert('이 장비를 예약할 권한이 없습니다. 장비 권한 또는 교육 이수 상태를 확인해 주세요.');
+        return false;
+      }
+      if (result.status === 400) {
+        window.alert('예약 입력값을 저장할 수 없습니다. 날짜, 시간, 예약 목적을 확인해 주세요.');
+        return false;
+      }
+      window.alert('예약 저장 중 서버 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+      return false;
+    }
+    const savedEvent = result.data;
     if (!savedEvent) {
       window.alert('예약을 DB에 저장하지 못했습니다. 장비 권한, 교육 이수 상태 또는 중복 예약 여부를 확인해 주세요.');
       return false;
