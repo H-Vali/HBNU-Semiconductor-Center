@@ -2173,7 +2173,7 @@ select {
 }
 
 .fc .fc-daygrid-event-harness {
-  overflow: hidden;
+  overflow: visible;
 }
 
 .fc .fc-daygrid-event {

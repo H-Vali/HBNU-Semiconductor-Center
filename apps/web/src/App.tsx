@@ -747,6 +747,7 @@ function buildReservationCalendarEvents(events: ReservationEvent[], equipmentIte
       start: multiDay ? event.start.slice(0, 10) : event.start,
       end: multiDay ? addDaysToDateKey(endDateKey, 1) : event.end,
       allDay: multiDay,
+      display: 'block',
       originalStart: event.start,
       originalEnd: event.end ?? event.start
     };
@@ -2965,6 +2966,7 @@ function ReservationPage({
           selectable
           height="auto"
           displayEventTime={false}
+          eventDisplay="block"
           dayCellClassNames={(arg) => (getSeoulDateKey(arg.date) === todayKey ? ['seoul-today'] : [])}
           dateClick={(arg) => openReservation(arg.dateStr)}
           eventClassNames={(arg) => [
@@ -4512,6 +4514,7 @@ function AdminPage({
             height="100%"
             contentHeight="auto"
             displayEventTime={false}
+            eventDisplay="block"
             dayMaxEvents={2}
             dayMaxEventRows={2}
             moreLinkClick="popover"
