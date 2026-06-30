@@ -7780,12 +7780,21 @@ export function App() {
     let isMounted = true;
     void apiGet<ApiReservationEvent[]>('/reservations', token).then((items) => {
       if (!isMounted || !items) return;
-      setReservationEvents(items.map(normalizeApiReservation));
+      const activeEquipmentIds = new Set(
+        equipmentItems
+          .filter((item) => !deletedEquipmentIds.includes(item.id))
+          .map((item) => item.id)
+      );
+      setReservationEvents(
+        items
+          .map(normalizeApiReservation)
+          .filter((event) => event.equipmentId && activeEquipmentIds.has(event.equipmentId))
+      );
     });
     return () => {
       isMounted = false;
     };
-  }, [sessionRole, equipmentItems]);
+  }, [deletedEquipmentIds, equipmentItems, sessionRole]);
 
   useEffect(() => {
     const token = localStorage.getItem(STORAGE_KEYS.sessionToken);
@@ -7986,6 +7995,8 @@ export function App() {
       return false;
     }
     setDeletedEquipmentIds((current) => current.includes(equipmentId) ? current : [...current, equipmentId]);
+    setReservationEvents((current) => current.filter((event) => event.equipmentId !== equipmentId));
+    setTrainingRequests((current) => current.filter((request) => request.equipmentId !== equipmentId));
     return true;
   }
 
@@ -8505,6 +8516,10 @@ export function App() {
   }
 
   const activeEquipmentItems = equipmentItems.filter((item) => !deletedEquipmentIds.includes(item.id));
+  const activeEquipmentIds = useMemo(() => new Set(activeEquipmentItems.map((item) => item.id)), [activeEquipmentItems]);
+  const activeReservationEvents = useMemo(() => (
+    reservationEvents.filter((event) => event.equipmentId && activeEquipmentIds.has(event.equipmentId))
+  ), [activeEquipmentIds, reservationEvents]);
   const activeConsumables = monthlyConsumables[selectedConsumableMonth] ?? cloneConsumables();
   const managerUserIds = useMemo(() => new Set(activeEquipmentItems.map((item) => item.managerId).filter(Boolean) as string[]), [activeEquipmentItems]);
   const currentManagedUser = useMemo(
@@ -8559,7 +8574,7 @@ export function App() {
             <>
               <Dashboard
                 equipmentItems={activeEquipmentItems}
-                calendarEvents={reservationEvents}
+                calendarEvents={activeReservationEvents}
                 managedUsers={managedUsers}
                 sessionUserName={sessionUserName}
                 sessionRole={sessionRole}
@@ -8603,7 +8618,7 @@ export function App() {
             ) : (
               <ReservationPage
                 equipmentItems={activeEquipmentItems}
-                calendarEvents={reservationEvents}
+                calendarEvents={activeReservationEvents}
                 sessionRole={sessionRole}
                 sessionUser={sessionUser}
                 currentUser={currentManagedUser}
@@ -8650,7 +8665,7 @@ export function App() {
             sessionRole === 'ADMIN' ? (
               <AdminPage
                 equipmentItems={activeEquipmentItems}
-                calendarEvents={reservationEvents}
+                calendarEvents={activeReservationEvents}
                 onAddReservation={addReservation}
                 onDeleteReservation={deleteReservation}
                 onNavigate={navigate}
@@ -8796,7 +8811,7 @@ export function App() {
           {activePage === 'mypage' && sessionRole && (
             <MyPageV2
               equipmentItems={activeEquipmentItems}
-              calendarEvents={reservationEvents}
+              calendarEvents={activeReservationEvents}
               managedUser={currentManagedUser}
               sessionUser={sessionUser}
               sessionRole={sessionRole}

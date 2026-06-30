@@ -626,13 +626,22 @@ export async function deleteEquipment(id: string) {
 }
 
 export async function listReservations(actor?: SessionUser) {
-  if (!hasDatabase()) return projectReservations(mutableFallbackReservations.map(mapFallbackReservation), actor);
+  if (!hasDatabase()) {
+    const activeEquipmentIds = new Set(mutableFallbackEquipment.map((entry) => entry.id));
+    return projectReservations(
+      mutableFallbackReservations
+        .filter((reservation) => activeEquipmentIds.has(reservation.equipmentId))
+        .map(mapFallbackReservation),
+      actor
+    );
+  }
   const result = await query<ReservationRow>(
-    `select id, equipment_id as "equipmentId", user_id as "userId", title, purpose,
-      starts_at as "startsAt", ends_at as "endsAt", status, created_by_role as "createdByRole"
-     from reservations
-     where deleted_at is null
-     order by starts_at desc`
+    `select r.id, r.equipment_id as "equipmentId", r.user_id as "userId", r.title, r.purpose,
+      r.starts_at as "startsAt", r.ends_at as "endsAt", r.status, r.created_by_role as "createdByRole"
+     from reservations r
+     join equipment e on e.id = r.equipment_id and e.deleted_at is null
+     where r.deleted_at is null
+     order by r.starts_at desc`
   );
   return projectReservations(result.rows.map(mapReservation), actor);
 }

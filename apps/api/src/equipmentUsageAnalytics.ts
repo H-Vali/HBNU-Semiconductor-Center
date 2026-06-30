@@ -85,7 +85,6 @@ async function getEquipmentUsageRows() {
       left join reservations r
         on r.equipment_id = e.id
        and ${approvedReservationClause}
-      where e.deleted_at is null
       group by e.id, e.name, e.group_key, e.group_name
       order by e.group_key, e.name`
   );
@@ -106,7 +105,6 @@ async function getGroupUsageRows() {
         left join reservations r
           on r.equipment_id = e.id
          and ${approvedReservationClause}
-        where e.deleted_at is null
         group by e.group_key
       ),
       total as (
