@@ -654,7 +654,7 @@ export async function createReservation(input: unknown, user?: SessionUser) {
 
   try {
     return await transaction(async (client) => {
-      await client.query('select pg_advisory_xact_lock(hashtext($1))', [body.equipmentId]);
+      await client.query('select pg_advisory_xact_lock(hashtext($1)::bigint)', [body.equipmentId]);
 
       const overlap = await client.query<{ id: string }>(
         `select id
