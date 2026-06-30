@@ -73,7 +73,7 @@ const createReservationSchema = z.object({
   equipmentId: z.string().min(1),
   startsAt: z.string().datetime({ offset: true }),
   endsAt: z.string().datetime({ offset: true }),
-  purpose: z.string().min(5),
+  purpose: z.string().trim().min(1),
   title: z.string().min(1).optional(),
   userId: z.string().min(1).optional(),
   status: createReservationStatusSchema.optional()
