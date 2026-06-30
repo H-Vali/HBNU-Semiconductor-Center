@@ -115,7 +115,11 @@ export async function apiGetBlobResult(pathOrUrl: string, authToken?: string | n
     headers.set('Authorization', `Bearer ${authToken}`);
   }
 
-  const targetUrl = /^https?:\/\//i.test(pathOrUrl) ? pathOrUrl : getApiUrl(pathOrUrl);
+  const targetUrl = /^\/\//.test(pathOrUrl)
+    ? `${typeof window !== 'undefined' ? window.location.protocol : 'https:'}${pathOrUrl}`
+    : /^https?:\/\//i.test(pathOrUrl)
+      ? pathOrUrl
+      : getApiUrl(pathOrUrl);
   try {
     const response = await fetch(targetUrl, { headers });
     if (!response.ok) {
