@@ -4144,10 +4144,7 @@ function TrainingManagementPage({
                         </label>
                       )}
                       <div className="training-manager-actions">
-                        <button type="button" className="is-muted" onClick={() => rejectRequest(request)}>반려</button>
-                        <a href={`mailto:${request.applicant.email}?subject=${encodeURIComponent(`${request.equipment.name} 교육 요청 문의`)}`}>
-                          <MessageSquare size={15} /> 메시지
-                        </a>
+                        <button type="button" className="is-danger" onClick={() => rejectRequest(request)}>반려</button>
                         <button type="button" className="is-primary" onClick={() => scheduleRequest(request)}>
                           <CheckCircle2 size={15} /> 이 시간으로 승인
                         </button>

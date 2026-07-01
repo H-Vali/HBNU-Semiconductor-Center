@@ -4700,11 +4700,21 @@ select {
   color: #cbd5e1;
 }
 
+.training-manager-actions button.is-danger {
+  background: rgba(220, 38, 38, 0.88);
+  color: #fff1f2;
+  box-shadow: 0 12px 26px rgba(220, 38, 38, 0.18);
+}
+
 .training-manager-compact-actions button:hover,
 .training-manager-actions button:hover,
 .training-complete-row button:hover {
   transform: translateY(-1px);
   box-shadow: 0 12px 28px rgba(52, 214, 176, 0.2);
+}
+
+.training-manager-actions button.is-danger:hover {
+  box-shadow: 0 14px 30px rgba(220, 38, 38, 0.26);
 }
 
 .training-schedule-editor {
