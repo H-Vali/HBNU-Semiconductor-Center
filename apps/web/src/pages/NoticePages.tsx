@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { BookOpen, Download, Plus, Search, Trash2, UploadCloud, X } from 'lucide-react';
 import { STORAGE_KEYS } from '../appStorage';
 import { apiGetBlobResult } from '../apiClient';
@@ -392,6 +392,14 @@ export function NoticeAdminPage({
   const selectedNotice = !isFaqBoard ? items.find((item) => item.id === selectedNoticeId) ?? items[0] : undefined;
   const selectedFaq = isFaqBoard ? faqItems.find((item) => item.id === selectedFaqId) ?? faqItems[0] : undefined;
   const meta = !isFaqBoard ? noticeBoardMeta[activeBoard] : { label: '자주묻는 질문', category: '운영' as NoticeCategory };
+  const [noticeDraft, setNoticeDraft] = useState<NoticeItem | undefined>(selectedNotice);
+  const [faqDraft, setFaqDraft] = useState<FaqItem | undefined>(selectedFaq);
+  const noticeSaveTimerRef = useRef<number | null>(null);
+  const faqSaveTimerRef = useRef<number | null>(null);
+  const pendingNoticeUpdateRef = useRef<{ board: NoticeBoardKey; noticeId: string; patch: Partial<NoticeItem> } | null>(null);
+  const pendingFaqUpdateRef = useRef<{ faqId: string; patch: Partial<FaqItem> } | null>(null);
+  const noticeEditor = noticeDraft ?? selectedNotice;
+  const faqEditor = faqDraft ?? selectedFaq;
 
   useEffect(() => {
     if (isFaqBoard) {
@@ -404,6 +412,73 @@ export function NoticeAdminPage({
       setSelectedNoticeId(items[0].id);
     }
   }, [faqItems, isFaqBoard, items, selectedFaqId, selectedNoticeId]);
+
+  useEffect(() => {
+    setNoticeDraft(selectedNotice);
+  }, [selectedNotice?.id]);
+
+  useEffect(() => {
+    setFaqDraft(selectedFaq);
+  }, [selectedFaq?.id]);
+
+  useEffect(() => () => {
+    flushPendingNoticeUpdate();
+    flushPendingFaqUpdate();
+  }, []);
+
+  function flushPendingNoticeUpdate() {
+    if (noticeSaveTimerRef.current) {
+      window.clearTimeout(noticeSaveTimerRef.current);
+      noticeSaveTimerRef.current = null;
+    }
+    const pending = pendingNoticeUpdateRef.current;
+    if (!pending) return;
+    pendingNoticeUpdateRef.current = null;
+    onUpdateNotice(pending.board, pending.noticeId, pending.patch);
+  }
+
+  function flushPendingFaqUpdate() {
+    if (faqSaveTimerRef.current) {
+      window.clearTimeout(faqSaveTimerRef.current);
+      faqSaveTimerRef.current = null;
+    }
+    const pending = pendingFaqUpdateRef.current;
+    if (!pending) return;
+    pendingFaqUpdateRef.current = null;
+    onUpdateFaq(pending.faqId, pending.patch);
+  }
+
+  function queueNoticeUpdate(patch: Partial<NoticeItem>) {
+    if (isFaqBoard || !selectedNotice) return;
+    const board = activeBoard as NoticeBoardKey;
+    const noticeId = selectedNotice.id;
+    setNoticeDraft((current) => ({ ...(current ?? selectedNotice), ...patch }));
+    const previous = pendingNoticeUpdateRef.current;
+    pendingNoticeUpdateRef.current = {
+      board,
+      noticeId,
+      patch: previous?.board === board && previous.noticeId === noticeId ? { ...previous.patch, ...patch } : patch
+    };
+    if (noticeSaveTimerRef.current) window.clearTimeout(noticeSaveTimerRef.current);
+    noticeSaveTimerRef.current = window.setTimeout(() => {
+      flushPendingNoticeUpdate();
+    }, 500);
+  }
+
+  function queueFaqUpdate(patch: Partial<FaqItem>) {
+    if (!isFaqBoard || !selectedFaq) return;
+    const faqId = selectedFaq.id;
+    setFaqDraft((current) => ({ ...(current ?? selectedFaq), ...patch }));
+    const previous = pendingFaqUpdateRef.current;
+    pendingFaqUpdateRef.current = {
+      faqId,
+      patch: previous?.faqId === faqId ? { ...previous.patch, ...patch } : patch
+    };
+    if (faqSaveTimerRef.current) window.clearTimeout(faqSaveTimerRef.current);
+    faqSaveTimerRef.current = window.setTimeout(() => {
+      flushPendingFaqUpdate();
+    }, 500);
+  }
 
   async function submitNotice(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -477,8 +552,10 @@ export function NoticeAdminPage({
     }
     event.target.value = '';
     if (!attachments.length) return;
+    const nextAttachments = [...(selectedNotice.attachments ?? []), ...attachments];
+    setNoticeDraft((current) => current && current.id === selectedNotice.id ? { ...current, attachments: nextAttachments } : current);
     onUpdateNotice(noticeBoard, selectedNotice.id, {
-      attachments: [...(selectedNotice.attachments ?? []), ...attachments]
+      attachments: nextAttachments
     });
   }
 
@@ -494,9 +571,9 @@ export function NoticeAdminPage({
         return;
       }
     }
-    onUpdateNotice(noticeBoard, selectedNotice.id, {
-      attachments: (selectedNotice.attachments ?? []).filter((attachment) => attachment.id !== attachmentId)
-    });
+    const nextAttachments = (selectedNotice.attachments ?? []).filter((attachment) => attachment.id !== attachmentId);
+    setNoticeDraft((current) => current && current.id === selectedNotice.id ? { ...current, attachments: nextAttachments } : current);
+    onUpdateNotice(noticeBoard, selectedNotice.id, { attachments: nextAttachments });
   }
 
   return (
@@ -519,6 +596,8 @@ export function NoticeAdminPage({
             type="button"
             className={activeBoard === board ? 'is-active' : ''}
             onClick={() => {
+              flushPendingNoticeUpdate();
+              flushPendingFaqUpdate();
               setActiveBoard(board);
               setSelectedNoticeId('');
               setSelectedFaqId('');
@@ -546,7 +625,10 @@ export function NoticeAdminPage({
                   key={item.id}
                   type="button"
                   className={`notice-admin-row ${selectedFaq?.id === item.id ? 'is-selected' : ''}`}
-                  onClick={() => setSelectedFaqId(item.id)}
+                  onClick={() => {
+                    flushPendingFaqUpdate();
+                    setSelectedFaqId(item.id);
+                  }}
                 >
                   <span>
                     <em>{item.category}</em>
@@ -564,7 +646,10 @@ export function NoticeAdminPage({
                   key={item.id}
                   type="button"
                   className={`notice-admin-row ${selectedNotice?.id === item.id ? 'is-selected' : ''}`}
-                  onClick={() => setSelectedNoticeId(item.id)}
+                  onClick={() => {
+                    flushPendingNoticeUpdate();
+                    setSelectedNoticeId(item.id);
+                  }}
                 >
                   <span>
                     {isImportantNotice(item) && <em>중요</em>}
@@ -580,54 +665,60 @@ export function NoticeAdminPage({
 
         <div className="notice-admin-editor">
           {isFaqBoard ? (
-            selectedFaq ? (
+            faqEditor ? (
               <>
                 <div className="notice-admin-editor-head">
                   <div>
                     <p>Selected FAQ</p>
-                    <h3>{selectedFaq.question}</h3>
+                    <h3>{faqEditor.question}</h3>
                   </div>
-                  <button type="button" className="is-danger" onClick={() => onDeleteFaq(selectedFaq.id)}>
+                  <button type="button" className="is-danger" onClick={() => {
+                    flushPendingFaqUpdate();
+                    onDeleteFaq(faqEditor.id);
+                  }}>
                     <Trash2 size={16} /> 삭제
                   </button>
                 </div>
                 <div className="notice-admin-form-grid">
-                  <label>분류<select value={selectedFaq.category} onChange={(event) => onUpdateFaq(selectedFaq.id, { category: event.target.value as FaqCategory })}>{faqCategoryOptions.map((category) => <option key={category} value={category}>{category}</option>)}</select></label>
-                  <label>수정일<input value={selectedFaq.updatedAt} onChange={(event) => onUpdateFaq(selectedFaq.id, { updatedAt: event.target.value })} /></label>
-                  <label className="is-wide">질문<input value={selectedFaq.question} onChange={(event) => onUpdateFaq(selectedFaq.id, { question: event.target.value })} /></label>
-                  <label className="is-wide">답변<textarea value={selectedFaq.answer} onChange={(event) => onUpdateFaq(selectedFaq.id, { answer: event.target.value })} /></label>
+                  <label>분류<select value={faqEditor.category} onChange={(event) => queueFaqUpdate({ category: event.target.value as FaqCategory })}>{faqCategoryOptions.map((category) => <option key={category} value={category}>{category}</option>)}</select></label>
+                  <label>수정일<input value={faqEditor.updatedAt} onChange={(event) => queueFaqUpdate({ updatedAt: event.target.value })} /></label>
+                  <label className="is-wide">질문<input value={faqEditor.question} onChange={(event) => queueFaqUpdate({ question: event.target.value })} /></label>
+                  <label className="is-wide">답변<textarea value={faqEditor.answer} onChange={(event) => queueFaqUpdate({ answer: event.target.value })} /></label>
                 </div>
               </>
             ) : (
               <p className="notice-admin-empty">왼쪽에서 FAQ를 선택하거나 새 FAQ를 등록하세요.</p>
             )
-          ) : selectedNotice ? (
+          ) : noticeEditor ? (
             <>
               <div className="notice-admin-editor-head">
                 <div>
                   <p>Selected Notice</p>
-                  <h3>{selectedNotice.title}</h3>
+                  <h3>{noticeEditor.title}</h3>
                 </div>
-                <button type="button" className="is-danger" onClick={() => onDeleteNotice(activeBoard, selectedNotice.id)}>
+                <button type="button" className="is-danger" onClick={() => {
+                  flushPendingNoticeUpdate();
+                  onDeleteNotice(activeBoard as NoticeBoardKey, noticeEditor.id);
+                }}>
                   <Trash2 size={16} /> 삭제
                 </button>
               </div>
               <div className="notice-admin-form-grid">
-                <label>분류<select value={selectedNotice.category} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { category: normalizeNoticeCategory(event.target.value) })}>{noticeCategoryOptions.map((category) => <option key={category} value={category}>{category}</option>)}</select></label>
-                <label>작성자<input value={selectedNotice.author} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { author: event.target.value })} /></label>
-                <label>등록일<input value={selectedNotice.date} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { date: event.target.value })} /></label>
+                <label>분류<select value={noticeEditor.category} onChange={(event) => queueNoticeUpdate({ category: normalizeNoticeCategory(event.target.value) })}>{noticeCategoryOptions.map((category) => <option key={category} value={category}>{category}</option>)}</select></label>
+                <label>작성자<input value={noticeEditor.author} onChange={(event) => queueNoticeUpdate({ author: event.target.value })} /></label>
+                <label>등록일<input value={noticeEditor.date} onChange={(event) => queueNoticeUpdate({ date: event.target.value })} /></label>
                 <div className="notice-admin-check-stack">
-                  <label className="notice-admin-check"><input type="checkbox" checked={isImportantNotice(selectedNotice)} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { important: event.target.checked })} /> 중요 공지</label>
-                  <label className="notice-admin-check"><input type="checkbox" checked={selectedNotice.pinned} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { pinned: event.target.checked })} /> 상단 고정</label>
+                  <label className="notice-admin-check"><input type="checkbox" checked={isImportantNotice(noticeEditor)} onChange={(event) => queueNoticeUpdate({ important: event.target.checked })} /> 중요 공지</label>
+                  <label className="notice-admin-check"><input type="checkbox" checked={noticeEditor.pinned} onChange={(event) => queueNoticeUpdate({ pinned: event.target.checked })} /> 상단 고정</label>
                 </div>
-                <label className="is-wide">제목<input value={selectedNotice.title} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { title: event.target.value })} /></label>
-                <label className="is-wide">요약<input value={selectedNotice.summary} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { summary: event.target.value })} /></label>
-                <label className="is-wide">본문<textarea value={selectedNotice.body} onChange={(event) => onUpdateNotice(activeBoard, selectedNotice.id, { body: event.target.value })} /></label>
+                <label className="is-wide">제목<input value={noticeEditor.title} onChange={(event) => queueNoticeUpdate({ title: event.target.value })} /></label>
+                <label className="is-wide">요약<input value={noticeEditor.summary} onChange={(event) => queueNoticeUpdate({ summary: event.target.value })} /></label>
+                <label className="is-wide">본문<textarea value={noticeEditor.body} onChange={(event) => queueNoticeUpdate({ body: event.target.value })} /></label>
                 <div className="notice-admin-attachments is-wide">
                   <div className="notice-admin-attachment-head">
                     <div>
                       <strong>첨부파일</strong>
-                      <span>{selectedNotice.attachments?.length ?? 0}개 등록</span>
+                      <span>{noticeEditor.attachments?.length ?? 0}개 등록</span>
                     </div>
                     <label className="notice-file-upload">
                       <UploadCloud size={16} />
@@ -640,9 +731,9 @@ export function NoticeAdminPage({
                       />
                     </label>
                   </div>
-                  {(selectedNotice.attachments?.length ?? 0) > 0 ? (
+                  {(noticeEditor.attachments?.length ?? 0) > 0 ? (
                     <ul className="notice-admin-attachment-list">
-                      {selectedNotice.attachments?.map((attachment) => (
+                      {noticeEditor.attachments?.map((attachment) => (
                         <li key={attachment.id}>
                           <div>
                             <strong>{attachment.name}</strong>
