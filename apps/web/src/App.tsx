@@ -1399,12 +1399,19 @@ function HanbatLogoMark() {
 function InstitutionHeader({
   onNavigate,
   sessionRole,
+  sessionUserName,
   onLogout
 }: {
   onNavigate: (page: PageKey) => void;
   sessionRole: Role | null;
+  sessionUserName: string;
   onLogout: () => void;
 }) {
+  const normalizedSessionUserName = sessionUserName.trim() || '사용자';
+  const sessionStatusLabel = sessionRole === 'ADMIN'
+    ? 'ADMIN 접속중'
+    : `${normalizedSessionUserName} 님, 환영합니다.`;
+
   return (
     <header className="sticky top-0 z-20 border-b border-white/10 bg-slate-950/90 backdrop-blur">
       <div className="mx-auto flex max-w-[1800px] items-center justify-between gap-5 px-5 py-3 2xl:px-8">
@@ -1421,7 +1428,7 @@ function InstitutionHeader({
           {sessionRole ? (
             <>
               <span className="rounded-md bg-white px-4 py-2 text-sm font-extrabold text-slate-950">
-                {sessionRole === 'ADMIN' ? 'ADMIN 접속중' : 'USER 접속중'}
+                {sessionStatusLabel}
               </span>
               <button type="button" className="rounded-md border border-white/25 px-4 py-2 text-sm font-extrabold text-white hover:bg-white hover:text-slate-950" onClick={onLogout}>
                 로그아웃
@@ -8570,6 +8577,7 @@ export function App() {
     () => getManagedUserForSession(sessionUser, managedUsers),
     [sessionRole, sessionUser?.id, sessionUser?.email, sessionUser?.name, managedUsers]
   );
+  const headerSessionUserName = currentManagedUser?.name ?? sessionUserName;
   const canManageAssignedPermissions = sessionRole === 'ADMIN' || Boolean(currentManagedUser && managerUserIds.has(currentManagedUser.id));
 
   async function grantAssignedEquipmentPermission(userId: string, equipmentId: string) {
@@ -8608,6 +8616,7 @@ export function App() {
       <InstitutionHeader
         onNavigate={navigate}
         sessionRole={sessionRole}
+        sessionUserName={headerSessionUserName}
         onLogout={logout}
       />
       <div className="app-shell mx-auto max-w-[1800px] px-4 py-5 lg:px-6 2xl:px-8">
