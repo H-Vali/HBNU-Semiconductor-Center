@@ -1399,12 +1399,10 @@ function HanbatLogoMark() {
 function InstitutionHeader({
   onNavigate,
   sessionRole,
-  onPreviewPenaltyTest,
   onLogout
 }: {
   onNavigate: (page: PageKey) => void;
   sessionRole: Role | null;
-  onPreviewPenaltyTest: () => void;
   onLogout: () => void;
 }) {
   return (
@@ -1420,9 +1418,6 @@ function InstitutionHeader({
           </div>
         </button>
         <div className="hidden items-center gap-2 md:flex">
-          <button type="button" className="rounded-md border border-red-300/40 px-3 py-2 text-sm font-extrabold text-red-100 hover:bg-red-500 hover:text-white" onClick={onPreviewPenaltyTest}>
-            페널티 TEST
-          </button>
           {sessionRole ? (
             <>
               <span className="rounded-md bg-white px-4 py-2 text-sm font-extrabold text-slate-950">
@@ -7715,7 +7710,6 @@ export function App() {
   const [trainingRequests, setTrainingRequests] = useState<ApiTrainingRequest[]>([]);
   const [penaltyRecords, setPenaltyRecords] = useState<PenaltyRecord[]>([]);
   const [showPenaltyNotice, setShowPenaltyNotice] = useState(false);
-  const [showPreviewPenaltyDemo, setShowPreviewPenaltyDemo] = useState(false);
   const sessionUser = getStoredSessionUser();
   const sessionUserName = (() => {
     try {
@@ -7729,22 +7723,6 @@ export function App() {
     () => getActivePenaltyForSession(sessionUser, managedUsers, penaltyRecords),
     [sessionRole, managedUsers, penaltyRecords]
   );
-  const previewPenaltyDemo = useMemo<PenaltyRecord>(() => {
-    const startsAt = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
-    return {
-      id: 'preview-penalty-demo',
-      userId: 'preview-demo-user',
-      userName: '프리뷰 사용자',
-      userEmail: 'preview-user@hbnu.local',
-      type: '1주 사용정지',
-      category: '안전관련',
-      reason: '프리뷰 테스트: 안전수칙 미준수로 장비 예약 기능이 1주간 제한된 예시입니다.',
-      startsAt,
-      endsAt: getPenaltyEndsAt('1주 사용정지', startsAt),
-      createdAt: startsAt
-    };
-  }, []);
-
   useEffect(() => {
     if (sessionRole && sessionRole !== 'ADMIN' && activeSessionPenalty) {
       setShowPenaltyNotice(true);
@@ -8295,11 +8273,6 @@ export function App() {
     return true;
   }
 
-  function dismissPreviewPenaltyDemo() {
-    localStorage.setItem(STORAGE_KEYS.previewPenaltyDemoDismissed, 'true');
-    setShowPreviewPenaltyDemo(false);
-  }
-
   function addPenalty(userId: string, type: PenaltyType, category: PenaltyCategory, reason: string) {
     const user = managedUsers.find((item) => item.id === userId);
     if (!user) return;
@@ -8635,7 +8608,6 @@ export function App() {
       <InstitutionHeader
         onNavigate={navigate}
         sessionRole={sessionRole}
-        onPreviewPenaltyTest={() => setShowPreviewPenaltyDemo(true)}
         onLogout={logout}
       />
       <div className="app-shell mx-auto max-w-[1800px] px-4 py-5 lg:px-6 2xl:px-8">
@@ -8899,9 +8871,6 @@ export function App() {
       </div>
       {showPenaltyNotice && activeSessionPenalty && (
         <PenaltyNoticeModal penalty={activeSessionPenalty} onClose={() => setShowPenaltyNotice(false)} />
-      )}
-      {showPreviewPenaltyDemo && !activeSessionPenalty && (
-        <PenaltyNoticeModal penalty={previewPenaltyDemo} onClose={dismissPreviewPenaltyDemo} />
       )}
       {globalAccessNotice && (
         <AccessRequirementModal notice={globalAccessNotice} onClose={() => setGlobalAccessNotice(null)} />

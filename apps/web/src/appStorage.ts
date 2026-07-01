@@ -10,7 +10,6 @@ export const STORAGE_KEYS = {
   meetingNotices: 'hbnu-meeting-notices',
   operationNotices: 'hbnu-operation-notices',
   penaltyRecords: 'hbnu-penalty-records',
-  previewPenaltyDemoDismissed: 'hbnu-preview-penalty-demo-dismissed',
   qnaItems: 'hbnu-qna-items',
   sessionToken: 'hbnu-session-token',
   sessionUser: 'hbnu-session-user',
