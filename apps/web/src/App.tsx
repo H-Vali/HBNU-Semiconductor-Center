@@ -1458,10 +1458,8 @@ function OwnerInfoFooter() {
         <p>
           <span>주소: 대전광역시 유성구 동서대로 125(국립한밭대학교), N11동 107, 113호</span>
           <span>대표번호: 042-828-8758</span>
-          <span>이메일: nfabric@hanbat.ac.kr</span>
         </p>
         <p>
-          <span>개인정보보호책임자: 창의융합교육센터 행정팀</span>
           <span>장비예약/교육문의: equipment@hanbat.ac.kr</span>
           <span>Copyright 2026 Hanbat National University. All rights reserved.</span>
         </p>
