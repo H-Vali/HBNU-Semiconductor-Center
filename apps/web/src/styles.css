@@ -737,30 +737,30 @@ select {
 
 .dashboard-notice-category.is-operation,
 .notice-category-badge.is-operation {
-  border-color: rgba(45, 212, 191, 0.2);
-  background: rgba(20, 184, 166, 0.18);
-  color: #99f6e4;
+  border-color: rgba(250, 204, 21, 0.32);
+  background: rgba(202, 138, 4, 0.2);
+  color: #fde68a;
 }
 
 .dashboard-notice-category.is-reservation,
 .notice-category-badge.is-reservation {
-  border-color: rgba(96, 165, 250, 0.22);
-  background: rgba(37, 99, 235, 0.2);
+  border-color: rgba(96, 165, 250, 0.34);
+  background: rgba(37, 99, 235, 0.22);
   color: #bfdbfe;
 }
 
 .dashboard-notice-category.is-training,
 .notice-category-badge.is-training {
-  border-color: rgba(167, 139, 250, 0.22);
-  background: rgba(124, 58, 237, 0.2);
-  color: #ddd6fe;
+  border-color: rgba(52, 211, 153, 0.32);
+  background: rgba(22, 163, 74, 0.18);
+  color: #bbf7d0;
 }
 
 .dashboard-notice-category.is-maintenance,
 .notice-category-badge.is-maintenance {
-  border-color: rgba(251, 191, 36, 0.25);
-  background: rgba(180, 83, 9, 0.22);
-  color: #fde68a;
+  border-color: rgba(248, 113, 113, 0.34);
+  background: rgba(220, 38, 38, 0.2);
+  color: #fecaca;
 }
 
 .dashboard-notice-row strong {
@@ -6537,6 +6537,10 @@ select {
 
 .notice-row-side strong,
 .notice-category-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.28rem;
   border-radius: 7px;
   background: rgba(59, 130, 246, 0.16);
   border: 1px solid transparent;
@@ -6544,6 +6548,10 @@ select {
   color: #bfdbfe;
   font-size: 0.72rem;
   font-weight: 900;
+}
+
+.notice-category-badge svg {
+  flex: 0 0 auto;
 }
 
 .notice-detail-panel {
@@ -6567,6 +6575,12 @@ select {
   font-size: 0.72rem;
   font-style: normal;
   font-weight: 900;
+}
+
+.notice-detail-head .notice-category-badge {
+  border-radius: 999px;
+  padding: 0.32rem 0.62rem;
+  font-size: 0.72rem;
 }
 
 .notice-detail-head span {
@@ -6828,8 +6842,16 @@ select {
   display: flex;
   align-items: center;
   gap: 0.45rem;
+  flex-wrap: wrap;
   color: #f8fafc;
   font-weight: 950;
+}
+
+.notice-admin-row .notice-category-badge {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 0.16rem 0.46rem;
+  font-size: 0.68rem;
 }
 
 .notice-admin-row em {

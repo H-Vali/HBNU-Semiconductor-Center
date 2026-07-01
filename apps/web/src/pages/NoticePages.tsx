@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
-import { BookOpen, Download, Plus, Search, Trash2, UploadCloud, X } from 'lucide-react';
+import { BookOpen, CalendarCheck, Download, GraduationCap, Megaphone, Plus, Search, Trash2, UploadCloud, Wrench, X, type LucideIcon } from 'lucide-react';
 import { STORAGE_KEYS } from '../appStorage';
 import { apiGetBlobResult } from '../apiClient';
 import type { FaqCategory, FaqItem } from './InquiryPages';
@@ -47,6 +47,25 @@ export function getNoticeCategoryTone(category: NoticeCategory) {
     교육: 'is-training',
     점검: 'is-maintenance'
   }[category];
+}
+
+function getNoticeCategoryIcon(category: NoticeCategory): LucideIcon {
+  return {
+    운영: Megaphone,
+    예약: CalendarCheck,
+    교육: GraduationCap,
+    점검: Wrench
+  }[category];
+}
+
+function NoticeCategoryBadge({ category, className = '' }: { category: NoticeCategory; className?: string }) {
+  const Icon = getNoticeCategoryIcon(category);
+  return (
+    <strong className={`notice-category-badge ${getNoticeCategoryTone(category)}${className ? ` ${className}` : ''}`}>
+      <Icon size={14} strokeWidth={2.6} aria-hidden="true" />
+      {category}
+    </strong>
+  );
 }
 
 export const noticeItems: NoticeItem[] = [
@@ -225,7 +244,7 @@ export function NoticePage({
                   <span className="notice-row-summary">{notice.summary}</span>
                 </span>
                 <span className="notice-row-side">
-                  <strong className={`notice-category-badge ${getNoticeCategoryTone(notice.category)}`}>{notice.category}</strong>
+                  <NoticeCategoryBadge category={notice.category} />
                   <span>{notice.date}</span>
                 </span>
               </button>
@@ -243,7 +262,7 @@ export function NoticePage({
           {selectedNotice ? (
             <>
           <div className="notice-detail-head">
-            <span className={`notice-category-badge ${getNoticeCategoryTone(selectedNotice.category)}`}>{selectedNotice.category}</span>
+            <NoticeCategoryBadge category={selectedNotice.category} />
             {isImportantNotice(selectedNotice) && <em>중요 공지</em>}
             {selectedNotice.pinned && <em>상단 고정</em>}
           </div>
@@ -652,6 +671,7 @@ export function NoticeAdminPage({
                   }}
                 >
                   <span>
+                    <NoticeCategoryBadge category={item.category} className="is-admin-row" />
                     {isImportantNotice(item) && <em>중요</em>}
                     {item.title}
                   </span>
