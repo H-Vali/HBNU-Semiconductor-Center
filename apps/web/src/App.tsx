@@ -5464,8 +5464,8 @@ function MyPageV2({
         </div>
         {myReservations.length === 0 ? (
           <div className="mypage-empty-state">
-            <p>예약 내역이 없습니다. 장비현황에서 예약을 시작해 보세요.</p>
-            <button type="button" onClick={() => onNavigate('equipment')}>장비현황 바로가기</button>
+            <p>예약 내역이 없습니다. 장비예약에서 예약을 시작해 보세요.</p>
+            <button type="button" onClick={() => onNavigate('reservations')}>장비예약 바로가기</button>
           </div>
         ) : (
           <div className="mypage-reservation-groups">
