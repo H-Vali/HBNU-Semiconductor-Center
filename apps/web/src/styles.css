@@ -7442,6 +7442,16 @@ select {
   font-weight: 750;
 }
 
+.qna-table .qna-actions-header,
+.qna-table .qna-actions-cell {
+  width: 9rem;
+  text-align: right;
+}
+
+.qna-table .qna-actions-cell {
+  padding-right: 1.35rem;
+}
+
 .qna-table tr:hover td {
   background: rgba(15, 118, 110, 0.1);
 }

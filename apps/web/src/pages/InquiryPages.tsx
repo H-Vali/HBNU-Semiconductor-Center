@@ -346,21 +346,23 @@ export function QnaPage({ sessionRole }: { sessionRole: Role | null }) {
     setAnswerSavePhase('saved');
   }
 
-  async function deleteSelectedQna() {
-    if (!isAdmin || !selectedQna) return;
-    const confirmed = window.confirm(`"${selectedQna.title}" 문의를 삭제하시겠습니까?\n삭제된 문의는 사용자 화면에서 더 이상 표시되지 않습니다.`);
+  async function deleteQnaQuestion(itemToDelete: QnaItem) {
+    if (!isAdmin) return;
+    const confirmed = window.confirm(`"${itemToDelete.title}" 문의를 삭제하시겠습니까?\n삭제된 문의는 사용자 화면에서 더 이상 표시되지 않습니다.`);
     if (!confirmed) return;
 
     const deletedQuestion = await apiDelete<QnaItem>(
-      `/qna/${selectedQna.id}`,
+      `/qna/${itemToDelete.id}`,
       localStorage.getItem(STORAGE_KEYS.sessionToken)
     );
     if (!deletedQuestion) {
       window.alert('Q&A 삭제에 실패했습니다. 관리자 권한 또는 네트워크 상태를 확인해 주세요.');
       return;
     }
-    persistQnaItems(qnaItems.filter((item) => item.id !== selectedQna.id));
-    setSelectedQnaId(null);
+    persistQnaItems(qnaItems.filter((item) => item.id !== itemToDelete.id));
+    if (selectedQnaId === itemToDelete.id) {
+      setSelectedQnaId(null);
+    }
   }
 
   return (
@@ -407,6 +409,7 @@ export function QnaPage({ sessionRole }: { sessionRole: Role | null }) {
               <th>제목</th>
               <th>답변</th>
               <th>작성일</th>
+              {isAdmin && <th className="qna-actions-header" aria-label="관리" />}
             </tr>
           </thead>
           <tbody>
@@ -433,11 +436,28 @@ export function QnaPage({ sessionRole }: { sessionRole: Role | null }) {
                   </span>
                 </td>
                 <td>{item.createdAt}</td>
+                {isAdmin && (
+                  <td className="qna-actions-cell">
+                    <button
+                      type="button"
+                      className="qna-delete-button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void deleteQnaQuestion(item);
+                      }}
+                      onKeyDown={(event) => event.stopPropagation()}
+                      aria-label={`${item.title} 문의 삭제`}
+                    >
+                      <Trash2 size={14} />
+                      삭제
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
             {!pagedQnaItems.length && (
               <tr>
-                <td colSpan={5} className="qna-empty-row">검색 조건에 맞는 문의가 없습니다.</td>
+                <td colSpan={isAdmin ? 6 : 5} className="qna-empty-row">검색 조건에 맞는 문의가 없습니다.</td>
               </tr>
             )}
           </tbody>
@@ -481,17 +501,6 @@ export function QnaPage({ sessionRole }: { sessionRole: Role | null }) {
             <div className="qna-detail-meta">
               <span>소속 <strong>{selectedQna.department}</strong></span>
               <span>작성일 <strong>{selectedQna.createdAt}</strong></span>
-              {isAdmin && (
-                <button
-                  type="button"
-                  className="qna-delete-button"
-                  onClick={deleteSelectedQna}
-                  aria-label={`${selectedQna.title} 문의 삭제`}
-                >
-                  <Trash2 size={14} />
-                  삭제
-                </button>
-              )}
               {selectedQna.answeredAt && <span>답변일 <strong>{selectedQna.answeredAt}</strong></span>}
             </div>
             <div className="qna-detail-content">
