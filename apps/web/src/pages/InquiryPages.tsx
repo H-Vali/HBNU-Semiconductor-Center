@@ -359,9 +359,13 @@ export function QnaPage({ sessionRole }: { sessionRole: Role | null }) {
       window.alert('Q&A 삭제에 실패했습니다. 관리자 권한 또는 네트워크 상태를 확인해 주세요.');
       return;
     }
+    const deletedVisibleIndex = visibleQnaItems.findIndex((item) => item.id === itemToDelete.id);
+    const nextVisibleItems = visibleQnaItems.filter((item) => item.id !== itemToDelete.id);
+    const nextSelectedItem = nextVisibleItems[Math.min(deletedVisibleIndex, nextVisibleItems.length - 1)] ?? null;
+
     persistQnaItems(qnaItems.filter((item) => item.id !== itemToDelete.id));
     if (selectedQnaId === itemToDelete.id) {
-      setSelectedQnaId(null);
+      setSelectedQnaId(nextSelectedItem?.id ?? null);
     }
   }
 

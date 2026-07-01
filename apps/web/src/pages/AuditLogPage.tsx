@@ -28,6 +28,7 @@ const actionLabels: Record<string, string> = {
   FAQ_UPDATE: 'FAQ 수정',
   FAQ_DELETE: 'FAQ 삭제',
   QNA_ANSWER: 'Q&A 답변',
+  QNA_DELETE: 'Q&A 삭제',
   RESERVATION_CREATE: '예약 생성',
   RESERVATION_CANCEL: '예약 취소',
   EQUIPMENT_PERMISSION_GRANT: '장비 권한 부여',
