@@ -4904,12 +4904,17 @@ select {
 .admin-education-search {
   display: grid;
   gap: 0.38rem;
+  min-width: 0;
   color: #9aa4b2;
   font-size: 0.78rem;
   font-weight: 500;
 }
 
 .admin-education-search input {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   min-height: 2.55rem;
   border: 1px solid rgba(154, 164, 178, 0.16);
   border-radius: 8px;
