@@ -1453,12 +1453,11 @@ function OwnerInfoFooter() {
       <div className="owner-info-lines">
         <p>
           <span>기관명: 국립한밭대학교</span>
-          <span>운영부서: 창의융합교육센터 / 반도체 장비 공동활용 플랫폼</span>
-          <span>센터장: 홍길동</span>
+          <span>운영부서: 지능형나노반도체연구소</span>
         </p>
         <p>
-          <span>주소: 대전광역시 유성구 동서대로 125, N-Facility FAB</span>
-          <span>대표번호: 042-000-0000</span>
+          <span>주소: 대전광역시 유성구 동서대로 125(국립한밭대학교), N11동 107, 113호</span>
+          <span>대표번호: 042-828-8758</span>
           <span>이메일: nfabric@hanbat.ac.kr</span>
         </p>
         <p>
