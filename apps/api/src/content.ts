@@ -383,3 +383,21 @@ export async function answerQnaItem(id: string, input: unknown) {
   );
   return result.rows[0] ?? null;
 }
+
+export async function deleteQnaItem(id: string) {
+  if (!hasDatabase()) {
+    const index = initialQnaItems.findIndex((item) => item.id === id);
+    if (index === -1) return null;
+    const [deletedItem] = initialQnaItems.splice(index, 1);
+    return deletedItem;
+  }
+  const result = await query<QnaItem>(
+    `update qna_items
+     set deleted_at = now()
+     where id = $1 and deleted_at is null
+     returning id, department, title, content, status, created_at as "createdAt",
+       answer, answered_at as "answeredAt", answered_by as "answeredBy"`,
+    [id]
+  );
+  return result.rows[0] ?? null;
+}

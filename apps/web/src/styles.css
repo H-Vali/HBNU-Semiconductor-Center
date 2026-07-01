@@ -7562,6 +7562,28 @@ select {
   color: #dbeafe;
 }
 
+.qna-delete-button {
+  display: inline-flex;
+  min-height: 2.15rem;
+  align-items: center;
+  gap: 0.38rem;
+  border-radius: 999px;
+  border: 1px solid rgba(248, 113, 113, 0.34);
+  background: rgba(127, 29, 29, 0.24);
+  padding: 0 0.78rem;
+  color: #fecaca;
+  font-size: 0.82rem;
+  font-weight: 950;
+  transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.qna-delete-button:hover {
+  border-color: rgba(248, 113, 113, 0.7);
+  background: rgba(185, 28, 28, 0.32);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
 .qna-detail-content,
 .qna-answer-section {
   display: grid;

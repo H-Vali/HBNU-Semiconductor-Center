@@ -19,6 +19,7 @@ import {
   createQnaItem,
   deleteFaq,
   deleteNotice,
+  deleteQnaItem,
   listFaqs,
   listNotices,
   listQnaItems,
@@ -394,6 +395,18 @@ app.patch('/qna/:id/answer', requireAuth, requireRole(['ADMIN']), async (req, re
     const item = await answerQnaItem(id, req.body);
     if (!item) return res.status(404).json({ message: 'Q&A item not found' });
     await writeAuditLog(req.user!, 'QNA_ANSWER', 'qna', id, { title: item.title, status: item.status });
+    return res.json(item);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete('/qna/:id', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
+  try {
+    const { id } = z.object({ id: z.string() }).parse(req.params);
+    const item = await deleteQnaItem(id);
+    if (!item) return res.status(404).json({ message: 'Q&A item not found' });
+    await writeAuditLog(req.user!, 'QNA_DELETE', 'qna', id, { title: item.title, status: item.status });
     return res.json(item);
   } catch (error) {
     next(error);
