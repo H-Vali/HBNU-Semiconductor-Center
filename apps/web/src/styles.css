@@ -5892,6 +5892,8 @@ select {
 }
 
 .training-permission-card {
+  display: flex;
+  flex-direction: column;
   min-height: 17.5rem;
 }
 
@@ -5907,7 +5909,9 @@ select {
 
 .training-permission-list.is-card-list {
   display: grid;
+  flex: 1;
   grid-template-columns: 1fr;
+  align-content: start;
   gap: 0.62rem;
 }
 
@@ -11172,7 +11176,7 @@ select {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(17rem, 0.42fr);
   gap: 1rem;
-  align-items: start;
+  align-items: stretch;
 }
 
 .training-applicant-page .training-request-card {
@@ -11183,6 +11187,11 @@ select {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1rem;
+  align-self: stretch;
+}
+
+.training-applicant-side-grid > .training-permission-card {
+  height: 100%;
 }
 
 .training-applicant-page .training-request-panel-head span {
@@ -11420,6 +11429,7 @@ select {
 
 .training-applicant-permission-empty {
   display: grid;
+  flex: 1;
   min-height: 11rem;
   place-items: center;
   gap: 0.62rem;
