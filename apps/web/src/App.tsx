@@ -5376,7 +5376,7 @@ function TrainingAllSessionsPage({
 
       <div className="training-filter-row" aria-label="교육 목록 필터">
         {[
-          ['all', '전체 상태', 'is-all'],
+          ['all', '교육 목록', 'is-all'],
           ['OPEN', '모집중', getTrainingStatusClass('OPEN')],
           ['CLOSED', '마감', getTrainingStatusClass('CLOSED')],
           ['DONE', '완료', getTrainingStatusClass('DONE')]
