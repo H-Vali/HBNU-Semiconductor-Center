@@ -11542,8 +11542,9 @@ select {
   display: grid;
   flex: 1;
   min-height: 11rem;
-  place-items: center;
-  gap: 0.62rem;
+  align-content: center;
+  justify-items: center;
+  gap: 0;
   border: 0.5px solid rgba(125, 179, 240, 0.11);
   border-radius: 8px;
   background: rgba(6, 14, 28, 0.18);
@@ -11558,22 +11559,36 @@ select {
   filter: drop-shadow(0 0 7px rgba(125, 179, 240, 0.24));
 }
 
+.training-applicant-permission-empty .training-permission-empty-icon {
+  width: 3.1rem;
+  height: 3.1rem;
+  border-radius: 13px;
+  background: rgba(52, 214, 176, 0.12);
+  filter: drop-shadow(0 0 9px rgba(52, 214, 176, 0.38));
+}
+
+.training-applicant-permission-empty .training-permission-empty-icon svg {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
 .training-applicant-permission-empty .training-permission-empty-icon svg {
   color: var(--training-accent);
 }
 
 .training-applicant-permission-empty strong {
-  color: var(--training-secondary);
-  font-size: 0.95rem;
+  margin-top: 0.75rem;
+  color: var(--training-primary);
+  font-size: 1rem;
   font-weight: 800;
 }
 
 .training-applicant-permission-empty p {
-  max-width: 18rem;
-  margin: 0;
-  color: var(--training-muted);
-  font-size: 0.84rem;
-  line-height: 1.55;
+  max-width: 19rem;
+  margin: 0.35rem 0 0;
+  color: var(--training-secondary);
+  font-size: 0.82rem;
+  line-height: 1.65;
 }
 
 .training-cancel-modal-backdrop {
