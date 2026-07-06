@@ -10111,8 +10111,7 @@ select {
 
 .training-primary-button,
 .training-create-panel button,
-.training-manager-card-foot button,
-.training-mini-session button {
+.training-manager-card-foot button {
   display: inline-flex;
   min-height: 2.7rem;
   align-items: center;
@@ -10130,14 +10129,12 @@ select {
 
 .training-primary-button:hover,
 .training-create-panel button:not(:disabled):hover,
-.training-manager-card-foot button:not(:disabled):hover,
-.training-mini-session button:not(:disabled):hover {
+.training-manager-card-foot button:not(:disabled):hover {
   background: var(--training-teal);
 }
 
 .training-create-panel button:disabled,
 .training-manager-card-foot button:disabled,
-.training-mini-session button:disabled,
 .training-application-card-foot button:disabled,
 .training-danger-button:disabled {
   cursor: not-allowed;
@@ -10156,7 +10153,6 @@ select {
 .training-manager-card-foot button:focus-visible,
 .training-danger-button:focus-visible,
 .training-complete-check input:focus-visible + span,
-.training-mini-session button:focus-visible,
 .training-application-card-foot button:focus-visible {
   outline: 2px solid rgba(52, 214, 176, 0.34);
   outline-offset: 2px;
@@ -10412,9 +10408,7 @@ select {
 .training-roster-person strong,
 .training-roster-person span,
 .training-total-equipment strong,
-.training-total-equipment span,
-.training-mini-session strong,
-.training-mini-session span {
+.training-total-equipment span {
   display: block;
 }
 
@@ -10626,8 +10620,7 @@ select {
 }
 
 .training-roster-person strong,
-.training-total-equipment strong,
-.training-mini-session strong {
+.training-total-equipment strong {
   overflow: hidden;
   color: var(--training-primary);
   font-weight: 700;
@@ -10637,7 +10630,6 @@ select {
 
 .training-roster-person span,
 .training-total-equipment span,
-.training-mini-session span,
 .training-roster-contact span {
   color: var(--training-secondary);
   font-size: 0.86rem;
@@ -11088,25 +11080,6 @@ select {
   margin: 0;
 }
 
-.training-applicant-apply-button {
-  display: inline-flex;
-  min-height: 2.35rem;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
-  border: 1px solid rgba(154, 164, 178, 0.28);
-  border-radius: 9px;
-  background: rgba(14, 23, 38, 0.4);
-  padding: 0 1rem;
-  color: var(--training-primary);
-}
-
-.training-applicant-apply-button:hover {
-  border-color: rgba(95, 217, 201, 0.54);
-  color: var(--training-teal);
-  box-shadow: 0 0 18px rgba(95, 217, 201, 0.12);
-}
-
 .training-applicant-dashboard {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(17rem, 0.42fr);
@@ -11349,42 +11322,6 @@ select {
   text-align: center;
 }
 
-.training-mini-session {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: start;
-  gap: 0.75rem;
-  border-top: 1px solid rgba(154, 164, 178, 0.12);
-  padding: 0.95rem 0;
-}
-
-.training-mini-session:first-child {
-  border-top: 0;
-  padding-top: 0;
-}
-
-.training-mini-session > div:last-child {
-  display: grid;
-  justify-items: end;
-  gap: 0.35rem;
-}
-
-.training-applicant-available-card .training-mini-session button {
-  min-width: 100%;
-  height: 2.35rem;
-  border-radius: 8px;
-  font-weight: 800;
-}
-
-.training-applicant-available-card .training-mini-session > div:last-child {
-  min-width: 6.9rem;
-}
-
-.training-applicant-available-card .training-seat-pill {
-  min-width: 4.9rem;
-  height: 2rem;
-}
-
 .training-permission-chip {
   border-radius: 8px;
   background: rgba(52, 214, 176, 0.13);
@@ -11560,8 +11497,7 @@ select {
 
 @media (max-width: 640px) {
   .training-manager-card-head,
-  .training-application-card-head,
-  .training-mini-session {
+  .training-application-card-head {
     grid-template-columns: 1fr;
   }
 

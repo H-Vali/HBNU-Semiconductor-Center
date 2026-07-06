@@ -4654,35 +4654,22 @@ function TrainingIconChip({ groupName, className = '' }: { groupName?: string; c
 function TrainingSessionApplicantPage({
   equipmentItems,
   currentUser,
-  sessionUser,
   permissions,
-  sessions,
   myRegistrations,
   onNavigate,
-  onRegister,
   onCancel
 }: {
   equipmentItems: EquipmentItem[];
   currentUser: ManagedUser | null;
-  sessionUser: StoredSessionUser | null;
   permissions: EquipmentPermissionMap;
-  sessions: ApiTrainingSession[];
   myRegistrations: ApiMyTrainingRegistration[];
   onNavigate: (page: PageKey) => void;
-  onRegister: (sessionId: string) => Promise<boolean>;
   onCancel: (sessionId: string) => Promise<boolean>;
 }) {
   const currentUserPermissionIds = currentUser ? permissions[currentUser.id] ?? [] : [];
   const grantedEquipment = equipmentItems.filter((item) => currentUserPermissionIds.includes(item.id));
-  const activeRegistrationSessionIds = new Set(
-    myRegistrations
-      .filter((registration) => registration.status === 'REGISTERED')
-      .map((registration) => registration.sessionId)
-  );
-  const openSessions = sessions.filter((session) => (session.status === 'OPEN' || session.status === 'FULL') && !activeRegistrationSessionIds.has(session.id));
   const [cancelTarget, setCancelTarget] = useState<ApiMyTrainingRegistration | null>(null);
   const [isCanceling, setIsCanceling] = useState(false);
-  const availablePanelRef = useRef<HTMLElement | null>(null);
   const cancelModalRef = useRef<HTMLElement | null>(null);
   const cancelCloseButtonRef = useRef<HTMLButtonElement | null>(null);
   const activeRegistrationCount = myRegistrations.filter((registration) => (
@@ -4696,7 +4683,6 @@ function TrainingSessionApplicantPage({
     (!registration.session || isTrainingSessionClosed(registration.session))
   )).length;
   const completedRegistrationCount = myRegistrations.filter((registration) => registration.status === 'COMPLETED').length;
-  const currentMonthLabel = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric' }).format(new Date()).replace('.', '월');
   const applicantMetricCards: TrainingMetricCard[] = [
     {
       label: '신청 중',
@@ -4731,17 +4717,6 @@ function TrainingSessionApplicantPage({
       tone: 'is-info'
     }
   ];
-
-  async function register(session: ApiTrainingSession) {
-    if (!sessionUser) {
-      onNavigate('login');
-      return;
-    }
-    if (session.status !== 'OPEN') return;
-    const confirmed = window.confirm(`${session.equipmentName} 교육을 신청하시겠습니까?`);
-    if (!confirmed) return;
-    await onRegister(session.id);
-  }
 
   useEffect(() => {
     if (!cancelTarget) return;
@@ -4792,14 +4767,6 @@ function TrainingSessionApplicantPage({
           <p>MY TRAINING</p>
           <h2>내 교육 신청 현황</h2>
         </div>
-        <button
-          type="button"
-          className="training-link-button training-applicant-apply-button"
-          onClick={() => availablePanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-        >
-          <Plus size={16} aria-hidden="true" />
-          교육 신청하기
-        </button>
       </header>
 
       <TrainingMetricGrid cards={applicantMetricCards} label="내 교육 신청 요약" />
@@ -4890,7 +4857,7 @@ function TrainingSessionApplicantPage({
                   <p>교육을 신청하면 접수부터 이수·권한 부여까지 진행 상황을 여기에서 단계별로 확인할 수 있어요.</p>
                   <button
                     type="button"
-                    onClick={() => availablePanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                    onClick={() => onNavigate('trainingAll')}
                   >
                     <ArrowRight size={15} aria-hidden="true" />
                     신청 가능한 교육 보기
@@ -4905,34 +4872,6 @@ function TrainingSessionApplicantPage({
         </div>
 
         <aside className="training-request-side training-applicant-side-grid">
-          <section className="training-request-card training-applicant-available-card" ref={availablePanelRef}>
-            <div className="training-request-panel-head">
-              <h3>신청 가능한 교육</h3>
-              <span>{currentMonthLabel} · {openSessions.length}건</span>
-            </div>
-            <div className="training-application-summary">
-              {openSessions.length > 0 ? openSessions.map((session) => {
-                const meta = trainingSessionStatusMeta[session.status];
-                return (
-                  <article key={session.id} className="training-mini-session">
-                    <div>
-                      <strong>{session.equipmentName} 교육</strong>
-                      <span>{session.groupName} · {session.status === 'OPEN' ? `신청마감 ${getTrainingShortDate(session.applyDeadline)}` : '정원 마감'}</span>
-                    </div>
-                    <div>
-                      <em className="training-seat-pill">{session.registeredCount} / {session.capacity}</em>
-                      <button type="button" disabled={session.status !== 'OPEN'} onClick={() => void register(session)}>
-                        {session.status === 'OPEN' ? '신청' : meta.label}
-                      </button>
-                    </div>
-                  </article>
-                );
-              }) : (
-                <p className="training-empty-state">현재 신청 가능한 교육이 없습니다.</p>
-              )}
-            </div>
-          </section>
-
           <section className="training-request-card">
             <div className="training-request-panel-head">
               <h3>내 보유 권한</h3>
@@ -9954,13 +9893,10 @@ export function App() {
           {activePage === 'training' && (
             <TrainingSessionApplicantPage
               equipmentItems={activeEquipmentItems}
-              sessionUser={sessionUser}
               currentUser={currentManagedUser}
               permissions={equipmentPermissions}
-              sessions={trainingSessions}
               myRegistrations={myTrainingRegistrations}
               onNavigate={navigate}
-              onRegister={registerTrainingSession}
               onCancel={cancelTrainingSessionRegistration}
             />
           )}
