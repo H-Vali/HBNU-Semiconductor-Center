@@ -4593,12 +4593,24 @@ function isTrainingSessionClosed(session: ApiTrainingSession) {
   return session.status === 'CLOSED' || session.status === 'DONE' || new Date(session.applyDeadline).getTime() <= Date.now();
 }
 
-function getTrainingMonthLabel() {
+function getCurrentTrainingMonth() {
+  return getSeoulDateKey().slice(0, 7);
+}
+
+function shiftTrainingMonth(month: string, offset: number) {
+  const [yearValue, monthValue] = month.split('-').map(Number);
+  if (!yearValue || !monthValue) return getCurrentTrainingMonth();
+  const date = new Date(Date.UTC(yearValue, monthValue - 1 + offset, 1));
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+function getTrainingMonthLabel(month = getCurrentTrainingMonth()) {
+  const date = new Date(`${month}-01T00:00:00+09:00`);
   return new Intl.DateTimeFormat('ko-KR', {
     timeZone: 'Asia/Seoul',
     year: 'numeric',
     month: 'long'
-  }).format(new Date());
+  }).format(Number.isNaN(date.getTime()) ? new Date() : date);
 }
 
 function getTrainingShortDate(value: string) {
@@ -4947,6 +4959,8 @@ function TrainingSessionManagementPage({
   currentUser,
   sessionRole,
   sessions,
+  selectedMonth,
+  onMonthChange,
   onCreateSession,
   onUpdateSession,
   onDeleteSession,
@@ -4957,6 +4971,8 @@ function TrainingSessionManagementPage({
   currentUser: ManagedUser | null;
   sessionRole: Role | null;
   sessions: ApiTrainingSession[];
+  selectedMonth: string;
+  onMonthChange: (offset: number) => void;
   onCreateSession: (input: { equipmentId: string; applyDeadline: string; note: string }) => Promise<boolean>;
   onUpdateSession: (sessionId: string, input: { applyDeadline: string; note: string }) => Promise<boolean>;
   onDeleteSession: (sessionId: string) => Promise<boolean>;
@@ -5088,9 +5104,9 @@ function TrainingSessionManagementPage({
         </div>
         <div className="training-header-actions">
           <div className="training-month-control" aria-label="조회 월">
-            <button type="button" aria-label="이전 월">◀</button>
-            <strong>{getTrainingMonthLabel()}</strong>
-            <button type="button" aria-label="다음 월">▶</button>
+            <button type="button" aria-label="이전 월" onClick={() => onMonthChange(-1)}>◀</button>
+            <strong>{getTrainingMonthLabel(selectedMonth)}</strong>
+            <button type="button" aria-label="다음 월" onClick={() => onMonthChange(1)}>▶</button>
           </div>
           <button type="button" className="training-primary-button" onClick={() => setShowCreateForm((current) => !current)}>
             <Plus size={17} /> 개설
@@ -5260,11 +5276,15 @@ function TrainingAllSessionsPage({
   sessions,
   equipmentItems,
   sessionRole,
+  selectedMonth,
+  onMonthChange,
   onNavigate
 }: {
   sessions: ApiTrainingSession[];
   equipmentItems: EquipmentItem[];
   sessionRole: Role | null;
+  selectedMonth: string;
+  onMonthChange: (offset: number) => void;
   onNavigate: (page: PageKey) => void;
 }) {
   const [statusFilter, setStatusFilter] = useState<'all' | 'OPEN' | 'CLOSED' | 'DONE'>('all');
@@ -5322,9 +5342,9 @@ function TrainingAllSessionsPage({
           <h2>개설 교육 전체 목록</h2>
         </div>
         <div className="training-month-control" aria-label="조회 월">
-          <button type="button" aria-label="이전 월">◀</button>
-          <strong>{getTrainingMonthLabel()}</strong>
-          <button type="button" aria-label="다음 월">▶</button>
+          <button type="button" aria-label="이전 월" onClick={() => onMonthChange(-1)}>◀</button>
+          <strong>{getTrainingMonthLabel(selectedMonth)}</strong>
+          <button type="button" aria-label="다음 월" onClick={() => onMonthChange(1)}>▶</button>
         </div>
       </header>
 
@@ -8677,6 +8697,7 @@ export function App() {
   const [globalAccessNotice, setGlobalAccessNotice] = useState<AccessRequirementNotice | null>(null);
   const [initialGroup, setInitialGroup] = useState<EquipmentGroup>('process');
   const [deletedEquipmentIds, setDeletedEquipmentIds] = useState<string[]>([]);
+  const [selectedTrainingMonth, setSelectedTrainingMonth] = useState(getCurrentTrainingMonth);
   const [selectedConsumableMonth, setSelectedConsumableMonth] = useState('2026-06');
   const [monthlyConsumables, setMonthlyConsumables] = useState<Record<string, ConsumableItem[]>>({ '2026-06': [] });
   const [consumablesUpdatedAt, setConsumablesUpdatedAt] = useState(() => (
@@ -8922,7 +8943,7 @@ export function App() {
     return () => {
       isMounted = false;
     };
-  }, [sessionRole]);
+  }, [selectedTrainingMonth, sessionRole]);
 
   useEffect(() => {
     const token = localStorage.getItem(STORAGE_KEYS.sessionToken);
@@ -9244,12 +9265,11 @@ export function App() {
     if (snapshot) applyEquipmentPermissionSnapshot(snapshot);
   }
 
-  async function refreshTrainingSessionData() {
+  async function refreshTrainingSessionData(month = selectedTrainingMonth) {
     const token = localStorage.getItem(STORAGE_KEYS.sessionToken);
     if (!token || !sessionRole) {
       return { sessions: [], registrations: [], candidates: [] };
     }
-    const month = new Date().toISOString().slice(0, 7);
     const list = await apiGet<ApiTrainingSessionList>(`/trainings?month=${encodeURIComponent(month)}`, token);
     const baseSessions = list?.items ?? [];
     const sessions = sessionRole === 'ADMIN' || sessionRole === 'MANAGER'
@@ -9274,6 +9294,10 @@ export function App() {
     setTrainingSessions(snapshot.sessions);
     setMyTrainingRegistrations(snapshot.registrations);
     setPenaltyCandidates(snapshot.candidates);
+  }
+
+  function changeTrainingMonth(offset: number) {
+    setSelectedTrainingMonth((current) => shiftTrainingMonth(current, offset));
   }
 
   async function createTrainingRequest(input: TrainingRequestInput) {
@@ -9918,6 +9942,8 @@ export function App() {
                 sessions={trainingSessions}
                 equipmentItems={activeEquipmentItems}
                 sessionRole={sessionRole}
+                selectedMonth={selectedTrainingMonth}
+                onMonthChange={changeTrainingMonth}
                 onNavigate={navigate}
               />
             ) : (
@@ -9931,6 +9957,8 @@ export function App() {
                 currentUser={currentManagedUser}
                 sessionRole={sessionRole}
                 sessions={trainingSessions}
+                selectedMonth={selectedTrainingMonth}
+                onMonthChange={changeTrainingMonth}
                 onCreateSession={createTrainingSession}
                 onUpdateSession={updateTrainingSession}
                 onDeleteSession={deleteTrainingSession}
