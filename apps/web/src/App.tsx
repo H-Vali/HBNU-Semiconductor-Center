@@ -5444,7 +5444,7 @@ function TrainingAllSessionsPage({
               <th>교육 / 장비</th>
               <th>담당자</th>
               <th>신청마감</th>
-              <th>정원 충원</th>
+              <th>신청현황</th>
               <th>상태</th>
               <th>관리</th>
             </tr>
