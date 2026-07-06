@@ -4682,8 +4682,55 @@ function TrainingSessionApplicantPage({
   const openSessions = sessions.filter((session) => (session.status === 'OPEN' || session.status === 'FULL') && !activeRegistrationSessionIds.has(session.id));
   const [cancelTarget, setCancelTarget] = useState<ApiMyTrainingRegistration | null>(null);
   const [isCanceling, setIsCanceling] = useState(false);
+  const availablePanelRef = useRef<HTMLElement | null>(null);
   const cancelModalRef = useRef<HTMLElement | null>(null);
   const cancelCloseButtonRef = useRef<HTMLButtonElement | null>(null);
+  const activeRegistrationCount = myRegistrations.filter((registration) => (
+    registration.status === 'REGISTERED' &&
+    registration.session &&
+    !isTrainingSessionClosed(registration.session) &&
+    registration.session.status !== 'CANCELED'
+  )).length;
+  const waitingRegistrationCount = myRegistrations.filter((registration) => (
+    registration.status === 'REGISTERED' &&
+    (!registration.session || isTrainingSessionClosed(registration.session))
+  )).length;
+  const completedRegistrationCount = myRegistrations.filter((registration) => registration.status === 'COMPLETED').length;
+  const currentMonthLabel = new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric' }).format(new Date()).replace('.', '월');
+  const applicantMetricCards: TrainingMetricCard[] = [
+    {
+      label: '신청 중',
+      value: activeRegistrationCount,
+      unit: '건',
+      detail: '마감 전 신청 내역',
+      icon: <CalendarDays size={16} aria-hidden="true" />,
+      tone: 'is-primary'
+    },
+    {
+      label: '마감 대기',
+      value: waitingRegistrationCount,
+      unit: '건',
+      detail: '담당자 안내 대기',
+      icon: <Clock3 size={16} aria-hidden="true" />,
+      tone: 'is-warning'
+    },
+    {
+      label: '이수 완료',
+      value: completedRegistrationCount,
+      unit: '건',
+      detail: '예약 권한 연동',
+      icon: <CheckCircle2 size={16} aria-hidden="true" />,
+      tone: 'is-success'
+    },
+    {
+      label: '보유 권한',
+      value: grantedEquipment.length,
+      unit: '건',
+      detail: '즉시 예약 가능 장비',
+      icon: <KeyRound size={16} aria-hidden="true" />,
+      tone: 'is-info'
+    }
+  ];
 
   async function register(session: ApiTrainingSession) {
     if (!sessionUser) {
@@ -4745,17 +4792,24 @@ function TrainingSessionApplicantPage({
           <p>MY TRAINING</p>
           <h2>내 교육 신청 현황</h2>
         </div>
-        <button type="button" className="training-link-button" onClick={() => onNavigate('training')}>
-          교육 신청하기 →
+        <button
+          type="button"
+          className="training-link-button training-applicant-apply-button"
+          onClick={() => availablePanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+        >
+          <Plus size={16} aria-hidden="true" />
+          교육 신청하기
         </button>
       </header>
 
-      <div className="training-request-layout">
+      <TrainingMetricGrid cards={applicantMetricCards} label="내 교육 신청 요약" />
+
+      <div className="training-applicant-dashboard">
         <div className="training-request-form">
           <section className="training-request-card training-application-panel">
             <div className="training-request-panel-head">
               <h3>내 신청 타임라인</h3>
-              <span>{myRegistrations.length}건</span>
+              <span>최근순</span>
             </div>
             <div className="training-application-summary">
               {myRegistrations.length > 0 ? myRegistrations.map((registration) => {
@@ -4828,17 +4882,33 @@ function TrainingSessionApplicantPage({
                   </article>
                 );
               }) : (
-                <p className="training-empty-state">아직 교육 신청 내역이 없습니다.</p>
+                <div className="training-applicant-empty-timeline">
+                  <span aria-hidden="true">
+                    <GraduationCap size={28} />
+                  </span>
+                  <strong>아직 신청한 교육이 없습니다</strong>
+                  <p>교육을 신청하면 접수부터 이수·권한 부여까지 진행 상황을 여기에서 단계별로 확인할 수 있어요.</p>
+                  <button
+                    type="button"
+                    onClick={() => availablePanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                  >
+                    <ArrowRight size={15} aria-hidden="true" />
+                    신청 가능한 교육 보기
+                  </button>
+                </div>
               )}
             </div>
+            {myRegistrations.length === 0 && (
+              <p className="training-applicant-panel-note">신청 내역이 생기면 단계별 진행 카드가 표시됩니다</p>
+            )}
           </section>
         </div>
 
         <aside className="training-request-side training-applicant-side-grid">
-          <section className="training-request-card">
+          <section className="training-request-card training-applicant-available-card" ref={availablePanelRef}>
             <div className="training-request-panel-head">
               <h3>신청 가능한 교육</h3>
-              <button type="button" onClick={() => onNavigate('training')}>교육 신청하기 →</button>
+              <span>{currentMonthLabel} · {openSessions.length}건</span>
             </div>
             <div className="training-application-summary">
               {openSessions.length > 0 ? openSessions.map((session) => {
@@ -4847,7 +4917,7 @@ function TrainingSessionApplicantPage({
                   <article key={session.id} className="training-mini-session">
                     <div>
                       <strong>{session.equipmentName} 교육</strong>
-                      <span>{session.status === 'OPEN' ? `신청마감 ${getTrainingShortDate(session.applyDeadline)}` : '정원 마감'}</span>
+                      <span>{session.groupName} · {session.status === 'OPEN' ? `신청마감 ${getTrainingShortDate(session.applyDeadline)}` : '정원 마감'}</span>
                     </div>
                     <div>
                       <em className="training-seat-pill">{session.registeredCount} / {session.capacity}</em>
@@ -4871,7 +4941,10 @@ function TrainingSessionApplicantPage({
               {grantedEquipment.length > 0 ? grantedEquipment.map((item) => (
                 <span key={item.id} className="training-permission-chip">{item.name}</span>
               )) : (
-                <p className="training-empty-state">아직 보유한 장비 권한이 없습니다.</p>
+                <div className="training-applicant-permission-empty">
+                  <KeyRound size={30} aria-hidden="true" />
+                  <strong>아직 보유한 장비 권한이 없습니다</strong>
+                </div>
               )}
             </div>
             <p className="training-permission-note">이수 완료 장비는 즉시 예약할 수 있습니다.</p>

@@ -11072,9 +11072,42 @@ select {
   text-decoration: none;
 }
 
-.training-applicant-page .training-request-layout {
-  grid-template-columns: 1fr;
+.training-applicant-page {
   gap: 1rem;
+}
+
+.training-applicant-page .training-ui-header {
+  margin-bottom: 0;
+}
+
+.training-applicant-page .training-metric-grid {
+  margin: 0;
+}
+
+.training-applicant-apply-button {
+  display: inline-flex;
+  min-height: 2.35rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border: 1px solid rgba(154, 164, 178, 0.28);
+  border-radius: 9px;
+  background: rgba(14, 23, 38, 0.4);
+  padding: 0 1rem;
+  color: var(--training-primary);
+}
+
+.training-applicant-apply-button:hover {
+  border-color: rgba(95, 217, 201, 0.54);
+  color: var(--training-teal);
+  box-shadow: 0 0 18px rgba(95, 217, 201, 0.12);
+}
+
+.training-applicant-dashboard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(17rem, 0.42fr);
+  gap: 1rem;
+  align-items: start;
 }
 
 .training-applicant-page .training-request-card {
@@ -11082,12 +11115,24 @@ select {
 }
 
 .training-applicant-side-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.training-applicant-page .training-request-panel-head span {
+  color: var(--training-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
 }
 
 .training-application-summary {
   display: grid;
   gap: 0.85rem;
+}
+
+.training-application-panel {
+  min-height: 21rem;
 }
 
 .training-application-card {
@@ -11234,13 +11279,79 @@ select {
   cursor: not-allowed;
 }
 
+.training-applicant-empty-timeline {
+  display: grid;
+  min-height: 15rem;
+  place-items: center;
+  border: 1px dashed rgba(154, 164, 178, 0.18);
+  border-radius: 10px;
+  background: rgba(8, 15, 28, 0.24);
+  padding: 2.1rem 1rem;
+  text-align: center;
+}
+
+.training-applicant-empty-timeline > span {
+  display: grid;
+  width: 3.1rem;
+  height: 3.1rem;
+  place-items: center;
+  border-radius: 13px;
+  background: rgba(52, 214, 176, 0.12);
+  color: var(--training-accent);
+  filter: drop-shadow(0 0 9px rgba(52, 214, 176, 0.38));
+}
+
+.training-applicant-empty-timeline strong {
+  margin-top: 0.75rem;
+  color: var(--training-primary);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.training-applicant-empty-timeline p {
+  max-width: 19rem;
+  margin: 0.35rem 0 0;
+  color: var(--training-secondary);
+  font-size: 0.82rem;
+  line-height: 1.65;
+}
+
+.training-applicant-empty-timeline button {
+  display: inline-flex;
+  min-height: 2.55rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  margin-top: 0.95rem;
+  border: 1px solid rgba(154, 164, 178, 0.34);
+  border-radius: 8px;
+  background: rgba(9, 16, 29, 0.48);
+  padding: 0 1.05rem;
+  color: var(--training-primary);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.training-applicant-empty-timeline button:hover {
+  border-color: rgba(95, 217, 201, 0.55);
+  color: var(--training-teal);
+}
+
+.training-applicant-panel-note {
+  margin: 0.8rem 0 0;
+  color: rgba(139, 150, 168, 0.38);
+  font-size: 0.78rem;
+  text-align: center;
+}
+
 .training-mini-session {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 0.85rem;
+  align-items: start;
+  gap: 0.75rem;
   border-top: 1px solid rgba(154, 164, 178, 0.12);
-  padding: 0.85rem 0;
+  padding: 0.95rem 0;
 }
 
 .training-mini-session:first-child {
@@ -11254,11 +11365,47 @@ select {
   gap: 0.35rem;
 }
 
+.training-applicant-available-card .training-mini-session button {
+  min-width: 100%;
+  height: 2.35rem;
+  border-radius: 8px;
+  font-weight: 800;
+}
+
+.training-applicant-available-card .training-mini-session > div:last-child {
+  min-width: 6.9rem;
+}
+
+.training-applicant-available-card .training-seat-pill {
+  min-width: 4.9rem;
+  height: 2rem;
+}
+
 .training-permission-chip {
   border-radius: 8px;
   background: rgba(52, 214, 176, 0.13);
   padding: 0.48rem 0.85rem;
   color: var(--training-accent);
+  font-weight: 700;
+}
+
+.training-applicant-permission-empty {
+  display: grid;
+  min-height: 5.5rem;
+  place-items: center;
+  color: var(--training-muted);
+  text-align: center;
+}
+
+.training-applicant-permission-empty svg {
+  margin-bottom: 0.35rem;
+  color: rgba(125, 179, 240, 0.45);
+  filter: drop-shadow(0 0 7px rgba(125, 179, 240, 0.24));
+}
+
+.training-applicant-permission-empty strong {
+  color: var(--training-secondary);
+  font-size: 0.86rem;
   font-weight: 700;
 }
 
@@ -11366,7 +11513,7 @@ select {
   .training-ui-summary,
   .training-create-grid,
   .training-edit-panel,
-  .training-applicant-page .training-request-layout,
+  .training-applicant-dashboard,
   .training-applicant-side-grid {
     grid-template-columns: 1fr;
   }
