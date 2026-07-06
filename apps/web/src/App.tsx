@@ -1719,15 +1719,7 @@ function SidebarNavigation({
                   <>
                     <button
                       type="button"
-                      className={`sidebar-subnav-item ${activePage === 'training' ? 'is-active' : ''}`}
-                      onClick={() => onNavigate('training')}
-                    >
-                      <GraduationCap size={15} />
-                      <span>교육신청</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={`sidebar-subnav-item ${activePage === 'trainingAll' ? 'is-active' : ''}`}
+                      className={`sidebar-subnav-item is-training-tab ${activePage === 'trainingAll' ? 'is-active' : ''}`}
                       onClick={() => onNavigate('trainingAll')}
                     >
                       <ListChecks size={15} />
@@ -1735,7 +1727,15 @@ function SidebarNavigation({
                     </button>
                     <button
                       type="button"
-                      className={`sidebar-subnav-item ${activePage === 'trainingManagement' ? 'is-active' : ''}`}
+                      className={`sidebar-subnav-item is-training-tab ${activePage === 'training' ? 'is-active' : ''}`}
+                      onClick={() => onNavigate('training')}
+                    >
+                      <GraduationCap size={15} />
+                      <span>교육신청</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`sidebar-subnav-item is-training-tab ${activePage === 'trainingManagement' ? 'is-active' : ''}`}
                       onClick={() => onNavigate('trainingManagement')}
                     >
                       <GraduationCap size={15} />
@@ -4990,21 +4990,18 @@ function TrainingAllSessionsPage({
 }) {
   const [statusFilter, setStatusFilter] = useState<'all' | 'OPEN' | 'CLOSED' | 'DONE'>('all');
   const [equipmentFilter, setEquipmentFilter] = useState('all');
-  const [managerFilter, setManagerFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const managerOptions = Array.from(new Map(sessions.map((session) => [session.managerId || session.managerName, session.managerName])).entries());
   const normalizedSearch = searchTerm.trim().toLowerCase();
   const filteredSessions = sessions.filter((session) => {
     const displayStatus = getTrainingSessionDisplayStatus(session);
     const matchesStatus = statusFilter === 'all'
       || (statusFilter === 'CLOSED' ? displayStatus === 'CLOSED' : displayStatus === statusFilter);
     const matchesEquipment = equipmentFilter === 'all' || session.equipmentId === equipmentFilter;
-    const matchesManager = managerFilter === 'all' || session.managerId === managerFilter || session.managerName === managerFilter;
     const matchesSearch = !normalizedSearch
       || session.equipmentName.toLowerCase().includes(normalizedSearch)
       || session.category.toLowerCase().includes(normalizedSearch)
       || session.managerName.toLowerCase().includes(normalizedSearch);
-    return matchesStatus && matchesEquipment && matchesManager && matchesSearch;
+    return matchesStatus && matchesEquipment && matchesSearch;
   });
   const totalCapacity = sessions.reduce((sum, session) => sum + session.capacity, 0);
   const totalRegistered = sessions.reduce((sum, session) => sum + session.registeredCount, 0);
@@ -5034,27 +5031,24 @@ function TrainingAllSessionsPage({
 
       <div className="training-filter-row" aria-label="교육 목록 필터">
         {[
-          ['all', '전체 상태'],
-          ['OPEN', '모집중'],
-          ['CLOSED', '마감'],
-          ['DONE', '완료']
-        ].map(([value, label]) => (
+          ['all', '전체 상태', 'is-all'],
+          ['OPEN', '모집중', getTrainingStatusClass('OPEN')],
+          ['CLOSED', '마감', getTrainingStatusClass('CLOSED')],
+          ['DONE', '완료', getTrainingStatusClass('DONE')]
+        ].map(([value, label, statusClass]) => (
           <button
             key={value}
             type="button"
             className={statusFilter === value ? 'is-active' : ''}
             onClick={() => setStatusFilter(value as typeof statusFilter)}
           >
-            {label}
+            <span className={`training-filter-status-dot ${statusClass}`} aria-hidden="true" />
+            <span>{label}</span>
           </button>
         ))}
         <select value={equipmentFilter} onChange={(event) => setEquipmentFilter(event.target.value)} aria-label="장비 필터">
           <option value="all">장비 전체</option>
           {equipmentItems.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-        </select>
-        <select value={managerFilter} onChange={(event) => setManagerFilter(event.target.value)} aria-label="담당자 필터">
-          <option value="all">담당자 전체</option>
-          {managerOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
         </select>
         <label className="training-search-field">
           <Search size={16} aria-hidden="true" />

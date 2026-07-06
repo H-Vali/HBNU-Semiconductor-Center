@@ -1031,6 +1031,11 @@ select {
   text-align: left;
 }
 
+.sidebar-subnav-item.is-training-tab,
+.sidebar-subnav-item.is-training-tab span {
+  font-weight: 900;
+}
+
 .sidebar-subnav-item:hover,
 .sidebar-subnav-item.is-active {
   border-color: rgba(95, 217, 201, 0.28);
@@ -10539,6 +10544,9 @@ select {
 }
 
 .training-filter-row button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
   padding: 0 1.25rem;
   cursor: pointer;
 }
@@ -10546,6 +10554,36 @@ select {
 .training-filter-row button.is-active {
   border-color: rgba(95, 217, 201, 0.48);
   color: var(--training-primary);
+}
+
+.training-filter-status-dot {
+  display: inline-block;
+  width: 0.58rem;
+  height: 0.58rem;
+  border-radius: 50%;
+  background: var(--training-muted);
+  box-shadow: 0 0 0 3px rgba(139, 150, 168, 0.12);
+}
+
+.training-filter-status-dot.is-all {
+  background: var(--training-info);
+  box-shadow: 0 0 0 3px rgba(125, 179, 240, 0.12);
+}
+
+.training-filter-status-dot.is-open {
+  background: var(--training-warning);
+  box-shadow: 0 0 0 3px rgba(245, 185, 66, 0.12);
+}
+
+.training-filter-status-dot.is-closed,
+.training-filter-status-dot.is-neutral {
+  background: var(--training-muted);
+  box-shadow: 0 0 0 3px rgba(139, 150, 168, 0.12);
+}
+
+.training-filter-status-dot.is-success {
+  background: var(--training-accent);
+  box-shadow: 0 0 0 3px rgba(52, 214, 176, 0.12);
 }
 
 .training-filter-row select {
