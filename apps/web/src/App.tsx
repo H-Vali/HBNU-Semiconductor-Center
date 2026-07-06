@@ -2063,6 +2063,43 @@ function StatGrid({ equipmentItems, metrics }: { equipmentItems: EquipmentItem[]
   );
 }
 
+type TrainingMetricCard = {
+  label: string;
+  value: string | number;
+  unit: string;
+  detail?: string;
+  icon: ReactNode;
+  tone?: 'is-primary' | 'is-open' | 'is-info' | 'is-success' | 'is-warning';
+  progress?: number;
+};
+
+function TrainingMetricGrid({ cards, label }: { cards: TrainingMetricCard[]; label: string }) {
+  return (
+    <div className="stat-grid training-metric-grid" aria-label={label}>
+      {cards.map((card) => {
+        const progress = typeof card.progress === 'number' ? Math.max(0, Math.min(100, card.progress)) : null;
+
+        return (
+          <div key={card.label} className={`stat-card ${card.tone ?? ''}`}>
+            <div className="stat-card-heading">
+              {card.icon}
+              <span>{card.label}</span>
+            </div>
+            <p className="stat-card-value">{card.value}<span>{card.unit}</span></p>
+            {progress === null ? (
+              <p className="stat-card-detail">{card.detail}</p>
+            ) : (
+              <div className="stat-progress" aria-label={`${card.label} ${progress}%`}>
+                <span style={{ width: `${progress}%` }} />
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function RealtimeEquipmentStatus({
   equipmentItems,
   calendarEvents
@@ -4807,6 +4844,42 @@ function TrainingSessionManagementPage({
   const pendingProcessCount = managerSessions.filter((session) => isTrainingSessionClosed(session) && session.status !== 'DONE').length;
   const totalRegistrations = managerSessions.reduce((sum, session) => sum + session.registeredCount, 0);
   const totalCompleted = managerSessions.reduce((sum, session) => sum + session.completedCount, 0);
+  const managerTotalCapacity = managerSessions.reduce((sum, session) => sum + session.capacity, 0);
+  const managerFillRate = managerTotalCapacity ? Math.round((totalRegistrations / managerTotalCapacity) * 100) : 0;
+  const managerMetricCards: TrainingMetricCard[] = [
+    {
+      label: '이번달 개설',
+      value: managerSessions.length.toLocaleString(),
+      unit: '건',
+      detail: '담당 장비 교육 세션',
+      icon: <GraduationCap size={16} aria-hidden="true" />,
+      tone: 'is-primary'
+    },
+    {
+      label: '신청 인원',
+      value: totalRegistrations.toLocaleString(),
+      unit: '명',
+      detail: `전체 정원 ${managerTotalCapacity.toLocaleString()}명 기준`,
+      icon: <UserRound size={16} aria-hidden="true" />,
+      tone: 'is-info'
+    },
+    {
+      label: '이수 처리 대기',
+      value: pendingProcessCount.toLocaleString(),
+      unit: '건',
+      detail: '마감 후 처리 필요',
+      icon: <Clock3 size={16} aria-hidden="true" />,
+      tone: 'is-warning'
+    },
+    {
+      label: '누적 이수자',
+      value: totalCompleted.toLocaleString(),
+      unit: '명',
+      progress: managerFillRate,
+      icon: <CheckCircle2 size={16} aria-hidden="true" />,
+      tone: 'is-success'
+    }
+  ];
 
   async function submitSession(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -4887,12 +4960,7 @@ function TrainingSessionManagementPage({
         </div>
       </header>
 
-      <div className="training-ui-summary">
-        <div><strong>{managerSessions.length}</strong><span>이번달 개설</span></div>
-        <div><strong>{totalRegistrations}</strong><span>신청 인원</span></div>
-        <div><strong>{pendingProcessCount}</strong><span>이수 처리 대기</span></div>
-        <div><strong>{totalCompleted}</strong><span>누적 이수자</span></div>
-      </div>
+      <TrainingMetricGrid cards={managerMetricCards} label="교육 개설 신청관리 지표" />
 
       {showCreateForm && (
         <form className="training-create-panel" onSubmit={submitSession}>
@@ -5082,11 +5150,39 @@ function TrainingAllSessionsPage({
   const openCount = sessions.filter((session) => getTrainingSessionDisplayStatus(session) === 'OPEN').length;
   const closedCount = sessions.filter((session) => getTrainingSessionDisplayStatus(session) === 'CLOSED').length;
   const doneCount = sessions.filter((session) => getTrainingSessionDisplayStatus(session) === 'DONE').length;
-  const summaryCards = [
-    { label: '개설 교육', value: sessions.length, icon: <GraduationCap size={21} />, tone: 'is-primary' },
-    { label: '모집중', value: openCount, icon: <CircleDot size={21} />, tone: 'is-open' },
-    { label: '총 신청 인원', value: totalRegistered, icon: <UserRound size={21} />, tone: 'is-info' },
-    { label: '평균 충원율', value: `${averageFillRate}%`, icon: <Gauge size={21} />, tone: 'is-success' }
+  const summaryCards: TrainingMetricCard[] = [
+    {
+      label: '개설 교육',
+      value: sessions.length.toLocaleString(),
+      unit: '건',
+      detail: '이번 달 전체 교육',
+      icon: <GraduationCap size={16} aria-hidden="true" />,
+      tone: 'is-primary'
+    },
+    {
+      label: '모집중',
+      value: openCount.toLocaleString(),
+      unit: '건',
+      detail: `마감 ${closedCount.toLocaleString()}건 · 완료 ${doneCount.toLocaleString()}건`,
+      icon: <CircleDot size={16} aria-hidden="true" />,
+      tone: 'is-open'
+    },
+    {
+      label: '총 신청 인원',
+      value: totalRegistered.toLocaleString(),
+      unit: '명',
+      detail: `전체 정원 ${totalCapacity.toLocaleString()}명 기준`,
+      icon: <UserRound size={16} aria-hidden="true" />,
+      tone: 'is-info'
+    },
+    {
+      label: '평균 충원율',
+      value: averageFillRate.toLocaleString(),
+      unit: '%',
+      progress: averageFillRate,
+      icon: <Gauge size={16} aria-hidden="true" />,
+      tone: 'is-success'
+    }
   ];
 
   return (
@@ -5103,17 +5199,7 @@ function TrainingAllSessionsPage({
         </div>
       </header>
 
-      <div className="training-ui-summary training-total-summary" aria-label="교육 세션 요약">
-        {summaryCards.map((card) => (
-          <div key={card.label} className={card.tone}>
-            <span>
-              <strong>{card.value}</strong>
-              <em>{card.label}</em>
-            </span>
-            <i aria-hidden="true">{card.icon}</i>
-          </div>
-        ))}
-      </div>
+      <TrainingMetricGrid cards={summaryCards} label="교육 세션 요약" />
 
       <div className="training-filter-row" aria-label="교육 목록 필터">
         {[

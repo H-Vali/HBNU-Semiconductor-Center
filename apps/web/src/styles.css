@@ -10209,6 +10209,45 @@ select {
   font-size: clamp(1.35rem, 1.8vw, 1.72rem);
 }
 
+.training-shell .training-metric-grid {
+  background: var(--training-surface);
+  border-color: rgba(148, 163, 184, 0.14);
+}
+
+.training-shell .training-metric-grid .stat-card {
+  min-height: 8.5rem;
+  padding: 16px 18px 18px;
+}
+
+.training-shell .training-metric-grid .stat-card-heading {
+  color: var(--training-secondary);
+}
+
+.training-shell .training-metric-grid .stat-card-value {
+  color: #f8fafc;
+}
+
+.training-shell .training-metric-grid .stat-card-detail {
+  color: var(--training-muted);
+}
+
+.training-shell .training-metric-grid .stat-card.is-primary .stat-card-heading svg {
+  color: rgba(125, 179, 240, 0.72);
+}
+
+.training-shell .training-metric-grid .stat-card.is-open .stat-card-heading svg,
+.training-shell .training-metric-grid .stat-card.is-warning .stat-card-heading svg {
+  color: rgba(245, 185, 66, 0.78);
+}
+
+.training-shell .training-metric-grid .stat-card.is-info .stat-card-heading svg {
+  color: rgba(125, 179, 240, 0.78);
+}
+
+.training-shell .training-metric-grid .stat-card.is-success .stat-card-heading svg {
+  color: rgba(52, 214, 176, 0.82);
+}
+
 .training-total-summary {
   border-radius: 10px;
 }
