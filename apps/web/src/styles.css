@@ -11073,7 +11073,7 @@ select {
 
 .training-total-table table {
   width: 100%;
-  min-width: 880px;
+  min-width: 960px;
   border-collapse: collapse;
   table-layout: fixed;
 }
@@ -11117,32 +11117,32 @@ select {
 
 .training-total-table th:nth-child(1),
 .training-total-table td:nth-child(1) {
-  width: 30%;
+  width: 25%;
 }
 
 .training-total-table th:nth-child(2),
 .training-total-table td:nth-child(2) {
-  width: 12%;
+  width: 15%;
 }
 
 .training-total-table th:nth-child(3),
 .training-total-table td:nth-child(3) {
-  width: 18%;
+  width: 15%;
 }
 
 .training-total-table th:nth-child(4),
 .training-total-table td:nth-child(4) {
-  width: 17%;
+  width: 15%;
 }
 
 .training-total-table th:nth-child(5),
 .training-total-table td:nth-child(5) {
-  width: 12%;
+  width: 15%;
 }
 
 .training-total-table th:nth-child(6),
 .training-total-table td:nth-child(6) {
-  width: 11%;
+  width: 15%;
 }
 
 .training-total-table tbody tr:last-child td {
@@ -11184,18 +11184,22 @@ select {
 
 .training-deadline-chip {
   display: inline-grid;
-  width: min(100%, 9.2rem);
-  gap: 0.32rem;
+  width: 8.5rem;
+  max-width: 100%;
+  justify-items: center;
+  gap: 0.42rem;
   border-radius: 8px;
   padding: 0.46rem 0.56rem;
   background: rgba(105, 116, 134, 0.14);
   color: var(--training-secondary);
+  text-align: center;
   vertical-align: middle;
 }
 
 .training-deadline-chip span {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.35rem;
   color: inherit;
   font-size: 0.68rem;
@@ -11208,7 +11212,7 @@ select {
   font-size: 0.78rem;
   font-weight: 800;
   line-height: 1.35;
-  white-space: normal;
+  white-space: nowrap;
 }
 
 .training-deadline-chip em {
@@ -11245,6 +11249,7 @@ select {
 .training-fill-meter {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.65rem;
   min-width: 0;
 }
