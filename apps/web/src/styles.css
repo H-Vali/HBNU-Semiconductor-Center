@@ -10613,7 +10613,15 @@ select {
 }
 
 .training-manager-card-meta .training-seat-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-width: 5.8rem;
+  height: 2.1rem;
+  color: var(--training-primary);
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .training-ui-badge.is-open {
