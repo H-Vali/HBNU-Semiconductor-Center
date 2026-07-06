@@ -5891,6 +5891,96 @@ select {
   font-weight: 700;
 }
 
+.training-permission-card {
+  min-height: 17.5rem;
+}
+
+.training-permission-card-head span {
+  border: 0.5px solid rgba(95, 217, 201, 0.22);
+  border-radius: 999px;
+  background: rgba(52, 214, 176, 0.1);
+  padding: 0.3rem 0.58rem;
+  color: var(--training-accent);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.training-permission-list.is-card-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.62rem;
+}
+
+.training-permission-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.72rem;
+  border: 0.5px solid rgba(125, 179, 240, 0.13);
+  border-radius: 8px;
+  background: rgba(6, 14, 28, 0.32);
+  padding: 0.72rem;
+}
+
+.training-permission-item-icon,
+.training-permission-empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 8px;
+}
+
+.training-permission-item-icon.is-process {
+  border: 0.5px solid rgba(125, 179, 240, 0.28);
+  background: rgba(80, 150, 232, 0.12);
+  color: #8ac5ff;
+}
+
+.training-permission-item-icon.is-metrology,
+.training-permission-empty-icon {
+  border: 0.5px solid rgba(52, 214, 176, 0.28);
+  background: rgba(52, 214, 176, 0.12);
+  color: var(--training-accent);
+}
+
+.training-permission-item strong {
+  display: block;
+  overflow: hidden;
+  color: var(--training-primary);
+  font-size: 0.94rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.training-permission-item div span {
+  display: block;
+  margin-top: 0.12rem;
+  color: var(--training-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.training-permission-item button,
+.training-applicant-permission-empty button {
+  border: 0.5px solid rgba(95, 217, 201, 0.28);
+  border-radius: 8px;
+  background: rgba(52, 214, 176, 0.12);
+  padding: 0.48rem 0.68rem;
+  color: var(--training-accent);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.training-permission-item button:hover,
+.training-applicant-permission-empty button:hover {
+  border-color: rgba(95, 217, 201, 0.55);
+  background: rgba(52, 214, 176, 0.2);
+  color: #eafffb;
+}
+
 @media (max-width: 880px) {
   .training-request-layout {
     grid-template-columns: 1fr;
@@ -11332,22 +11422,39 @@ select {
 
 .training-applicant-permission-empty {
   display: grid;
-  min-height: 5.5rem;
+  min-height: 11rem;
   place-items: center;
+  gap: 0.62rem;
+  border: 0.5px solid rgba(125, 179, 240, 0.11);
+  border-radius: 8px;
+  background: rgba(6, 14, 28, 0.18);
+  padding: 1.25rem;
   color: var(--training-muted);
   text-align: center;
 }
 
 .training-applicant-permission-empty svg {
-  margin-bottom: 0.35rem;
+  margin-bottom: 0;
   color: rgba(125, 179, 240, 0.45);
   filter: drop-shadow(0 0 7px rgba(125, 179, 240, 0.24));
 }
 
+.training-applicant-permission-empty .training-permission-empty-icon svg {
+  color: var(--training-accent);
+}
+
 .training-applicant-permission-empty strong {
   color: var(--training-secondary);
-  font-size: 0.86rem;
-  font-weight: 700;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.training-applicant-permission-empty p {
+  max-width: 18rem;
+  margin: 0;
+  color: var(--training-muted);
+  font-size: 0.84rem;
+  line-height: 1.55;
 }
 
 .training-cancel-modal-backdrop {

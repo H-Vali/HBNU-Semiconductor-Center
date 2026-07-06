@@ -3965,19 +3965,7 @@ function TrainingPage({
             </div>
           </section>
 
-          <section className="training-request-card">
-            <div className="training-request-panel-head">
-              <h3>내 보유 권한</h3>
-            </div>
-            <div className="training-permission-list">
-              {grantedEquipment.length > 0 ? grantedEquipment.map((item) => (
-                <span key={item.id} className="training-permission-chip">{item.name}</span>
-              )) : (
-                <p className="training-empty-state">아직 보유한 장비 권한이 없습니다.</p>
-              )}
-            </div>
-            <p className="training-permission-note">이수 완료 장비는 즉시 예약할 수 있습니다.</p>
-          </section>
+          <TrainingPermissionPanel grantedEquipment={grantedEquipment} onNavigate={onNavigate} />
         </aside>
       </div>
       {accessNotice && (
@@ -4651,6 +4639,51 @@ function TrainingIconChip({ groupName, className = '' }: { groupName?: string; c
   );
 }
 
+function TrainingPermissionPanel({
+  grantedEquipment,
+  onNavigate
+}: {
+  grantedEquipment: EquipmentItem[];
+  onNavigate: (page: PageKey) => void;
+}) {
+  return (
+    <section className="training-request-card training-permission-card">
+      <div className="training-request-panel-head training-permission-card-head">
+        <h3>내 보유 권한</h3>
+        <span>예약 가능 {grantedEquipment.length}개</span>
+      </div>
+      {grantedEquipment.length > 0 ? (
+        <div className="training-permission-list is-card-list">
+          {grantedEquipment.map((item) => {
+            const isProcess = item.group === 'process';
+            return (
+              <article key={item.id} className="training-permission-item">
+                <span className={`training-permission-item-icon ${isProcess ? 'is-process' : 'is-metrology'}`} aria-hidden="true">
+                  {isProcess ? <Cpu size={17} /> : <Microscope size={18} />}
+                </span>
+                <div>
+                  <strong>{item.name}</strong>
+                  <span>{isProcess ? '공정' : '검사·계측·패키징'}</span>
+                </div>
+                <button type="button" onClick={() => onNavigate('reservations')}>예약하기</button>
+              </article>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="training-applicant-permission-empty">
+          <span className="training-permission-empty-icon" aria-hidden="true">
+            <KeyRound size={30} />
+          </span>
+          <strong>아직 예약 가능한 장비가 없습니다</strong>
+          <p>장비사용 교육을 이수하면 해당 장비의 예약 권한이 표시됩니다.</p>
+          <button type="button" onClick={() => onNavigate('trainingAll')}>교육 신청하기</button>
+        </div>
+      )}
+    </section>
+  );
+}
+
 function TrainingSessionApplicantPage({
   equipmentItems,
   currentUser,
@@ -4872,22 +4905,7 @@ function TrainingSessionApplicantPage({
         </div>
 
         <aside className="training-request-side training-applicant-side-grid">
-          <section className="training-request-card">
-            <div className="training-request-panel-head">
-              <h3>내 보유 권한</h3>
-            </div>
-            <div className="training-permission-list">
-              {grantedEquipment.length > 0 ? grantedEquipment.map((item) => (
-                <span key={item.id} className="training-permission-chip">{item.name}</span>
-              )) : (
-                <div className="training-applicant-permission-empty">
-                  <KeyRound size={30} aria-hidden="true" />
-                  <strong>아직 보유한 장비 권한이 없습니다</strong>
-                </div>
-              )}
-            </div>
-            <p className="training-permission-note">이수 완료 장비는 즉시 예약할 수 있습니다.</p>
-          </section>
+          <TrainingPermissionPanel grantedEquipment={grantedEquipment} onNavigate={onNavigate} />
         </aside>
       </div>
 
