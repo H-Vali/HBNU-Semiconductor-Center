@@ -11194,6 +11194,13 @@ select {
   align-items: stretch;
 }
 
+.training-applicant-dashboard > .training-request-form,
+.training-applicant-dashboard > .training-applicant-side-grid {
+  align-content: stretch;
+  align-self: stretch;
+  height: 100%;
+}
+
 .training-applicant-page .training-request-card {
   padding: 1.05rem 1.1rem;
 }
@@ -11207,6 +11214,11 @@ select {
 
 .training-applicant-side-grid > .training-permission-card {
   height: 100%;
+}
+
+.training-applicant-dashboard .training-application-panel,
+.training-applicant-dashboard .training-permission-card {
+  min-height: 100%;
 }
 
 .training-applicant-page .training-request-panel-head span {
