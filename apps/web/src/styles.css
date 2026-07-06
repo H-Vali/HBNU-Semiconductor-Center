@@ -11185,7 +11185,7 @@ select {
 .training-deadline-chip {
   display: inline-grid;
   width: min(100%, 9.2rem);
-  gap: 0.16rem;
+  gap: 0.32rem;
   border-radius: 8px;
   padding: 0.46rem 0.56rem;
   background: rgba(105, 116, 134, 0.14);
@@ -11193,11 +11193,12 @@ select {
   vertical-align: middle;
 }
 
-.training-deadline-chip span,
-.training-deadline-chip em {
+.training-deadline-chip span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   color: inherit;
   font-size: 0.68rem;
-  font-style: normal;
   font-weight: 800;
   line-height: 1.1;
 }
@@ -11206,15 +11207,21 @@ select {
   color: var(--training-primary);
   font-size: 0.78rem;
   font-weight: 800;
-  line-height: 1.2;
+  line-height: 1.35;
   white-space: normal;
 }
 
 .training-deadline-chip em {
-  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 999px;
   background: rgba(105, 116, 134, 0.26);
   padding: 0.14rem 0.42rem;
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1.1;
 }
 
 .training-deadline-chip.is-warning {

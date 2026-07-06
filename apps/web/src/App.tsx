@@ -5469,9 +5469,8 @@ function TrainingAllSessionsPage({
                   <td>{session.managerName}</td>
                   <td>
                     <div className={`training-deadline-chip ${deadlineInfo.tone}`}>
-                      <span>신청마감</span>
+                      <span>신청마감 <em>{deadlineInfo.badge}</em></span>
                       <strong>{deadlineInfo.label}</strong>
-                      <em>{deadlineInfo.badge}</em>
                     </div>
                   </td>
                   <td>
