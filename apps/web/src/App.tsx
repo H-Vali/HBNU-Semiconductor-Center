@@ -4587,6 +4587,12 @@ function getTrainingShortDate(value: string) {
   }).format(date).replace(/\.$/, '');
 }
 
+function getTrainingDateInputValue(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value.slice(0, 10);
+  return date.toISOString().slice(0, 10);
+}
+
 function getTrainingSessionDisplayStatus(session: ApiTrainingSession) {
   if (session.status === 'FULL' || session.status === 'CLOSED') return 'CLOSED' as const;
   return session.status;
@@ -4767,6 +4773,8 @@ function TrainingSessionManagementPage({
   sessionRole,
   sessions,
   onCreateSession,
+  onUpdateSession,
+  onDeleteSession,
   onComplete,
   onNoShow
 }: {
@@ -4775,6 +4783,8 @@ function TrainingSessionManagementPage({
   sessionRole: Role | null;
   sessions: ApiTrainingSession[];
   onCreateSession: (input: { equipmentId: string; applyDeadline: string; note: string }) => Promise<boolean>;
+  onUpdateSession: (sessionId: string, input: { applyDeadline: string; note: string }) => Promise<boolean>;
+  onDeleteSession: (sessionId: string) => Promise<boolean>;
   onComplete: (sessionId: string, userIds: string[]) => Promise<boolean>;
   onNoShow: (sessionId: string, userIds: string[], reason?: string) => Promise<boolean>;
 }) {
@@ -4788,6 +4798,9 @@ function TrainingSessionManagementPage({
   const [applyDeadline, setApplyDeadline] = useState(getDateInputOffset(7));
   const [note, setNote] = useState('');
   const [selectedUserIds, setSelectedUserIds] = useState<Record<string, string[]>>({});
+  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const [editApplyDeadline, setEditApplyDeadline] = useState('');
+  const [editNote, setEditNote] = useState('');
   const managerSessions = sessionRole === 'ADMIN'
     ? sessions
     : sessions.filter((session) => session.managerId === currentUser?.id);
@@ -4828,6 +4841,31 @@ function TrainingSessionManagementPage({
     const reason = window.prompt('노쇼 사유를 입력해주세요.', '교육 마감 후 미참석');
     if (reason === null) return;
     await onNoShow(session.id, [userId], reason.trim() || '교육 노쇼');
+  }
+
+  function startEditSession(session: ApiTrainingSession) {
+    setEditingSessionId(session.id);
+    setEditApplyDeadline(getTrainingDateInputValue(session.applyDeadline));
+    setEditNote(session.note ?? '');
+  }
+
+  async function submitSessionEdit(event: FormEvent<HTMLFormElement>, session: ApiTrainingSession) {
+    event.preventDefault();
+    if (!editApplyDeadline) return;
+    const saved = await onUpdateSession(session.id, {
+      applyDeadline: editApplyDeadline,
+      note: editNote
+    });
+    if (saved) {
+      setEditingSessionId(null);
+      setEditNote('');
+    }
+  }
+
+  async function deleteSession(session: ApiTrainingSession) {
+    const confirmed = window.confirm(`${session.equipmentName} 교육을 삭제하시겠습니까?\n활성 신청자는 취소 처리되고 목록에서 제외됩니다.`);
+    if (!confirmed) return;
+    await onDeleteSession(session.id);
   }
 
   return (
@@ -4889,6 +4927,7 @@ function TrainingSessionManagementPage({
           const activeRegistrations = registrations.filter((registration) => registration.status === 'REGISTERED');
           const emptySeats = Math.max(0, session.capacity - activeRegistrations.length);
           const canProcess = isTrainingSessionClosed(session) && session.status !== 'DONE' && session.status !== 'CANCELED';
+          const canModify = session.status !== 'DONE' && session.status !== 'CANCELED';
           const selected = selectedUserIds[session.id] ?? [];
           return (
             <article key={session.id} className="training-manager-card">
@@ -4901,8 +4940,42 @@ function TrainingSessionManagementPage({
                 <div className="training-manager-card-meta">
                   <span className="training-seat-pill">{activeRegistrations.length} / {session.capacity}</span>
                   <em className={`training-ui-badge ${getTrainingStatusClass(getTrainingSessionDisplayStatus(session))}`}>{meta.label}</em>
+                  <div className="training-manager-session-actions">
+                    <button
+                      type="button"
+                      className="training-ghost-button"
+                      disabled={!canModify}
+                      onClick={() => startEditSession(session)}
+                    >
+                      수정
+                    </button>
+                    <button
+                      type="button"
+                      className="training-danger-button"
+                      disabled={!canModify}
+                      onClick={() => void deleteSession(session)}
+                    >
+                      <Trash2 size={14} /> 삭제
+                    </button>
+                  </div>
                 </div>
               </div>
+              {editingSessionId === session.id && (
+                <form className="training-edit-panel" onSubmit={(event) => void submitSessionEdit(event, session)}>
+                  <label>
+                    신청 마감일
+                    <input type="date" min={getDateInputOffset(0)} value={editApplyDeadline} onChange={(event) => setEditApplyDeadline(event.target.value)} />
+                  </label>
+                  <label>
+                    비고
+                    <input value={editNote} onChange={(event) => setEditNote(event.target.value)} placeholder="준비물·장소 등 (선택)" />
+                  </label>
+                  <div className="training-edit-actions">
+                    <button type="button" className="training-ghost-button" onClick={() => setEditingSessionId(null)}>취소</button>
+                    <button type="submit" className="training-primary-button" disabled={!editApplyDeadline}>저장</button>
+                  </div>
+                </form>
+              )}
               <div className="training-manager-roster">
                 <h4>신청자 명단</h4>
                 {registrations.map((registration) => {
@@ -9029,6 +9102,33 @@ export function App() {
     return true;
   }
 
+  async function updateTrainingSession(sessionId: string, input: { applyDeadline: string; note: string }) {
+    const savedSession = await apiPatch<ApiTrainingSession>(
+      `/manager/trainings/${encodeURIComponent(sessionId)}`,
+      input,
+      localStorage.getItem(STORAGE_KEYS.sessionToken)
+    );
+    if (!savedSession) {
+      window.alert('교육 수정에 실패했습니다. 담당 권한, 마감일 또는 세션 상태를 확인해 주세요.');
+      return false;
+    }
+    await reloadTrainingSessionData();
+    return true;
+  }
+
+  async function deleteTrainingSession(sessionId: string) {
+    const result = await apiDelete<{ id: string; deleted: boolean }>(
+      `/manager/trainings/${encodeURIComponent(sessionId)}`,
+      localStorage.getItem(STORAGE_KEYS.sessionToken)
+    );
+    if (!result?.deleted) {
+      window.alert('교육 삭제에 실패했습니다. 담당 권한 또는 세션 상태를 확인해 주세요.');
+      return false;
+    }
+    await reloadTrainingSessionData();
+    return true;
+  }
+
   async function registerTrainingSession(sessionId: string) {
     const savedSession = await apiPost<ApiTrainingSession>(
       `/trainings/${encodeURIComponent(sessionId)}/register`,
@@ -9599,6 +9699,8 @@ export function App() {
                 sessionRole={sessionRole}
                 sessions={trainingSessions}
                 onCreateSession={createTrainingSession}
+                onUpdateSession={updateTrainingSession}
+                onDeleteSession={deleteTrainingSession}
                 onComplete={completeTrainingSession}
                 onNoShow={noShowTrainingSession}
               />

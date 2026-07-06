@@ -103,6 +103,11 @@ const createSessionSchema = z.object({
   note: z.string().trim().default('')
 });
 
+const updateSessionSchema = z.object({
+  applyDeadline: z.string().min(1),
+  note: z.string().trim().default('')
+});
+
 const listSessionSchema = z.object({
   scope: z.enum(['all', 'manager', 'open']).optional(),
   month: z.string().regex(/^\d{4}-\d{2}$/).optional(),
@@ -584,6 +589,116 @@ export async function createTrainingSession(input: unknown, actor: SessionUser) 
     [id, body.equipmentId, actor.id, applyDeadline, body.note]
   );
   return getSessionDetail(id, actor);
+}
+
+export async function updateTrainingSession(id: string, input: unknown, actor: SessionUser) {
+  const body = updateSessionSchema.parse(input);
+  const applyDeadline = parseDeadline(body.applyDeadline);
+  if (new Date(applyDeadline).getTime() <= Date.now()) {
+    throw new TrainingSessionStateError('Apply deadline must be in the future');
+  }
+
+  if (!hasDatabase()) {
+    const index = fallbackSessions.findIndex((item) => item.id === id);
+    if (index === -1) throw new TrainingSessionStateError('Training session not found');
+    const session = fallbackSessions[index];
+    if (actor.role !== 'ADMIN' && session.managerId !== actor.id) throw new PermissionDeniedError();
+    if (session.status === 'CANCELED' || session.status === 'DONE') {
+      throw new TrainingSessionStateError('Training session cannot be updated');
+    }
+    const activeRegistrations = fallbackRegistrations.filter((registration) => (
+      registration.sessionId === id && registration.status === 'REGISTERED'
+    ));
+    fallbackSessions[index] = {
+      ...session,
+      applyDeadline,
+      note: body.note,
+      status: activeRegistrations.length >= session.capacity ? 'FULL' : 'OPEN'
+    };
+    return getTrainingSessionDetail(id, actor);
+  }
+
+  await transaction(async (client) => {
+    const sessionResult = await client.query<{
+      managerId: string | null;
+      capacity: number;
+      status: TrainingSessionStatus;
+    }>(
+      `select manager_id as "managerId", capacity, status
+       from training_session
+       where id = $1 and deleted_at is null
+       for update`,
+      [id]
+    );
+    const session = sessionResult.rows[0];
+    if (!session) throw new TrainingSessionStateError('Training session not found');
+    if (actor.role !== 'ADMIN' && session.managerId !== actor.id) throw new PermissionDeniedError();
+    if (session.status === 'CANCELED' || session.status === 'DONE') {
+      throw new TrainingSessionStateError('Training session cannot be updated');
+    }
+    const countResult = await client.query<{ count: string }>(
+      `select count(*)::int as count
+       from session_registration
+       where session_id = $1 and status = 'REGISTERED'`,
+      [id]
+    );
+    const registeredCount = Number(countResult.rows[0]?.count ?? 0);
+    await client.query(
+      `update training_session
+       set apply_deadline = $2, note = $3, status = $4, updated_at = now()
+       where id = $1 and deleted_at is null`,
+      [id, applyDeadline, body.note, registeredCount >= session.capacity ? 'FULL' : 'OPEN']
+    );
+  });
+  return getTrainingSessionDetail(id, actor);
+}
+
+export async function deleteTrainingSession(id: string, actor: SessionUser) {
+  if (!hasDatabase()) {
+    const index = fallbackSessions.findIndex((item) => item.id === id);
+    if (index === -1) throw new TrainingSessionStateError('Training session not found');
+    const session = fallbackSessions[index];
+    if (actor.role !== 'ADMIN' && session.managerId !== actor.id) throw new PermissionDeniedError();
+    if (session.status === 'DONE') throw new TrainingSessionStateError('Completed training session cannot be deleted');
+    fallbackSessions.splice(index, 1);
+    fallbackRegistrations.forEach((registration) => {
+      if (registration.sessionId === id && registration.status === 'REGISTERED') {
+        registration.status = 'CANCELED';
+        registration.canceledAt = new Date().toISOString();
+      }
+    });
+    return { id, deleted: true };
+  }
+
+  await transaction(async (client) => {
+    const sessionResult = await client.query<{
+      managerId: string | null;
+      status: TrainingSessionStatus;
+    }>(
+      `select manager_id as "managerId", status
+       from training_session
+       where id = $1 and deleted_at is null
+       for update`,
+      [id]
+    );
+    const session = sessionResult.rows[0];
+    if (!session) throw new TrainingSessionStateError('Training session not found');
+    if (actor.role !== 'ADMIN' && session.managerId !== actor.id) throw new PermissionDeniedError();
+    if (session.status === 'DONE') throw new TrainingSessionStateError('Completed training session cannot be deleted');
+    await client.query(
+      `update session_registration
+       set status = 'CANCELED', canceled_at = now(), updated_at = now()
+       where session_id = $1 and status = 'REGISTERED'`,
+      [id]
+    );
+    await client.query(
+      `update training_session
+       set status = 'CANCELED', deleted_at = now(), updated_at = now()
+       where id = $1 and deleted_at is null`,
+      [id]
+    );
+  });
+  return { id, deleted: true };
 }
 
 export async function registerTrainingSession(id: string, actor: SessionUser) {

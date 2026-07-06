@@ -10317,7 +10317,14 @@ select {
 .training-manager-card-meta {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.65rem;
+}
+
+.training-manager-session-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
 }
 
 .training-ui-icon {
@@ -10468,13 +10475,73 @@ select {
 }
 
 .training-danger-button {
+  display: inline-flex;
   min-height: 2rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
   border: 1px solid rgba(255, 127, 134, 0.42);
   border-radius: 8px;
   background: transparent;
   padding: 0 1.1rem;
   color: var(--training-danger);
   font-weight: 700;
+}
+
+.training-ghost-button {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(154, 164, 178, 0.24);
+  border-radius: 8px;
+  background: transparent;
+  padding: 0 1rem;
+  color: var(--training-secondary);
+  font-weight: 700;
+}
+
+.training-ghost-button:disabled,
+.training-danger-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.training-edit-panel {
+  display: grid;
+  grid-template-columns: minmax(11rem, 0.7fr) minmax(16rem, 1.35fr) auto;
+  align-items: end;
+  gap: 0.75rem;
+  border: 1px solid rgba(95, 217, 201, 0.22);
+  border-radius: 10px;
+  background: rgba(14, 23, 38, 0.7);
+  padding: 0.9rem;
+}
+
+.training-edit-panel label {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--training-secondary);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.training-edit-panel input {
+  width: 100%;
+  min-height: 2.35rem;
+  border: 1px solid rgba(154, 164, 178, 0.22);
+  border-radius: 8px;
+  background: var(--training-field);
+  padding: 0 0.7rem;
+  color: var(--training-primary);
+  font: inherit;
+}
+
+.training-edit-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem;
 }
 
 .training-complete-check {
@@ -10845,6 +10912,7 @@ select {
 
   .training-ui-summary,
   .training-create-grid,
+  .training-edit-panel,
   .training-applicant-page .training-request-layout {
     grid-template-columns: 1fr;
   }

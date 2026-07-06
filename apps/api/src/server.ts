@@ -71,6 +71,7 @@ import {
   completeTrainingSessionRegistrations,
   confirmPenaltyCandidate,
   createTrainingSession,
+  deleteTrainingSession,
   ensureTrainingSessionSchema,
   getTrainingSessionDetail,
   listMyTrainingRegistrations,
@@ -80,7 +81,8 @@ import {
   registerTrainingSession,
   rejectPenaltyCandidate,
   TrainingSeatUnavailableError,
-  TrainingSessionStateError
+  TrainingSessionStateError,
+  updateTrainingSession
 } from './trainingSessions.js';
 import {
   createPenalty,
@@ -750,6 +752,31 @@ app.post('/manager/trainings', requireAuth, requireRole(['ADMIN', 'MANAGER']), a
       applyDeadline: session.applyDeadline
     });
     return res.status(201).json(session);
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.patch('/manager/trainings/:id', requireAuth, requireRole(['ADMIN', 'MANAGER']), async (req, res, next) => {
+  try {
+    const { id } = z.object({ id: z.string().min(1) }).parse(req.params);
+    const session = await updateTrainingSession(id, req.body, req.user!);
+    await writeAuditLog(req.user!, 'TRAINING_SESSION_UPDATE', 'training_session', id, {
+      applyDeadline: session?.applyDeadline,
+      note: session?.note
+    });
+    return res.json(session);
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.delete('/manager/trainings/:id', requireAuth, requireRole(['ADMIN', 'MANAGER']), async (req, res, next) => {
+  try {
+    const { id } = z.object({ id: z.string().min(1) }).parse(req.params);
+    const result = await deleteTrainingSession(id, req.user!);
+    await writeAuditLog(req.user!, 'TRAINING_SESSION_DELETE', 'training_session', id, result);
+    return res.json(result);
   } catch (error) {
     return next(error);
   }
