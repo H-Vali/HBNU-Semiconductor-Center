@@ -4677,7 +4677,6 @@ function TrainingPermissionPanel({
           </span>
           <strong>아직 예약 가능한 장비가 없습니다</strong>
           <p>장비사용 교육을 이수하면 해당 장비의 예약 권한이 표시됩니다.</p>
-          <button type="button" onClick={() => onNavigate('trainingAll')}>교육 신청하기</button>
         </div>
       )}
     </section>
