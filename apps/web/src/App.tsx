@@ -24,6 +24,7 @@ import {
   CalendarDays,
   CheckCircle2,
   ChevronDown,
+  CircleDot,
   Clock3,
   Cpu,
   Download,
@@ -32,6 +33,7 @@ import {
   GraduationCap,
   HelpCircle,
   KeyRound,
+  ListChecks,
   LockKeyhole,
   LogIn,
   Mail,
@@ -46,6 +48,7 @@ import {
   Send,
   ShieldCheck,
   SlidersHorizontal,
+  Square,
   Star,
   Trash2,
   TrendingDown,
@@ -64,8 +67,8 @@ import { AuditLogPage } from './pages/AuditLogPage';
 import { apiDelete, apiGet, apiGetBlob, apiPatch, apiPost, apiPostResult, apiPut, getApiUrl } from './apiClient';
 import { getReservationStatusLabel, normalizeReservationStatus, type ReservationStatus } from './utils/reservationStatus';
 
-type PageKey = 'home' | 'notice' | 'operationNotice' | 'meetingNotice' | 'center' | 'facility' | 'equipment' | 'training' | 'trainingManagement' | 'faq' | 'qna' | 'reservations' | 'managerPermissions' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'equipmentAdmin' | 'penalties' | 'noticeAdmin' | 'educationAdmin' | 'auditLogs' | 'login';
-const pageKeys: PageKey[] = ['home', 'notice', 'operationNotice', 'meetingNotice', 'center', 'facility', 'equipment', 'training', 'trainingManagement', 'faq', 'qna', 'reservations', 'managerPermissions', 'mypage', 'admin', 'users', 'permissions', 'consumables', 'equipmentAdmin', 'penalties', 'noticeAdmin', 'educationAdmin', 'auditLogs', 'login'];
+type PageKey = 'home' | 'notice' | 'operationNotice' | 'meetingNotice' | 'center' | 'facility' | 'equipment' | 'training' | 'trainingAll' | 'trainingManagement' | 'faq' | 'qna' | 'reservations' | 'managerPermissions' | 'mypage' | 'admin' | 'users' | 'permissions' | 'consumables' | 'equipmentAdmin' | 'penalties' | 'noticeAdmin' | 'educationAdmin' | 'auditLogs' | 'login';
+const pageKeys: PageKey[] = ['home', 'notice', 'operationNotice', 'meetingNotice', 'center', 'facility', 'equipment', 'training', 'trainingAll', 'trainingManagement', 'faq', 'qna', 'reservations', 'managerPermissions', 'mypage', 'admin', 'users', 'permissions', 'consumables', 'equipmentAdmin', 'penalties', 'noticeAdmin', 'educationAdmin', 'auditLogs', 'login'];
 const validPageKeys = new Set<PageKey>(pageKeys);
 type Role = 'USER' | 'MANAGER' | 'ADMIN';
 type UsagePeriod = '24H' | '1W' | '1M';
@@ -1554,7 +1557,7 @@ function SidebarNavigation({
   const noticePages: PageKey[] = ['notice', 'operationNotice', 'meetingNotice'];
   const inquiryPages: PageKey[] = ['faq', 'qna'];
   const reservationPages: PageKey[] = ['reservations', 'managerPermissions'];
-  const trainingPages: PageKey[] = ['training', 'trainingManagement'];
+  const trainingPages: PageKey[] = ['training', 'trainingAll', 'trainingManagement'];
   const [noticeOpen, setNoticeOpen] = useState(() => noticePages.includes(activePage));
   const [inquiryOpen, setInquiryOpen] = useState(() => inquiryPages.includes(activePage));
   const [reservationOpen, setReservationOpen] = useState(() => reservationPages.includes(activePage));
@@ -1721,6 +1724,14 @@ function SidebarNavigation({
                     >
                       <GraduationCap size={15} />
                       <span>교육신청</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`sidebar-subnav-item ${activePage === 'trainingAll' ? 'is-active' : ''}`}
+                      onClick={() => onNavigate('trainingAll')}
+                    >
+                      <ListChecks size={15} />
+                      <span>개설교육 전체목록</span>
                     </button>
                     <button
                       type="button"
@@ -4558,6 +4569,46 @@ function isTrainingSessionClosed(session: ApiTrainingSession) {
   return session.status === 'CLOSED' || session.status === 'DONE' || new Date(session.applyDeadline).getTime() <= Date.now();
 }
 
+function getTrainingMonthLabel() {
+  return new Intl.DateTimeFormat('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: 'long'
+  }).format(new Date());
+}
+
+function getTrainingShortDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(date).replace(/\.$/, '');
+}
+
+function getTrainingSessionDisplayStatus(session: ApiTrainingSession) {
+  if (session.status === 'FULL' || session.status === 'CLOSED') return 'CLOSED' as const;
+  return session.status;
+}
+
+function getTrainingStatusClass(status: TrainingSessionStatus | SessionRegistrationStatus) {
+  if (status === 'OPEN') return 'is-open';
+  if (status === 'DONE' || status === 'COMPLETED' || status === 'REGISTERED') return 'is-success';
+  if (status === 'NO_SHOW') return 'is-danger';
+  if (status === 'CANCELED') return 'is-neutral';
+  return 'is-closed';
+}
+
+function TrainingIconChip({ groupName, className = '' }: { groupName?: string; className?: string }) {
+  const isProcess = groupName?.includes('공정');
+  return (
+    <span className={`training-ui-icon ${isProcess ? 'is-process' : 'is-metrology'} ${className}`} aria-hidden="true">
+      {isProcess ? <Square size={17} /> : <CircleDot size={18} />}
+    </span>
+  );
+}
+
 function TrainingSessionApplicantPage({
   equipmentItems,
   currentUser,
@@ -4595,11 +4646,15 @@ function TrainingSessionApplicantPage({
   }
 
   return (
-    <section className="training-request-page">
-      <header className="training-request-header">
-        <p>MY TRAINING</p>
-        <h2>내 교육 신청 현황</h2>
-        <span>교육 신청부터 마감 대기, 개별 안내, 이수 후 권한 부여까지 한 화면에서 확인합니다.</span>
+    <section className="training-shell training-request-page training-applicant-page">
+      <header className="training-ui-header">
+        <div>
+          <p>MY TRAINING</p>
+          <h2>내 교육 신청 현황</h2>
+        </div>
+        <button type="button" className="training-link-button" onClick={() => onNavigate('training')}>
+          교육 신청하기 →
+        </button>
       </header>
 
       <div className="training-request-layout">
@@ -4621,21 +4676,25 @@ function TrainingSessionApplicantPage({
                 ];
                 const meta = registrationStatusMeta[registration.status];
                 return (
-                  <article key={registration.id} className="training-status-row">
-                    <div>
-                      <strong>{session?.equipmentName ?? registration.sessionId}</strong>
-                      <span>{session ? `신청마감 ${formatTrainingSessionDate(session.applyDeadline)} · ${session.managerName}` : '세션 정보 없음'}</span>
-                      <div className="training-request-stepper" aria-label={`${session?.equipmentName ?? ''} 진행 단계`}>
+                  <article key={registration.id} className="training-application-card">
+                    <div className="training-application-card-head">
+                      <TrainingIconChip groupName={session?.groupName || session?.category} />
+                      <div>
+                        <strong>{session?.equipmentName ?? registration.sessionId} 교육</strong>
+                        <span>{session ? `담당 ${session.managerName} · 신청마감 ${getTrainingShortDate(session.applyDeadline)}` : '세션 정보 없음'}</span>
+                      </div>
+                      <em className={`training-ui-badge ${getTrainingStatusClass(registration.status)}`}>{meta.label}</em>
+                    </div>
+                    <div className="training-timeline" aria-label={`${session?.equipmentName ?? ''} 진행 단계`}>
                         {steps.map((step) => (
-                          <span key={step.label} className={step.done || step.current ? 'is-active' : ''} aria-label={`${step.label} ${step.done ? '완료' : step.current ? '현재' : '예정'}`}>
-                            <CheckCircle2 size={13} />
+                          <span key={step.label} className={step.done ? 'is-done' : step.current ? 'is-current' : ''} aria-label={`${step.label} ${step.done ? '완료' : step.current ? '현재' : '예정'}`}>
+                            <i>{step.done ? '✓' : step.current ? '•' : ''}</i>
                             <strong>{step.label}</strong>
                           </span>
                         ))}
-                      </div>
                     </div>
-                    <div className="training-request-actions">
-                      <em className={`training-status-badge ${meta.className}`}>{meta.label}</em>
+                    <div className="training-application-card-foot">
+                      <p>{registration.status === 'COMPLETED' ? `${session?.equipmentName ?? '장비'} 예약 권한이 부여되었습니다.` : '마감 후 담당자가 교육 일정을 개별 안내합니다.'}</p>
                       <button
                         type="button"
                         disabled={!session || registration.status !== 'REGISTERED' || isClosed}
@@ -4663,16 +4722,18 @@ function TrainingSessionApplicantPage({
             <div className="training-application-summary">
               {openSessions.length > 0 ? openSessions.map((session) => {
                 const meta = trainingSessionStatusMeta[session.status];
-                const remaining = Math.max(0, session.capacity - session.registeredCount);
                 return (
-                  <article key={session.id} className="training-status-row">
+                  <article key={session.id} className="training-mini-session">
                     <div>
-                      <strong>{session.equipmentName}</strong>
-                      <span>{session.registeredCount}/{session.capacity}명 · 마감 {formatTrainingSessionDate(session.applyDeadline)}</span>
+                      <strong>{session.equipmentName} 교육</strong>
+                      <span>{session.status === 'OPEN' ? `신청마감 ${getTrainingShortDate(session.applyDeadline)}` : '정원 마감'}</span>
                     </div>
-                    <button type="button" disabled={session.status !== 'OPEN'} onClick={() => void register(session)}>
-                      {session.status === 'OPEN' ? `신청 ${remaining}자리` : meta.label}
-                    </button>
+                    <div>
+                      <em className="training-seat-pill">{session.registeredCount} / {session.capacity}</em>
+                      <button type="button" disabled={session.status !== 'OPEN'} onClick={() => void register(session)}>
+                        {session.status === 'OPEN' ? '신청' : meta.label}
+                      </button>
+                    </div>
                   </article>
                 );
               }) : (
@@ -4770,33 +4831,35 @@ function TrainingSessionManagementPage({
   }
 
   return (
-    <section className="training-management-page">
-      <div className="training-request-header">
-        <p>TRAINING · MANAGER</p>
-        <h2>교육 개설 · 신청관리</h2>
-        <span>담당 장비의 월별 교육 세션을 개설하고, 마감 후 이수·노쇼를 처리합니다.</span>
-      </div>
+    <section className="training-shell training-management-page">
+      <header className="training-ui-header">
+        <div>
+          <p>TRAINING · MANAGER</p>
+          <h2>교육 개설 · 신청관리</h2>
+        </div>
+        <div className="training-header-actions">
+          <div className="training-month-control" aria-label="조회 월">
+            <button type="button" aria-label="이전 월">◀</button>
+            <strong>{getTrainingMonthLabel()}</strong>
+            <button type="button" aria-label="다음 월">▶</button>
+          </div>
+          <button type="button" className="training-primary-button" onClick={() => setShowCreateForm((current) => !current)}>
+            <Plus size={17} /> 개설
+          </button>
+        </div>
+      </header>
 
-      <div className="manager-permission-summary">
+      <div className="training-ui-summary">
         <div><strong>{managerSessions.length}</strong><span>이번달 개설</span></div>
         <div><strong>{totalRegistrations}</strong><span>신청 인원</span></div>
         <div><strong>{pendingProcessCount}</strong><span>이수 처리 대기</span></div>
         <div><strong>{totalCompleted}</strong><span>누적 이수자</span></div>
       </div>
 
-      <div className="training-request-actions">
-        <button type="button" onClick={() => setShowCreateForm((current) => !current)}>
-          <Plus size={15} /> 교육 개설
-        </button>
-      </div>
-
       {showCreateForm && (
-        <form className="training-request-card" onSubmit={submitSession}>
-          <div className="training-request-section-title">
-            <span>NEW</span>
-            <h3>교육 세션 개설</h3>
-          </div>
-          <div className="training-request-field-grid">
+        <form className="training-create-panel" onSubmit={submitSession}>
+          <h3>새 교육 개설</h3>
+          <div className="training-create-grid">
             <label>
               장비
               <select value={equipmentId} onChange={(event) => setEquipmentId(event.target.value)}>
@@ -4809,13 +4872,13 @@ function TrainingSessionManagementPage({
               신청 마감일
               <input type="date" min={getDateInputOffset(0)} value={applyDeadline} onChange={(event) => setApplyDeadline(event.target.value)} />
             </label>
+            <label>
+              비고
+              <input value={note} onChange={(event) => setNote(event.target.value)} placeholder="준비물·장소 등 (선택)" />
+            </label>
+            <span className="training-fixed-capacity">정원 3명 고정</span>
+            <button type="submit" disabled={!equipmentId || !applyDeadline}>개설</button>
           </div>
-          <label className="training-message-field">
-            비고
-            <textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder="준비물, 장소, 안내사항 등" />
-          </label>
-          <p className="training-permission-note">정원은 3명 고정입니다. 교육일은 지정하지 않으며, 신청 마감 후 담당자가 개별 안내합니다.</p>
-          <button type="submit" disabled={!equipmentId || !applyDeadline}>개설</button>
         </form>
       )}
 
@@ -4830,72 +4893,74 @@ function TrainingSessionManagementPage({
           return (
             <article key={session.id} className="training-manager-card">
               <div className="training-manager-card-head">
+                <TrainingIconChip groupName={session.groupName || session.category} />
                 <div>
-                  <strong>{session.equipmentName}</strong>
-                  <span>신청마감 {formatTrainingSessionDate(session.applyDeadline)} · {session.category || session.groupName} · 마감 후 개별 안내</span>
+                  <strong>{session.equipmentName} 교육</strong>
+                  <span>신청마감 {getTrainingShortDate(session.applyDeadline)} · {session.category || session.groupName} · 마감 후 개별 안내</span>
                 </div>
-                <div>
-                  <span>{activeRegistrations.length}/{session.capacity}</span>
-                  <em className={`training-status-badge ${meta.className}`}>{meta.label}</em>
+                <div className="training-manager-card-meta">
+                  <span className="training-seat-pill">{activeRegistrations.length} / {session.capacity}</span>
+                  <em className={`training-ui-badge ${getTrainingStatusClass(getTrainingSessionDisplayStatus(session))}`}>{meta.label}</em>
                 </div>
               </div>
-              <div className="training-manager-table">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>신청자</th>
-                      <th>연락처</th>
-                      <th>상태</th>
-                      <th>처리</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {registrations.map((registration) => {
-                      const rowMeta = registrationStatusMeta[registration.status];
-                      return (
-                        <tr key={registration.id}>
-                          <td><strong>{registration.userName}</strong><span>{registration.userDepartment}</span></td>
-                          <td>
-                            {registration.userPhone ? <a href={`tel:${registration.userPhone}`}>{registration.userPhone}</a> : <span>비공개</span>}
-                            {registration.userEmail && <a href={`mailto:${registration.userEmail}`}>{registration.userEmail}</a>}
-                          </td>
-                          <td><em className={`training-status-badge ${rowMeta.className}`}>{rowMeta.label}</em></td>
-                          <td>
-                            <label className="training-inline-check">
-                              <input
-                                type="checkbox"
-                                checked={selected.includes(registration.userId)}
-                                disabled={!canProcess || registration.status !== 'REGISTERED'}
-                                onChange={() => toggleSelected(session.id, registration.userId)}
-                              />
-                              이수
-                            </label>
-                            <button
-                              type="button"
-                              className="reservation-mini-danger"
-                              disabled={!canProcess || registration.status !== 'REGISTERED'}
-                              title={!canProcess ? '신청 마감 후 처리 가능' : undefined}
-                              onClick={() => void markNoShow(session, registration.userId)}
-                            >
-                              노쇼
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                    {Array.from({ length: emptySeats }, (_, index) => (
-                      <tr key={`empty-${session.id}-${index}`}>
-                        <td><strong>빈 좌석 {index + 1}</strong><span>신청 대기</span></td>
-                        <td colSpan={3}>마감 전 신청자가 들어오면 자동 배정됩니다.</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="training-manager-roster">
+                <h4>신청자 명단</h4>
+                {registrations.map((registration) => {
+                  const rowMeta = registrationStatusMeta[registration.status];
+                  const initial = registration.userName.trim().slice(0, 1) || '?';
+                  return (
+                    <div key={registration.id} className="training-roster-row">
+                      <div className="training-roster-person">
+                        <span className="training-roster-avatar">{initial}</span>
+                        <div>
+                          <strong>{registration.userName}</strong>
+                          <span>{registration.userDepartment || '소속 미입력'}</span>
+                        </div>
+                      </div>
+                      <div className="training-roster-contact">
+                        {registration.userPhone ? <a href={`tel:${registration.userPhone}`}>☎ {registration.userPhone}</a> : <span>연락처 비공개</span>}
+                        {registration.userEmail && <a href={`mailto:${registration.userEmail}`}>✉ {registration.userEmail}</a>}
+                      </div>
+                      <em className={`training-ui-badge ${getTrainingStatusClass(registration.status)}`}>{rowMeta.label}</em>
+                      <div className="training-roster-actions">
+                        <button
+                          type="button"
+                          className="training-danger-button"
+                          disabled={!canProcess || registration.status !== 'REGISTERED'}
+                          title={!canProcess ? '신청 마감 후 처리 가능' : undefined}
+                          onClick={() => void markNoShow(session, registration.userId)}
+                        >
+                          노쇼
+                        </button>
+                        <label className="training-complete-check" aria-label={`${registration.userName} 이수 선택`}>
+                          <input
+                            type="checkbox"
+                            checked={selected.includes(registration.userId)}
+                            disabled={!canProcess || registration.status !== 'REGISTERED'}
+                            onChange={() => toggleSelected(session.id, registration.userId)}
+                          />
+                          <span />
+                        </label>
+                      </div>
+                    </div>
+                  );
+                })}
+                {Array.from({ length: emptySeats }, (_, index) => (
+                  <div key={`empty-${session.id}-${index}`} className="training-roster-row is-empty">
+                    <div className="training-roster-person">
+                      <span className="training-empty-seat">+</span>
+                      <div>
+                        <strong>빈 좌석 {index + 1}</strong>
+                        <span>신청 대기</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="training-request-actions">
+              <div className="training-manager-card-foot">
                 <p>{canProcess ? '이수 체크는 권한 부여로, 노쇼는 관리자 페널티 대기열로 전송됩니다.' : '신청 마감 후 이수/노쇼 처리가 가능합니다.'}</p>
                 <button type="button" disabled={!canProcess || selected.length === 0} onClick={() => void completeSelected(session)}>
-                  선택 인원 이수 처리
+                  ✓ 선택 인원 이수 처리
                 </button>
               </div>
             </article>
@@ -4907,6 +4972,151 @@ function TrainingSessionManagementPage({
             <span>교육 개설 버튼으로 담당 장비의 첫 세션을 만들어 주세요.</span>
           </div>
         )}
+      </div>
+    </section>
+  );
+}
+
+function TrainingAllSessionsPage({
+  sessions,
+  equipmentItems,
+  sessionRole,
+  onNavigate
+}: {
+  sessions: ApiTrainingSession[];
+  equipmentItems: EquipmentItem[];
+  sessionRole: Role | null;
+  onNavigate: (page: PageKey) => void;
+}) {
+  const [statusFilter, setStatusFilter] = useState<'all' | 'OPEN' | 'CLOSED' | 'DONE'>('all');
+  const [equipmentFilter, setEquipmentFilter] = useState('all');
+  const [managerFilter, setManagerFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const managerOptions = Array.from(new Map(sessions.map((session) => [session.managerId || session.managerName, session.managerName])).entries());
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const filteredSessions = sessions.filter((session) => {
+    const displayStatus = getTrainingSessionDisplayStatus(session);
+    const matchesStatus = statusFilter === 'all'
+      || (statusFilter === 'CLOSED' ? displayStatus === 'CLOSED' : displayStatus === statusFilter);
+    const matchesEquipment = equipmentFilter === 'all' || session.equipmentId === equipmentFilter;
+    const matchesManager = managerFilter === 'all' || session.managerId === managerFilter || session.managerName === managerFilter;
+    const matchesSearch = !normalizedSearch
+      || session.equipmentName.toLowerCase().includes(normalizedSearch)
+      || session.category.toLowerCase().includes(normalizedSearch)
+      || session.managerName.toLowerCase().includes(normalizedSearch);
+    return matchesStatus && matchesEquipment && matchesManager && matchesSearch;
+  });
+  const totalCapacity = sessions.reduce((sum, session) => sum + session.capacity, 0);
+  const totalRegistered = sessions.reduce((sum, session) => sum + session.registeredCount, 0);
+  const averageFillRate = totalCapacity ? Math.round((totalRegistered / totalCapacity) * 100) : 0;
+  const openCount = sessions.filter((session) => getTrainingSessionDisplayStatus(session) === 'OPEN').length;
+
+  return (
+    <section className="training-shell training-total-page">
+      <header className="training-ui-header">
+        <div>
+          <p>TRAINING · ALL SESSIONS</p>
+          <h2>개설 교육 전체 목록</h2>
+        </div>
+        <div className="training-month-control" aria-label="조회 월">
+          <button type="button" aria-label="이전 월">◀</button>
+          <strong>{getTrainingMonthLabel()}</strong>
+          <button type="button" aria-label="다음 월">▶</button>
+        </div>
+      </header>
+
+      <div className="training-ui-summary" aria-label="교육 세션 요약">
+        <div><strong>{sessions.length}</strong><span>개설 교육</span></div>
+        <div><strong>{openCount}</strong><span>모집중</span></div>
+        <div><strong>{totalRegistered}</strong><span>총 신청 인원</span></div>
+        <div><strong>{averageFillRate}%</strong><span>평균 충원율</span></div>
+      </div>
+
+      <div className="training-filter-row" aria-label="교육 목록 필터">
+        {[
+          ['all', '전체 상태'],
+          ['OPEN', '모집중'],
+          ['CLOSED', '마감'],
+          ['DONE', '완료']
+        ].map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            className={statusFilter === value ? 'is-active' : ''}
+            onClick={() => setStatusFilter(value as typeof statusFilter)}
+          >
+            {label}
+          </button>
+        ))}
+        <select value={equipmentFilter} onChange={(event) => setEquipmentFilter(event.target.value)} aria-label="장비 필터">
+          <option value="all">장비 전체</option>
+          {equipmentItems.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+        </select>
+        <select value={managerFilter} onChange={(event) => setManagerFilter(event.target.value)} aria-label="담당자 필터">
+          <option value="all">담당자 전체</option>
+          {managerOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+        </select>
+        <label className="training-search-field">
+          <Search size={16} aria-hidden="true" />
+          <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="검색" />
+        </label>
+      </div>
+
+      <div className="training-total-table">
+        <table>
+          <thead>
+            <tr>
+              <th>교육 / 장비</th>
+              <th>담당자</th>
+              <th>신청마감</th>
+              <th>정원 충원</th>
+              <th>상태</th>
+              <th>관리</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredSessions.length > 0 ? filteredSessions.map((session) => {
+              const displayStatus = getTrainingSessionDisplayStatus(session);
+              const meta = trainingSessionStatusMeta[displayStatus];
+              const percent = Math.min(100, Math.round((session.registeredCount / session.capacity) * 100));
+              return (
+                <tr key={session.id}>
+                  <td>
+                    <div className="training-total-equipment">
+                      <TrainingIconChip groupName={session.groupName || session.category} />
+                      <div>
+                        <strong>{session.equipmentName} 교육</strong>
+                        <span>{session.category || session.groupName || '교육 세션'}</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td>{session.managerName}</td>
+                  <td>{getTrainingShortDate(session.applyDeadline)}</td>
+                  <td>
+                    <div className="training-fill-meter">
+                      <span><i style={{ width: `${percent}%` }} /></span>
+                      <strong>{session.registeredCount}/{session.capacity}</strong>
+                    </div>
+                  </td>
+                  <td><em className={`training-ui-badge ${getTrainingStatusClass(displayStatus)}`}>{meta.label}</em></td>
+                  <td>
+                    <button
+                      type="button"
+                      className="training-link-button"
+                      onClick={() => onNavigate(sessionRole === 'USER' ? 'training' : 'trainingManagement')}
+                    >
+                      명단 →
+                    </button>
+                  </td>
+                </tr>
+              );
+            }) : (
+              <tr>
+                <td colSpan={6} className="training-empty-state">해당 조건의 교육이 없습니다.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </section>
   );
@@ -9374,6 +9584,18 @@ export function App() {
               onRegister={registerTrainingSession}
               onCancel={cancelTrainingSessionRegistration}
             />
+          )}
+          {activePage === 'trainingAll' && (
+            canManageAssignedPermissions ? (
+              <TrainingAllSessionsPage
+                sessions={trainingSessions}
+                equipmentItems={activeEquipmentItems}
+                sessionRole={sessionRole}
+                onNavigate={navigate}
+              />
+            ) : (
+              <PlaceholderPage title="접근 권한이 없습니다" />
+            )
           )}
           {activePage === 'trainingManagement' && (
             canManageAssignedPermissions ? (
