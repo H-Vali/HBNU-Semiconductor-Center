@@ -10545,6 +10545,30 @@ select {
   color: var(--training-danger);
 }
 
+.training-ui-badge {
+  transition: background 160ms ease, box-shadow 160ms ease, color 160ms ease;
+}
+
+.training-ui-badge:hover {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04), 0 0 18px rgba(95, 217, 201, 0.1);
+}
+
+.training-ui-badge.is-open:hover {
+  background: rgba(245, 185, 66, 0.2);
+  box-shadow: 0 0 18px rgba(245, 185, 66, 0.18);
+}
+
+.training-ui-badge.is-closed:hover,
+.training-ui-badge.is-neutral:hover {
+  background: rgba(139, 150, 168, 0.3);
+  box-shadow: 0 0 16px rgba(139, 150, 168, 0.14);
+}
+
+.training-ui-badge.is-success:hover {
+  background: rgba(52, 214, 176, 0.2);
+  box-shadow: 0 0 18px rgba(52, 214, 176, 0.18);
+}
+
 .training-manager-roster {
   display: grid;
 }
@@ -10796,6 +10820,7 @@ select {
   border-radius: 50%;
   background: var(--training-muted);
   box-shadow: 0 0 0 3px rgba(139, 150, 168, 0.12);
+  transition: box-shadow 160ms ease, transform 160ms ease;
 }
 
 .training-filter-status-dot.is-all {
@@ -10817,6 +10842,33 @@ select {
 .training-filter-status-dot.is-success {
   background: var(--training-accent);
   box-shadow: 0 0 0 3px rgba(52, 214, 176, 0.12);
+}
+
+.training-filter-row button:hover .training-filter-status-dot,
+.training-filter-row button.is-active .training-filter-status-dot {
+  transform: scale(1.08);
+}
+
+.training-filter-row button:hover .training-filter-status-dot.is-all,
+.training-filter-row button.is-active .training-filter-status-dot.is-all {
+  box-shadow: 0 0 0 3px rgba(125, 179, 240, 0.17), 0 0 14px rgba(125, 179, 240, 0.42);
+}
+
+.training-filter-row button:hover .training-filter-status-dot.is-open,
+.training-filter-row button.is-active .training-filter-status-dot.is-open {
+  box-shadow: 0 0 0 3px rgba(245, 185, 66, 0.18), 0 0 14px rgba(245, 185, 66, 0.5);
+}
+
+.training-filter-row button:hover .training-filter-status-dot.is-closed,
+.training-filter-row button:hover .training-filter-status-dot.is-neutral,
+.training-filter-row button.is-active .training-filter-status-dot.is-closed,
+.training-filter-row button.is-active .training-filter-status-dot.is-neutral {
+  box-shadow: 0 0 0 3px rgba(139, 150, 168, 0.18), 0 0 12px rgba(139, 150, 168, 0.38);
+}
+
+.training-filter-row button:hover .training-filter-status-dot.is-success,
+.training-filter-row button.is-active .training-filter-status-dot.is-success {
+  box-shadow: 0 0 0 3px rgba(52, 214, 176, 0.18), 0 0 14px rgba(52, 214, 176, 0.5);
 }
 
 .training-filter-row select {
@@ -10948,10 +11000,13 @@ select {
   flex: 0 0 auto;
   border-radius: 50%;
   background: var(--training-muted);
+  box-shadow: 0 0 0 3px rgba(139, 150, 168, 0.09), 0 0 8px rgba(139, 150, 168, 0.28);
+  transition: box-shadow 160ms ease, transform 160ms ease;
 }
 
 .training-status-dot.is-open {
   background: var(--training-warning);
+  box-shadow: 0 0 0 3px rgba(245, 185, 66, 0.1), 0 0 8px rgba(245, 185, 66, 0.34);
 }
 
 .training-status-dot.is-closed,
@@ -10961,10 +11016,29 @@ select {
 
 .training-status-dot.is-success {
   background: var(--training-accent);
+  box-shadow: 0 0 0 3px rgba(52, 214, 176, 0.1), 0 0 8px rgba(52, 214, 176, 0.34);
 }
 
 .training-status-dot.is-danger {
   background: var(--training-danger);
+  box-shadow: 0 0 0 3px rgba(255, 127, 134, 0.1), 0 0 8px rgba(255, 127, 134, 0.34);
+}
+
+.training-ui-badge:hover .training-status-dot {
+  transform: scale(1.18);
+}
+
+.training-ui-badge:hover .training-status-dot.is-open {
+  box-shadow: 0 0 0 3px rgba(245, 185, 66, 0.18), 0 0 14px rgba(245, 185, 66, 0.62);
+}
+
+.training-ui-badge:hover .training-status-dot.is-closed,
+.training-ui-badge:hover .training-status-dot.is-neutral {
+  box-shadow: 0 0 0 3px rgba(139, 150, 168, 0.18), 0 0 12px rgba(139, 150, 168, 0.45);
+}
+
+.training-ui-badge:hover .training-status-dot.is-success {
+  box-shadow: 0 0 0 3px rgba(52, 214, 176, 0.18), 0 0 14px rgba(52, 214, 176, 0.62);
 }
 
 .training-total-table-foot {
