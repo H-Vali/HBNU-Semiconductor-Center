@@ -1572,11 +1572,11 @@ function SidebarNavigation({
   const trainingItem = menu.find((item) => item.page === 'training');
   const mypageItem = menu.find((item) => item.page === 'mypage');
 
-  function renderNavButton(item: (typeof menu)[number] | undefined, selected: boolean) {
+  function renderNavButton(item: (typeof menu)[number] | undefined, selected: boolean, targetPage: PageKey = item?.page ?? 'home') {
     if (!item) return null;
     const Icon = item.icon;
     return (
-      <button type="button" className={`sidebar-nav-item ${selected ? 'is-active' : ''}`} onClick={() => onNavigate(item.page)}>
+      <button type="button" className={`sidebar-nav-item ${selected ? 'is-active' : ''}`} onClick={() => onNavigate(targetPage)}>
         <Icon size={18} />
         <span>{item.label}</span>
       </button>
@@ -1707,9 +1707,9 @@ function SidebarNavigation({
                 open: trainingOpen,
                 selected: trainingSelected,
                 onToggle: () => {
-                  if (activePage !== 'training') {
+                  if (activePage !== 'trainingAll') {
                     setTrainingOpen(true);
-                    onNavigate('training');
+                    onNavigate('trainingAll');
                     return;
                   }
                   setTrainingOpen((current) => !current);
@@ -1743,7 +1743,7 @@ function SidebarNavigation({
                   </>
                 )
               })
-            : renderNavButton(trainingItem, activePage === 'training')}
+            : renderNavButton(trainingItem, trainingSelected, 'trainingAll')}
           <div className={`sidebar-dropdown ${inquiryOpen ? 'is-open' : ''}`}>
             <button
               type="button"
