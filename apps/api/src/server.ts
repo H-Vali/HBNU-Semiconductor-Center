@@ -67,6 +67,22 @@ import {
   TrainingRequestStateError
 } from './training.js';
 import {
+  cancelTrainingRegistration,
+  completeTrainingSessionRegistrations,
+  confirmPenaltyCandidate,
+  createTrainingSession,
+  ensureTrainingSessionSchema,
+  getTrainingSessionDetail,
+  listMyTrainingRegistrations,
+  listPenaltyCandidates,
+  listTrainingSessions,
+  noShowTrainingSessionRegistrations,
+  registerTrainingSession,
+  rejectPenaltyCandidate,
+  TrainingSeatUnavailableError,
+  TrainingSessionStateError
+} from './trainingSessions.js';
+import {
   createPenalty,
   ensureOperationalDataSchema,
   listConsumables,
@@ -676,6 +692,118 @@ app.patch('/training-requests/:id/complete', requireAuth, requireRole(['ADMIN', 
   }
 });
 
+app.get('/trainings', requireAuth, async (req, res, next) => {
+  try {
+    res.json(await listTrainingSessions(req.user!, req.query));
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/trainings/:id', requireAuth, async (req, res, next) => {
+  try {
+    const { id } = z.object({ id: z.string().min(1) }).parse(req.params);
+    const session = await getTrainingSessionDetail(id, req.user!);
+    if (!session) return res.status(404).json({ message: 'Training session not found' });
+    return res.json(session);
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.post('/trainings/:id/register', requireAuth, async (req, res, next) => {
+  try {
+    const { id } = z.object({ id: z.string().min(1) }).parse(req.params);
+    const session = await registerTrainingSession(id, req.user!);
+    await writeAuditLog(req.user!, 'TRAINING_SESSION_REGISTER', 'training_session', id, { userId: req.user!.id });
+    return res.status(201).json(session);
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.post('/trainings/:id/cancel', requireAuth, async (req, res, next) => {
+  try {
+    const { id } = z.object({ id: z.string().min(1) }).parse(req.params);
+    const session = await cancelTrainingRegistration(id, req.user!);
+    await writeAuditLog(req.user!, 'TRAINING_SESSION_CANCEL_REGISTRATION', 'training_session', id, { userId: req.user!.id });
+    return res.json(session);
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.get('/me/registrations', requireAuth, async (req, res, next) => {
+  try {
+    return res.json(await listMyTrainingRegistrations(req.user!));
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.post('/manager/trainings', requireAuth, requireRole(['ADMIN', 'MANAGER']), async (req, res, next) => {
+  try {
+    const session = await createTrainingSession(req.body, req.user!);
+    if (!session) return res.status(404).json({ message: 'Training session not found after creation' });
+    await writeAuditLog(req.user!, 'TRAINING_SESSION_CREATE', 'training_session', session.id, {
+      equipmentId: session.equipmentId,
+      applyDeadline: session.applyDeadline
+    });
+    return res.status(201).json(session);
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.get('/manager/trainings', requireAuth, requireRole(['ADMIN', 'MANAGER']), async (req, res, next) => {
+  try {
+    return res.json(await listTrainingSessions(req.user!, { ...req.query, scope: 'manager' }));
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.get('/manager/trainings/:id/registrations', requireAuth, requireRole(['ADMIN', 'MANAGER']), async (req, res, next) => {
+  try {
+    const { id } = z.object({ id: z.string().min(1) }).parse(req.params);
+    const session = await getTrainingSessionDetail(id, req.user!);
+    if (!session) return res.status(404).json({ message: 'Training session not found' });
+    if (req.user!.role !== 'ADMIN' && session.managerId !== req.user!.id) {
+      return res.status(403).json({ message: 'Insufficient training manager scope' });
+    }
+    return res.json(session);
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.post('/manager/trainings/:id/complete', requireAuth, requireRole(['ADMIN', 'MANAGER']), async (req, res, next) => {
+  try {
+    const { id } = z.object({ id: z.string().min(1) }).parse(req.params);
+    const session = await completeTrainingSessionRegistrations(id, req.body, req.user!);
+    await writeAuditLog(req.user!, 'TRAINING_SESSION_COMPLETE', 'training_session', id, {
+      userIds: Array.isArray(req.body?.userIds) ? req.body.userIds : []
+    });
+    return res.json(session);
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.post('/manager/trainings/:id/no-show', requireAuth, requireRole(['ADMIN', 'MANAGER']), async (req, res, next) => {
+  try {
+    const { id } = z.object({ id: z.string().min(1) }).parse(req.params);
+    const session = await noShowTrainingSessionRegistrations(id, req.body, req.user!);
+    await writeAuditLog(req.user!, 'TRAINING_SESSION_NO_SHOW', 'training_session', id, {
+      userIds: Array.isArray(req.body?.userIds) ? req.body.userIds : [],
+      reason: req.body?.reason
+    });
+    return res.json(session);
+  } catch (error) {
+    return next(error);
+  }
+});
+
 app.get('/admin/summary', requireAuth, requireRole(['ADMIN']), async (_req, res, next) => {
   try {
     res.json(await getAdminSummary());
@@ -757,6 +885,38 @@ app.patch('/penalties/:id/revoke', requireAuth, requireRole(['ADMIN']), async (r
   }
 });
 
+app.get('/admin/penalties/candidates', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
+  try {
+    return res.json(await listPenaltyCandidates(req.query));
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.post('/admin/penalties/candidates/:id/confirm', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
+  try {
+    const { id } = z.object({ id: z.string().min(1) }).parse(req.params);
+    const candidate = await confirmPenaltyCandidate(id, req.body, req.user!);
+    if (!candidate) return res.status(404).json({ message: 'Penalty candidate not found' });
+    await writeAuditLog(req.user!, 'PENALTY_CANDIDATE_CONFIRM', 'penalty_candidate', id, { userId: candidate.userId });
+    return res.json(candidate);
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.post('/admin/penalties/candidates/:id/reject', requireAuth, requireRole(['ADMIN']), async (req, res, next) => {
+  try {
+    const { id } = z.object({ id: z.string().min(1) }).parse(req.params);
+    const candidate = await rejectPenaltyCandidate(id, req.body, req.user!);
+    if (!candidate) return res.status(404).json({ message: 'Penalty candidate not found' });
+    await writeAuditLog(req.user!, 'PENALTY_CANDIDATE_REJECT', 'penalty_candidate', id, { userId: candidate.userId });
+    return res.json(candidate);
+  } catch (error) {
+    return next(error);
+  }
+});
+
 function logApiError(error: unknown, req: express.Request, res: express.Response) {
   const knownError = error instanceof Error ? error : null;
   const databaseError = typeof error === 'object' && error !== null
@@ -815,6 +975,9 @@ app.use((error: unknown, req: express.Request, res: express.Response, _next: exp
   if (error instanceof TrainingRequestStateError) {
     return errorResponse(res, 409, { message: error.message });
   }
+  if (error instanceof TrainingSessionStateError || error instanceof TrainingSeatUnavailableError) {
+    return errorResponse(res, 409, { message: error.message });
+  }
   if (error instanceof z.ZodError) {
     return errorResponse(res, 400, { message: 'Invalid request body', issues: error.issues });
   }
@@ -827,6 +990,7 @@ async function startServer() {
   await Promise.all([
     ensureEquipmentPermissionSchema(),
     ensureTrainingRequestSchema(),
+    ensureTrainingSessionSchema(),
     ensureOperationalDataSchema(),
     ensureAuditLogSchema(),
     ensureFileAssetSchema(),

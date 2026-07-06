@@ -4653,6 +4653,61 @@ select {
   line-height: 1.55;
 }
 
+.training-manager-table {
+  overflow-x: auto;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 10px;
+}
+
+.training-manager-table table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 46rem;
+}
+
+.training-manager-table th,
+.training-manager-table td {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  padding: 0.78rem;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.training-manager-table th {
+  color: #94a3b8;
+  font-size: 0.74rem;
+  font-weight: 950;
+}
+
+.training-manager-table td {
+  color: #dbeafe;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.training-manager-table td strong,
+.training-manager-table td span,
+.training-manager-table td a {
+  display: block;
+}
+
+.training-manager-table td span,
+.training-manager-table td a {
+  margin-top: 0.18rem;
+  color: #93c5fd;
+  font-size: 0.78rem;
+}
+
+.training-inline-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.34rem;
+  margin-right: 0.5rem;
+  color: #cbd5e1;
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
 .training-manager-compact-actions,
 .training-manager-actions,
 .training-complete-row {

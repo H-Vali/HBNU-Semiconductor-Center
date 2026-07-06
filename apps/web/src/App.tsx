@@ -155,6 +155,76 @@ type ApiTrainingRequest = {
   rejectedReason?: string;
   completedAt?: string;
 };
+type TrainingSessionStatus = 'OPEN' | 'FULL' | 'CLOSED' | 'CANCELED' | 'DONE';
+type SessionRegistrationStatus = 'REGISTERED' | 'CANCELED' | 'COMPLETED' | 'NO_SHOW';
+type ApiSessionRegistration = {
+  id: string;
+  sessionId: string;
+  userId: string;
+  userName: string;
+  userDepartment: string;
+  userEmail?: string;
+  userPhone?: string;
+  status: SessionRegistrationStatus;
+  registeredAt: string;
+  canceledAt: string | null;
+  completedAt: string | null;
+  noShowAt: string | null;
+};
+type ApiTrainingSession = {
+  id: string;
+  equipmentId: string;
+  equipmentName: string;
+  category: string;
+  groupName: string;
+  managerId: string;
+  managerName: string;
+  applyDeadline: string;
+  capacity: number;
+  note: string;
+  status: TrainingSessionStatus;
+  registeredCount: number;
+  completedCount: number;
+  noShowCount: number;
+  createdAt: string;
+  registrations?: ApiSessionRegistration[];
+  myRegistration?: ApiSessionRegistration | null;
+};
+type ApiTrainingSessionList = {
+  items: ApiTrainingSession[];
+  summary: {
+    total: number;
+    open: number;
+    registered: number;
+    averageFillRate: number;
+  };
+  page: number;
+  pageSize: number;
+  total: number;
+};
+type ApiMyTrainingRegistration = ApiSessionRegistration & {
+  session: ApiTrainingSession | null;
+};
+type ApiPenaltyCandidate = {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  userDepartment: string;
+  equipmentId: string;
+  equipmentName: string;
+  sessionId: string;
+  registrationId: string;
+  managerId: string;
+  managerName: string;
+  applyDeadline: string;
+  origin: 'NO_SHOW';
+  status: 'PENDING' | 'CONFIRMED' | 'REJECTED';
+  reason: string;
+  reviewReason: string;
+  createdAt: string;
+  reviewedAt: string | null;
+};
 type TrainingRequestInput = {
   equipmentId: string;
   preferredDate: string;
@@ -4457,6 +4527,391 @@ function AdminEducationPermissionPanel({
   );
 }
 
+const trainingSessionStatusMeta: Record<TrainingSessionStatus, { label: string; className: string }> = {
+  OPEN: { label: '모집중', className: 'is-warning' },
+  FULL: { label: '정원 마감', className: 'is-info' },
+  CLOSED: { label: '신청마감', className: 'is-requested' },
+  CANCELED: { label: '폐강', className: 'is-rejected' },
+  DONE: { label: '완료', className: 'is-success' }
+};
+
+const registrationStatusMeta: Record<SessionRegistrationStatus, { label: string; className: string }> = {
+  REGISTERED: { label: '신청됨', className: 'is-info' },
+  CANCELED: { label: '취소됨', className: 'is-rejected' },
+  COMPLETED: { label: '이수완료', className: 'is-success' },
+  NO_SHOW: { label: '노쇼', className: 'is-rejected' }
+};
+
+function formatTrainingSessionDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(date);
+}
+
+function isTrainingSessionClosed(session: ApiTrainingSession) {
+  return session.status === 'CLOSED' || session.status === 'DONE' || new Date(session.applyDeadline).getTime() <= Date.now();
+}
+
+function TrainingSessionApplicantPage({
+  equipmentItems,
+  currentUser,
+  sessionUser,
+  permissions,
+  sessions,
+  myRegistrations,
+  onNavigate,
+  onRegister,
+  onCancel
+}: {
+  equipmentItems: EquipmentItem[];
+  currentUser: ManagedUser | null;
+  sessionUser: StoredSessionUser | null;
+  permissions: EquipmentPermissionMap;
+  sessions: ApiTrainingSession[];
+  myRegistrations: ApiMyTrainingRegistration[];
+  onNavigate: (page: PageKey) => void;
+  onRegister: (sessionId: string) => Promise<boolean>;
+  onCancel: (sessionId: string) => Promise<boolean>;
+}) {
+  const currentUserPermissionIds = currentUser ? permissions[currentUser.id] ?? [] : [];
+  const grantedEquipment = equipmentItems.filter((item) => currentUserPermissionIds.includes(item.id));
+  const openSessions = sessions.filter((session) => session.status === 'OPEN' || session.status === 'FULL');
+
+  async function register(session: ApiTrainingSession) {
+    if (!sessionUser) {
+      onNavigate('login');
+      return;
+    }
+    if (session.status !== 'OPEN') return;
+    const confirmed = window.confirm(`${session.equipmentName} 교육을 신청하시겠습니까?`);
+    if (!confirmed) return;
+    await onRegister(session.id);
+  }
+
+  return (
+    <section className="training-request-page">
+      <header className="training-request-header">
+        <p>MY TRAINING</p>
+        <h2>내 교육 신청 현황</h2>
+        <span>교육 신청부터 마감 대기, 개별 안내, 이수 후 권한 부여까지 한 화면에서 확인합니다.</span>
+      </header>
+
+      <div className="training-request-layout">
+        <div className="training-request-form">
+          <section className="training-request-card">
+            <div className="training-request-panel-head">
+              <h3>내 신청 타임라인</h3>
+              <span>{myRegistrations.length}건</span>
+            </div>
+            <div className="training-application-summary">
+              {myRegistrations.length > 0 ? myRegistrations.map((registration) => {
+                const session = registration.session;
+                const isClosed = session ? isTrainingSessionClosed(session) : false;
+                const steps = [
+                  { label: '신청 접수', done: true, current: registration.status === 'REGISTERED' && !isClosed },
+                  { label: '마감 대기', done: isClosed || registration.status !== 'REGISTERED', current: registration.status === 'REGISTERED' && !isClosed },
+                  { label: '개별 안내', done: registration.status === 'COMPLETED', current: registration.status === 'REGISTERED' && isClosed },
+                  { label: '이수·권한', done: registration.status === 'COMPLETED', current: registration.status === 'COMPLETED' }
+                ];
+                const meta = registrationStatusMeta[registration.status];
+                return (
+                  <article key={registration.id} className="training-status-row">
+                    <div>
+                      <strong>{session?.equipmentName ?? registration.sessionId}</strong>
+                      <span>{session ? `신청마감 ${formatTrainingSessionDate(session.applyDeadline)} · ${session.managerName}` : '세션 정보 없음'}</span>
+                      <div className="training-request-stepper" aria-label={`${session?.equipmentName ?? ''} 진행 단계`}>
+                        {steps.map((step) => (
+                          <span key={step.label} className={step.done || step.current ? 'is-active' : ''} aria-label={`${step.label} ${step.done ? '완료' : step.current ? '현재' : '예정'}`}>
+                            <CheckCircle2 size={13} />
+                            <strong>{step.label}</strong>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="training-request-actions">
+                      <em className={`training-status-badge ${meta.className}`}>{meta.label}</em>
+                      <button
+                        type="button"
+                        disabled={!session || registration.status !== 'REGISTERED' || isClosed}
+                        onClick={() => session && void onCancel(session.id)}
+                        title={isClosed ? '신청 마감 후에는 취소할 수 없습니다.' : undefined}
+                      >
+                        신청 취소
+                      </button>
+                    </div>
+                  </article>
+                );
+              }) : (
+                <p className="training-empty-state">아직 교육 신청 내역이 없습니다.</p>
+              )}
+            </div>
+          </section>
+        </div>
+
+        <aside className="training-request-side">
+          <section className="training-request-card">
+            <div className="training-request-panel-head">
+              <h3>신청 가능한 교육</h3>
+              <button type="button" onClick={() => onNavigate('training')}>교육 신청하기 →</button>
+            </div>
+            <div className="training-application-summary">
+              {openSessions.length > 0 ? openSessions.map((session) => {
+                const meta = trainingSessionStatusMeta[session.status];
+                const remaining = Math.max(0, session.capacity - session.registeredCount);
+                return (
+                  <article key={session.id} className="training-status-row">
+                    <div>
+                      <strong>{session.equipmentName}</strong>
+                      <span>{session.registeredCount}/{session.capacity}명 · 마감 {formatTrainingSessionDate(session.applyDeadline)}</span>
+                    </div>
+                    <button type="button" disabled={session.status !== 'OPEN'} onClick={() => void register(session)}>
+                      {session.status === 'OPEN' ? `신청 ${remaining}자리` : meta.label}
+                    </button>
+                  </article>
+                );
+              }) : (
+                <p className="training-empty-state">현재 신청 가능한 교육이 없습니다.</p>
+              )}
+            </div>
+          </section>
+
+          <section className="training-request-card">
+            <div className="training-request-panel-head">
+              <h3>내 보유 권한</h3>
+            </div>
+            <div className="training-permission-list">
+              {grantedEquipment.length > 0 ? grantedEquipment.map((item) => (
+                <span key={item.id} className="training-permission-chip">{item.name}</span>
+              )) : (
+                <p className="training-empty-state">아직 보유한 장비 권한이 없습니다.</p>
+              )}
+            </div>
+            <p className="training-permission-note">이수 완료 장비는 즉시 예약할 수 있습니다.</p>
+          </section>
+        </aside>
+      </div>
+    </section>
+  );
+}
+
+function TrainingSessionManagementPage({
+  equipmentItems,
+  currentUser,
+  sessionRole,
+  sessions,
+  onCreateSession,
+  onComplete,
+  onNoShow
+}: {
+  equipmentItems: EquipmentItem[];
+  currentUser: ManagedUser | null;
+  sessionRole: Role | null;
+  sessions: ApiTrainingSession[];
+  onCreateSession: (input: { equipmentId: string; applyDeadline: string; note: string }) => Promise<boolean>;
+  onComplete: (sessionId: string, userIds: string[]) => Promise<boolean>;
+  onNoShow: (sessionId: string, userIds: string[], reason?: string) => Promise<boolean>;
+}) {
+  const manageableEquipment = sessionRole === 'ADMIN'
+    ? equipmentItems
+    : currentUser
+      ? equipmentItems.filter((item) => item.managerId === currentUser.id)
+      : [];
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [equipmentId, setEquipmentId] = useState(manageableEquipment[0]?.id ?? '');
+  const [applyDeadline, setApplyDeadline] = useState(getDateInputOffset(7));
+  const [note, setNote] = useState('');
+  const [selectedUserIds, setSelectedUserIds] = useState<Record<string, string[]>>({});
+  const managerSessions = sessionRole === 'ADMIN'
+    ? sessions
+    : sessions.filter((session) => session.managerId === currentUser?.id);
+  const pendingProcessCount = managerSessions.filter((session) => isTrainingSessionClosed(session) && session.status !== 'DONE').length;
+  const totalRegistrations = managerSessions.reduce((sum, session) => sum + session.registeredCount, 0);
+  const totalCompleted = managerSessions.reduce((sum, session) => sum + session.completedCount, 0);
+
+  async function submitSession(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!equipmentId || !applyDeadline) return;
+    const saved = await onCreateSession({ equipmentId, applyDeadline, note });
+    if (saved) {
+      setShowCreateForm(false);
+      setNote('');
+    }
+  }
+
+  function toggleSelected(sessionId: string, userId: string) {
+    setSelectedUserIds((current) => {
+      const selected = current[sessionId] ?? [];
+      return {
+        ...current,
+        [sessionId]: selected.includes(userId)
+          ? selected.filter((id) => id !== userId)
+          : [...selected, userId]
+      };
+    });
+  }
+
+  async function completeSelected(session: ApiTrainingSession) {
+    const userIds = selectedUserIds[session.id] ?? [];
+    if (!userIds.length) return;
+    const saved = await onComplete(session.id, userIds);
+    if (saved) setSelectedUserIds((current) => ({ ...current, [session.id]: [] }));
+  }
+
+  async function markNoShow(session: ApiTrainingSession, userId: string) {
+    const reason = window.prompt('노쇼 사유를 입력해주세요.', '교육 마감 후 미참석');
+    if (reason === null) return;
+    await onNoShow(session.id, [userId], reason.trim() || '교육 노쇼');
+  }
+
+  return (
+    <section className="training-management-page">
+      <div className="training-request-header">
+        <p>TRAINING · MANAGER</p>
+        <h2>교육 개설 · 신청관리</h2>
+        <span>담당 장비의 월별 교육 세션을 개설하고, 마감 후 이수·노쇼를 처리합니다.</span>
+      </div>
+
+      <div className="manager-permission-summary">
+        <div><strong>{managerSessions.length}</strong><span>이번달 개설</span></div>
+        <div><strong>{totalRegistrations}</strong><span>신청 인원</span></div>
+        <div><strong>{pendingProcessCount}</strong><span>이수 처리 대기</span></div>
+        <div><strong>{totalCompleted}</strong><span>누적 이수자</span></div>
+      </div>
+
+      <div className="training-request-actions">
+        <button type="button" onClick={() => setShowCreateForm((current) => !current)}>
+          <Plus size={15} /> 교육 개설
+        </button>
+      </div>
+
+      {showCreateForm && (
+        <form className="training-request-card" onSubmit={submitSession}>
+          <div className="training-request-section-title">
+            <span>NEW</span>
+            <h3>교육 세션 개설</h3>
+          </div>
+          <div className="training-request-field-grid">
+            <label>
+              장비
+              <select value={equipmentId} onChange={(event) => setEquipmentId(event.target.value)}>
+                {manageableEquipment.map((item) => (
+                  <option key={item.id} value={item.id}>{item.name}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              신청 마감일
+              <input type="date" min={getDateInputOffset(0)} value={applyDeadline} onChange={(event) => setApplyDeadline(event.target.value)} />
+            </label>
+          </div>
+          <label className="training-message-field">
+            비고
+            <textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder="준비물, 장소, 안내사항 등" />
+          </label>
+          <p className="training-permission-note">정원은 3명 고정입니다. 교육일은 지정하지 않으며, 신청 마감 후 담당자가 개별 안내합니다.</p>
+          <button type="submit" disabled={!equipmentId || !applyDeadline}>개설</button>
+        </form>
+      )}
+
+      <div className="training-manager-list">
+        {managerSessions.length > 0 ? managerSessions.map((session) => {
+          const meta = trainingSessionStatusMeta[session.status];
+          const registrations = session.registrations ?? [];
+          const activeRegistrations = registrations.filter((registration) => registration.status === 'REGISTERED');
+          const emptySeats = Math.max(0, session.capacity - activeRegistrations.length);
+          const canProcess = isTrainingSessionClosed(session) && session.status !== 'DONE' && session.status !== 'CANCELED';
+          const selected = selectedUserIds[session.id] ?? [];
+          return (
+            <article key={session.id} className="training-manager-card">
+              <div className="training-manager-card-head">
+                <div>
+                  <strong>{session.equipmentName}</strong>
+                  <span>신청마감 {formatTrainingSessionDate(session.applyDeadline)} · {session.category || session.groupName} · 마감 후 개별 안내</span>
+                </div>
+                <div>
+                  <span>{activeRegistrations.length}/{session.capacity}</span>
+                  <em className={`training-status-badge ${meta.className}`}>{meta.label}</em>
+                </div>
+              </div>
+              <div className="training-manager-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>신청자</th>
+                      <th>연락처</th>
+                      <th>상태</th>
+                      <th>처리</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {registrations.map((registration) => {
+                      const rowMeta = registrationStatusMeta[registration.status];
+                      return (
+                        <tr key={registration.id}>
+                          <td><strong>{registration.userName}</strong><span>{registration.userDepartment}</span></td>
+                          <td>
+                            {registration.userPhone ? <a href={`tel:${registration.userPhone}`}>{registration.userPhone}</a> : <span>비공개</span>}
+                            {registration.userEmail && <a href={`mailto:${registration.userEmail}`}>{registration.userEmail}</a>}
+                          </td>
+                          <td><em className={`training-status-badge ${rowMeta.className}`}>{rowMeta.label}</em></td>
+                          <td>
+                            <label className="training-inline-check">
+                              <input
+                                type="checkbox"
+                                checked={selected.includes(registration.userId)}
+                                disabled={!canProcess || registration.status !== 'REGISTERED'}
+                                onChange={() => toggleSelected(session.id, registration.userId)}
+                              />
+                              이수
+                            </label>
+                            <button
+                              type="button"
+                              className="reservation-mini-danger"
+                              disabled={!canProcess || registration.status !== 'REGISTERED'}
+                              title={!canProcess ? '신청 마감 후 처리 가능' : undefined}
+                              onClick={() => void markNoShow(session, registration.userId)}
+                            >
+                              노쇼
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {Array.from({ length: emptySeats }, (_, index) => (
+                      <tr key={`empty-${session.id}-${index}`}>
+                        <td><strong>빈 좌석 {index + 1}</strong><span>신청 대기</span></td>
+                        <td colSpan={3}>마감 전 신청자가 들어오면 자동 배정됩니다.</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="training-request-actions">
+                <p>{canProcess ? '이수 체크는 권한 부여로, 노쇼는 관리자 페널티 대기열로 전송됩니다.' : '신청 마감 후 이수/노쇼 처리가 가능합니다.'}</p>
+                <button type="button" disabled={!canProcess || selected.length === 0} onClick={() => void completeSelected(session)}>
+                  선택 인원 이수 처리
+                </button>
+              </div>
+            </article>
+          );
+        }) : (
+          <div className="manager-permission-empty">
+            <GraduationCap size={32} />
+            <strong>개설된 교육 세션이 없습니다.</strong>
+            <span>교육 개설 버튼으로 담당 장비의 첫 세션을 만들어 주세요.</span>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function AdminPage({
   equipmentItems,
   calendarEvents,
@@ -5548,12 +6003,18 @@ function PenaltyManagementPage({
   users,
   penalties,
   onAddPenalty,
-  onRevokePenalty
+  onRevokePenalty,
+  candidates,
+  onConfirmCandidate,
+  onRejectCandidate
 }: {
   users: ManagedUser[];
   penalties: PenaltyRecord[];
   onAddPenalty: (userId: string, type: PenaltyType, category: PenaltyCategory, reason: string) => void;
   onRevokePenalty: (penaltyId: string) => void;
+  candidates: ApiPenaltyCandidate[];
+  onConfirmCandidate: (candidateId: string, type: PenaltyType, category: PenaltyCategory, reason: string) => Promise<boolean>;
+  onRejectCandidate: (candidateId: string, reason: string) => Promise<boolean>;
 }) {
   const [selectedUserId, setSelectedUserId] = useState(users[0]?.id ?? '');
   const [type, setType] = useState<PenaltyType>('1주 사용정지');
@@ -5568,6 +6029,23 @@ function PenaltyManagementPage({
     if (!selectedUserId || !reason.trim()) return;
     onAddPenalty(selectedUserId, type, category, reason.trim());
     setReason('');
+  }
+
+  async function confirmCandidate(candidate: ApiPenaltyCandidate) {
+    const reasonText = window.prompt('확정 사유를 입력해주세요.', candidate.reason || '교육 노쇼');
+    if (reasonText === null) return;
+    await onConfirmCandidate(candidate.id, type, category, reasonText.trim() || candidate.reason || '교육 노쇼');
+  }
+
+  async function rejectCandidate(candidate: ApiPenaltyCandidate) {
+    const reasonText = window.prompt('기각 사유를 입력해주세요.');
+    if (reasonText === null) return;
+    const trimmed = reasonText.trim();
+    if (!trimmed) {
+      window.alert('기각 사유는 필수입니다.');
+      return;
+    }
+    await onRejectCandidate(candidate.id, trimmed);
   }
 
   return (
@@ -5591,6 +6069,53 @@ function PenaltyManagementPage({
             <strong>{permanentCount}</strong>
             <span>영구정지</span>
           </div>
+        </div>
+      </div>
+
+      <div className="penalty-table-card">
+        <div className="penalty-table-head">
+          <div>
+            <p>No-show Review</p>
+            <h3>노쇼 발생 검토 대기</h3>
+          </div>
+          <span>담당자가 기록한 노쇼 후보를 관리자만 확정 또는 기각합니다.</span>
+        </div>
+        <div className="penalty-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>신청자</th>
+                <th>장비</th>
+                <th>담당자</th>
+                <th>발생</th>
+                <th>관리</th>
+              </tr>
+            </thead>
+            <tbody>
+              {candidates.length > 0 ? candidates.map((candidate) => (
+                <tr key={candidate.id}>
+                  <td>
+                    <strong>{candidate.userName}</strong>
+                    <span>{candidate.userDepartment || candidate.userEmail}</span>
+                  </td>
+                  <td>
+                    <strong>{candidate.equipmentName}</strong>
+                    <span>마감 {formatTrainingSessionDate(candidate.applyDeadline)}</span>
+                  </td>
+                  <td>{candidate.managerName}</td>
+                  <td>{formatTrainingSessionDate(candidate.createdAt)}</td>
+                  <td>
+                    <button type="button" onClick={() => void confirmCandidate(candidate)}>확정</button>
+                    <button type="button" onClick={() => void rejectCandidate(candidate)}>기각</button>
+                  </td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan={5} className="penalty-empty">검토 대기 중인 노쇼 후보가 없습니다.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -7698,7 +8223,10 @@ export function App() {
         setEquipmentPermissionGrantMeta({});
         setEquipmentPermissionHistory([]);
         setTrainingRequests([]);
+        setTrainingSessions([]);
+        setMyTrainingRegistrations([]);
         setPenaltyRecords([]);
+        setPenaltyCandidates([]);
         return;
       }
 
@@ -7715,7 +8243,10 @@ export function App() {
 
   const [reservationEvents, setReservationEvents] = useState<ReservationEvent[]>([]);
   const [trainingRequests, setTrainingRequests] = useState<ApiTrainingRequest[]>([]);
+  const [trainingSessions, setTrainingSessions] = useState<ApiTrainingSession[]>([]);
+  const [myTrainingRegistrations, setMyTrainingRegistrations] = useState<ApiMyTrainingRegistration[]>([]);
   const [penaltyRecords, setPenaltyRecords] = useState<PenaltyRecord[]>([]);
+  const [penaltyCandidates, setPenaltyCandidates] = useState<ApiPenaltyCandidate[]>([]);
   const [showPenaltyNotice, setShowPenaltyNotice] = useState(false);
   const sessionUser = getStoredSessionUser();
   const sessionUserName = (() => {
@@ -7868,6 +8399,19 @@ export function App() {
   }, [sessionRole]);
 
   useEffect(() => {
+    let isMounted = true;
+    void refreshTrainingSessionData().then((snapshot) => {
+      if (!isMounted || !snapshot) return;
+      setTrainingSessions(snapshot.sessions);
+      setMyTrainingRegistrations(snapshot.registrations);
+      setPenaltyCandidates(snapshot.candidates);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [sessionRole]);
+
+  useEffect(() => {
     const token = localStorage.getItem(STORAGE_KEYS.sessionToken);
     if (!token || !sessionRole) {
       setPenaltyRecords([]);
@@ -7964,7 +8508,10 @@ export function App() {
     setEquipmentPermissionGrantMeta({});
     setEquipmentPermissionHistory([]);
     setTrainingRequests([]);
+    setTrainingSessions([]);
+    setMyTrainingRegistrations([]);
     setPenaltyRecords([]);
+    setPenaltyCandidates([]);
     navigate('login');
   }
 
@@ -8184,6 +8731,38 @@ export function App() {
     if (snapshot) applyEquipmentPermissionSnapshot(snapshot);
   }
 
+  async function refreshTrainingSessionData() {
+    const token = localStorage.getItem(STORAGE_KEYS.sessionToken);
+    if (!token || !sessionRole) {
+      return { sessions: [], registrations: [], candidates: [] };
+    }
+    const month = new Date().toISOString().slice(0, 7);
+    const list = await apiGet<ApiTrainingSessionList>(`/trainings?month=${encodeURIComponent(month)}`, token);
+    const baseSessions = list?.items ?? [];
+    const sessions = sessionRole === 'ADMIN' || sessionRole === 'MANAGER'
+      ? (await Promise.all(baseSessions.map((session) => (
+        apiGet<ApiTrainingSession>(`/manager/trainings/${encodeURIComponent(session.id)}/registrations`, token)
+      )))).filter(Boolean) as ApiTrainingSession[]
+      : baseSessions;
+    const registrations = await apiGet<ApiMyTrainingRegistration[]>('/me/registrations', token);
+    const candidates = sessionRole === 'ADMIN'
+      ? await apiGet<ApiPenaltyCandidate[]>('/admin/penalties/candidates?status=PENDING', token)
+      : [];
+    return {
+      sessions,
+      registrations: registrations ?? [],
+      candidates: candidates ?? []
+    };
+  }
+
+  async function reloadTrainingSessionData() {
+    const snapshot = await refreshTrainingSessionData();
+    if (!snapshot) return;
+    setTrainingSessions(snapshot.sessions);
+    setMyTrainingRegistrations(snapshot.registrations);
+    setPenaltyCandidates(snapshot.candidates);
+  }
+
   async function createTrainingRequest(input: TrainingRequestInput) {
     const savedRequest = await apiPost<ApiTrainingRequest>(
       '/training-requests',
@@ -8230,6 +8809,107 @@ export function App() {
       }
     }
     return savedRequest;
+  }
+
+  async function createTrainingSession(input: { equipmentId: string; applyDeadline: string; note: string }) {
+    const savedSession = await apiPost<ApiTrainingSession>(
+      '/manager/trainings',
+      input,
+      localStorage.getItem(STORAGE_KEYS.sessionToken)
+    );
+    if (!savedSession) {
+      window.alert('교육 세션 개설에 실패했습니다. 담당 장비 권한과 마감일을 확인해 주세요.');
+      return false;
+    }
+    await reloadTrainingSessionData();
+    return true;
+  }
+
+  async function registerTrainingSession(sessionId: string) {
+    const savedSession = await apiPost<ApiTrainingSession>(
+      `/trainings/${encodeURIComponent(sessionId)}/register`,
+      {},
+      localStorage.getItem(STORAGE_KEYS.sessionToken)
+    );
+    if (!savedSession) {
+      window.alert('교육 신청에 실패했습니다. 정원, 마감일 또는 로그인 상태를 확인해 주세요.');
+      return false;
+    }
+    await reloadTrainingSessionData();
+    return true;
+  }
+
+  async function cancelTrainingSessionRegistration(sessionId: string) {
+    const savedSession = await apiPost<ApiTrainingSession>(
+      `/trainings/${encodeURIComponent(sessionId)}/cancel`,
+      {},
+      localStorage.getItem(STORAGE_KEYS.sessionToken)
+    );
+    if (!savedSession) {
+      window.alert('교육 신청 취소에 실패했습니다. 마감일 이후에는 취소할 수 없습니다.');
+      return false;
+    }
+    await reloadTrainingSessionData();
+    return true;
+  }
+
+  async function completeTrainingSession(sessionId: string, userIds: string[]) {
+    const savedSession = await apiPost<ApiTrainingSession>(
+      `/manager/trainings/${encodeURIComponent(sessionId)}/complete`,
+      { userIds },
+      localStorage.getItem(STORAGE_KEYS.sessionToken)
+    );
+    if (!savedSession) {
+      window.alert('이수 처리에 실패했습니다. 마감 이후인지, 담당 권한이 있는지 확인해 주세요.');
+      return false;
+    }
+    await refreshEquipmentPermissions();
+    await reloadTrainingSessionData();
+    return true;
+  }
+
+  async function noShowTrainingSession(sessionId: string, userIds: string[], reason?: string) {
+    const savedSession = await apiPost<ApiTrainingSession>(
+      `/manager/trainings/${encodeURIComponent(sessionId)}/no-show`,
+      { userIds, reason },
+      localStorage.getItem(STORAGE_KEYS.sessionToken)
+    );
+    if (!savedSession) {
+      window.alert('노쇼 처리에 실패했습니다. 마감 이후인지, 담당 권한이 있는지 확인해 주세요.');
+      return false;
+    }
+    await reloadTrainingSessionData();
+    return true;
+  }
+
+  async function confirmPenaltyCandidate(candidateId: string, type: PenaltyType, category: PenaltyCategory, reason: string) {
+    const confirmed = await apiPost<ApiPenaltyCandidate>(
+      `/admin/penalties/candidates/${encodeURIComponent(candidateId)}/confirm`,
+      { type, category, reason },
+      localStorage.getItem(STORAGE_KEYS.sessionToken)
+    );
+    if (!confirmed) {
+      window.alert('노쇼 페널티 후보 확정에 실패했습니다.');
+      return false;
+    }
+    await reloadTrainingSessionData();
+    const penalties = await apiGet<PenaltyRecord[]>('/penalties', localStorage.getItem(STORAGE_KEYS.sessionToken));
+    if (penalties) setPenaltyRecords(penalties);
+    return true;
+  }
+
+  async function rejectPenaltyCandidate(candidateId: string, reason: string) {
+    const rejected = await apiPost<ApiPenaltyCandidate>(
+      `/admin/penalties/candidates/${encodeURIComponent(candidateId)}/reject`,
+      { reason },
+      localStorage.getItem(STORAGE_KEYS.sessionToken)
+    );
+    if (!rejected) {
+      window.alert('노쇼 페널티 후보 기각에 실패했습니다.');
+      return false;
+    }
+    await reloadTrainingSessionData();
+    return true;
   }
 
   async function addReservation(event: ReservationEvent) {
@@ -8683,29 +9363,28 @@ export function App() {
             )
           )}
           {activePage === 'training' && (
-            <TrainingPage
+            <TrainingSessionApplicantPage
               equipmentItems={activeEquipmentItems}
-              users={managedUsers}
               sessionUser={sessionUser}
               currentUser={currentManagedUser}
               permissions={equipmentPermissions}
-              trainingRequests={trainingRequests}
+              sessions={trainingSessions}
+              myRegistrations={myTrainingRegistrations}
               onNavigate={navigate}
-              onCreateTrainingRequest={createTrainingRequest}
+              onRegister={registerTrainingSession}
+              onCancel={cancelTrainingSessionRegistration}
             />
           )}
           {activePage === 'trainingManagement' && (
             canManageAssignedPermissions ? (
-              <TrainingManagementPage
-                users={managedUsers}
+              <TrainingSessionManagementPage
                 equipmentItems={activeEquipmentItems}
-                permissions={equipmentPermissions}
-                trainingRequests={trainingRequests}
                 currentUser={currentManagedUser}
                 sessionRole={sessionRole}
-                onScheduleTrainingRequest={scheduleTrainingRequest}
-                onRejectTrainingRequest={rejectTrainingRequest}
-                onCompleteTrainingRequest={completeTrainingRequest}
+                sessions={trainingSessions}
+                onCreateSession={createTrainingSession}
+                onComplete={completeTrainingSession}
+                onNoShow={noShowTrainingSession}
               />
             ) : (
               <PlaceholderPage title="접근 권한이 없습니다" />
@@ -8827,8 +9506,11 @@ export function App() {
               <PenaltyManagementPage
                 users={managedUsers}
                 penalties={penaltyRecords}
+                candidates={penaltyCandidates}
                 onAddPenalty={addPenalty}
                 onRevokePenalty={revokePenalty}
+                onConfirmCandidate={confirmPenaltyCandidate}
+                onRejectCandidate={rejectPenaltyCandidate}
               />
             ) : (
               <PlaceholderPage title="접근 권한이 없습니다" />
