@@ -11160,6 +11160,19 @@ select {
   font-weight: 500;
 }
 
+@keyframes trainingStatusGlow {
+  0%,
+  100% {
+    opacity: 0.86;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.13);
+  }
+}
+
 .training-status-dot {
   display: inline-block;
   width: 0.46rem;
@@ -11168,6 +11181,7 @@ select {
   border-radius: 50%;
   background: var(--training-muted);
   box-shadow: 0 0 0 3px rgba(139, 150, 168, 0.09), 0 0 8px rgba(139, 150, 168, 0.28);
+  animation: trainingStatusGlow 2.8s ease-in-out infinite;
   transition: box-shadow 160ms ease, transform 160ms ease;
 }
 
@@ -11206,6 +11220,12 @@ select {
 
 .training-ui-badge:hover .training-status-dot.is-success {
   box-shadow: 0 0 0 3px rgba(52, 214, 176, 0.18), 0 0 14px rgba(52, 214, 176, 0.62);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .training-status-dot {
+    animation: none;
+  }
 }
 
 .training-total-table-foot {
