@@ -10441,14 +10441,22 @@ select {
   height: 3rem;
   flex: 0 0 auto;
   place-items: center;
-  border-radius: 10px;
+  border-radius: 12px;
+  border: 1px solid transparent;
   background: rgba(95, 217, 201, 0.12);
   color: var(--training-teal);
 }
 
 .training-ui-icon.is-process {
-  background: rgba(125, 179, 240, 0.12);
+  border-color: rgba(125, 179, 240, 0.18);
+  background: rgba(125, 179, 240, 0.14);
   color: var(--training-info);
+}
+
+.training-ui-icon.is-metrology {
+  border-color: rgba(52, 214, 176, 0.18);
+  background: rgba(52, 214, 176, 0.12);
+  color: var(--training-accent);
 }
 
 .training-seat-pill,

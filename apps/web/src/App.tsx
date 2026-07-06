@@ -48,7 +48,6 @@ import {
   Send,
   ShieldCheck,
   SlidersHorizontal,
-  Square,
   Star,
   Trash2,
   TrendingDown,
@@ -4647,7 +4646,7 @@ function TrainingIconChip({ groupName, className = '' }: { groupName?: string; c
   const isProcess = groupName?.includes('공정');
   return (
     <span className={`training-ui-icon ${isProcess ? 'is-process' : 'is-metrology'} ${className}`} aria-hidden="true">
-      {isProcess ? <Square size={17} /> : <CircleDot size={18} />}
+      {isProcess ? <Cpu size={17} /> : <Microscope size={18} />}
     </span>
   );
 }
