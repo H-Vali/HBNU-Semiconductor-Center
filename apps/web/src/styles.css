@@ -11073,8 +11073,9 @@ select {
 
 .training-total-table table {
   width: 100%;
-  min-width: 860px;
+  min-width: 880px;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .training-total-table th,
@@ -11100,6 +11101,36 @@ select {
 .training-total-table th:nth-child(5),
 .training-total-table td:nth-child(5) {
   text-align: center;
+}
+
+.training-total-table th:nth-child(1),
+.training-total-table td:nth-child(1) {
+  width: 30%;
+}
+
+.training-total-table th:nth-child(2),
+.training-total-table td:nth-child(2) {
+  width: 12%;
+}
+
+.training-total-table th:nth-child(3),
+.training-total-table td:nth-child(3) {
+  width: 18%;
+}
+
+.training-total-table th:nth-child(4),
+.training-total-table td:nth-child(4) {
+  width: 17%;
+}
+
+.training-total-table th:nth-child(5),
+.training-total-table td:nth-child(5) {
+  width: 12%;
+}
+
+.training-total-table th:nth-child(6),
+.training-total-table td:nth-child(6) {
+  width: 11%;
 }
 
 .training-total-table tbody tr:last-child td {
@@ -11140,13 +11171,14 @@ select {
 }
 
 .training-deadline-chip {
-  display: grid;
-  min-width: 10.5rem;
-  gap: 0.18rem;
+  display: inline-grid;
+  width: min(100%, 9.2rem);
+  gap: 0.16rem;
   border-radius: 8px;
-  padding: 0.5rem 0.62rem;
+  padding: 0.46rem 0.56rem;
   background: rgba(105, 116, 134, 0.14);
   color: var(--training-secondary);
+  vertical-align: middle;
 }
 
 .training-deadline-chip span,
@@ -11160,9 +11192,10 @@ select {
 
 .training-deadline-chip strong {
   color: var(--training-primary);
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 800;
   line-height: 1.2;
+  white-space: normal;
 }
 
 .training-deadline-chip em {
@@ -11194,11 +11227,12 @@ select {
   display: flex;
   align-items: center;
   gap: 0.65rem;
+  min-width: 0;
 }
 
 .training-fill-meter > span {
   display: block;
-  width: 6.2rem;
+  width: clamp(3rem, 7vw, 5.6rem);
   height: 0.42rem;
   overflow: hidden;
   border-radius: 999px;
