@@ -10201,6 +10201,75 @@ select {
   font-weight: 500;
 }
 
+.training-total-page {
+  gap: 1rem;
+}
+
+.training-total-page .training-ui-header h2 {
+  font-size: clamp(1.35rem, 1.8vw, 1.72rem);
+}
+
+.training-total-summary {
+  border-radius: 10px;
+}
+
+.training-total-summary div {
+  display: flex;
+  min-height: 4.6rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+  padding: 0.85rem 1.1rem;
+}
+
+.training-total-summary div > span {
+  display: grid;
+  gap: 0.26rem;
+}
+
+.training-total-summary strong {
+  font-size: 1.45rem;
+  font-weight: 700;
+}
+
+.training-total-summary em {
+  color: var(--training-secondary);
+  font-size: 0.8rem;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.training-total-summary i {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 9px;
+  color: rgba(125, 179, 240, 0.58);
+  opacity: 0.78;
+}
+
+.training-ui-summary.training-total-summary div.is-open strong {
+  color: var(--training-warning);
+}
+
+.training-ui-summary.training-total-summary div.is-info strong {
+  color: var(--training-info);
+}
+
+.training-ui-summary.training-total-summary div.is-success strong {
+  color: var(--training-accent);
+}
+
+.training-total-summary .is-open i {
+  color: rgba(245, 185, 66, 0.58);
+}
+
+.training-total-summary .is-success i {
+  color: rgba(52, 214, 176, 0.58);
+}
+
 .training-create-panel,
 .training-manager-card,
 .training-total-table,
@@ -10350,6 +10419,7 @@ select {
   min-height: 2rem;
   align-items: center;
   justify-content: center;
+  gap: 0.38rem;
   border-radius: 8px;
   padding: 0 0.75rem;
   font-style: normal;
@@ -10680,7 +10750,8 @@ select {
 
 .training-total-table {
   overflow: auto;
-  padding: 0.9rem 1rem;
+  border-radius: 10px;
+  padding: 0.78rem 1rem 0.7rem;
 }
 
 .training-total-table table {
@@ -10692,21 +10763,31 @@ select {
 .training-total-table th,
 .training-total-table td {
   border-bottom: 1px solid rgba(154, 164, 178, 0.12);
-  padding: 1rem 0.8rem;
+  padding: 0.82rem 0.8rem;
   text-align: left;
   vertical-align: middle;
 }
 
 .training-total-table th {
   color: var(--training-muted);
-  font-size: 0.86rem;
+  font-size: 0.78rem;
   font-weight: 700;
 }
 
 .training-total-table td {
   color: var(--training-primary);
-  font-size: 0.96rem;
+  font-size: 0.9rem;
   font-weight: 600;
+}
+
+.training-total-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.training-total-table .training-ui-icon {
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 9px;
 }
 
 .training-fill-meter {
@@ -10718,7 +10799,7 @@ select {
 .training-fill-meter > span {
   display: block;
   width: 6.2rem;
-  height: 0.45rem;
+  height: 0.42rem;
   overflow: hidden;
   border-radius: 999px;
   background: var(--training-selected);
@@ -10726,6 +10807,7 @@ select {
 
 .training-fill-meter i {
   display: block;
+  min-width: 2px;
   height: 100%;
   border-radius: inherit;
   background: var(--training-accent);
@@ -10734,6 +10816,57 @@ select {
 .training-fill-meter strong {
   color: #a9c8ff;
   font-weight: 500;
+}
+
+.training-status-dot {
+  display: inline-block;
+  width: 0.46rem;
+  height: 0.46rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--training-muted);
+}
+
+.training-status-dot.is-open {
+  background: var(--training-warning);
+}
+
+.training-status-dot.is-closed,
+.training-status-dot.is-neutral {
+  background: var(--training-muted);
+}
+
+.training-status-dot.is-success {
+  background: var(--training-accent);
+}
+
+.training-status-dot.is-danger {
+  background: var(--training-danger);
+}
+
+.training-total-table-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-top: 1px solid rgba(154, 164, 178, 0.12);
+  padding-top: 0.7rem;
+  color: var(--training-muted);
+  font-size: 0.78rem;
+}
+
+.training-total-table-foot div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.training-total-table-foot span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.34rem;
+  white-space: nowrap;
 }
 
 .training-link-button {
@@ -10941,6 +11074,15 @@ select {
 
   .training-search-field input {
     width: 100%;
+  }
+
+  .training-total-table-foot {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .training-total-table-foot div {
+    justify-content: flex-start;
   }
 }
 

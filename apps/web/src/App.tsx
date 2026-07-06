@@ -5080,6 +5080,14 @@ function TrainingAllSessionsPage({
   const totalRegistered = sessions.reduce((sum, session) => sum + session.registeredCount, 0);
   const averageFillRate = totalCapacity ? Math.round((totalRegistered / totalCapacity) * 100) : 0;
   const openCount = sessions.filter((session) => getTrainingSessionDisplayStatus(session) === 'OPEN').length;
+  const closedCount = sessions.filter((session) => getTrainingSessionDisplayStatus(session) === 'CLOSED').length;
+  const doneCount = sessions.filter((session) => getTrainingSessionDisplayStatus(session) === 'DONE').length;
+  const summaryCards = [
+    { label: '개설 교육', value: sessions.length, icon: <GraduationCap size={21} />, tone: 'is-primary' },
+    { label: '모집중', value: openCount, icon: <CircleDot size={21} />, tone: 'is-open' },
+    { label: '총 신청 인원', value: totalRegistered, icon: <UserRound size={21} />, tone: 'is-info' },
+    { label: '평균 충원율', value: `${averageFillRate}%`, icon: <Gauge size={21} />, tone: 'is-success' }
+  ];
 
   return (
     <section className="training-shell training-total-page">
@@ -5095,11 +5103,16 @@ function TrainingAllSessionsPage({
         </div>
       </header>
 
-      <div className="training-ui-summary" aria-label="교육 세션 요약">
-        <div><strong>{sessions.length}</strong><span>개설 교육</span></div>
-        <div><strong>{openCount}</strong><span>모집중</span></div>
-        <div><strong>{totalRegistered}</strong><span>총 신청 인원</span></div>
-        <div><strong>{averageFillRate}%</strong><span>평균 충원율</span></div>
+      <div className="training-ui-summary training-total-summary" aria-label="교육 세션 요약">
+        {summaryCards.map((card) => (
+          <div key={card.label} className={card.tone}>
+            <span>
+              <strong>{card.value}</strong>
+              <em>{card.label}</em>
+            </span>
+            <i aria-hidden="true">{card.icon}</i>
+          </div>
+        ))}
       </div>
 
       <div className="training-filter-row" aria-label="교육 목록 필터">
@@ -5125,7 +5138,7 @@ function TrainingAllSessionsPage({
         </select>
         <label className="training-search-field">
           <Search size={16} aria-hidden="true" />
-          <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="검색" />
+          <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder="교육 검색" />
         </label>
       </div>
 
@@ -5165,7 +5178,12 @@ function TrainingAllSessionsPage({
                       <strong>{session.registeredCount}/{session.capacity}</strong>
                     </div>
                   </td>
-                  <td><em className={`training-ui-badge ${getTrainingStatusClass(displayStatus)}`}>{meta.label}</em></td>
+                  <td>
+                    <em className={`training-ui-badge ${getTrainingStatusClass(displayStatus)}`}>
+                      <span className={`training-status-dot ${getTrainingStatusClass(displayStatus)}`} aria-hidden="true" />
+                      {meta.label}
+                    </em>
+                  </td>
                   <td>
                     <button
                       type="button"
@@ -5184,6 +5202,14 @@ function TrainingAllSessionsPage({
             )}
           </tbody>
         </table>
+        <div className="training-total-table-foot">
+          <span>{filteredSessions.length}건 표시 · 전체 {sessions.length}건</span>
+          <div aria-label="상태 범례">
+            <span><i className="training-status-dot is-open" /> 모집중 {openCount}</span>
+            <span><i className="training-status-dot is-closed" /> 마감 {closedCount}</span>
+            <span><i className="training-status-dot is-success" /> 완료 {doneCount}</span>
+          </div>
+        </div>
       </div>
     </section>
   );
