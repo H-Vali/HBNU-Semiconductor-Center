@@ -10026,6 +10026,7 @@ select {
   --training-danger: #ff7f86;
   --training-info: #7db3f0;
   display: grid;
+  align-content: start;
   gap: 1.45rem;
   min-height: calc(100vh - 7.5rem);
   border-radius: 20px;
