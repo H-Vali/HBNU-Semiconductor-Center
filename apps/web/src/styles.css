@@ -2634,13 +2634,20 @@ select {
   gap: 0.2rem;
   border-radius: 7px;
   justify-self: end;
-  max-width: 6.2rem;
+  max-width: 7.4rem;
   overflow: hidden;
   padding: 0.32rem 0.34rem;
   font-size: 0.66rem;
   text-overflow: ellipsis;
   font-weight: 900;
   white-space: nowrap;
+}
+
+.equipment-type-chip svg {
+  flex: 0 0 auto;
+  width: 0.88rem;
+  height: 0.88rem;
+  stroke-width: 2.4;
 }
 
 .equipment-type-chip.is-process {
