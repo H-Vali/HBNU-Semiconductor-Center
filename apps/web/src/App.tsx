@@ -4674,7 +4674,16 @@ function TrainingSessionApplicantPage({
 }) {
   const currentUserPermissionIds = currentUser ? permissions[currentUser.id] ?? [] : [];
   const grantedEquipment = equipmentItems.filter((item) => currentUserPermissionIds.includes(item.id));
-  const openSessions = sessions.filter((session) => session.status === 'OPEN' || session.status === 'FULL');
+  const activeRegistrationSessionIds = new Set(
+    myRegistrations
+      .filter((registration) => registration.status === 'REGISTERED')
+      .map((registration) => registration.sessionId)
+  );
+  const openSessions = sessions.filter((session) => (session.status === 'OPEN' || session.status === 'FULL') && !activeRegistrationSessionIds.has(session.id));
+  const [cancelTarget, setCancelTarget] = useState<ApiMyTrainingRegistration | null>(null);
+  const [isCanceling, setIsCanceling] = useState(false);
+  const cancelModalRef = useRef<HTMLElement | null>(null);
+  const cancelCloseButtonRef = useRef<HTMLButtonElement | null>(null);
 
   async function register(session: ApiTrainingSession) {
     if (!sessionUser) {
@@ -4685,6 +4694,48 @@ function TrainingSessionApplicantPage({
     const confirmed = window.confirm(`${session.equipmentName} 교육을 신청하시겠습니까?`);
     if (!confirmed) return;
     await onRegister(session.id);
+  }
+
+  useEffect(() => {
+    if (!cancelTarget) return;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    cancelCloseButtonRef.current?.focus();
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setCancelTarget(null);
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const focusable = Array.from(
+        cancelModalRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])') ?? []
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      previousFocus?.focus();
+    };
+  }, [cancelTarget]);
+
+  async function confirmCancelRegistration() {
+    if (!cancelTarget?.session || isCanceling) return;
+    setIsCanceling(true);
+    const canceled = await onCancel(cancelTarget.session.id);
+    setIsCanceling(false);
+    if (canceled) setCancelTarget(null);
   }
 
   return (
@@ -4701,7 +4752,7 @@ function TrainingSessionApplicantPage({
 
       <div className="training-request-layout">
         <div className="training-request-form">
-          <section className="training-request-card">
+          <section className="training-request-card training-application-panel">
             <div className="training-request-panel-head">
               <h3>내 신청 타임라인</h3>
               <span>{myRegistrations.length}건</span>
@@ -4709,7 +4760,26 @@ function TrainingSessionApplicantPage({
             <div className="training-application-summary">
               {myRegistrations.length > 0 ? myRegistrations.map((registration) => {
                 const session = registration.session;
-                const isClosed = session ? isTrainingSessionClosed(session) : false;
+                const isClosed = session ? isTrainingSessionClosed(session) : true;
+                const isSessionCanceled = session?.status === 'CANCELED';
+                const canCancel = Boolean(session && registration.status === 'REGISTERED' && !isClosed && !isSessionCanceled);
+                const showCancelControl = registration.status === 'REGISTERED';
+                const cancelBlockedLabel = isSessionCanceled
+                  ? '폐강됨'
+                  : isClosed
+                    ? '취소 불가'
+                    : '취소 불가';
+                const footMessage = registration.status === 'COMPLETED'
+                  ? `${session?.equipmentName ?? '장비'} 예약 권한이 부여되었습니다.`
+                  : registration.status === 'CANCELED'
+                    ? '신청 취소가 완료되어 좌석이 반환되었습니다.'
+                    : registration.status === 'NO_SHOW'
+                      ? '미참석 처리된 교육입니다. 담당자에게 문의하세요.'
+                      : isSessionCanceled
+                        ? '교육이 폐강되어 신청이 처리되지 않습니다.'
+                        : isClosed
+                          ? '신청이 마감되어 취소할 수 없습니다. 참석이 어려우면 담당자에게 문의하세요.'
+                          : '마감 후 담당자가 교육 일정을 개별 안내합니다.';
                 const steps = [
                   { label: '신청 접수', done: true, current: registration.status === 'REGISTERED' && !isClosed },
                   { label: '마감 대기', done: isClosed || registration.status !== 'REGISTERED', current: registration.status === 'REGISTERED' && !isClosed },
@@ -4718,14 +4788,19 @@ function TrainingSessionApplicantPage({
                 ];
                 const meta = registrationStatusMeta[registration.status];
                 return (
-                  <article key={registration.id} className="training-application-card">
+                  <article key={registration.id} className={`training-application-card ${canCancel ? 'is-cancelable' : ''} ${isClosed ? 'is-locked' : ''}`}>
                     <div className="training-application-card-head">
                       <TrainingIconChip groupName={session?.groupName || session?.category} />
                       <div>
                         <strong>{session?.equipmentName ?? registration.sessionId} 교육</strong>
-                        <span>{session ? `담당 ${session.managerName} · 신청마감 ${getTrainingShortDate(session.applyDeadline)}` : '세션 정보 없음'}</span>
+                        <span>{session ? `담당 ${session.managerName} · 신청마감 ${getTrainingShortDate(session.applyDeadline)}${isClosed ? ' (마감됨)' : ''}` : '세션 정보 없음'}</span>
                       </div>
-                      <em className={`training-ui-badge ${getTrainingStatusClass(registration.status)}`}>{meta.label}</em>
+                      <div className="training-application-head-meta">
+                        {session && registration.status === 'REGISTERED' && !isClosed && (
+                          <span className="training-seat-pill">{session.registeredCount} / {session.capacity}</span>
+                        )}
+                        <em className={`training-ui-badge ${isSessionCanceled ? getTrainingStatusClass('CANCELED') : getTrainingStatusClass(registration.status)}`}>{isSessionCanceled ? '폐강' : meta.label}</em>
+                      </div>
                     </div>
                     <div className="training-timeline" aria-label={`${session?.equipmentName ?? ''} 진행 단계`}>
                         {steps.map((step) => (
@@ -4736,15 +4811,19 @@ function TrainingSessionApplicantPage({
                         ))}
                     </div>
                     <div className="training-application-card-foot">
-                      <p>{registration.status === 'COMPLETED' ? `${session?.equipmentName ?? '장비'} 예약 권한이 부여되었습니다.` : '마감 후 담당자가 교육 일정을 개별 안내합니다.'}</p>
-                      <button
-                        type="button"
-                        disabled={!session || registration.status !== 'REGISTERED' || isClosed}
-                        onClick={() => session && void onCancel(session.id)}
-                        title={isClosed ? '신청 마감 후에는 취소할 수 없습니다.' : undefined}
-                      >
-                        신청 취소
-                      </button>
+                      <p>{footMessage}</p>
+                      {showCancelControl && (
+                        <button
+                          type="button"
+                          className={canCancel ? 'is-cancelable' : 'is-disabled'}
+                          disabled={!canCancel}
+                          onClick={() => setCancelTarget(registration)}
+                          title={!canCancel ? footMessage : undefined}
+                          aria-label={session ? `${session.equipmentName} 교육 신청 취소` : '교육 신청 취소'}
+                        >
+                          {canCancel ? '신청 취소' : cancelBlockedLabel}
+                        </button>
+                      )}
                     </div>
                   </article>
                 );
@@ -4755,7 +4834,7 @@ function TrainingSessionApplicantPage({
           </section>
         </div>
 
-        <aside className="training-request-side">
+        <aside className="training-request-side training-applicant-side-grid">
           <section className="training-request-card">
             <div className="training-request-panel-head">
               <h3>신청 가능한 교육</h3>
@@ -4799,6 +4878,37 @@ function TrainingSessionApplicantPage({
           </section>
         </aside>
       </div>
+
+      {cancelTarget?.session && (
+        <div className="training-cancel-modal-backdrop" role="presentation" onMouseDown={() => setCancelTarget(null)}>
+          <section
+            ref={cancelModalRef}
+            className="training-cancel-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="training-cancel-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <span className="training-cancel-modal-icon" aria-hidden="true">
+              <AlertTriangle size={30} />
+            </span>
+            <div className="training-cancel-modal-copy">
+              <h3 id="training-cancel-title">신청을 취소하시겠어요?</h3>
+              <p>{cancelTarget.session.equipmentName} 교육 · 신청마감 {getTrainingShortDate(cancelTarget.session.applyDeadline)}</p>
+              <ul>
+                <li>취소하면 좌석이 즉시 반환되어 다른 사용자가 신청할 수 있습니다.</li>
+                <li>다시 신청하려면 정원({cancelTarget.session.capacity}명)에 여유가 있어야 합니다.</li>
+              </ul>
+            </div>
+            <div className="training-cancel-modal-actions">
+              <button type="button" ref={cancelCloseButtonRef} className="is-cancel" onClick={() => setCancelTarget(null)}>닫기</button>
+              <button type="button" className="is-danger" disabled={isCanceling} onClick={() => void confirmCancelRegistration()}>
+                {isCanceling ? '취소 중' : '신청 취소'}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </section>
   );
 }
