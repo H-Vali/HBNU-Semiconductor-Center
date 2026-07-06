@@ -1738,7 +1738,7 @@ function SidebarNavigation({
                       onClick={() => onNavigate('trainingManagement')}
                     >
                       <GraduationCap size={15} />
-                      <span>교육신청관리(담당)</span>
+                      <span>교육통합관리(담당)</span>
                     </button>
                   </>
                 )
