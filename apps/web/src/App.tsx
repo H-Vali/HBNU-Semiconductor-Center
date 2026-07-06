@@ -5485,7 +5485,7 @@ function TrainingAllSessionsPage({
                       className="training-link-button"
                       onClick={() => onNavigate(sessionRole === 'USER' ? 'training' : 'trainingManagement')}
                     >
-                      명단 →
+                      {sessionRole === 'USER' ? '신청 →' : '관리 →'}
                     </button>
                   </td>
                 </tr>
