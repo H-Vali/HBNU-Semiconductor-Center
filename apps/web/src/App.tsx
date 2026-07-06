@@ -2074,7 +2074,7 @@ type TrainingMetricCard = {
 
 function TrainingMetricGrid({ cards, label }: { cards: TrainingMetricCard[]; label: string }) {
   return (
-    <div className="stat-grid training-metric-grid" aria-label={label}>
+    <div className={`stat-grid training-metric-grid is-count-${cards.length}`} aria-label={label}>
       {cards.map((card) => {
         const progress = typeof card.progress === 'number' ? Math.max(0, Math.min(100, card.progress)) : null;
 
@@ -5328,7 +5328,6 @@ function TrainingAllSessionsPage({
   });
   const totalCapacity = sessions.reduce((sum, session) => sum + session.capacity, 0);
   const totalRegistered = sessions.reduce((sum, session) => sum + session.registeredCount, 0);
-  const averageFillRate = totalCapacity ? Math.round((totalRegistered / totalCapacity) * 100) : 0;
   const openCount = sessions.filter((session) => getTrainingSessionDisplayStatus(session) === 'OPEN').length;
   const closedCount = sessions.filter((session) => getTrainingSessionDisplayStatus(session) === 'CLOSED').length;
   const doneCount = sessions.filter((session) => getTrainingSessionDisplayStatus(session) === 'DONE').length;
@@ -5356,14 +5355,6 @@ function TrainingAllSessionsPage({
       detail: `전체 정원 ${totalCapacity.toLocaleString()}명 기준`,
       icon: <UserRound size={16} aria-hidden="true" />,
       tone: 'is-info'
-    },
-    {
-      label: '평균 충원율',
-      value: averageFillRate.toLocaleString(),
-      unit: '%',
-      progress: averageFillRate,
-      icon: <Gauge size={16} aria-hidden="true" />,
-      tone: 'is-success'
     }
   ];
 

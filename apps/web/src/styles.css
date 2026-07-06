@@ -582,6 +582,10 @@ select {
   background: #11192b;
 }
 
+.training-metric-grid.is-count-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .process-status-card {
   border-radius: 11px;
   padding: 13px 14px;
