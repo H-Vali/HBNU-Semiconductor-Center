@@ -10484,6 +10484,70 @@ select {
   display: grid;
   gap: 1.15rem;
   padding: 1.25rem 1.35rem;
+  overflow: hidden;
+}
+
+.training-deadline-ribbon {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: -1.25rem -1.35rem 0;
+  padding: 0.42rem 0.88rem;
+  color: var(--training-secondary);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.training-deadline-ribbon span,
+.training-deadline-ribbon strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.training-deadline-ribbon span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.training-deadline-ribbon strong {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 0.12rem 0.42rem;
+  font-size: 0.72rem;
+  line-height: 1.2;
+}
+
+.training-deadline-ribbon.is-muted {
+  background: rgba(105, 116, 134, 0.2);
+}
+
+.training-deadline-ribbon.is-muted strong {
+  background: rgba(105, 116, 134, 0.28);
+  color: var(--training-muted);
+}
+
+.training-deadline-ribbon.is-warning {
+  background: rgba(245, 185, 66, 0.18);
+  color: var(--training-warning);
+}
+
+.training-deadline-ribbon.is-warning strong {
+  background: rgba(245, 185, 66, 0.24);
+  color: var(--training-warning);
+}
+
+.training-deadline-ribbon.is-danger {
+  background: rgba(255, 127, 134, 0.18);
+  color: var(--training-danger);
+}
+
+.training-deadline-ribbon.is-danger strong {
+  background: rgba(255, 127, 134, 0.24);
+  color: var(--training-danger);
 }
 
 .training-manager-card-head {

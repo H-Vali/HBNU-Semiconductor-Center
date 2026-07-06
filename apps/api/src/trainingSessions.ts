@@ -290,7 +290,11 @@ function mapPenaltyCandidate(row: PenaltyCandidateRow) {
 }
 
 function parseDeadline(value: string) {
-  const normalized = /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T23:59:59+09:00` : value;
+  const normalized = /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ? `${value}T23:59:59+09:00`
+    : /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)
+      ? `${value}:00+09:00`
+      : value;
   const date = new Date(normalized);
   if (Number.isNaN(date.getTime())) throw new TrainingSessionStateError('Invalid apply deadline');
   return date.toISOString();

@@ -3608,6 +3608,22 @@ function getDateInputOffset(days: number) {
   return date.toISOString().slice(0, 10);
 }
 
+const SEOUL_OFFSET_MS = 9 * 60 * 60 * 1000;
+
+function toSeoulDateTimeInputValue(date: Date) {
+  return new Date(date.getTime() + SEOUL_OFFSET_MS).toISOString().slice(0, 16);
+}
+
+function getCurrentDateTimeInputValue() {
+  return toSeoulDateTimeInputValue(new Date());
+}
+
+function getDateTimeInputOffset(days: number, time = '18:00') {
+  const seoulNow = new Date(Date.now() + SEOUL_OFFSET_MS);
+  const target = new Date(Date.UTC(seoulNow.getUTCFullYear(), seoulNow.getUTCMonth(), seoulNow.getUTCDate() + days));
+  return `${target.toISOString().slice(0, 10)}T${time}`;
+}
+
 function formatTrainingDateLabel(date: string, start?: string, end?: string) {
   const target = new Date(`${date}T${start || '09:00'}:00`);
   const dateLabel = new Intl.DateTimeFormat('ko-KR', {
@@ -4629,6 +4645,45 @@ function getTrainingDateInputValue(value: string) {
   return date.toISOString().slice(0, 10);
 }
 
+function getTrainingDateTimeInputValue(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value.slice(0, 16);
+  return toSeoulDateTimeInputValue(date);
+}
+
+function formatTrainingDeadlineLabel(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    month: 'numeric',
+    day: 'numeric',
+    weekday: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23'
+  }).format(date);
+}
+
+function getTrainingDeadlineInfo(value: string, status?: TrainingSessionStatus) {
+  const deadline = new Date(value);
+  if (Number.isNaN(deadline.getTime())) {
+    return { tone: 'is-muted', badge: 'D -', label: value };
+  }
+  const label = formatTrainingDeadlineLabel(value);
+  if (status === 'DONE' || status === 'CANCELED') {
+    return { tone: 'is-muted', badge: status === 'DONE' ? '완료' : '취소', label };
+  }
+  const remainingMs = deadline.getTime() - Date.now();
+  if (remainingMs <= 0) return { tone: 'is-danger', badge: 'D-DAY', label };
+  const remainingDays = Math.ceil(remainingMs / 86_400_000);
+  const tone = remainingDays > 7 ? 'is-muted' : remainingDays > 3 ? 'is-warning' : 'is-danger';
+  const badge = remainingDays <= 1
+    ? `${Math.ceil(remainingMs / 3_600_000)}H`
+    : `D-${remainingDays}`;
+  return { tone, badge, label };
+}
+
 function getTrainingSessionDisplayStatus(session: ApiTrainingSession) {
   if (session.status === 'FULL' || session.status === 'CLOSED') return 'CLOSED' as const;
   return session.status;
@@ -4986,7 +5041,7 @@ function TrainingSessionManagementPage({
       : [];
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [equipmentId, setEquipmentId] = useState(manageableEquipment[0]?.id ?? '');
-  const [applyDeadline, setApplyDeadline] = useState(getDateInputOffset(7));
+  const [applyDeadline, setApplyDeadline] = useState(getDateTimeInputOffset(7));
   const [note, setNote] = useState('');
   const [selectedUserIds, setSelectedUserIds] = useState<Record<string, string[]>>({});
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
@@ -5072,7 +5127,7 @@ function TrainingSessionManagementPage({
 
   function startEditSession(session: ApiTrainingSession) {
     setEditingSessionId(session.id);
-    setEditApplyDeadline(getTrainingDateInputValue(session.applyDeadline));
+    setEditApplyDeadline(getTrainingDateTimeInputValue(session.applyDeadline));
     setEditNote(session.note ?? '');
   }
 
@@ -5130,7 +5185,7 @@ function TrainingSessionManagementPage({
             </label>
             <label>
               신청 마감일
-              <input type="date" min={getDateInputOffset(0)} value={applyDeadline} onChange={(event) => setApplyDeadline(event.target.value)} />
+              <input type="datetime-local" min={getCurrentDateTimeInputValue()} value={applyDeadline} onChange={(event) => setApplyDeadline(event.target.value)} />
             </label>
             <label>
               비고
@@ -5151,13 +5206,18 @@ function TrainingSessionManagementPage({
           const canProcess = isTrainingSessionClosed(session) && session.status !== 'DONE' && session.status !== 'CANCELED';
           const canModify = session.status !== 'DONE' && session.status !== 'CANCELED';
           const selected = selectedUserIds[session.id] ?? [];
+          const deadlineInfo = getTrainingDeadlineInfo(session.applyDeadline, getTrainingSessionDisplayStatus(session));
           return (
             <article key={session.id} className="training-manager-card">
+              <div className={`training-deadline-ribbon ${deadlineInfo.tone}`}>
+                <span><Clock3 size={13} aria-hidden="true" /> 신청마감 {deadlineInfo.label}</span>
+                <strong>{deadlineInfo.badge}</strong>
+              </div>
               <div className="training-manager-card-head">
                 <TrainingIconChip groupName={session.groupName || session.category} />
                 <div>
                   <strong>{session.equipmentName} 교육</strong>
-                  <span>신청마감 {getTrainingShortDate(session.applyDeadline)} · {session.category || session.groupName} · 마감 후 개별 안내</span>
+                  <span>{session.category || session.groupName} · 마감 후 개별 안내</span>
                 </div>
                 <div className="training-manager-card-meta">
                   <span className="training-seat-pill">{activeRegistrations.length} / {session.capacity}</span>
@@ -5186,7 +5246,7 @@ function TrainingSessionManagementPage({
                 <form className="training-edit-panel" onSubmit={(event) => void submitSessionEdit(event, session)}>
                   <label>
                     신청 마감일
-                    <input type="date" min={getDateInputOffset(0)} value={editApplyDeadline} onChange={(event) => setEditApplyDeadline(event.target.value)} />
+                    <input type="datetime-local" min={getCurrentDateTimeInputValue()} value={editApplyDeadline} onChange={(event) => setEditApplyDeadline(event.target.value)} />
                   </label>
                   <label>
                     비고
@@ -5406,7 +5466,7 @@ function TrainingAllSessionsPage({
                     </div>
                   </td>
                   <td>{session.managerName}</td>
-                  <td>{getTrainingShortDate(session.applyDeadline)}</td>
+                  <td>{formatTrainingSessionDate(session.applyDeadline)}</td>
                   <td>
                     <div className="training-fill-meter">
                       <span><i style={{ width: `${percent}%` }} /></span>
