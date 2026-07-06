@@ -11090,6 +11090,7 @@ select {
   color: var(--training-muted);
   font-size: 0.78rem;
   font-weight: 700;
+  vertical-align: middle;
 }
 
 .training-total-table td {
@@ -11100,6 +11101,17 @@ select {
 
 .training-total-table th:nth-child(5),
 .training-total-table td:nth-child(5) {
+  text-align: center;
+}
+
+.training-total-table th:nth-child(2),
+.training-total-table td:nth-child(2),
+.training-total-table th:nth-child(3),
+.training-total-table td:nth-child(3),
+.training-total-table th:nth-child(4),
+.training-total-table td:nth-child(4),
+.training-total-table th:nth-child(6),
+.training-total-table td:nth-child(6) {
   text-align: center;
 }
 
