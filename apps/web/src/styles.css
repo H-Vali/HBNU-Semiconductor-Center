@@ -10215,8 +10215,8 @@ select {
 }
 
 .training-shell .training-metric-grid .stat-card {
-  min-height: 8.5rem;
-  padding: 16px 18px 18px;
+  min-height: auto;
+  padding: 14px 20px 15px;
 }
 
 .training-shell .training-metric-grid .stat-card-heading {
@@ -10229,6 +10229,10 @@ select {
 
 .training-shell .training-metric-grid .stat-card-detail {
   color: var(--training-muted);
+}
+
+.training-shell .training-metric-grid .stat-progress {
+  margin-top: 10px;
 }
 
 .training-shell .training-metric-grid .stat-card.is-primary .stat-card-heading svg {
