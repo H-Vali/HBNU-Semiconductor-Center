@@ -5454,6 +5454,7 @@ function TrainingAllSessionsPage({
               const displayStatus = getTrainingSessionDisplayStatus(session);
               const meta = trainingSessionStatusMeta[displayStatus];
               const percent = Math.min(100, Math.round((session.registeredCount / session.capacity) * 100));
+              const deadlineInfo = getTrainingDeadlineInfo(session.applyDeadline, displayStatus);
               return (
                 <tr key={session.id}>
                   <td>
@@ -5466,7 +5467,13 @@ function TrainingAllSessionsPage({
                     </div>
                   </td>
                   <td>{session.managerName}</td>
-                  <td>{formatTrainingSessionDate(session.applyDeadline)}</td>
+                  <td>
+                    <div className={`training-deadline-chip ${deadlineInfo.tone}`}>
+                      <span>신청마감</span>
+                      <strong>{deadlineInfo.label}</strong>
+                      <em>{deadlineInfo.badge}</em>
+                    </div>
+                  </td>
                   <td>
                     <div className="training-fill-meter">
                       <span><i style={{ width: `${percent}%` }} /></span>
