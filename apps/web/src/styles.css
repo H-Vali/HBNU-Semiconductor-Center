@@ -10590,9 +10590,11 @@ select {
 .training-seat-pill,
 .training-ui-badge {
   display: inline-grid;
+  grid-auto-flow: column;
+  align-items: center;
+  justify-content: center;
   min-width: 5.25rem;
   height: 2.1rem;
-  place-items: center;
   gap: 0.38rem;
   border-radius: 8px;
   padding: 0 0.75rem;
@@ -11014,6 +11016,11 @@ select {
   color: var(--training-primary);
   font-size: 0.9rem;
   font-weight: 600;
+}
+
+.training-total-table th:nth-child(5),
+.training-total-table td:nth-child(5) {
+  text-align: center;
 }
 
 .training-total-table tbody tr:last-child td {

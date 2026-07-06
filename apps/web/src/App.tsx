@@ -5419,11 +5419,6 @@ function TrainingAllSessionsPage({
         </table>
         <div className="training-total-table-foot">
           <span>{filteredSessions.length}건 표시 · 전체 {sessions.length}건</span>
-          <div aria-label="상태 범례">
-            <span><i className="training-status-dot is-open" /> 모집중 {openCount}</span>
-            <span><i className="training-status-dot is-closed" /> 마감 {closedCount}</span>
-            <span><i className="training-status-dot is-success" /> 완료 {doneCount}</span>
-          </div>
         </div>
       </div>
     </section>
