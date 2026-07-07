@@ -5355,7 +5355,7 @@ function TrainingSessionManagementPage({
                 {Array.from({ length: emptySeats }, (_, index) => (
                   <div key={`empty-${session.id}-${index}`} className="training-roster-row is-empty">
                     <div className="training-roster-person">
-                      <span className="training-empty-seat">+</span>
+                      <span className="training-empty-seat" aria-hidden="true" />
                       <div>
                         <strong>빈 좌석 {index + 1}</strong>
                         <span>신청 대기</span>
