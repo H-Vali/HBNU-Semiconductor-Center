@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
-import { CalendarDays, CheckCircle2, Factory, GraduationCap, LayoutDashboard, MessageSquare, Search, Trash2, UserRound, Wrench } from 'lucide-react';
+import { AlertTriangle, CalendarDays, CheckCircle2, Factory, GraduationCap, LayoutDashboard, MessageSquare, Search, Trash2, UserRound, Wrench } from 'lucide-react';
 import { STORAGE_KEYS } from '../appStorage';
 import { apiDelete, apiGet, apiPatch, apiPost } from '../apiClient';
 
@@ -205,6 +205,8 @@ export function QnaPage({ sessionRole }: { sessionRole: Role | null }) {
   const [qnaItems, setQnaItems] = useState<QnaItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [deleteTargetQna, setDeleteTargetQna] = useState<QnaItem | null>(null);
+  const [isDeletingQna, setIsDeletingQna] = useState(false);
   const [selectedQnaId, setSelectedQnaId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [answerDraft, setAnswerDraft] = useState('');
@@ -348,25 +350,30 @@ export function QnaPage({ sessionRole }: { sessionRole: Role | null }) {
 
   async function deleteQnaQuestion(itemToDelete: QnaItem) {
     if (!isAdmin) return;
-    const confirmed = window.confirm(`"${itemToDelete.title}" 문의를 삭제하시겠습니까?\n삭제된 문의는 사용자 화면에서 더 이상 표시되지 않습니다.`);
-    if (!confirmed) return;
+    setDeleteTargetQna(itemToDelete);
+  }
 
+  async function confirmDeleteQnaQuestion() {
+    if (!deleteTargetQna || isDeletingQna) return;
+    setIsDeletingQna(true);
     const deletedQuestion = await apiDelete<QnaItem>(
-      `/qna/${itemToDelete.id}`,
+      `/qna/${deleteTargetQna.id}`,
       localStorage.getItem(STORAGE_KEYS.sessionToken)
     );
+    setIsDeletingQna(false);
     if (!deletedQuestion) {
       window.alert('Q&A 삭제에 실패했습니다. 관리자 권한 또는 네트워크 상태를 확인해 주세요.');
       return;
     }
-    const deletedVisibleIndex = visibleQnaItems.findIndex((item) => item.id === itemToDelete.id);
-    const nextVisibleItems = visibleQnaItems.filter((item) => item.id !== itemToDelete.id);
+    const deletedVisibleIndex = visibleQnaItems.findIndex((item) => item.id === deleteTargetQna.id);
+    const nextVisibleItems = visibleQnaItems.filter((item) => item.id !== deleteTargetQna.id);
     const nextSelectedItem = nextVisibleItems[Math.min(deletedVisibleIndex, nextVisibleItems.length - 1)] ?? null;
 
-    persistQnaItems(qnaItems.filter((item) => item.id !== itemToDelete.id));
-    if (selectedQnaId === itemToDelete.id) {
+    persistQnaItems(qnaItems.filter((item) => item.id !== deleteTargetQna.id));
+    if (selectedQnaId === deleteTargetQna.id) {
       setSelectedQnaId(nextSelectedItem?.id ?? null);
     }
+    setDeleteTargetQna(null);
   }
 
   return (
@@ -549,6 +556,33 @@ export function QnaPage({ sessionRole }: { sessionRole: Role | null }) {
           </div>
         )}
       </div>
+      {deleteTargetQna && (
+        <div className="app-modal-backdrop" role="presentation" onMouseDown={isDeletingQna ? undefined : () => setDeleteTargetQna(null)}>
+          <section
+            className="app-modal app-confirm-modal is-danger"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="qna-delete-confirm-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <span className="app-modal-icon" aria-hidden="true">
+              <AlertTriangle size={28} />
+            </span>
+            <div className="app-modal-body">
+              <p className="app-modal-eyebrow">Danger Action</p>
+              <h3 id="qna-delete-confirm-title">문의글을 삭제하시겠습니까?</h3>
+              <div className="app-modal-message">"{deleteTargetQna.title}" 문의가 사용자 화면에서 더 이상 표시되지 않습니다.</div>
+              <div className="app-modal-detail">삭제 후에는 목록에서 되돌릴 수 없습니다.</div>
+            </div>
+            <div className="app-modal-actions">
+              <button type="button" className="app-modal-button is-cancel" disabled={isDeletingQna} onClick={() => setDeleteTargetQna(null)}>닫기</button>
+              <button type="button" className="app-modal-button is-danger" disabled={isDeletingQna} onClick={() => void confirmDeleteQnaQuestion()}>
+                {isDeletingQna ? '처리 중' : '삭제'}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
       {showCreateModal && <QnaCreateModal onClose={() => setShowCreateModal(false)} onSubmit={addQuestion} />}
     </section>
   );

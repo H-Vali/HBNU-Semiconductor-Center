@@ -344,6 +344,24 @@ type AccessRequirementNotice = {
   onPrimary?: () => void;
 };
 
+type AppModalTone = 'info' | 'success' | 'warning' | 'danger' | 'locked';
+
+type AppNoticeState = {
+  title: string;
+  message: ReactNode;
+  detail?: ReactNode;
+  tone?: AppModalTone;
+  closeLabel?: string;
+  primaryLabel?: string;
+  onPrimary?: () => void;
+};
+
+type AppToastState = {
+  id: number;
+  message: string;
+  tone?: 'success' | 'info' | 'warning' | 'danger';
+};
+
 type GoogleIdentityWindow = Window & typeof globalThis & {
   google?: {
     accounts: {
@@ -3755,6 +3773,9 @@ function TrainingPage({
   const [message, setMessage] = useState('');
   const [accessNotice, setAccessNotice] = useState<AccessRequirementNotice | null>(null);
   const [submittedTrainingRequest, setSubmittedTrainingRequest] = useState(false);
+  const [legacyTrainingConfirmOpen, setLegacyTrainingConfirmOpen] = useState(false);
+  const legacyTrainingFormRef = useRef<HTMLFormElement | null>(null);
+  const legacyTrainingConfirmedRef = useRef(false);
   const activeEquipmentIds = useMemo(() => new Set(equipmentItems.map((item) => item.id)), [equipmentItems]);
   const displayedApplications = useMemo(() => (
     trainingRequests
@@ -3795,8 +3816,11 @@ function TrainingPage({
       return;
     }
     if (!selectedEquipment || !canSubmitTrainingRequest) return;
-    const confirmed = window.confirm(`${selectedEquipment.name} 교육 신청을 담당자에게 전송하시겠습니까?`);
-    if (!confirmed) return;
+    if (!legacyTrainingConfirmedRef.current) {
+      setLegacyTrainingConfirmOpen(true);
+      return;
+    }
+    legacyTrainingConfirmedRef.current = false;
     const preferred = splitTrainingPreferredDate(preferredDate);
     const savedRequest = await onCreateTrainingRequest({
       equipmentId: selectedEquipment.id,
@@ -3842,7 +3866,7 @@ function TrainingPage({
       </ol>
 
       <div className="training-request-layout">
-        <form className="training-request-form" onSubmit={submitTrainingRequest}>
+        <form ref={legacyTrainingFormRef} className="training-request-form" onSubmit={submitTrainingRequest}>
           <section className="training-request-card">
             <div className="training-request-section-title">
               <span>01</span>
@@ -3984,6 +4008,22 @@ function TrainingPage({
           <TrainingPermissionPanel grantedEquipment={grantedEquipment} onNavigate={onNavigate} />
         </aside>
       </div>
+      {legacyTrainingConfirmOpen && selectedEquipment && (
+        <AppConfirmModal
+          title="교육 신청을 전송하시겠습니까?"
+          message={`${selectedEquipment.name} 교육 신청을 ${selectedManagerName}에게 전송합니다.`}
+          detail="전송 후 담당자가 일정과 안내사항을 확인해 신청자에게 개별 안내합니다."
+          tone="info"
+          confirmLabel="신청"
+          cancelLabel="닫기"
+          onCancel={() => setLegacyTrainingConfirmOpen(false)}
+          onConfirm={() => {
+            legacyTrainingConfirmedRef.current = true;
+            setLegacyTrainingConfirmOpen(false);
+            window.setTimeout(() => legacyTrainingFormRef.current?.requestSubmit(), 0);
+          }}
+        />
+      )}
       {accessNotice && (
         <AccessRequirementModal notice={accessNotice} onClose={() => setAccessNotice(null)} />
       )}
@@ -5047,6 +5087,8 @@ function TrainingSessionManagementPage({
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [editApplyDeadline, setEditApplyDeadline] = useState('');
   const [editNote, setEditNote] = useState('');
+  const [deleteTargetSession, setDeleteTargetSession] = useState<ApiTrainingSession | null>(null);
+  const [isDeletingSession, setIsDeletingSession] = useState(false);
   const managerSessions = sessionRole === 'ADMIN'
     ? sessions
     : sessions.filter((session) => session.managerId === currentUser?.id);
@@ -5144,10 +5186,16 @@ function TrainingSessionManagementPage({
     }
   }
 
-  async function deleteSession(session: ApiTrainingSession) {
-    const confirmed = window.confirm(`${session.equipmentName} 교육을 삭제하시겠습니까?\n활성 신청자는 취소 처리되고 목록에서 제외됩니다.`);
-    if (!confirmed) return;
-    await onDeleteSession(session.id);
+  async function confirmDeleteSession() {
+    if (!deleteTargetSession || isDeletingSession) return;
+    setIsDeletingSession(true);
+    const deleted = await onDeleteSession(deleteTargetSession.id);
+    setIsDeletingSession(false);
+    if (deleted) setDeleteTargetSession(null);
+  }
+
+  function deleteSession(session: ApiTrainingSession) {
+    setDeleteTargetSession(session);
   }
 
   return (
@@ -5341,6 +5389,20 @@ function TrainingSessionManagementPage({
           </div>
         )}
       </div>
+
+      {deleteTargetSession && (
+        <AppConfirmModal
+          title="교육 세션을 삭제하시겠습니까?"
+          message={`${deleteTargetSession.equipmentName} 교육이 목록에서 제외됩니다.`}
+          detail="활성 신청자는 취소 처리되며, 삭제 후에는 관리자 화면에서 되돌릴 수 없습니다."
+          tone="danger"
+          confirmLabel="삭제"
+          cancelLabel="닫기"
+          busy={isDeletingSession}
+          onCancel={() => setDeleteTargetSession(null)}
+          onConfirm={() => void confirmDeleteSession()}
+        />
+      )}
     </section>
   );
 }
@@ -6921,6 +6983,129 @@ function PenaltyManagementPage({
   );
 }
 
+function getAppModalIcon(tone: AppModalTone = 'info') {
+  if (tone === 'success') return <CheckCircle2 size={28} />;
+  if (tone === 'danger' || tone === 'warning') return <AlertTriangle size={28} />;
+  if (tone === 'locked') return <LockKeyhole size={26} />;
+  return <HelpCircle size={27} />;
+}
+
+function AppNoticeModal({
+  notice,
+  onClose
+}: {
+  notice: AppNoticeState;
+  onClose: () => void;
+}) {
+  const tone = notice.tone ?? 'info';
+  return (
+    <div className="app-modal-backdrop" role="presentation" onMouseDown={onClose}>
+      <section
+        className={`app-modal app-notice-modal is-${tone}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="app-notice-title"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <span className="app-modal-icon" aria-hidden="true">
+          {getAppModalIcon(tone)}
+        </span>
+        <div className="app-modal-body">
+          <p className="app-modal-eyebrow">
+            {tone === 'danger' ? 'Action Required' : tone === 'success' ? 'Completed' : tone === 'locked' ? 'Access Notice' : 'Notice'}
+          </p>
+          <h3 id="app-notice-title">{notice.title}</h3>
+          <div className="app-modal-message">{notice.message}</div>
+          {notice.detail && <div className="app-modal-detail">{notice.detail}</div>}
+        </div>
+        <div className="app-modal-actions">
+          <button type="button" className="app-modal-button is-cancel" onClick={onClose}>
+            {notice.closeLabel ?? '확인'}
+          </button>
+          {notice.primaryLabel && notice.onPrimary && (
+            <button
+              type="button"
+              className="app-modal-button is-primary"
+              onClick={() => {
+                onClose();
+                notice.onPrimary?.();
+              }}
+            >
+              {notice.primaryLabel}
+            </button>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function AppConfirmModal({
+  title,
+  message,
+  detail,
+  tone = 'info',
+  confirmLabel = '확인',
+  cancelLabel = '취소',
+  busy = false,
+  onCancel,
+  onConfirm
+}: {
+  title: string;
+  message: ReactNode;
+  detail?: ReactNode;
+  tone?: AppModalTone;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  busy?: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="app-modal-backdrop" role="presentation" onMouseDown={busy ? undefined : onCancel}>
+      <section
+        className={`app-modal app-confirm-modal is-${tone}`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="app-confirm-title"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <span className="app-modal-icon" aria-hidden="true">
+          {getAppModalIcon(tone)}
+        </span>
+        <div className="app-modal-body">
+          <p className="app-modal-eyebrow">{tone === 'danger' ? 'Danger Action' : 'Confirm Action'}</p>
+          <h3 id="app-confirm-title">{title}</h3>
+          <div className="app-modal-message">{message}</div>
+          {detail && <div className="app-modal-detail">{detail}</div>}
+        </div>
+        <div className="app-modal-actions">
+          <button type="button" className="app-modal-button is-cancel" disabled={busy} onClick={onCancel}>
+            {cancelLabel}
+          </button>
+          <button type="button" className={`app-modal-button ${tone === 'danger' ? 'is-danger' : 'is-primary'}`} disabled={busy} onClick={onConfirm}>
+            {busy ? '처리 중' : confirmLabel}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function AppToast({ toast, onClose }: { toast: AppToastState; onClose: () => void }) {
+  return (
+    <div className={`app-toast is-${toast.tone ?? 'info'}`} role="status">
+      <span aria-hidden="true">
+        {toast.tone === 'danger' || toast.tone === 'warning' ? <AlertTriangle size={18} /> : <CheckCircle2 size={18} />}
+      </span>
+      <strong>{toast.message}</strong>
+      <button type="button" onClick={onClose} aria-label="알림 닫기">
+        <X size={15} />
+      </button>
+    </div>
+  );
+}
+
 function PenaltyNoticeModal({
   penalty,
   onClose
@@ -6972,34 +7157,17 @@ function AccessRequirementModal({
   onClose: () => void;
 }) {
   return (
-    <div className="user-add-modal-backdrop" role="presentation">
-      <section className="access-requirement-modal" role="dialog" aria-modal="true" aria-labelledby="access-requirement-title">
-        <div className="access-requirement-icon" aria-hidden="true">
-          <LockKeyhole size={26} />
-        </div>
-        <div className="access-requirement-heading">
-          <p>이용 조건 안내</p>
-          <h3 id="access-requirement-title">{notice.title}</h3>
-        </div>
-        <p>{notice.message}</p>
-        {notice.detail && <div className="access-requirement-detail">{notice.detail}</div>}
-        <div className="user-add-modal-actions">
-          <button type="button" className="is-cancel" onClick={onClose}>확인</button>
-          {notice.primaryLabel && notice.onPrimary && (
-            <button
-              type="button"
-              className="is-primary"
-              onClick={() => {
-                onClose();
-                notice.onPrimary?.();
-              }}
-            >
-              {notice.primaryLabel}
-            </button>
-          )}
-        </div>
-      </section>
-    </div>
+    <AppNoticeModal
+      notice={{
+        title: notice.title,
+        message: notice.message,
+        detail: notice.detail,
+        tone: 'locked',
+        primaryLabel: notice.primaryLabel,
+        onPrimary: notice.onPrimary
+      }}
+      onClose={onClose}
+    />
   );
 }
 
@@ -8961,6 +9129,8 @@ export function App() {
   const [penaltyRecords, setPenaltyRecords] = useState<PenaltyRecord[]>([]);
   const [penaltyCandidates, setPenaltyCandidates] = useState<ApiPenaltyCandidate[]>([]);
   const [showPenaltyNotice, setShowPenaltyNotice] = useState(false);
+  const [appNotice, setAppNotice] = useState<AppNoticeState | null>(null);
+  const [appToast, setAppToast] = useState<AppToastState | null>(null);
   const sessionUser = getStoredSessionUser();
   const sessionUserName = (() => {
     try {
@@ -8979,6 +9149,37 @@ export function App() {
       setShowPenaltyNotice(true);
     }
   }, [sessionRole, activeSessionPenalty?.id]);
+
+  useEffect(() => {
+    const originalAlert = window.alert.bind(window);
+
+    window.alert = (message?: unknown) => {
+      const text = String(message ?? '');
+      const isSuccess = /(완료|저장되었습니다|전송되었습니다|부여되었습니다|등록되었습니다|확정되었습니다)/.test(text);
+      const isDanger = /(실패|오류|못했습니다|없습니다|불가|확인해 주세요)/.test(text);
+
+      if (isSuccess) {
+        setAppToast({ id: Date.now(), message: text, tone: 'success' });
+        return;
+      }
+
+      setAppNotice({
+        title: isDanger ? '처리할 수 없습니다' : '안내',
+        message: text,
+        tone: isDanger ? 'warning' : 'info'
+      });
+    };
+
+    return () => {
+      window.alert = originalAlert;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!appToast) return;
+    const timer = window.setTimeout(() => setAppToast(null), 3200);
+    return () => window.clearTimeout(timer);
+  }, [appToast?.id]);
 
   useEffect(() => {
     if (sessionRole !== 'ADMIN' && adminOnlyPages.has(activePage)) {
@@ -10325,6 +10526,12 @@ export function App() {
       )}
       {globalAccessNotice && (
         <AccessRequirementModal notice={globalAccessNotice} onClose={() => setGlobalAccessNotice(null)} />
+      )}
+      {appNotice && (
+        <AppNoticeModal notice={appNotice} onClose={() => setAppNotice(null)} />
+      )}
+      {appToast && (
+        <AppToast toast={appToast} onClose={() => setAppToast(null)} />
       )}
     </div>
   );
