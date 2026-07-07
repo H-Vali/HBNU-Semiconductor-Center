@@ -5329,7 +5329,7 @@ function TrainingSessionManagementPage({
                       <div className="training-roster-person">
                         <span className="training-roster-avatar is-applicant">
                           <span>{initial}</span>
-                          <CheckCircle2 className="training-roster-avatar-check" size={13} aria-hidden="true" />
+                          <span className="training-roster-avatar-check" aria-hidden="true">✓</span>
                         </span>
                         <div>
                           <strong>{registration.userName}</strong>
@@ -5368,9 +5368,7 @@ function TrainingSessionManagementPage({
                   <div key={`empty-${session.id}-${index}`} className="training-roster-row is-empty">
                     <div className="training-roster-person">
                       <span className="training-empty-seat" aria-hidden="true">
-                        <span>
-                          <Plus size={16} />
-                        </span>
+                        <span>+</span>
                       </span>
                       <div>
                         <strong>빈 좌석 {index + 1}</strong>
