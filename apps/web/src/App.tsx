@@ -5367,6 +5367,9 @@ function TrainingAllSessionsPage({
   const [statusFilter, setStatusFilter] = useState<'all' | 'OPEN' | 'CLOSED' | 'DONE'>('all');
   const [equipmentFilter, setEquipmentFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [applyTarget, setApplyTarget] = useState<ApiTrainingSession | null>(null);
+  const [completedApplySession, setCompletedApplySession] = useState<ApiTrainingSession | null>(null);
+  const [isApplying, setIsApplying] = useState(false);
   const normalizedSearch = searchTerm.trim().toLowerCase();
   const filteredSessions = sessions.filter((session) => {
     const displayStatus = getTrainingSessionDisplayStatus(session);
@@ -5384,6 +5387,7 @@ function TrainingAllSessionsPage({
   const openCount = sessions.filter((session) => getTrainingSessionDisplayStatus(session) === 'OPEN').length;
   const closedCount = sessions.filter((session) => getTrainingSessionDisplayStatus(session) === 'CLOSED').length;
   const doneCount = sessions.filter((session) => getTrainingSessionDisplayStatus(session) === 'DONE').length;
+  const actionHeaderLabel = sessionRole === 'ADMIN' ? '관리' : sessionRole === 'MANAGER' ? '신청/관리' : '신청';
   const summaryCards: TrainingMetricCard[] = [
     {
       label: '개설 교육',
@@ -5410,6 +5414,17 @@ function TrainingAllSessionsPage({
       tone: 'is-info'
     }
   ];
+
+  async function confirmApplySession() {
+    if (!applyTarget || isApplying) return;
+    setIsApplying(true);
+    const applied = await onRegister(applyTarget.id);
+    setIsApplying(false);
+    if (applied) {
+      setCompletedApplySession(applyTarget);
+      setApplyTarget(null);
+    }
+  }
 
   return (
     <section className="training-shell training-total-page">
@@ -5463,7 +5478,7 @@ function TrainingAllSessionsPage({
               <th>신청마감</th>
               <th>신청현황</th>
               <th>상태</th>
-              <th>관리</th>
+              <th>{actionHeaderLabel}</th>
             </tr>
           </thead>
           <tbody>
@@ -5515,7 +5530,7 @@ function TrainingAllSessionsPage({
                           return;
                         }
                         if (canApply) {
-                          void onRegister(session.id);
+                          setApplyTarget(session);
                           return;
                         }
                       }}
@@ -5536,6 +5551,73 @@ function TrainingAllSessionsPage({
           <span>{filteredSessions.length}건 표시 · 전체 {sessions.length}건</span>
         </div>
       </div>
+
+      {applyTarget && (
+        <div className="training-cancel-modal-backdrop" role="presentation" onMouseDown={() => setApplyTarget(null)}>
+          <section
+            className="training-cancel-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="training-apply-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <span className="training-cancel-modal-icon is-apply" aria-hidden="true">
+              <GraduationCap size={30} />
+            </span>
+            <div className="training-cancel-modal-copy">
+              <h3 id="training-apply-title">교육을 신청하시겠어요?</h3>
+              <p>{applyTarget.equipmentName} 교육 · 신청마감 {getTrainingShortDate(applyTarget.applyDeadline)}</p>
+              <ul>
+                <li>신청 후 마감 전까지 내 교육 신청 현황에서 취소할 수 있습니다.</li>
+                <li>마감 후 담당자가 교육 일정을 개별 안내합니다.</li>
+              </ul>
+            </div>
+            <div className="training-cancel-modal-actions">
+              <button type="button" className="is-cancel" disabled={isApplying} onClick={() => setApplyTarget(null)}>닫기</button>
+              <button type="button" className="is-primary" disabled={isApplying} onClick={() => void confirmApplySession()}>
+                {isApplying ? '신청 중' : '교육 신청'}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {completedApplySession && (
+        <div className="training-cancel-modal-backdrop" role="presentation" onMouseDown={() => setCompletedApplySession(null)}>
+          <section
+            className="training-cancel-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="training-apply-complete-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <span className="training-cancel-modal-icon is-complete" aria-hidden="true">
+              <CheckCircle2 size={30} />
+            </span>
+            <div className="training-cancel-modal-copy">
+              <h3 id="training-apply-complete-title">교육 신청이 완료되었습니다</h3>
+              <p>{completedApplySession.equipmentName} 교육 신청이 접수되었습니다.</p>
+              <ul>
+                <li>신청 내역은 교육신청 메뉴의 내 신청 타임라인에서 확인할 수 있습니다.</li>
+                <li>담당자 안내 후 교육 이수가 완료되면 장비 사용 권한이 부여됩니다.</li>
+              </ul>
+            </div>
+            <div className="training-cancel-modal-actions">
+              <button type="button" className="is-cancel" onClick={() => setCompletedApplySession(null)}>닫기</button>
+              <button
+                type="button"
+                className="is-primary"
+                onClick={() => {
+                  setCompletedApplySession(null);
+                  onNavigate('training');
+                }}
+              >
+                내 신청 현황 보기
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </section>
   );
 }
