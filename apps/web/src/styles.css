@@ -10521,8 +10521,8 @@ select {
   display: flex;
   min-width: 0;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 0.55rem;
+  align-items: flex-start;
+  gap: 0.7rem;
 }
 
 .training-manager-title-line strong {
@@ -10540,30 +10540,34 @@ select {
   font-size: 0.74rem;
 }
 
+.training-manager-status-stack {
+  display: grid;
+  gap: 0.24rem;
+  justify-items: start;
+}
+
+.training-manager-category-line {
+  display: block;
+  color: var(--training-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
 .training-manager-deadline-line {
   display: flex;
   min-width: 0;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.32rem;
-  color: var(--training-secondary);
-  font-size: 0.86rem;
-  font-weight: 700;
+  color: var(--training-warning);
+  font-size: 0.78rem;
+  font-weight: 800;
   line-height: 1.25;
 }
 
-.training-manager-deadline-line > span {
-  color: var(--training-muted);
-}
-
-.training-manager-deadline-line i {
-  color: rgba(154, 164, 178, 0.65);
-  font-style: normal;
-}
-
 .training-manager-deadline-line svg {
-  color: var(--training-warning);
-  filter: drop-shadow(0 0 5px rgba(245, 185, 66, 0.16));
+  color: currentColor;
+  filter: drop-shadow(0 0 5px currentColor);
 }
 
 .training-manager-deadline-line em {
@@ -10573,21 +10577,37 @@ select {
   place-items: center;
   border-radius: 999px;
   background: rgba(245, 185, 66, 0.16);
-  color: var(--training-warning);
+  color: currentColor;
   font-size: 0.66rem;
   font-style: normal;
   font-weight: 900;
   line-height: 1;
 }
 
-.training-manager-deadline-line.is-muted em {
-  background: rgba(105, 116, 134, 0.24);
+.training-manager-deadline-line.is-open {
+  color: var(--training-warning);
+}
+
+.training-manager-deadline-line.is-closed,
+.training-manager-deadline-line.is-neutral {
   color: var(--training-muted);
 }
 
-.training-manager-deadline-line.is-danger svg,
-.training-manager-deadline-line.is-danger em {
+.training-manager-deadline-line.is-success {
+  color: var(--training-accent);
+}
+
+.training-manager-deadline-line.is-danger {
   color: var(--training-danger);
+}
+
+.training-manager-deadline-line.is-closed em,
+.training-manager-deadline-line.is-neutral em {
+  background: rgba(105, 116, 134, 0.24);
+}
+
+.training-manager-deadline-line.is-success em {
+  background: rgba(52, 214, 176, 0.16);
 }
 
 .training-manager-deadline-line.is-danger em {

@@ -5215,15 +5215,16 @@ function TrainingSessionManagementPage({
                 <div className="training-manager-title-stack">
                   <div className="training-manager-title-line">
                     <strong>{session.equipmentName} 교육</strong>
-                    <em className={`training-ui-badge ${getTrainingStatusClass(displayStatus)}`}>{meta.label}</em>
+                    <div className="training-manager-status-stack">
+                      <em className={`training-ui-badge ${getTrainingStatusClass(displayStatus)}`}>{meta.label}</em>
+                      <span className={`training-manager-deadline-line ${getTrainingStatusClass(displayStatus)}`}>
+                        <Clock3 size={13} aria-hidden="true" />
+                        신청마감 {deadlineInfo.label}
+                        <em>{deadlineInfo.badge}</em>
+                      </span>
+                    </div>
                   </div>
-                  <span className={`training-manager-deadline-line ${deadlineInfo.tone}`}>
-                    <span>{session.category || session.groupName}</span>
-                    <i aria-hidden="true">·</i>
-                    <Clock3 size={13} aria-hidden="true" />
-                    신청마감 {deadlineInfo.label}
-                    <em>{deadlineInfo.badge}</em>
-                  </span>
+                  <span className="training-manager-category-line">{session.category || session.groupName} · 마감 후 개별 안내</span>
                 </div>
                 <div className="training-manager-card-meta">
                   <span className="training-seat-pill"><UserRound size={13} aria-hidden="true" /> {activeRegistrations.length} / {session.capacity}</span>
