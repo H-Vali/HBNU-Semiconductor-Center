@@ -5349,6 +5349,7 @@ function TrainingAllSessionsPage({
   sessions,
   equipmentItems,
   sessionRole,
+  currentUserId,
   selectedMonth,
   onMonthChange,
   onNavigate,
@@ -5357,6 +5358,7 @@ function TrainingAllSessionsPage({
   sessions: ApiTrainingSession[];
   equipmentItems: EquipmentItem[];
   sessionRole: Role | null;
+  currentUserId?: string;
   selectedMonth: string;
   onMonthChange: (offset: number) => void;
   onNavigate: (page: PageKey) => void;
@@ -5470,7 +5472,8 @@ function TrainingAllSessionsPage({
               const meta = trainingSessionStatusMeta[displayStatus];
               const percent = Math.min(100, Math.round((session.registeredCount / session.capacity) * 100));
               const deadlineInfo = getTrainingDeadlineInfo(session.applyDeadline, displayStatus);
-              const canApply = sessionRole === 'USER' && displayStatus === 'OPEN';
+              const canManageSession = sessionRole === 'ADMIN' || (sessionRole === 'MANAGER' && session.managerId === currentUserId);
+              const canApply = Boolean(sessionRole && sessionRole !== 'ADMIN' && !canManageSession && displayStatus === 'OPEN');
               return (
                 <tr key={session.id}>
                   <td>
@@ -5505,16 +5508,19 @@ function TrainingAllSessionsPage({
                     <button
                       type="button"
                       className="training-link-button"
-                      disabled={sessionRole === 'USER' && !canApply}
+                      disabled={!canManageSession && !canApply}
                       onClick={() => {
-                        if (sessionRole === 'USER') {
-                          if (canApply) void onRegister(session.id);
+                        if (canManageSession) {
+                          onNavigate('trainingManagement');
                           return;
                         }
-                        onNavigate('trainingManagement');
+                        if (canApply) {
+                          void onRegister(session.id);
+                          return;
+                        }
                       }}
                     >
-                      {sessionRole === 'USER' ? (canApply ? '신청 →' : meta.label) : '관리 →'}
+                      {canManageSession ? '관리 →' : canApply ? '신청 →' : meta.label}
                     </button>
                   </td>
                 </tr>
@@ -8847,6 +8853,7 @@ export function App() {
         setEquipmentPermissionHistory([]);
         setTrainingRequests([]);
         setTrainingSessions([]);
+        setTrainingManagementSessions([]);
         setMyTrainingRegistrations([]);
         setPenaltyRecords([]);
         setPenaltyCandidates([]);
@@ -8867,6 +8874,7 @@ export function App() {
   const [reservationEvents, setReservationEvents] = useState<ReservationEvent[]>([]);
   const [trainingRequests, setTrainingRequests] = useState<ApiTrainingRequest[]>([]);
   const [trainingSessions, setTrainingSessions] = useState<ApiTrainingSession[]>([]);
+  const [trainingManagementSessions, setTrainingManagementSessions] = useState<ApiTrainingSession[]>([]);
   const [myTrainingRegistrations, setMyTrainingRegistrations] = useState<ApiMyTrainingRegistration[]>([]);
   const [penaltyRecords, setPenaltyRecords] = useState<PenaltyRecord[]>([]);
   const [penaltyCandidates, setPenaltyCandidates] = useState<ApiPenaltyCandidate[]>([]);
@@ -9026,6 +9034,7 @@ export function App() {
     void refreshTrainingSessionData().then((snapshot) => {
       if (!isMounted || !snapshot) return;
       setTrainingSessions(snapshot.sessions);
+      setTrainingManagementSessions(snapshot.managementSessions);
       setMyTrainingRegistrations(snapshot.registrations);
       setPenaltyCandidates(snapshot.candidates);
     });
@@ -9132,6 +9141,7 @@ export function App() {
     setEquipmentPermissionHistory([]);
     setTrainingRequests([]);
     setTrainingSessions([]);
+    setTrainingManagementSessions([]);
     setMyTrainingRegistrations([]);
     setPenaltyRecords([]);
     setPenaltyCandidates([]);
@@ -9359,7 +9369,7 @@ export function App() {
     const list = await apiGet<ApiTrainingSessionList>(`/trainings?month=${encodeURIComponent(month)}&scope=all`, token);
     const baseSessions = list?.items ?? [];
     const canLoadManagerDetails = Boolean(token && (sessionRole === 'ADMIN' || sessionRole === 'MANAGER'));
-    const sessions = canLoadManagerDetails
+    const managementSessions = canLoadManagerDetails
       ? (await Promise.all(baseSessions.map((session) => (
         apiGet<ApiTrainingSession>(`/manager/trainings/${encodeURIComponent(session.id)}/registrations`, token)
       )))).filter(Boolean) as ApiTrainingSession[]
@@ -9371,7 +9381,8 @@ export function App() {
       ? await apiGet<ApiPenaltyCandidate[]>('/admin/penalties/candidates?status=PENDING', token)
       : [];
     return {
-      sessions,
+      sessions: baseSessions,
+      managementSessions,
       registrations: registrations ?? [],
       candidates: candidates ?? []
     };
@@ -9381,6 +9392,7 @@ export function App() {
     const snapshot = await refreshTrainingSessionData();
     if (!snapshot) return;
     setTrainingSessions(snapshot.sessions);
+    setTrainingManagementSessions(snapshot.managementSessions);
     setMyTrainingRegistrations(snapshot.registrations);
     setPenaltyCandidates(snapshot.candidates);
   }
@@ -10030,6 +10042,7 @@ export function App() {
               sessions={trainingSessions}
               equipmentItems={activeEquipmentItems}
               sessionRole={sessionRole}
+              currentUserId={currentManagedUser?.id ?? sessionUser?.id}
               selectedMonth={selectedTrainingMonth}
               onMonthChange={changeTrainingMonth}
               onNavigate={navigate}
@@ -10042,7 +10055,7 @@ export function App() {
                 equipmentItems={activeEquipmentItems}
                 currentUser={currentManagedUser}
                 sessionRole={sessionRole}
-                sessions={trainingSessions}
+                sessions={trainingManagementSessions}
                 selectedMonth={selectedTrainingMonth}
                 onMonthChange={changeTrainingMonth}
                 onCreateSession={createTrainingSession}
