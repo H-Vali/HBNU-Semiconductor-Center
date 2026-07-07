@@ -52,17 +52,27 @@ export function verifyRegistrationToken(token: string) {
   return payload;
 }
 
-export function requireAuth(req: Request, res: Response, next: NextFunction) {
+export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   const token = req.headers.authorization?.replace('Bearer ', '');
   if (!token) {
     return res.status(401).json({ message: 'Authentication required' });
   }
 
+  let tokenUser: SessionUser;
   try {
-    req.user = jwt.verify(token, signingSecret) as SessionUser;
-    next();
+    tokenUser = jwt.verify(token, signingSecret) as SessionUser;
   } catch {
     return res.status(401).json({ message: 'Invalid or expired session' });
+  }
+
+  try {
+    const { getCurrentAuthSession } = await import('./users.js');
+    const session = await getCurrentAuthSession(tokenUser);
+    if (!session) return res.status(401).json({ message: 'Invalid or expired session' });
+    req.user = session.user;
+    return next();
+  } catch (error) {
+    return next(error);
   }
 }
 

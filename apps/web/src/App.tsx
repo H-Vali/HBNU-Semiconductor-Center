@@ -1701,49 +1701,49 @@ function SidebarNavigation({
                 )
               })
             : renderNavButton(reservationItem, activePage === 'reservations')}
-          {canManageAssignedPermissions
-            ? renderDropdown({
-                item: trainingItem,
-                open: trainingOpen,
-                selected: trainingSelected,
-                onToggle: () => {
-                  if (activePage !== 'trainingAll') {
-                    setTrainingOpen(true);
-                    onNavigate('trainingAll');
-                    return;
-                  }
-                  setTrainingOpen((current) => !current);
-                },
-                children: (
-                  <>
-                    <button
-                      type="button"
-                      className={`sidebar-subnav-item is-training-tab ${activePage === 'trainingAll' ? 'is-active' : ''}`}
-                      onClick={() => onNavigate('trainingAll')}
-                    >
-                      <ListChecks size={15} />
-                      <span>개설교육 전체목록</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={`sidebar-subnav-item is-training-tab ${activePage === 'training' ? 'is-active' : ''}`}
-                      onClick={() => onNavigate('training')}
-                    >
-                      <GraduationCap size={15} />
-                      <span>교육신청</span>
-                    </button>
-                    <button
-                      type="button"
-                      className={`sidebar-subnav-item is-training-tab ${activePage === 'trainingManagement' ? 'is-active' : ''}`}
-                      onClick={() => onNavigate('trainingManagement')}
-                    >
-                      <GraduationCap size={15} />
-                      <span>교육통합관리(담당)</span>
-                    </button>
-                  </>
-                )
-              })
-            : renderNavButton(trainingItem, trainingSelected, 'trainingAll')}
+          {renderDropdown({
+            item: trainingItem,
+            open: trainingOpen,
+            selected: trainingSelected,
+            onToggle: () => {
+              if (activePage !== 'trainingAll') {
+                setTrainingOpen(true);
+                onNavigate('trainingAll');
+                return;
+              }
+              setTrainingOpen((current) => !current);
+            },
+            children: (
+              <>
+                <button
+                  type="button"
+                  className={`sidebar-subnav-item is-training-tab ${activePage === 'trainingAll' ? 'is-active' : ''}`}
+                  onClick={() => onNavigate('trainingAll')}
+                >
+                  <ListChecks size={15} />
+                  <span>개설교육 전체목록</span>
+                </button>
+                <button
+                  type="button"
+                  className={`sidebar-subnav-item is-training-tab ${activePage === 'training' ? 'is-active' : ''}`}
+                  onClick={() => onNavigate('training')}
+                >
+                  <GraduationCap size={15} />
+                  <span>교육신청</span>
+                </button>
+                {canManageAssignedPermissions && (
+                  <button
+                    type="button"
+                    className={`sidebar-subnav-item is-training-tab ${activePage === 'trainingManagement' ? 'is-active' : ''}`}
+                    onClick={() => onNavigate('trainingManagement')}
+                  >
+                    <GraduationCap size={15} />
+                    <span>교육통합관리(담당)</span>
+                  </button>
+                )}
+              </>
+            )
+          })}
           <div className={`sidebar-dropdown ${inquiryOpen ? 'is-open' : ''}`}>
             <button
               type="button"
@@ -8888,18 +8888,18 @@ export function App() {
   }, [activePage, sessionRole]);
 
   useEffect(() => {
-    if (sessionRole || !['reservations', 'training', 'mypage'].includes(activePage)) return;
+    if (sessionRole || !['reservations', 'training', 'trainingAll', 'mypage'].includes(activePage)) return;
     const notice = activePage === 'reservations'
       ? {
         title: '로그인이 필요합니다.',
         message: '장비사용예약은 로그인한 사용자만 이용할 수 있습니다.',
         detail: '비로그인 방문자는 장비현황과 공지사항을 읽기 전용으로 확인할 수 있으며, 예약 신청은 Google 본인인증 후 가능합니다.'
       }
-      : activePage === 'training'
+      : activePage === 'training' || activePage === 'trainingAll'
         ? {
           title: '로그인이 필요합니다.',
-          message: '교육신청은 로그인한 사용자만 신청할 수 있습니다.',
-          detail: '비로그인 방문자는 교육신청 화면에 진입할 수 없으며, 로그인 후 회원정보 등록을 마치면 장비 담당자에게 교육을 요청할 수 있습니다.'
+          message: '교육 목록과 교육신청은 로그인한 사용자만 이용할 수 있습니다.',
+          detail: '로그인 후 회원정보 등록을 마치면 개설교육 전체목록을 확인하고 교육을 신청할 수 있습니다.'
         }
         : {
           title: '로그인이 필요합니다.',
@@ -9073,11 +9073,11 @@ export function App() {
       });
       return;
     }
-    if (!sessionRole && page === 'training') {
+    if (!sessionRole && (page === 'training' || page === 'trainingAll')) {
       setGlobalAccessNotice({
         title: '로그인이 필요합니다.',
-        message: '교육신청은 로그인한 사용자만 신청할 수 있습니다.',
-        detail: '비로그인 방문자는 교육신청 화면에 진입할 수 없으며, 로그인 후 회원정보 등록을 마치면 장비 담당자에게 교육을 요청할 수 있습니다.',
+        message: '교육 목록과 교육신청은 로그인한 사용자만 이용할 수 있습니다.',
+        detail: '로그인 후 회원정보 등록을 마치면 개설교육 전체목록을 확인하고 교육을 신청할 수 있습니다.',
         primaryLabel: '로그인하기',
         onPrimary: () => navigate('login')
       });
@@ -10016,18 +10016,14 @@ export function App() {
             />
           )}
           {activePage === 'trainingAll' && (
-            canManageAssignedPermissions ? (
-              <TrainingAllSessionsPage
-                sessions={trainingSessions}
-                equipmentItems={activeEquipmentItems}
-                sessionRole={sessionRole}
-                selectedMonth={selectedTrainingMonth}
-                onMonthChange={changeTrainingMonth}
-                onNavigate={navigate}
-              />
-            ) : (
-              <PlaceholderPage title="접근 권한이 없습니다" />
-            )
+            <TrainingAllSessionsPage
+              sessions={trainingSessions}
+              equipmentItems={activeEquipmentItems}
+              sessionRole={sessionRole}
+              selectedMonth={selectedTrainingMonth}
+              onMonthChange={changeTrainingMonth}
+              onNavigate={navigate}
+            />
           )}
           {activePage === 'trainingManagement' && (
             canManageAssignedPermissions ? (

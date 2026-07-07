@@ -125,14 +125,26 @@ async function grantRole(userId: string, role: Role) {
   );
 }
 
-async function grantConfiguredAdminRole(user: ManagedUser) {
-  if (!isConfiguredAdminEmail(user.email)) return false;
+async function revokeRole(userId: string, role: Role) {
+  if (!hasDatabase()) return;
+  await query(
+    `delete from user_roles
+     where user_id = $1 and role_id = $2`,
+    [userId, toRoleId(role)]
+  );
+}
+
+async function syncConfiguredAdminRole(user: ManagedUser) {
+  if (!isConfiguredAdminEmail(user.email)) {
+    await revokeRole(user.id, 'ADMIN');
+    return false;
+  }
   await grantRole(user.id, 'ADMIN');
   return true;
 }
 
 async function getEffectiveRole(user: ManagedUser): Promise<Role> {
-  if (await grantConfiguredAdminRole(user)) return 'ADMIN';
+  if (await syncConfiguredAdminRole(user)) return 'ADMIN';
 
   const grantedRole = await getGrantedPrimaryRole(user.id);
   if (grantedRole === 'ADMIN') return 'ADMIN';
