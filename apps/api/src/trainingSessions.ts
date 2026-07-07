@@ -128,7 +128,7 @@ const candidateStatusSchema = z.object({
 });
 
 const confirmCandidateSchema = z.object({
-  type: z.string().trim().min(1).default('1주 사용정지'),
+  type: z.string().trim().min(1).default('6개월 사용정지'),
   category: z.string().trim().min(1).default('장비활용관련'),
   reason: z.string().trim().optional(),
   startsAt: z.string().datetime({ offset: true }).optional(),
@@ -138,6 +138,12 @@ const confirmCandidateSchema = z.object({
 const rejectCandidateSchema = z.object({
   reason: z.string().trim().min(1)
 });
+
+function addMonths(value: string, months: number) {
+  const date = new Date(value);
+  date.setMonth(date.getMonth() + months);
+  return date.toISOString();
+}
 
 const fallbackSessions: TrainingSession[] = [];
 const fallbackRegistrations: SessionRegistration[] = [];
@@ -1009,6 +1015,8 @@ export async function listPenaltyCandidates(input: unknown) {
 export async function confirmPenaltyCandidate(id: string, input: unknown, actor: SessionUser) {
   const body = confirmCandidateSchema.parse(input);
   const startsAt = body.startsAt ?? new Date().toISOString();
+  const noShowPenaltyType = '6개월 사용정지';
+  const noShowPenaltyEndsAt = addMonths(startsAt, 6);
   if (!hasDatabase()) throw new TrainingSessionStateError('Penalty candidate confirmation requires database storage');
 
   await transaction(async (client) => {
@@ -1027,11 +1035,11 @@ export async function confirmPenaltyCandidate(id: string, input: unknown, actor:
       [
         `penalty-${randomUUID()}`,
         row.userId,
-        body.type,
+        noShowPenaltyType,
         body.category,
         body.reason ?? row.reason ?? '교육 노쇼',
         startsAt,
-        body.endsAt ?? null
+        noShowPenaltyEndsAt
       ]
     );
     await client.query(

@@ -72,7 +72,7 @@ const validPageKeys = new Set<PageKey>(pageKeys);
 type Role = 'USER' | 'MANAGER' | 'ADMIN';
 type UsagePeriod = '24H' | '1W' | '1M';
 type EquipmentRuntimeStatus = 'active' | 'maintenance' | 'idle';
-type PenaltyType = '1주 사용정지' | '2주 사용정지' | '1개월 정지' | '영구정지';
+type PenaltyType = '1주 사용정지' | '2주 사용정지' | '1개월 정지' | '6개월 사용정지' | '영구정지';
 type PenaltyCategory = '장비활용관련' | '안전관련' | '학생자치기구 관련' | '사고 유발';
 type EquipmentStatus = 'available' | 'unavailable';
 type ReservationForm = {
@@ -1121,8 +1121,8 @@ function formatPenaltyDateTime(value: string | null) {
 function getPenaltyEndsAt(type: PenaltyType, startsAt: string) {
   if (type === '영구정지') return null;
   const end = new Date(startsAt);
-  if (type === '1개월 정지') {
-    end.setMonth(end.getMonth() + 1);
+  if (type === '1개월 정지' || type === '6개월 사용정지') {
+    end.setMonth(end.getMonth() + (type === '6개월 사용정지' ? 6 : 1));
   } else {
     const days = type === '1주 사용정지' ? 7 : 14;
     end.setDate(end.getDate() + days);
@@ -1236,7 +1236,7 @@ const roleLevelOptions: RoleLevel[] = ['교원', '대표', '일반'];
 type OnboardingStatus = NonNullable<ManagedUser['onboardingStatus']>;
 const onboardingStatusOptions: OnboardingStatus[] = ['profile_pending', 'training_pending', 'active'];
 const permissionRoleOptions: PermissionRoleLevel[] = ['교원', '담당', '대표', '일반'];
-const penaltyTypeOptions: PenaltyType[] = ['1주 사용정지', '2주 사용정지', '1개월 정지', '영구정지'];
+const penaltyTypeOptions: PenaltyType[] = ['1주 사용정지', '2주 사용정지', '1개월 정지', '6개월 사용정지', '영구정지'];
 const penaltyCategoryOptions: PenaltyCategory[] = ['장비활용관련', '안전관련', '학생자치기구 관련', '사고 유발'];
 
 function normalizeRoleLevel(value: string): RoleLevel {
@@ -6828,7 +6828,7 @@ function PenaltyManagementPage({
   async function confirmCandidate(candidate: ApiPenaltyCandidate) {
     const reasonText = window.prompt('확정 사유를 입력해주세요.', candidate.reason || '교육 노쇼');
     if (reasonText === null) return;
-    await onConfirmCandidate(candidate.id, type, category, reasonText.trim() || candidate.reason || '교육 노쇼');
+    await onConfirmCandidate(candidate.id, '6개월 사용정지', category, reasonText.trim() || candidate.reason || '교육 노쇼');
   }
 
   async function rejectCandidate(candidate: ApiPenaltyCandidate) {
@@ -6872,7 +6872,7 @@ function PenaltyManagementPage({
             <p>No-show Review</p>
             <h3>노쇼 발생 검토 대기</h3>
           </div>
-          <span>담당자가 기록한 노쇼 후보를 관리자만 확정 또는 기각합니다.</span>
+          <span>장비 교육 노쇼 인원으로, 확정 시 6개월 사용정지 페널티가 부과됩니다.</span>
         </div>
         <div className="penalty-table-wrap">
           <table>
