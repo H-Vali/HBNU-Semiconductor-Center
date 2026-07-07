@@ -10857,22 +10857,36 @@ select {
   line-height: 1;
 }
 
-.training-empty-seat-plus {
-  display: flex;
-  width: 1.75rem;
-  height: 1.75rem;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(80, 108, 144, 0.8);
+.training-empty-seat-aim {
+  position: relative;
+  display: block;
+  width: 1.8rem;
+  height: 1.8rem;
+  border: 1px solid rgba(125, 179, 240, 0.7);
   border-radius: 50%;
-  background: rgba(23, 42, 69, 0.95);
-  color: #9eb2cc;
-  font-family: Arial, sans-serif;
-  font-size: 1.45rem;
-  font-style: normal;
-  font-weight: 800;
-  line-height: 0;
-  padding-bottom: 0.08rem;
+  background:
+    radial-gradient(circle, rgba(125, 179, 240, 0.72) 0 0.12rem, transparent 0.13rem),
+    rgba(23, 42, 69, 0.95);
+  box-shadow: inset 0 0 0 0.38rem rgba(125, 179, 240, 0.07);
+}
+
+.training-empty-seat-aim::before,
+.training-empty-seat-aim::after {
+  content: "";
+  position: absolute;
+  inset: 50% auto auto 50%;
+  background: rgba(158, 178, 204, 0.86);
+  transform: translate(-50%, -50%);
+}
+
+.training-empty-seat-aim::before {
+  width: 1.04rem;
+  height: 1px;
+}
+
+.training-empty-seat-aim::after {
+  width: 1px;
+  height: 1.04rem;
 }
 
 .training-empty-seat-badge {

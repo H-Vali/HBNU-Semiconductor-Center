@@ -5368,7 +5368,7 @@ function TrainingSessionManagementPage({
                   <div key={`empty-${session.id}-${index}`} className="training-roster-row is-empty">
                     <div className="training-roster-person">
                       <span className="training-empty-seat" aria-hidden="true">
-                        <i className="training-empty-seat-plus">+</i>
+                        <i className="training-empty-seat-aim" />
                       </span>
                       <div>
                         <strong>빈 좌석 {index + 1}</strong>
