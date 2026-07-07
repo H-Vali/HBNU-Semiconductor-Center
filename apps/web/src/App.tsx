@@ -5215,16 +5215,19 @@ function TrainingSessionManagementPage({
                 <div className="training-manager-title-stack">
                   <div className="training-manager-title-line">
                     <strong>{session.equipmentName} 교육</strong>
-                    <div className="training-manager-status-stack">
-                      <em className={`training-ui-badge ${getTrainingStatusClass(displayStatus)}`}>{meta.label}</em>
-                      <span className={`training-manager-deadline-line ${getTrainingStatusClass(displayStatus)}`}>
-                        <Clock3 size={13} aria-hidden="true" />
-                        신청마감 {deadlineInfo.label}
-                        <em>{deadlineInfo.badge}</em>
-                      </span>
-                    </div>
+                    <em className={`training-manager-status-badge ${getTrainingStatusClass(displayStatus)}`}>{meta.label}</em>
                   </div>
-                  <span className="training-manager-category-line">{session.category || session.groupName} · 마감 후 개별 안내</span>
+                  <div className="training-manager-meta-line">
+                    <span className="training-manager-category-text">{session.category || session.groupName}</span>
+                    <i className="training-manager-category-separator" aria-hidden="true">·</i>
+                    <span className={`training-manager-deadline-line ${getTrainingStatusClass(displayStatus)}`}>
+                      <Clock3 size={13} aria-hidden="true" />
+                      신청마감 {deadlineInfo.label}
+                      <em>{deadlineInfo.badge}</em>
+                    </span>
+                    <i className="training-manager-note-separator" aria-hidden="true">·</i>
+                    <span className="training-manager-note-text">마감 후 개별 안내</span>
+                  </div>
                 </div>
                 <div className="training-manager-card-meta">
                   <span className="training-seat-pill"><UserRound size={13} aria-hidden="true" /> {activeRegistrations.length} / {session.capacity}</span>

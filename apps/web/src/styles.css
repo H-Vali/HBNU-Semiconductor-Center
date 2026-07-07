@@ -10521,48 +10521,94 @@ select {
   display: flex;
   min-width: 0;
   flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 0.7rem;
+  align-items: center;
+  gap: 9px;
 }
 
 .training-manager-title-line strong {
-  color: var(--training-primary);
-  font-size: 1.18rem;
-  font-weight: 700;
+  color: #eef2f8;
+  font-size: 15px;
+  font-weight: 500;
   line-height: 1.15;
 }
 
-.training-manager-title-line .training-ui-badge {
-  min-width: auto;
-  height: 1.55rem;
-  padding: 0 0.55rem;
-  border-radius: 7px;
-  font-size: 0.74rem;
+.training-manager-status-badge {
+  display: inline-flex;
+  height: 1.32rem;
+  align-items: center;
+  gap: 0.32rem;
+  border-radius: 6px;
+  padding: 0 0.48rem;
+  background: rgba(245, 185, 66, 0.14);
+  color: #f5b942;
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
 }
 
-.training-manager-status-stack {
-  display: grid;
-  gap: 0.24rem;
-  justify-items: start;
+.training-manager-status-badge::before {
+  width: 0.38rem;
+  height: 0.38rem;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 8px currentColor;
+  content: "";
 }
 
-.training-manager-category-line {
-  display: block;
-  color: var(--training-muted);
-  font-size: 0.9rem;
+.training-manager-status-badge.is-closed,
+.training-manager-status-badge.is-neutral {
+  background: rgba(107, 118, 137, 0.24);
+  color: #8b96a8;
+}
+
+.training-manager-status-badge.is-success {
+  background: rgba(52, 214, 176, 0.14);
+  color: #34d6b0;
+}
+
+.training-manager-status-badge.is-danger {
+  background: rgba(255, 127, 134, 0.12);
+  color: #ff7f86;
+}
+
+.training-manager-meta-line {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  color: #8b96a8;
+  font-size: 11.5px;
   font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.training-manager-meta-line > i {
+  flex: 0 0 auto;
+  color: #46536b;
+  font-style: normal;
+}
+
+.training-manager-category-text,
+.training-manager-note-text {
+  min-width: 0;
+  overflow: hidden;
+  color: #8b96a8;
+  text-overflow: ellipsis;
 }
 
 .training-manager-deadline-line {
   display: flex;
-  min-width: 0;
-  flex-wrap: wrap;
+  flex: 0 0 auto;
   align-items: center;
-  gap: 0.32rem;
-  color: var(--training-warning);
-  font-size: 0.78rem;
+  gap: 4px;
+  color: #f5d98a;
+  font-size: 11.5px;
   font-weight: 800;
   line-height: 1.25;
+  white-space: nowrap;
 }
 
 .training-manager-deadline-line svg {
@@ -10572,33 +10618,34 @@ select {
 
 .training-manager-deadline-line em {
   display: inline-grid;
-  min-width: 2.15rem;
-  height: 1.15rem;
+  min-width: 0;
+  height: 1rem;
   place-items: center;
-  border-radius: 999px;
-  background: rgba(245, 185, 66, 0.16);
-  color: currentColor;
-  font-size: 0.66rem;
+  border-radius: 5px;
+  padding: 1px 6px;
+  background: rgba(245, 185, 66, 0.15);
+  color: #f5b942;
+  font-size: 10.5px;
   font-style: normal;
   font-weight: 900;
   line-height: 1;
 }
 
 .training-manager-deadline-line.is-open {
-  color: var(--training-warning);
+  color: #f5d98a;
 }
 
 .training-manager-deadline-line.is-closed,
 .training-manager-deadline-line.is-neutral {
-  color: var(--training-muted);
+  color: #8b96a8;
 }
 
 .training-manager-deadline-line.is-success {
-  color: var(--training-accent);
+  color: #34d6b0;
 }
 
 .training-manager-deadline-line.is-danger {
-  color: var(--training-danger);
+  color: #ff7f86;
 }
 
 .training-manager-deadline-line.is-closed em,
@@ -10608,10 +10655,21 @@ select {
 
 .training-manager-deadline-line.is-success em {
   background: rgba(52, 214, 176, 0.16);
+  color: #34d6b0;
 }
 
 .training-manager-deadline-line.is-danger em {
   background: rgba(255, 127, 134, 0.16);
+  color: #ff7f86;
+}
+
+@media (max-width: 760px) {
+  .training-manager-category-text,
+  .training-manager-category-separator,
+  .training-manager-note-text,
+  .training-manager-note-separator {
+    display: none;
+  }
 }
 
 .training-manager-card-meta {
