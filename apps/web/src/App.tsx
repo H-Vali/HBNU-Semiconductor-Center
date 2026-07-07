@@ -5245,7 +5245,6 @@ function TrainingSessionManagementPage({
                     <span className="training-manager-category-text">{session.category || session.groupName}</span>
                     <i className="training-manager-category-separator" aria-hidden="true">·</i>
                     <span className={`training-manager-deadline-line ${getTrainingStatusClass(displayStatus)}`}>
-                      <Clock3 size={13} aria-hidden="true" />
                       <span className="training-manager-deadline-label">신청마감</span>
                       {deadlineParts ? (
                         <>
@@ -5259,8 +5258,6 @@ function TrainingSessionManagementPage({
                       )}
                       <em aria-label={`마감 ${deadlineInfo.badge}`}>{deadlineInfo.badge}</em>
                     </span>
-                    <i className="training-manager-note-separator" aria-hidden="true">·</i>
-                    <span className="training-manager-note-text">마감 후 개별 안내</span>
                   </div>
                 </div>
                 <div className="training-manager-card-meta">

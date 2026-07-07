@@ -10591,8 +10591,7 @@ select {
   font-style: normal;
 }
 
-.training-manager-category-text,
-.training-manager-note-text {
+.training-manager-category-text {
   min-width: 0;
   overflow: hidden;
   color: #8b96a8;
@@ -10619,12 +10618,6 @@ select {
 
 .training-manager-deadline-label {
   margin-right: 1px;
-}
-
-.training-manager-deadline-line svg {
-  flex: 0 0 auto;
-  color: currentColor;
-  filter: drop-shadow(0 0 5px currentColor);
 }
 
 .training-manager-deadline-line em {
@@ -10677,9 +10670,7 @@ select {
 
 @media (max-width: 760px) {
   .training-manager-category-text,
-  .training-manager-category-separator,
-  .training-manager-note-text,
-  .training-manager-note-separator {
+  .training-manager-category-separator {
     display: none;
   }
 }
