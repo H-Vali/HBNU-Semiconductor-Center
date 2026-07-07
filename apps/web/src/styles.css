@@ -10857,19 +10857,22 @@ select {
   line-height: 1;
 }
 
-.training-empty-seat > i {
-  display: grid;
+.training-empty-seat-plus {
+  display: flex;
   width: 1.75rem;
   height: 1.75rem;
-  place-items: center;
+  align-items: center;
+  justify-content: center;
   border: 1px solid rgba(80, 108, 144, 0.8);
   border-radius: 50%;
   background: rgba(23, 42, 69, 0.95);
   color: #9eb2cc;
-  font-size: 1.35rem;
+  font-family: Arial, sans-serif;
+  font-size: 1.45rem;
   font-style: normal;
   font-weight: 800;
-  line-height: 1;
+  line-height: 0;
+  padding-bottom: 0.08rem;
 }
 
 .training-empty-seat-badge {
