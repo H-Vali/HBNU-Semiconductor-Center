@@ -5207,21 +5207,26 @@ function TrainingSessionManagementPage({
           const canModify = session.status !== 'DONE' && session.status !== 'CANCELED';
           const selected = selectedUserIds[session.id] ?? [];
           const deadlineInfo = getTrainingDeadlineInfo(session.applyDeadline, getTrainingSessionDisplayStatus(session));
+          const displayStatus = getTrainingSessionDisplayStatus(session);
           return (
             <article key={session.id} className="training-manager-card">
-              <div className={`training-deadline-ribbon ${deadlineInfo.tone}`}>
-                <span><Clock3 size={13} aria-hidden="true" /> 신청마감 {deadlineInfo.label}</span>
-                <strong>{deadlineInfo.badge}</strong>
-              </div>
               <div className="training-manager-card-head">
                 <TrainingIconChip groupName={session.groupName || session.category} />
-                <div>
-                  <strong>{session.equipmentName} 교육</strong>
-                  <span>{session.category || session.groupName} · 마감 후 개별 안내</span>
+                <div className="training-manager-title-stack">
+                  <div className="training-manager-title-line">
+                    <strong>{session.equipmentName} 교육</strong>
+                    <em className={`training-ui-badge ${getTrainingStatusClass(displayStatus)}`}>{meta.label}</em>
+                  </div>
+                  <span className={`training-manager-deadline-line ${deadlineInfo.tone}`}>
+                    <span>{session.category || session.groupName}</span>
+                    <i aria-hidden="true">·</i>
+                    <Clock3 size={13} aria-hidden="true" />
+                    신청마감 {deadlineInfo.label}
+                    <em>{deadlineInfo.badge}</em>
+                  </span>
                 </div>
                 <div className="training-manager-card-meta">
-                  <span className="training-seat-pill">{activeRegistrations.length} / {session.capacity}</span>
-                  <em className={`training-ui-badge ${getTrainingStatusClass(getTrainingSessionDisplayStatus(session))}`}>{meta.label}</em>
+                  <span className="training-seat-pill"><UserRound size={13} aria-hidden="true" /> {activeRegistrations.length} / {session.capacity}</span>
                   <div className="training-manager-session-actions">
                     <button
                       type="button"
@@ -5259,7 +5264,15 @@ function TrainingSessionManagementPage({
                 </form>
               )}
               <div className="training-manager-roster">
-                <h4>신청자 명단</h4>
+                <div className="training-manager-roster-head">
+                  <h4>신청자 명단</h4>
+                  <span>{activeRegistrations.length}명 신청 · {emptySeats}자리 남음</span>
+                </div>
+                <div className="training-manager-seat-track" style={{ gridTemplateColumns: `repeat(${session.capacity}, minmax(0, 1fr))` }} aria-hidden="true">
+                  {Array.from({ length: session.capacity }, (_, index) => (
+                    <span key={`seat-track-${session.id}-${index}`} className={index < activeRegistrations.length ? 'is-filled' : undefined} />
+                  ))}
+                </div>
                 {registrations.map((registration) => {
                   const rowMeta = registrationStatusMeta[registration.status];
                   const initial = registration.userName.trim().slice(0, 1) || '?';
@@ -5313,7 +5326,16 @@ function TrainingSessionManagementPage({
                 ))}
               </div>
               <div className="training-manager-card-foot">
-                <p>{canProcess ? '이수 체크는 권한 부여로, 노쇼는 관리자 페널티 대기열로 전송됩니다.' : '신청 마감 후 이수/노쇼 처리가 가능합니다.'}</p>
+                <p className={!canProcess ? 'is-locked' : undefined}>
+                  {canProcess ? (
+                    '이수 체크는 권한 부여로, 노쇼는 관리자 페널티 대기열로 전송됩니다.'
+                  ) : (
+                    <>
+                      <LockKeyhole size={13} aria-hidden="true" />
+                      이수·노쇼 처리는 신청 마감 {getTrainingShortDate(session.applyDeadline)} 후 가능합니다.
+                    </>
+                  )}
+                </p>
                 <button type="button" disabled={!canProcess || selected.length === 0} onClick={() => void completeSelected(session)}>
                   ✓ 선택 인원 이수 처리
                 </button>
