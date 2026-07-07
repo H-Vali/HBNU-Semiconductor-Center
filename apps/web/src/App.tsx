@@ -1534,7 +1534,7 @@ function OwnerInfoFooter() {
           <span>대표번호: 042-828-8758</span>
         </p>
         <p>
-          <span>장비예약/교육문의: equipment@hanbat.ac.kr</span>
+          <span>장비예약/교육문의: sjk2879@hanbat.ac.kr</span>
           <span>Copyright 2026 Hanbat National University. All rights reserved.</span>
         </p>
       </div>
