@@ -5327,7 +5327,10 @@ function TrainingSessionManagementPage({
                   return (
                     <div key={registration.id} className="training-roster-row">
                       <div className="training-roster-person">
-                        <span className="training-roster-avatar is-applicant">{initial}</span>
+                        <span className="training-roster-avatar is-applicant">
+                          <span>{initial}</span>
+                          <CheckCircle2 className="training-roster-avatar-check" size={13} aria-hidden="true" />
+                        </span>
                         <div>
                           <strong>{registration.userName}</strong>
                           <span>{registration.userDepartment || '소속 미입력'}</span>
@@ -5364,7 +5367,11 @@ function TrainingSessionManagementPage({
                 {Array.from({ length: emptySeats }, (_, index) => (
                   <div key={`empty-${session.id}-${index}`} className="training-roster-row is-empty">
                     <div className="training-roster-person">
-                      <span className="training-empty-seat" aria-hidden="true" />
+                      <span className="training-empty-seat" aria-hidden="true">
+                        <span>
+                          <Plus size={16} />
+                        </span>
+                      </span>
                       <div>
                         <strong>빈 좌석 {index + 1}</strong>
                         <span>신청 대기</span>

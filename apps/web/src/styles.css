@@ -10818,22 +10818,23 @@ select {
   position: relative;
 }
 
-.training-roster-avatar.is-applicant::after {
-  content: "✓";
+.training-roster-avatar > span {
+  display: grid;
+  place-items: center;
+}
+
+.training-roster-avatar-check {
   position: absolute;
   right: -0.16rem;
   bottom: -0.16rem;
-  display: grid;
   width: 0.9rem;
   height: 0.9rem;
-  place-items: center;
   border: 3px solid rgba(18, 29, 48, 0.98);
   border-radius: 50%;
   background: linear-gradient(#34d6b0, #20c49f);
   color: #06291f;
-  font-size: 0.58rem;
-  font-weight: 950;
-  line-height: 1;
+  padding: 0.08rem;
+  stroke-width: 3;
 }
 
 .training-empty-seat {
@@ -10841,13 +10842,11 @@ select {
   height: 2.6rem;
   border: 1px dashed rgba(154, 164, 178, 0.5);
   background: linear-gradient(145deg, rgba(23, 38, 63, 0.7), rgba(14, 26, 45, 0.92));
-  color: transparent;
-  font-size: 0;
+  color: #9eb2cc;
   line-height: 1;
 }
 
-.training-empty-seat::before {
-  content: "+";
+.training-empty-seat > span {
   display: grid;
   width: 1.35rem;
   height: 1.35rem;
@@ -10856,9 +10855,14 @@ select {
   border-radius: 50%;
   background: rgba(23, 42, 69, 0.95);
   color: #9eb2cc;
-  font-size: 1.05rem;
-  font-weight: 900;
   line-height: 1;
+}
+
+.training-empty-seat svg {
+  display: block;
+  width: 0.95rem;
+  height: 0.95rem;
+  stroke-width: 3;
 }
 
 .training-empty-seat-badge {
