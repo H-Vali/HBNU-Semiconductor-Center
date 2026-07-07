@@ -5242,10 +5242,12 @@ function TrainingSessionManagementPage({
                     <em className={`training-manager-status-badge ${getTrainingStatusClass(displayStatus)}`}>{meta.label}</em>
                   </div>
                   <div className="training-manager-meta-line">
-                    <span className="training-manager-category-text">{session.category || session.groupName}</span>
-                    <i className="training-manager-category-separator" aria-hidden="true">·</i>
+                    <span className="training-manager-category-group">
+                      <span className="training-manager-category-text">{session.category || session.groupName}</span>
+                      <i className="training-manager-category-separator" aria-hidden="true">·</i>
+                    </span>
                     <span className={`training-manager-deadline-line ${getTrainingStatusClass(displayStatus)}`}>
-                      <span className="training-manager-deadline-label">신청마감</span>
+                      <span className="training-manager-deadline-label">신청마감 -</span>
                       {deadlineParts ? (
                         <>
                           <span>{deadlineParts.month}</span>
