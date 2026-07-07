@@ -5264,11 +5264,6 @@ function TrainingSessionManagementPage({
                   <h4>신청자 명단</h4>
                   <span>{activeRegistrations.length}명 신청 · {emptySeats}자리 남음</span>
                 </div>
-                <div className="training-manager-seat-track" style={{ gridTemplateColumns: `repeat(${session.capacity}, minmax(0, 1fr))` }} aria-hidden="true">
-                  {Array.from({ length: session.capacity }, (_, index) => (
-                    <span key={`seat-track-${session.id}-${index}`} className={index < activeRegistrations.length ? 'is-filled' : undefined} />
-                  ))}
-                </div>
                 {registrations.map((registration) => {
                   const rowMeta = registrationStatusMeta[registration.status];
                   const initial = registration.userName.trim().slice(0, 1) || '?';

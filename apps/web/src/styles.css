@@ -10778,24 +10778,6 @@ select {
   font-weight: 700;
 }
 
-.training-manager-seat-track {
-  display: grid;
-  gap: 0.35rem;
-  margin-bottom: 0.55rem;
-}
-
-.training-manager-seat-track span {
-  display: block;
-  height: 0.36rem;
-  border-radius: 999px;
-  background: rgba(32, 46, 72, 0.9);
-}
-
-.training-manager-seat-track span.is-filled {
-  background: var(--training-accent);
-  box-shadow: 0 0 12px rgba(52, 214, 176, 0.18);
-}
-
 .training-roster-row {
   display: grid;
   grid-template-columns: 1.55fr 1.65fr auto auto;
@@ -10832,9 +10814,14 @@ select {
 }
 
 .training-empty-seat {
+  width: 2.6rem;
+  height: 2.6rem;
   border: 1px dashed rgba(154, 164, 178, 0.45);
   background: transparent;
   color: var(--training-muted);
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .training-roster-person strong,
