@@ -675,12 +675,9 @@ export async function deleteTrainingSession(id: string, actor: SessionUser) {
     if (actor.role !== 'ADMIN' && session.managerId !== actor.id) throw new PermissionDeniedError();
     if (session.status === 'DONE') throw new TrainingSessionStateError('Completed training session cannot be deleted');
     fallbackSessions.splice(index, 1);
-    fallbackRegistrations.forEach((registration) => {
-      if (registration.sessionId === id && registration.status === 'REGISTERED') {
-        registration.status = 'CANCELED';
-        registration.canceledAt = new Date().toISOString();
-      }
-    });
+    for (let i = fallbackRegistrations.length - 1; i >= 0; i -= 1) {
+      if (fallbackRegistrations[i].sessionId === id) fallbackRegistrations.splice(i, 1);
+    }
     return { id, deleted: true };
   }
 
@@ -699,12 +696,7 @@ export async function deleteTrainingSession(id: string, actor: SessionUser) {
     if (!session) throw new TrainingSessionStateError('Training session not found');
     if (actor.role !== 'ADMIN' && session.managerId !== actor.id) throw new PermissionDeniedError();
     if (session.status === 'DONE') throw new TrainingSessionStateError('Completed training session cannot be deleted');
-    await client.query(
-      `update session_registration
-       set status = 'CANCELED', canceled_at = now(), updated_at = now()
-       where session_id = $1 and status = 'REGISTERED'`,
-      [id]
-    );
+    await client.query(`delete from session_registration where session_id = $1`, [id]);
     await client.query(
       `update training_session
        set status = 'CANCELED', deleted_at = now(), updated_at = now()
