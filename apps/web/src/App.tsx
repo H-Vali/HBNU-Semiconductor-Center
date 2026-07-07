@@ -5351,7 +5351,8 @@ function TrainingAllSessionsPage({
   sessionRole,
   selectedMonth,
   onMonthChange,
-  onNavigate
+  onNavigate,
+  onRegister
 }: {
   sessions: ApiTrainingSession[];
   equipmentItems: EquipmentItem[];
@@ -5359,6 +5360,7 @@ function TrainingAllSessionsPage({
   selectedMonth: string;
   onMonthChange: (offset: number) => void;
   onNavigate: (page: PageKey) => void;
+  onRegister: (sessionId: string) => Promise<boolean>;
 }) {
   const [statusFilter, setStatusFilter] = useState<'all' | 'OPEN' | 'CLOSED' | 'DONE'>('all');
   const [equipmentFilter, setEquipmentFilter] = useState('all');
@@ -5468,6 +5470,7 @@ function TrainingAllSessionsPage({
               const meta = trainingSessionStatusMeta[displayStatus];
               const percent = Math.min(100, Math.round((session.registeredCount / session.capacity) * 100));
               const deadlineInfo = getTrainingDeadlineInfo(session.applyDeadline, displayStatus);
+              const canApply = sessionRole === 'USER' && displayStatus === 'OPEN';
               return (
                 <tr key={session.id}>
                   <td>
@@ -5502,9 +5505,16 @@ function TrainingAllSessionsPage({
                     <button
                       type="button"
                       className="training-link-button"
-                      onClick={() => onNavigate(sessionRole === 'USER' ? 'training' : 'trainingManagement')}
+                      disabled={sessionRole === 'USER' && !canApply}
+                      onClick={() => {
+                        if (sessionRole === 'USER') {
+                          if (canApply) void onRegister(session.id);
+                          return;
+                        }
+                        onNavigate('trainingManagement');
+                      }}
                     >
-                      {sessionRole === 'USER' ? '신청 →' : '관리 →'}
+                      {sessionRole === 'USER' ? (canApply ? '신청 →' : meta.label) : '관리 →'}
                     </button>
                   </td>
                 </tr>
@@ -9349,7 +9359,7 @@ export function App() {
     if (!token || !sessionRole) {
       return { sessions: [], registrations: [], candidates: [] };
     }
-    const list = await apiGet<ApiTrainingSessionList>(`/trainings?month=${encodeURIComponent(month)}`, token);
+    const list = await apiGet<ApiTrainingSessionList>(`/trainings?month=${encodeURIComponent(month)}&scope=all`, token);
     const baseSessions = list?.items ?? [];
     const sessions = sessionRole === 'ADMIN' || sessionRole === 'MANAGER'
       ? (await Promise.all(baseSessions.map((session) => (
@@ -10023,6 +10033,7 @@ export function App() {
               selectedMonth={selectedTrainingMonth}
               onMonthChange={changeTrainingMonth}
               onNavigate={navigate}
+              onRegister={registerTrainingSession}
             />
           )}
           {activePage === 'trainingManagement' && (
