@@ -9356,18 +9356,18 @@ export function App() {
 
   async function refreshTrainingSessionData(month = selectedTrainingMonth) {
     const token = localStorage.getItem(STORAGE_KEYS.sessionToken);
-    if (!token || !sessionRole) {
-      return { sessions: [], registrations: [], candidates: [] };
-    }
     const list = await apiGet<ApiTrainingSessionList>(`/trainings?month=${encodeURIComponent(month)}&scope=all`, token);
     const baseSessions = list?.items ?? [];
-    const sessions = sessionRole === 'ADMIN' || sessionRole === 'MANAGER'
+    const canLoadManagerDetails = Boolean(token && (sessionRole === 'ADMIN' || sessionRole === 'MANAGER'));
+    const sessions = canLoadManagerDetails
       ? (await Promise.all(baseSessions.map((session) => (
         apiGet<ApiTrainingSession>(`/manager/trainings/${encodeURIComponent(session.id)}/registrations`, token)
       )))).filter(Boolean) as ApiTrainingSession[]
       : baseSessions;
-    const registrations = await apiGet<ApiMyTrainingRegistration[]>('/me/registrations', token);
-    const candidates = sessionRole === 'ADMIN'
+    const registrations = token && sessionRole
+      ? await apiGet<ApiMyTrainingRegistration[]>('/me/registrations', token)
+      : [];
+    const candidates = token && sessionRole === 'ADMIN'
       ? await apiGet<ApiPenaltyCandidate[]>('/admin/penalties/candidates?status=PENDING', token)
       : [];
     return {
