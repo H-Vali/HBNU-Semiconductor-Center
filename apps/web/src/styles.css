@@ -10489,9 +10489,72 @@ select {
 
 .training-manager-card {
   display: grid;
-  gap: 1rem;
+  gap: 1.15rem;
   padding: 1.25rem 1.35rem;
   overflow: hidden;
+}
+
+.training-deadline-ribbon {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: -1.25rem -1.35rem 0;
+  padding: 0.42rem 0.88rem;
+  color: var(--training-secondary);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.training-deadline-ribbon span,
+.training-deadline-ribbon strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.training-deadline-ribbon span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.training-deadline-ribbon strong {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 0.12rem 0.42rem;
+  font-size: 0.72rem;
+  line-height: 1.2;
+}
+
+.training-deadline-ribbon.is-muted {
+  background: rgba(105, 116, 134, 0.2);
+}
+
+.training-deadline-ribbon.is-muted strong {
+  background: rgba(105, 116, 134, 0.28);
+  color: var(--training-muted);
+}
+
+.training-deadline-ribbon.is-warning {
+  background: rgba(245, 185, 66, 0.18);
+  color: var(--training-warning);
+}
+
+.training-deadline-ribbon.is-warning strong {
+  background: rgba(245, 185, 66, 0.24);
+  color: var(--training-warning);
+}
+
+.training-deadline-ribbon.is-danger {
+  background: rgba(255, 127, 134, 0.18);
+  color: var(--training-danger);
+}
+
+.training-deadline-ribbon.is-danger strong {
+  background: rgba(255, 127, 134, 0.24);
+  color: var(--training-danger);
 }
 
 .training-manager-card-head {
@@ -10504,6 +10567,7 @@ select {
 }
 
 .training-manager-card-head strong,
+.training-manager-card-head span,
 .training-roster-person strong,
 .training-roster-person span,
 .training-total-equipment strong,
@@ -10511,168 +10575,17 @@ select {
   display: block;
 }
 
-.training-manager-title-stack {
-  display: grid;
-  min-width: 0;
-  grid-template-columns: max-content minmax(0, 1fr);
-  column-gap: 9px;
-  row-gap: 0.34rem;
-  align-items: center;
+.training-manager-card-head strong {
+  color: var(--training-primary);
+  font-size: 1.18rem;
+  font-weight: 700;
 }
 
-.training-manager-title-line,
-.training-manager-meta-line {
-  display: contents;
-}
-
-.training-manager-title-line strong {
-  color: #eef2f8;
-  font-size: 15px;
-  font-weight: 800;
-  line-height: 1.15;
-}
-
-.training-manager-status-badge {
-  display: inline-flex;
-  height: 1.32rem;
-  align-items: center;
-  gap: 0.32rem;
-  border-radius: 6px;
-  padding: 0 0.48rem;
-  background: rgba(245, 185, 66, 0.14);
-  color: #f5b942;
-  font-size: 0.72rem;
-  font-style: normal;
-  font-weight: 800;
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.training-manager-status-badge::before {
-  width: 0.38rem;
-  height: 0.38rem;
-  border-radius: 50%;
-  background: currentColor;
-  box-shadow: 0 0 8px currentColor;
-  content: "";
-}
-
-.training-manager-status-badge.is-closed,
-.training-manager-status-badge.is-neutral {
-  background: rgba(107, 118, 137, 0.24);
-  color: #8b96a8;
-}
-
-.training-manager-status-badge.is-success {
-  background: rgba(52, 214, 176, 0.14);
-  color: #34d6b0;
-}
-
-.training-manager-status-badge.is-danger {
-  background: rgba(255, 127, 134, 0.12);
-  color: #ff7f86;
-}
-
-.training-manager-category-group,
-.training-manager-category-text {
-  display: inline-flex;
-  min-width: 0;
-  align-items: center;
-  gap: 10px;
-  overflow: hidden;
-  color: #8b96a8;
-  font-size: 11.5px;
-  font-weight: 600;
-  line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.training-manager-category-separator {
-  flex: 0 0 auto;
-  color: #46536b;
-  font-style: normal;
-}
-
-.training-manager-deadline-line {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 5px;
-  color: #f5d98a;
-  font-size: 11.5px;
-  font-weight: 800;
-  line-height: 1.25;
-  white-space: nowrap;
-}
-
-.training-manager-deadline-line > span {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-}
-
-.training-manager-deadline-label {
-  margin-right: 1px;
-}
-
-.training-manager-deadline-line em {
-  display: inline-grid;
-  flex: 0 0 auto;
-  margin-left: 0.85rem;
-  min-width: 0;
-  height: 1rem;
-  place-items: center;
-  border-radius: 5px;
-  padding: 1px 6px;
-  background: rgba(245, 185, 66, 0.15);
-  color: #f5b942;
-  font-size: 10.5px;
-  font-style: normal;
-  font-weight: 900;
-  line-height: 1;
-}
-
-.training-manager-deadline-line.is-open {
-  color: #f5d98a;
-}
-
-.training-manager-deadline-line.is-closed,
-.training-manager-deadline-line.is-neutral {
-  color: #8b96a8;
-}
-
-.training-manager-deadline-line.is-success {
-  color: #34d6b0;
-}
-
-.training-manager-deadline-line.is-danger {
-  color: #ff7f86;
-}
-
-.training-manager-deadline-line.is-closed em,
-.training-manager-deadline-line.is-neutral em {
-  background: rgba(105, 116, 134, 0.24);
-}
-
-.training-manager-deadline-line.is-success em {
-  background: rgba(52, 214, 176, 0.16);
-  color: #34d6b0;
-}
-
-.training-manager-deadline-line.is-danger em {
-  background: rgba(255, 127, 134, 0.16);
-  color: #ff7f86;
-}
-
-@media (max-width: 760px) {
-  .training-manager-title-stack {
-    grid-template-columns: 1fr;
-  }
-
-  .training-manager-category-group {
-    display: none;
-  }
+.training-manager-card-head span {
+  margin-top: 0.25rem;
+  color: var(--training-secondary);
+  font-size: 0.9rem;
+  font-weight: 500;
 }
 
 .training-manager-card-meta {

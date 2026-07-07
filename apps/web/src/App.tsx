@@ -4665,29 +4665,6 @@ function formatTrainingDeadlineLabel(value: string) {
   }).format(date);
 }
 
-function getTrainingDeadlineParts(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-  const parts = new Intl.DateTimeFormat('ko-KR', {
-    timeZone: 'Asia/Seoul',
-    month: 'numeric',
-    day: 'numeric',
-    weekday: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23'
-  }).formatToParts(date);
-  const getPart = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? '';
-  const hour = getPart('hour');
-  const minute = getPart('minute');
-  return {
-    month: `${getPart('month')}월`,
-    day: `${getPart('day')}일`,
-    weekday: `(${getPart('weekday')})`,
-    time: `${hour}:${minute}`
-  };
-}
-
 function getTrainingDeadlineInfo(value: string, status?: TrainingSessionStatus) {
   const deadline = new Date(value);
   if (Number.isNaN(deadline.getTime())) {
@@ -5230,40 +5207,22 @@ function TrainingSessionManagementPage({
           const canModify = session.status !== 'DONE' && session.status !== 'CANCELED';
           const selected = selectedUserIds[session.id] ?? [];
           const deadlineInfo = getTrainingDeadlineInfo(session.applyDeadline, getTrainingSessionDisplayStatus(session));
-          const deadlineParts = getTrainingDeadlineParts(session.applyDeadline);
           const displayStatus = getTrainingSessionDisplayStatus(session);
           return (
             <article key={session.id} className="training-manager-card">
+              <div className={`training-deadline-ribbon ${deadlineInfo.tone}`}>
+                <span><Clock3 size={13} aria-hidden="true" /> 신청마감 {deadlineInfo.label}</span>
+                <strong>{deadlineInfo.badge}</strong>
+              </div>
               <div className="training-manager-card-head">
                 <TrainingIconChip groupName={session.groupName || session.category} />
-                <div className="training-manager-title-stack">
-                  <div className="training-manager-title-line">
-                    <strong>{session.equipmentName} 교육</strong>
-                    <em className={`training-manager-status-badge ${getTrainingStatusClass(displayStatus)}`}>{meta.label}</em>
-                  </div>
-                  <div className="training-manager-meta-line">
-                    <span className="training-manager-category-group">
-                      <span className="training-manager-category-text">{session.category || session.groupName}</span>
-                      <i className="training-manager-category-separator" aria-hidden="true">·</i>
-                    </span>
-                    <span className={`training-manager-deadline-line ${getTrainingStatusClass(displayStatus)}`}>
-                      <span className="training-manager-deadline-label">신청마감 -</span>
-                      {deadlineParts ? (
-                        <>
-                          <span>{deadlineParts.month}</span>
-                          <span>{deadlineParts.day}</span>
-                          <span>{deadlineParts.weekday}</span>
-                          <span>{deadlineParts.time}</span>
-                        </>
-                      ) : (
-                        <span>{deadlineInfo.label}</span>
-                      )}
-                      <em aria-label={`마감 ${deadlineInfo.badge}`}>{deadlineInfo.badge}</em>
-                    </span>
-                  </div>
+                <div>
+                  <strong>{session.equipmentName} 교육</strong>
+                  <span>{session.category || session.groupName} · 마감 후 개별 안내</span>
                 </div>
                 <div className="training-manager-card-meta">
-                  <span className="training-seat-pill"><UserRound size={13} aria-hidden="true" /> {activeRegistrations.length} / {session.capacity}</span>
+                  <span className="training-seat-pill">{activeRegistrations.length} / {session.capacity}</span>
+                  <em className={`training-ui-badge ${getTrainingStatusClass(displayStatus)}`}>{meta.label}</em>
                   <div className="training-manager-session-actions">
                     <button
                       type="button"
