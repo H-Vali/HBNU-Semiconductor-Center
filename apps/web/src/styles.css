@@ -10788,7 +10788,7 @@ select {
 }
 
 .training-roster-row.is-empty {
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr) auto;
   color: var(--training-faint);
 }
 
@@ -10808,20 +10808,64 @@ select {
   flex: 0 0 auto;
   place-items: center;
   border-radius: 50%;
-  background: var(--training-selected);
-  color: #a9c8ff;
-  font-weight: 700;
+  background: linear-gradient(145deg, rgba(58, 92, 148, 0.76), rgba(28, 45, 75, 0.92));
+  border: 1px solid rgba(106, 154, 221, 0.22);
+  color: #dcecff;
+  font-size: 0.95rem;
+  font-weight: 800;
+  box-shadow: 0 0 18px rgba(92, 183, 255, 0.12);
+  position: relative;
+}
+
+.training-roster-avatar.is-applicant::after {
+  content: "";
+  position: absolute;
+  right: -0.12rem;
+  bottom: -0.12rem;
+  width: 0.82rem;
+  height: 0.82rem;
+  border: 3px solid rgba(18, 29, 48, 0.98);
+  border-radius: 50%;
+  background:
+    linear-gradient(135deg, transparent 45%, #073227 45% 55%, transparent 55%) 47% 57% / 0.42rem 0.42rem no-repeat,
+    linear-gradient(#34d6b0, #20c49f);
 }
 
 .training-empty-seat {
   width: 2.6rem;
   height: 2.6rem;
-  border: 1px dashed rgba(154, 164, 178, 0.45);
-  background: transparent;
-  color: var(--training-muted);
-  font-size: 1.35rem;
-  font-weight: 800;
+  border: 1px dashed rgba(154, 164, 178, 0.5);
+  background: linear-gradient(145deg, rgba(23, 38, 63, 0.7), rgba(14, 26, 45, 0.92));
+  color: transparent;
+  font-size: 0;
   line-height: 1;
+}
+
+.training-empty-seat::before {
+  content: "+";
+  display: grid;
+  width: 1.35rem;
+  height: 1.35rem;
+  place-items: center;
+  border: 1px solid rgba(80, 108, 144, 0.8);
+  border-radius: 50%;
+  background: rgba(23, 42, 69, 0.95);
+  color: #9eb2cc;
+  font-size: 1.05rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.training-empty-seat-badge {
+  justify-self: end;
+  border: 1px solid rgba(80, 108, 144, 0.72);
+  border-radius: 999px;
+  background: rgba(23, 38, 63, 0.78);
+  color: #9eb2cc;
+  font-size: 0.76rem;
+  font-style: normal;
+  font-weight: 800;
+  padding: 0.34rem 0.62rem;
 }
 
 .training-roster-person strong,

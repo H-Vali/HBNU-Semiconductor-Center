@@ -5318,7 +5318,7 @@ function TrainingSessionManagementPage({
                   return (
                     <div key={registration.id} className="training-roster-row">
                       <div className="training-roster-person">
-                        <span className="training-roster-avatar">{initial}</span>
+                        <span className="training-roster-avatar is-applicant">{initial}</span>
                         <div>
                           <strong>{registration.userName}</strong>
                           <span>{registration.userDepartment || '소속 미입력'}</span>
@@ -5361,6 +5361,7 @@ function TrainingSessionManagementPage({
                         <span>신청 대기</span>
                       </div>
                     </div>
+                    <em className="training-empty-seat-badge">비어있음</em>
                   </div>
                 ))}
               </div>
