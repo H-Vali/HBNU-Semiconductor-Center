@@ -10528,7 +10528,7 @@ select {
 .training-manager-title-line strong {
   color: #eef2f8;
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 800;
   line-height: 1.15;
 }
 
@@ -10603,7 +10603,7 @@ select {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   color: #f5d98a;
   font-size: 11.5px;
   font-weight: 800;
@@ -10611,13 +10611,25 @@ select {
   white-space: nowrap;
 }
 
+.training-manager-deadline-line > span {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+}
+
+.training-manager-deadline-label {
+  margin-right: 1px;
+}
+
 .training-manager-deadline-line svg {
+  flex: 0 0 auto;
   color: currentColor;
   filter: drop-shadow(0 0 5px currentColor);
 }
 
 .training-manager-deadline-line em {
   display: inline-grid;
+  flex: 0 0 auto;
   min-width: 0;
   height: 1rem;
   place-items: center;

@@ -4665,6 +4665,29 @@ function formatTrainingDeadlineLabel(value: string) {
   }).format(date);
 }
 
+function getTrainingDeadlineParts(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  const parts = new Intl.DateTimeFormat('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    month: 'numeric',
+    day: 'numeric',
+    weekday: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23'
+  }).formatToParts(date);
+  const getPart = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? '';
+  const hour = getPart('hour');
+  const minute = getPart('minute');
+  return {
+    month: `${getPart('month')}월`,
+    day: `${getPart('day')}일`,
+    weekday: `(${getPart('weekday')})`,
+    time: `${hour}:${minute}`
+  };
+}
+
 function getTrainingDeadlineInfo(value: string, status?: TrainingSessionStatus) {
   const deadline = new Date(value);
   if (Number.isNaN(deadline.getTime())) {
@@ -5207,6 +5230,7 @@ function TrainingSessionManagementPage({
           const canModify = session.status !== 'DONE' && session.status !== 'CANCELED';
           const selected = selectedUserIds[session.id] ?? [];
           const deadlineInfo = getTrainingDeadlineInfo(session.applyDeadline, getTrainingSessionDisplayStatus(session));
+          const deadlineParts = getTrainingDeadlineParts(session.applyDeadline);
           const displayStatus = getTrainingSessionDisplayStatus(session);
           return (
             <article key={session.id} className="training-manager-card">
@@ -5222,8 +5246,18 @@ function TrainingSessionManagementPage({
                     <i className="training-manager-category-separator" aria-hidden="true">·</i>
                     <span className={`training-manager-deadline-line ${getTrainingStatusClass(displayStatus)}`}>
                       <Clock3 size={13} aria-hidden="true" />
-                      신청마감 {deadlineInfo.label}
-                      <em>{deadlineInfo.badge}</em>
+                      <span className="training-manager-deadline-label">신청마감</span>
+                      {deadlineParts ? (
+                        <>
+                          <span>{deadlineParts.month}</span>
+                          <span>{deadlineParts.day}</span>
+                          <span>{deadlineParts.weekday}</span>
+                          <span>{deadlineParts.time}</span>
+                        </>
+                      ) : (
+                        <span>{deadlineInfo.label}</span>
+                      )}
+                      <em aria-label={`마감 ${deadlineInfo.badge}`}>{deadlineInfo.badge}</em>
                     </span>
                     <i className="training-manager-note-separator" aria-hidden="true">·</i>
                     <span className="training-manager-note-text">마감 후 개별 안내</span>
