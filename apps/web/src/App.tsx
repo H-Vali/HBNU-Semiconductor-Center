@@ -5054,6 +5054,7 @@ function TrainingSessionManagementPage({
   currentUser,
   sessionRole,
   sessions,
+  isLoading,
   selectedMonth,
   onMonthChange,
   onCreateSession,
@@ -5066,6 +5067,7 @@ function TrainingSessionManagementPage({
   currentUser: ManagedUser | null;
   sessionRole: Role | null;
   sessions: ApiTrainingSession[];
+  isLoading: boolean;
   selectedMonth: string;
   onMonthChange: (offset: number) => void;
   onCreateSession: (input: { equipmentId: string; applyDeadline: string; note: string }) => Promise<boolean>;
@@ -5097,10 +5099,11 @@ function TrainingSessionManagementPage({
   const totalCompleted = managerSessions.reduce((sum, session) => sum + session.completedCount, 0);
   const managerTotalCapacity = managerSessions.reduce((sum, session) => sum + session.capacity, 0);
   const managerFillRate = managerTotalCapacity ? Math.round((totalRegistrations / managerTotalCapacity) * 100) : 0;
+  const managerMetricValue = (value: number) => isLoading ? '-' : value.toLocaleString();
   const managerMetricCards: TrainingMetricCard[] = [
     {
       label: '이번달 개설',
-      value: managerSessions.length.toLocaleString(),
+      value: managerMetricValue(managerSessions.length),
       unit: '건',
       detail: '담당 장비 교육 세션',
       icon: <GraduationCap size={16} aria-hidden="true" />,
@@ -5108,7 +5111,7 @@ function TrainingSessionManagementPage({
     },
     {
       label: '신청 인원',
-      value: totalRegistrations.toLocaleString(),
+      value: managerMetricValue(totalRegistrations),
       unit: '명',
       detail: `전체 정원 ${managerTotalCapacity.toLocaleString()}명 기준`,
       icon: <UserRound size={16} aria-hidden="true" />,
@@ -5116,7 +5119,7 @@ function TrainingSessionManagementPage({
     },
     {
       label: '이수 처리 대기',
-      value: pendingProcessCount.toLocaleString(),
+      value: managerMetricValue(pendingProcessCount),
       unit: '건',
       detail: '마감 후 처리 필요',
       icon: <Clock3 size={16} aria-hidden="true" />,
@@ -5124,7 +5127,7 @@ function TrainingSessionManagementPage({
     },
     {
       label: '누적 이수자',
-      value: totalCompleted.toLocaleString(),
+      value: managerMetricValue(totalCompleted),
       unit: '명',
       progress: managerFillRate,
       icon: <CheckCircle2 size={16} aria-hidden="true" />,
@@ -5246,7 +5249,13 @@ function TrainingSessionManagementPage({
       )}
 
       <div className="training-manager-list">
-        {managerSessions.length > 0 ? managerSessions.map((session) => {
+        {isLoading ? (
+          <div className="manager-permission-empty is-loading">
+            <Clock3 size={32} />
+            <strong>교육 정보를 불러오는 중입니다.</strong>
+            <span>개설 교육과 신청자 명단을 최신 데이터로 확인하고 있습니다.</span>
+          </div>
+        ) : managerSessions.length > 0 ? managerSessions.map((session) => {
           const meta = trainingSessionStatusMeta[session.status];
           const registrations = session.registrations ?? [];
           const activeRegistrations = registrations.filter((registration) => registration.status === 'REGISTERED');
@@ -5413,6 +5422,7 @@ function TrainingAllSessionsPage({
   equipmentItems,
   sessionRole,
   currentUserId,
+  isLoading,
   selectedMonth,
   onMonthChange,
   onNavigate,
@@ -5422,6 +5432,7 @@ function TrainingAllSessionsPage({
   equipmentItems: EquipmentItem[];
   sessionRole: Role | null;
   currentUserId?: string;
+  isLoading: boolean;
   selectedMonth: string;
   onMonthChange: (offset: number) => void;
   onNavigate: (page: PageKey) => void;
@@ -5450,11 +5461,12 @@ function TrainingAllSessionsPage({
   const openCount = sessions.filter((session) => getTrainingSessionDisplayStatus(session) === 'OPEN').length;
   const closedCount = sessions.filter((session) => getTrainingSessionDisplayStatus(session) === 'CLOSED').length;
   const doneCount = sessions.filter((session) => getTrainingSessionDisplayStatus(session) === 'DONE').length;
+  const totalMetricValue = (value: number) => isLoading ? '-' : value.toLocaleString();
   const actionHeaderLabel = sessionRole === 'ADMIN' ? '관리' : sessionRole === 'MANAGER' ? '신청/관리' : '신청';
   const summaryCards: TrainingMetricCard[] = [
     {
       label: '개설 교육',
-      value: sessions.length.toLocaleString(),
+      value: totalMetricValue(sessions.length),
       unit: '건',
       detail: '이번 달 전체 교육',
       icon: <GraduationCap size={16} aria-hidden="true" />,
@@ -5462,7 +5474,7 @@ function TrainingAllSessionsPage({
     },
     {
       label: '모집중',
-      value: openCount.toLocaleString(),
+      value: totalMetricValue(openCount),
       unit: '건',
       detail: `마감 ${closedCount.toLocaleString()}건 · 완료 ${doneCount.toLocaleString()}건`,
       icon: <CircleDot size={16} aria-hidden="true" />,
@@ -5470,7 +5482,7 @@ function TrainingAllSessionsPage({
     },
     {
       label: '총 신청 인원',
-      value: totalRegistered.toLocaleString(),
+      value: totalMetricValue(totalRegistered),
       unit: '명',
       detail: `전체 정원 ${totalCapacity.toLocaleString()}명 기준`,
       icon: <UserRound size={16} aria-hidden="true" />,
@@ -5545,7 +5557,11 @@ function TrainingAllSessionsPage({
             </tr>
           </thead>
           <tbody>
-            {filteredSessions.length > 0 ? filteredSessions.map((session) => {
+            {isLoading ? (
+              <tr>
+                <td colSpan={6} className="training-empty-state is-loading">교육 정보를 불러오는 중입니다.</td>
+              </tr>
+            ) : filteredSessions.length > 0 ? filteredSessions.map((session) => {
               const displayStatus = getTrainingSessionDisplayStatus(session);
               const meta = trainingSessionStatusMeta[displayStatus];
               const percent = Math.min(100, Math.round((session.registeredCount / session.capacity) * 100));
@@ -5611,7 +5627,7 @@ function TrainingAllSessionsPage({
           </tbody>
         </table>
         <div className="training-total-table-foot">
-          <span>{filteredSessions.length}건 표시 · 전체 {sessions.length}건</span>
+          <span>{isLoading ? '조회 중' : `${filteredSessions.length}건 표시 · 전체 ${sessions.length}건`}</span>
         </div>
       </div>
 
@@ -9127,6 +9143,7 @@ export function App() {
   const [trainingSessions, setTrainingSessions] = useState<ApiTrainingSession[]>([]);
   const [trainingManagementSessions, setTrainingManagementSessions] = useState<ApiTrainingSession[]>([]);
   const [myTrainingRegistrations, setMyTrainingRegistrations] = useState<ApiMyTrainingRegistration[]>([]);
+  const [trainingSessionsLoading, setTrainingSessionsLoading] = useState(true);
   const [penaltyRecords, setPenaltyRecords] = useState<PenaltyRecord[]>([]);
   const [penaltyCandidates, setPenaltyCandidates] = useState<ApiPenaltyCandidate[]>([]);
   const [showPenaltyNotice, setShowPenaltyNotice] = useState(false);
@@ -9315,12 +9332,16 @@ export function App() {
 
   useEffect(() => {
     let isMounted = true;
+    setTrainingSessionsLoading(true);
     void refreshTrainingSessionData().then((snapshot) => {
       if (!isMounted || !snapshot) return;
       setTrainingSessions(snapshot.sessions);
       setTrainingManagementSessions(snapshot.managementSessions);
       setMyTrainingRegistrations(snapshot.registrations);
       setPenaltyCandidates(snapshot.candidates);
+      setTrainingSessionsLoading(false);
+    }).catch(() => {
+      if (isMounted) setTrainingSessionsLoading(false);
     });
     return () => {
       isMounted = false;
@@ -10327,6 +10348,7 @@ export function App() {
               equipmentItems={activeEquipmentItems}
               sessionRole={sessionRole}
               currentUserId={currentManagedUser?.id ?? sessionUser?.id}
+              isLoading={trainingSessionsLoading}
               selectedMonth={selectedTrainingMonth}
               onMonthChange={changeTrainingMonth}
               onNavigate={navigate}
@@ -10340,6 +10362,7 @@ export function App() {
                 currentUser={currentManagedUser}
                 sessionRole={sessionRole}
                 sessions={trainingManagementSessions}
+                isLoading={trainingSessionsLoading}
                 selectedMonth={selectedTrainingMonth}
                 onMonthChange={changeTrainingMonth}
                 onCreateSession={createTrainingSession}

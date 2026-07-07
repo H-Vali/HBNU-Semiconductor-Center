@@ -10841,7 +10841,8 @@ select {
   height: 2.6rem;
   border: 1px dashed rgba(154, 164, 178, 0.5);
   background: linear-gradient(145deg, rgba(23, 38, 63, 0.7), rgba(14, 26, 45, 0.92));
-  color: #9eb2cc;
+  color: transparent;
+  font-size: 0;
   line-height: 1;
 }
 
