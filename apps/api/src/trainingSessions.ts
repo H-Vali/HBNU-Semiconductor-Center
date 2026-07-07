@@ -408,16 +408,26 @@ function createSummary(items: TrainingSession[]) {
 
 export async function listTrainingSessions(actor: SessionUser, input: unknown) {
   const body = listSessionSchema.parse(input);
+  const requestedScope = body.scope;
+  const scope = actor.role === 'ADMIN'
+    ? requestedScope ?? 'all'
+    : requestedScope === 'manager' && actor.role === 'MANAGER'
+      ? 'manager'
+      : requestedScope === 'open'
+        ? 'open'
+        : 'all';
+
   if (!hasDatabase()) {
     let items = [...fallbackSessions];
-    if (actor.role === 'USER') items = items.filter((item) => item.status === 'OPEN');
-    if (actor.role === 'MANAGER') items = items.filter((item) => item.managerId === actor.id);
+    if (scope === 'open') {
+      items = items.filter((item) => (item.status === 'OPEN' || item.status === 'FULL') && new Date(item.applyDeadline).getTime() > Date.now());
+    }
+    if (scope === 'manager') items = items.filter((item) => item.managerId === actor.id);
     return { items, summary: createSummary(items), page: 1, pageSize: 50, total: items.length };
   }
 
   const params: unknown[] = [];
   const where = ['ts.deleted_at is null'];
-  const scope = actor.role === 'ADMIN' ? body.scope ?? 'all' : actor.role === 'MANAGER' ? 'manager' : 'open';
 
   if (scope === 'manager') {
     params.push(actor.id);
