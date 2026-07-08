@@ -226,6 +226,7 @@ type EquipmentRow = {
 type ReservationRow = {
   id: string;
   equipmentId: string;
+  equipmentName: string | null;
   userId: string | null;
   userName: string | null;
   title: string;
@@ -303,6 +304,7 @@ function mapReservation(row: ReservationRow) {
   return {
     id: row.id,
     equipmentId: row.equipmentId,
+    equipmentName: row.equipmentName ?? undefined,
     userId: row.userId ?? undefined,
     userName: row.userName ?? undefined,
     title: row.title,
@@ -318,9 +320,11 @@ type ReservationView = ReturnType<typeof mapReservation>;
 
 function mapFallbackReservation(row: FallbackReservation): ReservationView {
   const status = reservationStatusSchema.safeParse(row.status);
+  const equipmentName = mutableFallbackEquipment.find((entry) => entry.id === row.equipmentId)?.name;
   return {
     id: row.id,
     equipmentId: row.equipmentId,
+    equipmentName,
     userId: row.userId,
     userName: undefined,
     title: row.title,
@@ -332,12 +336,19 @@ function mapFallbackReservation(row: FallbackReservation): ReservationView {
   };
 }
 
+function getPublicReservationTitle(reservation: ReservationView) {
+  const equipmentName = reservation.equipmentName || reservation.title.split(' 예약')[0] || '장비';
+  if (reservation.status === 'maintenance') return `${equipmentName} 장비 점검`;
+  if (reservation.status === 'external') return `${equipmentName} 외부 사용`;
+  return `${equipmentName} 예약`;
+}
+
 function projectReservations(rows: ReservationView[], actor?: SessionUser) {
   if (actor?.role === 'ADMIN') return rows;
   return rows.map((reservation) => ({
     id: reservation.id,
     equipmentId: reservation.equipmentId,
-    title: '예약',
+    title: getPublicReservationTitle(reservation),
     startsAt: reservation.startsAt,
     endsAt: reservation.endsAt,
     status: reservation.status,
@@ -639,7 +650,7 @@ export async function listReservations(actor?: SessionUser) {
     );
   }
   const result = await query<ReservationRow>(
-    `select r.id, r.equipment_id as "equipmentId", r.user_id as "userId", r.title, r.purpose,
+    `select r.id, r.equipment_id as "equipmentId", e.name as "equipmentName", r.user_id as "userId", r.title, r.purpose,
       u.name as "userName",
       r.starts_at as "startsAt", r.ends_at as "endsAt", r.status, r.created_by_role as "createdByRole"
      from reservations r
@@ -703,7 +714,7 @@ export async function createReservation(input: unknown, user?: SessionUser) {
           id, equipment_id, user_id, title, purpose, starts_at, ends_at, status, created_by_role
         )
         values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-        returning id, equipment_id as "equipmentId", user_id as "userId", title, purpose,
+        returning id, equipment_id as "equipmentId", (select name from equipment where id = $2) as "equipmentName", user_id as "userId", title, purpose,
           null::text as "userName",
           starts_at as "startsAt", ends_at as "endsAt", status, created_by_role as "createdByRole"`,
         [
@@ -742,10 +753,10 @@ export async function cancelReservation(id: string, user: SessionUser) {
   }
 
   const result = await query<ReservationRow>(
-    `update reservations
+    `update reservations r
      set status = 'canceled', deleted_at = now(), updated_at = now()
      where id = $1 and deleted_at is null and ($2 = true or user_id = $3)
-     returning id, equipment_id as "equipmentId", user_id as "userId", title, purpose,
+     returning id, equipment_id as "equipmentId", (select name from equipment where id = r.equipment_id) as "equipmentName", user_id as "userId", title, purpose,
        null::text as "userName",
        starts_at as "startsAt", ends_at as "endsAt", status, created_by_role as "createdByRole"`,
     [id, canCancelAny, user.id]
