@@ -5098,7 +5098,6 @@ function TrainingSessionManagementPage({
   const totalRegistrations = managerSessions.reduce((sum, session) => sum + session.registeredCount, 0);
   const totalCompleted = managerSessions.reduce((sum, session) => sum + session.completedCount, 0);
   const managerTotalCapacity = managerSessions.reduce((sum, session) => sum + session.capacity, 0);
-  const managerFillRate = managerTotalCapacity ? Math.round((totalRegistrations / managerTotalCapacity) * 100) : 0;
   const managerMetricValue = (value: number) => isLoading ? '-' : value.toLocaleString();
   const managerMetricCards: TrainingMetricCard[] = [
     {
@@ -5129,7 +5128,7 @@ function TrainingSessionManagementPage({
       label: '누적 이수자',
       value: managerMetricValue(totalCompleted),
       unit: '명',
-      progress: managerFillRate,
+      detail: '이수 완료 처리 인원',
       icon: <CheckCircle2 size={16} aria-hidden="true" />,
       tone: 'is-success'
     }
