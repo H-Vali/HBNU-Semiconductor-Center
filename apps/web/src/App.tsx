@@ -9896,7 +9896,7 @@ export function App() {
       localStorage.getItem(STORAGE_KEYS.sessionToken)
     );
     if (!savedSession) {
-      window.alert('교육 신청 취소에 실패했습니다. 마감일 이후에는 취소할 수 없습니다.');
+      window.alert('교육 신청 취소에 실패했습니다. 신청 상태, 마감 시각 또는 로그인 권한을 확인해 주세요.');
       return false;
     }
     await reloadTrainingSessionData();

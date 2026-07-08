@@ -782,7 +782,7 @@ export async function registerTrainingSession(id: string, actor: SessionUser) {
 }
 
 export async function cancelTrainingRegistration(id: string, actor: SessionUser) {
-  if (actor.role !== 'USER') throw new PermissionDeniedError();
+  if (actor.role === 'ADMIN') throw new PermissionDeniedError();
   if (!hasDatabase()) throw new TrainingSessionStateError('Training cancellation requires database storage');
 
   await transaction(async (client) => {
