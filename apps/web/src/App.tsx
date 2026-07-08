@@ -4649,6 +4649,12 @@ function isTrainingSessionClosed(session: ApiTrainingSession) {
   return session.status === 'CLOSED' || session.status === 'DONE' || new Date(session.applyDeadline).getTime() <= Date.now();
 }
 
+function isTrainingCancellationOpen(session: ApiTrainingSession) {
+  if (session.status !== 'OPEN' && session.status !== 'FULL') return false;
+  const deadline = new Date(session.applyDeadline);
+  return !Number.isNaN(deadline.getTime()) && deadline.getTime() > Date.now();
+}
+
 function getCurrentTrainingMonth() {
   return getSeoulDateKey().slice(0, 7);
 }
@@ -4922,7 +4928,7 @@ function TrainingSessionApplicantPage({
                 const session = registration.session;
                 const isClosed = session ? isTrainingSessionClosed(session) : true;
                 const isSessionCanceled = session?.status === 'CANCELED';
-                const canCancel = Boolean(session && registration.status === 'REGISTERED' && !isClosed && !isSessionCanceled);
+                const canCancel = Boolean(session && registration.status === 'REGISTERED' && isTrainingCancellationOpen(session));
                 const showCancelControl = registration.status === 'REGISTERED';
                 const cancelBlockedLabel = isSessionCanceled
                   ? '폐강됨'
@@ -4953,7 +4959,7 @@ function TrainingSessionApplicantPage({
                       <TrainingIconChip groupName={session?.groupName || session?.category} />
                       <div>
                         <strong>{session?.equipmentName ?? registration.sessionId} 교육</strong>
-                        <span>{session ? `담당 ${session.managerName} · 신청마감 ${getTrainingShortDate(session.applyDeadline)}${isClosed ? ' (마감됨)' : ''}` : '세션 정보 없음'}</span>
+                        <span>{session ? `담당 ${session.managerName} · 신청마감 ${formatTrainingDeadlineLabel(session.applyDeadline)}${isClosed ? ' (마감됨)' : ''}` : '세션 정보 없음'}</span>
                       </div>
                       <div className="training-application-head-meta">
                         {session && registration.status === 'REGISTERED' && !isClosed && (
@@ -5030,7 +5036,7 @@ function TrainingSessionApplicantPage({
             </span>
             <div className="training-cancel-modal-copy">
               <h3 id="training-cancel-title">신청을 취소하시겠어요?</h3>
-              <p>{cancelTarget.session.equipmentName} 교육 · 신청마감 {getTrainingShortDate(cancelTarget.session.applyDeadline)}</p>
+              <p>{cancelTarget.session.equipmentName} 교육 · 신청마감 {formatTrainingDeadlineLabel(cancelTarget.session.applyDeadline)}</p>
               <ul>
                 <li>취소하면 좌석이 즉시 반환되어 다른 사용자가 신청할 수 있습니다.</li>
                 <li>다시 신청하려면 정원({cancelTarget.session.capacity}명)에 여유가 있어야 합니다.</li>
