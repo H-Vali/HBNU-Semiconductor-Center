@@ -235,8 +235,8 @@ export async function listEquipmentPermissions(actor?: SessionUser) {
     eventWhere.push(`epe.user_id = $${params.length}`);
   } else if (actor?.role === 'MANAGER') {
     params.push(actor.id);
-    permissionWhere.push(`e.manager_user_id = $${params.length}`);
-    eventWhere.push(`e.manager_user_id = $${params.length}`);
+    permissionWhere.push(`(e.manager_user_id = $${params.length} or ep.user_id = $${params.length})`);
+    eventWhere.push(`(e.manager_user_id = $${params.length} or epe.user_id = $${params.length})`);
   }
 
   const permissions = await query<PermissionRow>(
@@ -297,6 +297,13 @@ export async function grantEquipmentPermission(input: unknown, actor: SessionUse
       revoked_by = null,
       revoke_reason = null`,
     [body.userId, body.equipmentId, actor.id, actor.role, body.sourceRequestId ?? null]
+  );
+  await query(
+    `update users
+     set onboarding_status = 'active',
+      updated_at = now()
+     where id = $1 and deleted_at is null`,
+    [body.userId]
   );
   await writePermissionEvent('GRANT', actor, body.userId, body.equipmentId);
   return listEquipmentPermissions(actor);

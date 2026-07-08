@@ -1174,6 +1174,23 @@ function getManagedUserForSession(sessionUser: StoredSessionUser | null, users: 
   )) ?? null;
 }
 
+function createManagedUserFromSession(sessionUser: StoredSessionUser | null): ManagedUser | null {
+  if (!sessionUser?.id || !sessionUser.email) return null;
+  return {
+    id: sessionUser.id,
+    index: 0,
+    name: sessionUser.name ?? sessionUser.email,
+    roleLevel: normalizeRoleLevel(''),
+    department: '',
+    labProfessor: '',
+    phone: '',
+    email: sessionUser.email,
+    memo: '',
+    authProvider: 'Google',
+    onboardingStatus: 'training_pending'
+  };
+}
+
 function getActivePenaltyForSession(sessionUser: StoredSessionUser | null, users: ManagedUser[], penalties: PenaltyRecord[]) {
   if (!sessionUser) return null;
   const matchedUser = getManagedUserForSession(sessionUser, users);
@@ -9303,6 +9320,58 @@ export function App() {
 
   useEffect(() => {
     const token = localStorage.getItem(STORAGE_KEYS.sessionToken);
+    const accessPages: PageKey[] = ['reservations', 'training', 'trainingAll', 'trainingManagement', 'managerPermissions', 'mypage'];
+    if (!token || !sessionRole || !accessPages.includes(activePage)) return;
+    let isMounted = true;
+
+    async function refreshAccessState() {
+      const [session, snapshot] = await Promise.all([
+        apiGet<GoogleAuthResponse>('/auth/me', token),
+        apiGet<EquipmentPermissionSnapshot>('/equipment-permissions', token)
+      ]);
+      if (!isMounted) return;
+      if (session?.user && session.token) {
+        localStorage.setItem(STORAGE_KEYS.sessionToken, session.token);
+        localStorage.setItem(STORAGE_KEYS.sessionUser, JSON.stringify(session.user));
+        if (session.managedUser) registerAuthenticatedUser(session.managedUser);
+        setSessionRole(session.user.role ?? 'USER');
+      }
+      if (snapshot) applyEquipmentPermissionSnapshot(snapshot);
+      if (activePage === 'training' || activePage === 'trainingAll' || activePage === 'trainingManagement') {
+        void reloadTrainingSessionData();
+      }
+    }
+
+    void refreshAccessState();
+    return () => {
+      isMounted = false;
+    };
+  }, [activePage, sessionRole]);
+
+  useEffect(() => {
+    const accessPages: PageKey[] = ['reservations', 'training', 'trainingAll', 'trainingManagement', 'managerPermissions', 'mypage'];
+
+    function handleAccessRefresh() {
+      const token = localStorage.getItem(STORAGE_KEYS.sessionToken);
+      if (!token || !sessionRole || !accessPages.includes(activePage)) return;
+      void apiGet<EquipmentPermissionSnapshot>('/equipment-permissions', token).then((snapshot) => {
+        if (snapshot) applyEquipmentPermissionSnapshot(snapshot);
+      });
+      if (activePage === 'training' || activePage === 'trainingAll' || activePage === 'trainingManagement') {
+        void reloadTrainingSessionData();
+      }
+    }
+
+    window.addEventListener('focus', handleAccessRefresh);
+    document.addEventListener('visibilitychange', handleAccessRefresh);
+    return () => {
+      window.removeEventListener('focus', handleAccessRefresh);
+      document.removeEventListener('visibilitychange', handleAccessRefresh);
+    };
+  }, [activePage, sessionRole]);
+
+  useEffect(() => {
+    const token = localStorage.getItem(STORAGE_KEYS.sessionToken);
     if (!token || !sessionRole) {
       setReservationEvents([]);
       return;
@@ -10235,8 +10304,16 @@ export function App() {
   const activeConsumables = monthlyConsumables[selectedConsumableMonth] ?? cloneConsumables();
   const managerUserIds = useMemo(() => new Set(activeEquipmentItems.map((item) => item.managerId).filter(Boolean) as string[]), [activeEquipmentItems]);
   const currentManagedUser = useMemo(
-    () => getManagedUserForSession(sessionUser, managedUsers),
-    [sessionRole, sessionUser?.id, sessionUser?.email, sessionUser?.name, managedUsers]
+    () => {
+      const matchedUser = getManagedUserForSession(sessionUser, managedUsers) ?? createManagedUserFromSession(sessionUser);
+      if (!matchedUser) return null;
+      const ownPermissionCount = equipmentPermissions[matchedUser.id]?.length ?? 0;
+      if (ownPermissionCount > 0 && matchedUser.onboardingStatus !== 'active') {
+        return { ...matchedUser, onboardingStatus: 'active' as const };
+      }
+      return matchedUser;
+    },
+    [sessionRole, sessionUser?.id, sessionUser?.email, sessionUser?.name, managedUsers, equipmentPermissions]
   );
   const headerSessionUserName = currentManagedUser?.name ?? sessionUserName;
   const canManageAssignedPermissions = sessionRole === 'ADMIN' || Boolean(currentManagedUser && managerUserIds.has(currentManagedUser.id));
