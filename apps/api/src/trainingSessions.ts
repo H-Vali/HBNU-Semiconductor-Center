@@ -339,7 +339,7 @@ function getSessionSelect(whereSql: string) {
       ts.note,
       ts.status,
       ts.created_at as "createdAt",
-      count(sr.id) filter (where sr.status = 'REGISTERED') as "registeredCount",
+      count(sr.id) filter (where sr.status <> 'CANCELED') as "registeredCount",
       count(sr.id) filter (where sr.status = 'COMPLETED') as "completedCount",
       count(sr.id) filter (where sr.status = 'NO_SHOW') as "noShowCount"
     from training_session ts
@@ -509,7 +509,7 @@ export async function listMyTrainingRegistrations(actor: SessionUser) {
       ts.note,
       ts.status as "sessionStatus",
       ts.created_at as "createdAt",
-      (select count(*) from session_registration active_sr where active_sr.session_id = ts.id and active_sr.status = 'REGISTERED') as "registeredCount",
+      (select count(*) from session_registration active_sr where active_sr.session_id = ts.id and active_sr.status <> 'CANCELED') as "registeredCount",
       (select count(*) from session_registration completed_sr where completed_sr.session_id = ts.id and completed_sr.status = 'COMPLETED') as "completedCount",
       (select count(*) from session_registration noshow_sr where noshow_sr.session_id = ts.id and noshow_sr.status = 'NO_SHOW') as "noShowCount"
      from session_registration sr

@@ -5279,9 +5279,9 @@ function TrainingSessionManagementPage({
           </div>
         ) : managerSessions.length > 0 ? managerSessions.map((session) => {
           const meta = trainingSessionStatusMeta[session.status];
-          const registrations = session.registrations ?? [];
-          const activeRegistrations = registrations.filter((registration) => registration.status === 'REGISTERED');
-          const emptySeats = Math.max(0, session.capacity - activeRegistrations.length);
+          const registrations = (session.registrations ?? []).filter((registration) => registration.status !== 'CANCELED');
+          const appliedCount = registrations.length;
+          const emptySeats = Math.max(0, session.capacity - appliedCount);
           const canProcess = isTrainingSessionClosed(session) && session.status !== 'DONE' && session.status !== 'CANCELED';
           const canModify = session.status !== 'DONE' && session.status !== 'CANCELED';
           const canDelete = session.status !== 'CANCELED' && (session.status !== 'DONE' || sessionRole === 'ADMIN');
@@ -5301,7 +5301,7 @@ function TrainingSessionManagementPage({
                   <span>{session.category || session.groupName} · 마감 후 개별 안내</span>
                 </div>
                 <div className="training-manager-card-meta">
-                  <span className="training-seat-pill">{activeRegistrations.length} / {session.capacity}</span>
+                  <span className="training-seat-pill">{appliedCount} / {session.capacity}</span>
                   <em className={`training-ui-badge ${getTrainingStatusClass(displayStatus)}`}>{meta.label}</em>
                   <div className="training-manager-session-actions">
                     <button
@@ -5342,7 +5342,7 @@ function TrainingSessionManagementPage({
               <div className="training-manager-roster">
                 <div className="training-manager-roster-head">
                   <h4>신청자 명단</h4>
-                  <span>{activeRegistrations.length}명 신청 · {emptySeats}자리 남음</span>
+                  <span>{appliedCount}명 신청 · {emptySeats}자리 남음</span>
                 </div>
                 {registrations.map((registration) => {
                   const rowMeta = registrationStatusMeta[registration.status];
