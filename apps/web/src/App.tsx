@@ -1528,7 +1528,7 @@ function InstitutionHeader({
           </div>
           <div>
             <p className="text-xs font-bold text-cyan-300">HBNU SEMICONDUCTOR CENTER</p>
-            <h1 className="text-lg font-extrabold text-white sm:text-xl">반도체 장비 공동활용 플랫폼</h1>
+            <h1 className="text-lg font-extrabold text-white sm:text-xl">창의융합교육센터 인프라 통합관리 시스템</h1>
           </div>
         </button>
         <div className="hidden items-center gap-2 md:flex">
