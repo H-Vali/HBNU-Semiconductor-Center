@@ -5262,6 +5262,7 @@ function TrainingSessionManagementPage({
           const emptySeats = Math.max(0, session.capacity - activeRegistrations.length);
           const canProcess = isTrainingSessionClosed(session) && session.status !== 'DONE' && session.status !== 'CANCELED';
           const canModify = session.status !== 'DONE' && session.status !== 'CANCELED';
+          const canDelete = session.status !== 'CANCELED' && (session.status !== 'DONE' || sessionRole === 'ADMIN');
           const selected = selectedUserIds[session.id] ?? [];
           const deadlineInfo = getTrainingDeadlineInfo(session.applyDeadline, getTrainingSessionDisplayStatus(session));
           const displayStatus = getTrainingSessionDisplayStatus(session);
@@ -5292,7 +5293,7 @@ function TrainingSessionManagementPage({
                     <button
                       type="button"
                       className="training-danger-button"
-                      disabled={!canModify}
+                      disabled={!canDelete}
                       onClick={() => void deleteSession(session)}
                     >
                       <Trash2 size={14} /> 삭제

@@ -679,7 +679,7 @@ export async function deleteTrainingSession(id: string, actor: SessionUser) {
     if (index === -1) throw new TrainingSessionStateError('Training session not found');
     const session = fallbackSessions[index];
     if (actor.role !== 'ADMIN' && session.managerId !== actor.id) throw new PermissionDeniedError();
-    if (session.status === 'DONE') throw new TrainingSessionStateError('Completed training session cannot be deleted');
+    if (session.status === 'DONE' && actor.role !== 'ADMIN') throw new TrainingSessionStateError('Completed training session cannot be deleted');
     fallbackSessions.splice(index, 1);
     for (let i = fallbackRegistrations.length - 1; i >= 0; i -= 1) {
       if (fallbackRegistrations[i].sessionId === id) fallbackRegistrations.splice(i, 1);
@@ -701,7 +701,7 @@ export async function deleteTrainingSession(id: string, actor: SessionUser) {
     const session = sessionResult.rows[0];
     if (!session) throw new TrainingSessionStateError('Training session not found');
     if (actor.role !== 'ADMIN' && session.managerId !== actor.id) throw new PermissionDeniedError();
-    if (session.status === 'DONE') throw new TrainingSessionStateError('Completed training session cannot be deleted');
+    if (session.status === 'DONE' && actor.role !== 'ADMIN') throw new TrainingSessionStateError('Completed training session cannot be deleted');
     await client.query(`delete from session_registration where session_id = $1`, [id]);
     await client.query(
       `update training_session
