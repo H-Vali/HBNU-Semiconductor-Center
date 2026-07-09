@@ -5,6 +5,10 @@ import { apiDelete, apiGet, apiPatch, apiPost } from '../apiClient';
 
 type Role = 'USER' | 'MANAGER' | 'ADMIN';
 type QnaCurrentUser = { name?: string; department?: string } | null;
+type QnaAuthSession = {
+  user?: { name?: string };
+  managedUser?: { name?: string; department?: string };
+};
 
 function formatSeoulDateTime(value: string) {
   const normalizedValue = /^\d{4}\.\d{2}\.\d{2}$/.test(value)
@@ -216,6 +220,7 @@ const QNA_PAGE_SIZE = 5;
 
 export function QnaPage({ sessionRole, currentUser }: { sessionRole: Role | null; currentUser?: QnaCurrentUser }) {
   const [qnaItems, setQnaItems] = useState<QnaItem[]>([]);
+  const [currentSessionUser, setCurrentSessionUser] = useState<QnaCurrentUser>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [deleteTargetQna, setDeleteTargetQna] = useState<QnaItem | null>(null);
@@ -226,6 +231,16 @@ export function QnaPage({ sessionRole, currentUser }: { sessionRole: Role | null
   const [answerSavePhase, setAnswerSavePhase] = useState<'idle' | 'saved' | 'returning'>('idle');
   const answerSaveTimers = useRef<number[]>([]);
   const isAdmin = sessionRole === 'ADMIN';
+  const qnaCurrentUser = useMemo<QnaCurrentUser>(() => {
+    const sessionDepartment = currentSessionUser?.department?.trim() ?? '';
+    const sessionName = currentSessionUser?.name?.trim() ?? '';
+    if (sessionDepartment || sessionName) {
+      return { department: sessionDepartment, name: sessionName };
+    }
+    const propDepartment = currentUser?.department?.trim() ?? '';
+    const propName = currentUser?.name?.trim() ?? '';
+    return propDepartment || propName ? { department: propDepartment, name: propName } : null;
+  }, [currentSessionUser, currentUser]);
 
   useEffect(() => () => {
     answerSaveTimers.current.forEach((timer) => window.clearTimeout(timer));
@@ -243,6 +258,30 @@ export function QnaPage({ sessionRole, currentUser }: { sessionRole: Role | null
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem(STORAGE_KEYS.sessionToken);
+    if (!token) {
+      setCurrentSessionUser(null);
+      return;
+    }
+    let isMounted = true;
+    void apiGet<QnaAuthSession>('/auth/me', token).then((session) => {
+      if (!isMounted) return;
+      const managedUser = session?.managedUser;
+      if (managedUser?.name || managedUser?.department) {
+        setCurrentSessionUser({
+          name: managedUser.name ?? '',
+          department: managedUser.department ?? ''
+        });
+        return;
+      }
+      setCurrentSessionUser(session?.user?.name ? { name: session.user.name, department: '' } : null);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [showCreateModal]);
 
   function persistQnaItems(nextItems: QnaItem[]) {
     setQnaItems(nextItems);
@@ -598,7 +637,7 @@ export function QnaPage({ sessionRole, currentUser }: { sessionRole: Role | null
           </section>
         </div>
       )}
-      {showCreateModal && <QnaCreateModal currentUser={currentUser ?? null} onClose={() => setShowCreateModal(false)} onSubmit={addQuestion} />}
+      {showCreateModal && <QnaCreateModal currentUser={qnaCurrentUser} onClose={() => setShowCreateModal(false)} onSubmit={addQuestion} />}
     </section>
   );
 }
