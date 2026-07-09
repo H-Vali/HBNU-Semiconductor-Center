@@ -7,6 +7,14 @@ export default {
       fontFamily: {
         sans: ['A2z', 'ui-sans-serif', 'system-ui']
       },
+      fontWeight: {
+        normal: '400',
+        medium: '500',
+        semibold: '600',
+        bold: '600',
+        extrabold: '700',
+        black: '700'
+      },
       colors: {
         navy: '#1E3A8A',
         surface: '#1E293B',

@@ -83,7 +83,7 @@ select {
   margin-top: 7.5rem;
   color: #dbeafe;
   font-size: 0.95rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .loading-wafer {
@@ -199,7 +199,7 @@ select {
   margin: 0;
   color: #f3f6fb;
   font-size: clamp(1.92rem, 2.42vw, 2.56rem);
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.24;
   letter-spacing: 0;
 }
@@ -220,7 +220,7 @@ select {
 .hero-title em {
   color: #5fd9c9;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .hero-intro {
@@ -254,7 +254,7 @@ select {
   padding-left: 2px;
   color: #5fd9c9;
   font-size: 0.82rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -311,7 +311,7 @@ select {
   margin: 0;
   color: #f3f6fb;
   font-size: 1.12rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .hero-guest-login-title {
@@ -327,7 +327,7 @@ select {
 
 .hero-user-summary-head h3 strong {
   color: #5fd9c9;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .hero-user-summary-head > span {
@@ -338,7 +338,7 @@ select {
   padding: 0.42rem 0.7rem;
   color: #5fd9c9;
   font-size: 0.82rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .hero-user-permissions {
@@ -379,7 +379,7 @@ select {
   padding: 0.25rem 0.62rem;
   color: #cdd5e1;
   font-size: 0.74rem;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
   white-space: nowrap;
 }
@@ -488,7 +488,7 @@ select {
   overflow: hidden;
   color: #f3f6fb;
   font-size: 0.96rem;
-  font-weight: 700;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -499,7 +499,7 @@ select {
   padding: 0.28rem 0.48rem;
   color: #cdd5e1;
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .hero-reservation-action:hover,
@@ -547,7 +547,7 @@ select {
 .hero-user-summary-foot button {
   color: #5fd9c9;
   font-size: 0.84rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .hero-user-summary-foot button:hover {
@@ -570,7 +570,7 @@ select {
   border-radius: 9px;
   padding: 11px 16px;
   font-size: 0.94rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .hero-action-button.is-primary {
@@ -636,7 +636,7 @@ select {
 .process-status-card p {
   margin: 0 0 7px;
   font-size: 0.78rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -644,7 +644,7 @@ select {
 .process-status-card strong {
   color: #f3f6fb;
   font-size: 1.45rem;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
 }
 
@@ -703,7 +703,7 @@ select {
   margin: 0;
   color: #f8fafc;
   font-size: 1.34rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .dashboard-notice-title {
@@ -732,7 +732,7 @@ select {
   color: #93c5fd;
   padding: 0.42rem 0.82rem;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 700;
   transition: all 0.3s ease;
 }
 
@@ -777,7 +777,7 @@ select {
   color: #7dd3fc;
   padding: 0.26rem 0.5rem;
   font-size: 0.72rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .dashboard-notice-category.is-operation,
@@ -812,7 +812,7 @@ select {
   overflow: hidden;
   color: #f8fafc;
   font-size: 0.98rem;
-  font-weight: 900;
+  font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -820,7 +820,7 @@ select {
 .dashboard-notice-row time {
   color: #94a3b8;
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .brand-mark {
@@ -916,7 +916,7 @@ select {
 .owner-info-brand strong {
   color: #dbe4f0;
   font-size: 1.25rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0;
 }
 
@@ -970,7 +970,7 @@ select {
   margin-bottom: 0.75rem;
   color: #67e8f9;
   font-size: 0.74rem;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0;
   text-transform: uppercase;
 }
@@ -991,7 +991,7 @@ select {
   padding: 0.7rem 0.8rem;
   color: #cbd5e1;
   font-size: 0.95rem;
-  font-weight: 900;
+  font-weight: 700;
   text-align: left;
 }
 
@@ -1009,7 +1009,7 @@ select {
   color: #a5f3fc;
   font-size: 0.62rem;
   font-style: normal;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .sidebar-nav-item:hover,
@@ -1072,13 +1072,13 @@ select {
   padding: 0.48rem 0.65rem;
   color: #94a3b8;
   font-size: 0.84rem;
-  font-weight: 900;
+  font-weight: 700;
   text-align: left;
 }
 
 .sidebar-subnav-item.is-training-tab,
 .sidebar-subnav-item.is-training-tab span {
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .sidebar-subnav-item:hover,
@@ -1141,7 +1141,7 @@ select {
   margin: 0;
   color: #f3f6fb;
   font-size: 1.9rem;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
 }
 
@@ -1245,7 +1245,7 @@ select {
   display: block;
   color: #94a3b8;
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .wafer-label strong {
@@ -1319,7 +1319,7 @@ select {
   margin: 0 0 4px;
   color: #5fd9c9;
   font-size: 0.76rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -1328,7 +1328,7 @@ select {
   margin: 0;
   color: #eef2f8;
   font-size: 1.5rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .auto-status-meta {
@@ -1356,7 +1356,7 @@ select {
   border-radius: 5px;
   padding: 0.32rem 0.58rem;
   font-size: 0.82rem;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1;
 }
 
@@ -1566,7 +1566,7 @@ select {
   overflow: hidden;
   color: var(--auto-status-accent);
   font-size: 0.68rem;
-  font-weight: 700;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1578,7 +1578,7 @@ select {
   border-radius: 5px;
   padding: 0.24rem 0.5rem;
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .auto-status-cell .runtime-status-badge::before {
@@ -1591,7 +1591,7 @@ select {
   overflow: hidden;
   color: #eef2f8;
   font-size: 1.05rem;
-  font-weight: 800;
+  font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1707,7 +1707,7 @@ select {
   border-radius: 999px;
   padding: 0.46rem 0.88rem;
   font-size: 0.84rem;
-  font-weight: 900;
+  font-weight: 700;
   line-height: 1;
 }
 
@@ -1763,13 +1763,13 @@ select {
 .realtime-digital-clock span {
   color: #93c5fd;
   font-size: 0.9rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .realtime-digital-clock strong {
   color: #67e8f9;
   font-size: clamp(1.15rem, 1.6vw, 1.55rem);
-  font-weight: 900;
+  font-weight: 700;
   text-shadow: 0 0 18px rgba(34, 211, 238, 0.42);
 }
 
@@ -1777,7 +1777,7 @@ select {
   color: rgba(125, 211, 252, 0.56);
   font-size: 1rem;
   font-style: normal;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .realtime-digital-clock i {
@@ -1850,7 +1850,7 @@ select {
 .realtime-equipment-item p {
   color: #7dd3fc;
   font-size: 0.72rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .runtime-status-badge {
@@ -1860,7 +1860,7 @@ select {
   border-radius: 7px;
   padding: 0.28rem 0.5rem;
   font-size: 0.72rem;
-  font-weight: 900;
+  font-weight: 700;
   white-space: nowrap;
 }
 
@@ -1893,7 +1893,7 @@ select {
   margin-top: 0.6rem;
   color: #ffffff;
   font-size: 1.14rem;
-  font-weight: 900;
+  font-weight: 700;
   line-height: 1.2;
 }
 
@@ -1902,7 +1902,7 @@ select {
   margin-top: 0.75rem;
   color: #cbd5e1;
   font-size: 0.86rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .realtime-equipment-item.is-active {
@@ -1968,7 +1968,7 @@ select {
   padding: 0.34rem 0.65rem;
   color: #8b96a8;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .usage-period-toggle button:hover,
@@ -1984,12 +1984,12 @@ select {
   margin-bottom: 0.75rem;
   color: #8b96a8;
   font-size: 0.82rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .usage-trend-summary strong {
   color: #cdd5e1;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .usage-trend-summary .is-up {
@@ -2042,7 +2042,7 @@ select {
   margin: 0;
   color: #5eead4;
   font-size: 0.875rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0;
 }
 
@@ -2050,7 +2050,7 @@ select {
   margin: 0.25rem 0 0;
   color: #ffffff;
   font-size: 1.5rem;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.25;
 }
 
@@ -2066,7 +2066,7 @@ select {
   border: 0.5px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   background: #11192b;
-  font-weight: 800;
+  font-weight: 700;
   text-decoration: none;
   transition: transform 0.15s ease, border-color 0.15s ease;
 }
@@ -2113,7 +2113,7 @@ select {
 .eq-cat {
   color: #f3f6fb;
   font-size: 1.18rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .eq-desc {
@@ -2121,7 +2121,7 @@ select {
   margin-top: 4px;
   color: #8b96a8;
   font-size: 0.86rem;
-  font-weight: 800;
+  font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2135,13 +2135,13 @@ select {
 .eq-count-label {
   color: #6b7689;
   font-size: 0.74rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .eq-count-num {
   color: rgb(var(--accent));
   font-size: 1.08rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .eq-body {
@@ -2162,7 +2162,7 @@ select {
   padding: 5px 11px;
   color: #aab4c4;
   font-size: 0.82rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .eq-cta {
@@ -2171,7 +2171,7 @@ select {
   gap: 8px;
   color: rgb(var(--accent));
   font-size: 1rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .eq-arrow {
@@ -2199,27 +2199,27 @@ select {
 
 .fc .fc-toolbar-title {
   font-size: 1.1rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .fc .fc-button-primary {
   border-color: rgba(56, 189, 248, 0.4);
   background: #1d4ed8;
   border-radius: 6px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .fc .fc-daygrid-day-number {
   position: relative;
   z-index: 1;
   color: #dbeafe;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .fc .fc-col-header-cell-cushion {
   color: #7dd3fc;
   font-size: 0.8rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .fc .fc-daygrid-event-harness {
@@ -2298,7 +2298,7 @@ select {
   align-items: center;
   overflow: hidden;
   color: inherit;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .calendar-event-slide-window {
@@ -2325,7 +2325,7 @@ select {
 
 .calendar-event-time {
   flex: 0 0 auto;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .calendar-event-title {
@@ -2422,7 +2422,7 @@ select {
   background-size: 10px 10px, 10px 10px, auto;
   color: #ffffff;
   box-shadow: inset 0 0 16px rgba(34, 211, 238, 0.28), 0 0 22px rgba(34, 211, 238, 0.34);
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .fc .fc-daygrid-day.seoul-today .fc-daygrid-day-number::before {
@@ -2461,7 +2461,7 @@ select {
   margin-top: 0.75rem;
   color: #9fb1ce;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .reservation-calendar-legend span {
@@ -2554,7 +2554,7 @@ select {
   display: block;
   color: #67e8f9;
   font-size: 0.72rem;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0;
 }
 
@@ -2563,14 +2563,14 @@ select {
   margin-top: 0.15rem;
   color: #e0f2fe;
   font-size: 0.95rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .seoul-clock time {
   color: #ffffff;
   font-variant-numeric: tabular-nums;
   font-size: clamp(1.45rem, 3vw, 2.45rem);
-  font-weight: 900;
+  font-weight: 700;
   line-height: 1;
   text-shadow: 0 0 24px rgba(34, 211, 238, 0.28);
 }
@@ -2600,7 +2600,7 @@ select {
   color: #cbd5e1;
   text-align: left;
   font-size: 0.88rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .reservation-equipment-button:hover,
@@ -2666,7 +2666,7 @@ select {
   padding: 0.2rem 0.34rem;
   color: #dbeafe;
   font-size: 0.66rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .equipment-type-chip {
@@ -2680,7 +2680,7 @@ select {
   padding: 0.32rem 0.34rem;
   font-size: 0.66rem;
   text-overflow: ellipsis;
-  font-weight: 900;
+  font-weight: 700;
   white-space: nowrap;
 }
 
@@ -3010,7 +3010,7 @@ select {
   margin-top: 1rem;
   color: #bfdbfe;
   font-size: 0.92rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .reservation-label input,
@@ -3021,7 +3021,7 @@ select {
   background: #020617;
   padding: 0 0.9rem;
   color: #ffffff;
-  font-weight: 800;
+  font-weight: 700;
   outline: none;
 }
 
@@ -3055,7 +3055,7 @@ select {
   margin-top: 0.35rem;
   color: #ffffff;
   font-size: 1.05rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .reservation-day-list {
@@ -3075,7 +3075,7 @@ select {
   display: block;
   color: #7dd3fc;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .reservation-day-item strong {
@@ -3110,7 +3110,7 @@ select {
   color: #fecaca;
   font-size: 0.74rem;
   font-style: normal;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .reservation-day-item em::before {
@@ -3129,7 +3129,7 @@ select {
   padding: 1rem;
   color: #94a3b8;
   font-size: 0.88rem;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.55;
 }
 
@@ -3147,7 +3147,7 @@ select {
 .reservation-confirm-button {
   border-radius: 7px;
   border: 0;
-  font-weight: 900;
+  font-weight: 700;
   color: #ffffff;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
@@ -3184,7 +3184,7 @@ select {
   padding: 0.8rem;
   color: #fecaca;
   font-size: 0.82rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .reservation-mini-danger {
@@ -3198,7 +3198,7 @@ select {
   padding: 0.42rem 0.62rem;
   color: #ffffff;
   font-size: 0.74rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .reservation-mini-danger:hover {
@@ -3215,7 +3215,7 @@ select {
   padding: 0.55rem 0.75rem;
   color: #cbd5e1;
   font-size: 0.82rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .reservation-status-tab span {
@@ -3267,7 +3267,7 @@ select {
   margin: 0;
   color: #5fd9c9;
   font-size: 0.72rem;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0;
   text-transform: uppercase;
 }
@@ -3276,7 +3276,7 @@ select {
   margin: 0.25rem 0 0;
   color: #f3f6fb;
   font-size: 1.18rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .admin-reservation-panel-head span {
@@ -3299,7 +3299,7 @@ select {
   padding: 0.62rem 0.82rem;
   color: #5fd9c9;
   font-size: 0.82rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .admin-reservation-panel-head button:hover {
@@ -3390,7 +3390,7 @@ select {
 .admin-reservation-calendar .fc .fc-daygrid-more-link {
   color: #5fd9c9;
   font-size: 0.72rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .admin-reservation-calendar .fc-daygrid-day.admin-selected-day {
@@ -3479,7 +3479,7 @@ select {
   display: block;
   color: #ffffff;
   font-size: 1rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .admin-reservation-row span,
@@ -3489,7 +3489,7 @@ select {
   margin-top: 0.25rem;
   color: #93c5fd;
   font-size: 0.82rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .admin-reservation-row em {
@@ -3498,7 +3498,7 @@ select {
   color: #6b7689;
   font-size: 0.76rem;
   font-style: normal;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .audit-log-list {
@@ -3521,7 +3521,7 @@ select {
   display: block;
   color: #ffffff;
   font-size: 0.95rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .audit-log-row span,
@@ -3529,7 +3529,7 @@ select {
   margin-top: 0.25rem;
   color: #94a3b8;
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .audit-log-row em {
@@ -3537,7 +3537,7 @@ select {
   color: #67e8f9;
   font-size: 0.74rem;
   font-style: normal;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .mypage-reservation-card button {
@@ -3548,7 +3548,7 @@ select {
   padding: 0.7rem 0.9rem;
   color: #ffffff;
   font-size: 0.82rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .mypage-reservation-card button:hover {
@@ -3599,7 +3599,7 @@ select {
   background: linear-gradient(135deg, #34d6b0, #38bdf8);
   color: #031a22;
   font-size: 1.18rem;
-  font-weight: 900;
+  font-weight: 700;
   box-shadow: 0 0 26px rgba(52, 214, 176, 0.28);
 }
 
@@ -3608,7 +3608,7 @@ select {
 .mypage-reservation-group h3 {
   margin: 0;
   color: #f8fafc;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .mypage-profile-main h2 {
@@ -3621,7 +3621,7 @@ select {
   margin: 0;
   color: #94a3b8;
   font-size: 0.82rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .mypage-panel-head p {
@@ -3641,7 +3641,7 @@ select {
   padding: 0.42rem 0.7rem;
   color: #99f6e4;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .mypage-role-grid {
@@ -3661,7 +3661,7 @@ select {
   padding: 5px 11px;
   color: #94a3b8;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 700;
   transition: all 0.3s ease;
 }
 
@@ -3717,7 +3717,7 @@ select {
   display: block;
   color: #94a3b8;
   font-size: 0.76rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .mypage-summary-grid strong {
@@ -3725,7 +3725,7 @@ select {
   margin-top: 0.25rem;
   color: #f8fafc;
   font-size: 1.44rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .mypage-filter-tabs {
@@ -3741,7 +3741,7 @@ select {
   padding: 0.42rem 0.75rem;
   color: #94a3b8;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 700;
   transition: all 0.3s ease;
 }
 
@@ -3780,14 +3780,14 @@ select {
   margin: 0 0 0.2rem;
   color: #93c5fd;
   font-size: 0.76rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .mypage-reservation-row h3 {
   margin: 0;
   color: #f8fafc;
   font-size: 0.94rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .mypage-secondary-action,
@@ -3804,7 +3804,7 @@ select {
   padding: 0 0.75rem;
   color: #cbd5e1;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 700;
   transition: all 0.3s ease;
 }
 
@@ -3828,7 +3828,7 @@ select {
   background: rgba(15, 23, 42, 0.42);
   padding: 1rem;
   color: #94a3b8;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .mypage-empty-state {
@@ -3862,7 +3862,7 @@ select {
   min-width: 0;
   color: #f8fafc;
   font-size: 0.84rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .mypage-training-badge,
@@ -3871,7 +3871,7 @@ select {
   border-radius: 999px;
   padding: 0.32rem 0.55rem;
   font-size: 0.72rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .mypage-training-badge.is-complete,
@@ -3905,7 +3905,7 @@ select {
   align-items: center;
   gap: 0.45rem;
   color: #cbd5e1;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .mypage-cancel-modal {
@@ -3921,7 +3921,7 @@ select {
   margin: 0;
   padding: 1rem 0 1.15rem;
   color: #cbd5e1;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.6;
 }
 
@@ -3989,7 +3989,7 @@ select {
   margin-bottom: 0.45rem;
   color: #67e8f9;
   font-size: 0.76rem;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0;
   text-transform: uppercase;
 }
@@ -3998,7 +3998,7 @@ select {
   margin: 0;
   color: #ffffff;
   font-size: clamp(1.2rem, 1.8vw, 1.7rem);
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .facility-lab-copy p {
@@ -4084,13 +4084,13 @@ select {
 .cleanroom-room strong {
   color: #ffffff;
   font-size: clamp(1.05rem, 1.8vw, 1.6rem);
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .cleanroom-room span {
   color: #bae6fd;
   font-size: 0.9rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .room-process {
@@ -4147,7 +4147,7 @@ select {
 .upload-drop-zone span {
   color: #94a3b8;
   font-size: 0.88rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .upload-preview {
@@ -4207,7 +4207,7 @@ select {
 .manager-permission-empty p {
   color: #5fd9c9;
   font-size: 0.74rem;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -4217,7 +4217,7 @@ select {
   margin-top: 0.3rem;
   color: #f8fafc;
   font-size: 1.3rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .manager-equipment-list {
@@ -4245,13 +4245,13 @@ select {
 .manager-equipment-button strong {
   color: #ffffff;
   font-size: 0.98rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .manager-equipment-button span {
   color: #94a3b8;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .manager-equipment-button em {
@@ -4262,7 +4262,7 @@ select {
   color: #bfdbfe;
   font-size: 0.72rem;
   font-style: normal;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .manager-grant-form {
@@ -4277,7 +4277,7 @@ select {
   gap: 0.4rem;
   color: #94a3b8;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .manager-grant-form select {
@@ -4287,7 +4287,7 @@ select {
   background: rgba(2, 6, 23, 0.72);
   padding: 0 0.85rem;
   color: #f8fafc;
-  font-weight: 900;
+  font-weight: 700;
   outline: none;
 }
 
@@ -4301,7 +4301,7 @@ select {
   background: #34d6b0;
   padding: 0 1rem;
   color: #062018;
-  font-weight: 900;
+  font-weight: 700;
   transition: all 0.3s ease;
 }
 
@@ -4332,7 +4332,7 @@ select {
   gap: 0.85rem;
   padding: 1rem 0 1.15rem;
   color: #cbd5e1;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.6;
 }
 
@@ -4355,7 +4355,7 @@ select {
 .manager-grant-confirm-grid span {
   color: #94a3b8;
   font-size: 0.76rem;
-  font-weight: 900;
+  font-weight: 700;
   text-transform: uppercase;
 }
 
@@ -4388,14 +4388,14 @@ select {
 .manager-granted-row strong {
   color: #f8fafc;
   font-size: 0.96rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .manager-granted-row span {
   margin-top: 0.2rem;
   color: #94a3b8;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .training-management-page {
@@ -4420,7 +4420,7 @@ select {
 .training-manager-identity strong,
 .training-manager-identity span {
   display: block;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .training-manager-hero p {
@@ -4486,14 +4486,14 @@ select {
 .training-management-summary strong {
   color: #f8fafc;
   font-size: 1.65rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .training-management-summary span {
   margin-top: 0.15rem;
   color: #94a3b8;
   font-size: 0.82rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .training-management-layout {
@@ -4538,7 +4538,7 @@ select {
   padding: 0 0.85rem;
   color: #cbd5e1;
   font-size: 0.84rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .training-manager-tabs button span {
@@ -4611,7 +4611,7 @@ select {
 .training-side-list strong {
   color: #f8fafc;
   font-size: 1rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .training-manager-card-head span,
@@ -4619,7 +4619,7 @@ select {
   margin-top: 0.22rem;
   color: #94a3b8;
   font-size: 0.82rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .training-manager-status {
@@ -4628,7 +4628,7 @@ select {
   padding: 0.34rem 0.62rem;
   font-size: 0.74rem;
   font-style: normal;
-  font-weight: 900;
+  font-weight: 700;
   white-space: nowrap;
 }
 
@@ -4676,7 +4676,7 @@ select {
   padding: 0 0.72rem;
   color: #bae6fd;
   font-size: 0.8rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .training-manager-card-body {
@@ -4693,20 +4693,20 @@ select {
 .training-manager-confirmed span {
   color: #7dd3fc;
   font-size: 0.76rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .training-manager-card-body strong,
 .training-manager-confirmed strong {
   color: #e2e8f0;
   font-size: 0.92rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .training-manager-card-body p {
   color: #cbd5e1;
   font-size: 0.86rem;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.55;
 }
 
@@ -4733,13 +4733,13 @@ select {
 .training-manager-table th {
   color: #94a3b8;
   font-size: 0.74rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .training-manager-table td {
   color: #dbeafe;
   font-size: 0.84rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .training-manager-table td strong,
@@ -4762,7 +4762,7 @@ select {
   margin-right: 0.5rem;
   color: #cbd5e1;
   font-size: 0.8rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .training-manager-compact-actions,
@@ -4782,7 +4782,7 @@ select {
 .training-manager-compact-actions span {
   color: #94a3b8;
   font-size: 0.82rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .training-manager-compact-actions button,
@@ -4796,7 +4796,7 @@ select {
   border-radius: 8px;
   padding: 0 0.78rem;
   font-size: 0.8rem;
-  font-weight: 900;
+  font-weight: 700;
   transition: all 0.3s ease;
 }
 
@@ -4848,7 +4848,7 @@ select {
   gap: 0.38rem;
   color: #cbd5e1;
   font-size: 0.8rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .training-schedule-grid input,
@@ -4860,7 +4860,7 @@ select {
   padding: 0 0.75rem;
   color: #f8fafc;
   font-size: 0.88rem;
-  font-weight: 900;
+  font-weight: 700;
   outline: none;
 }
 
@@ -4886,7 +4886,7 @@ select {
   padding: 0.65rem 0.75rem;
   color: #fcd34d;
   font-size: 0.82rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .training-manager-confirmed {
@@ -4903,7 +4903,7 @@ select {
   color: #94a3b8;
   font-size: 0.78rem;
   font-style: normal;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .training-side-list > div {
@@ -4941,7 +4941,7 @@ select {
   padding: 0.36rem 0.62rem;
   color: #99f6e4;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .training-manager-empty {
@@ -4950,7 +4950,7 @@ select {
   padding: 1rem;
   color: #94a3b8;
   font-size: 0.86rem;
-  font-weight: 900;
+  font-weight: 700;
   text-align: center;
 }
 
@@ -5387,7 +5387,7 @@ select {
 
 .admin-education-permission,
 .admin-education-permission * {
-  font-weight: 800 !important;
+  font-weight: 700 !important;
 }
 
 .admin-education-permission h2,
@@ -5395,12 +5395,12 @@ select {
 .admin-education-permission strong,
 .admin-equipment-master-row strong,
 .admin-education-user-cell strong {
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .admin-education-permission input::placeholder,
 .admin-education-permission textarea::placeholder {
-  font-weight: 800;
+  font-weight: 700;
 }
 
 @media (max-width: 860px) {
@@ -5470,7 +5470,7 @@ select {
 .manager-granted-row .manager-granted-date {
   color: #67e8f9;
   font-size: 0.74rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .training-request-page {
@@ -5509,14 +5509,14 @@ select {
 .training-request-header p {
   color: var(--training-teal);
   font-size: 0.84rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0;
 }
 
 .training-request-header h2 {
   color: var(--training-primary);
   font-size: clamp(1.85rem, 2.8vw, 2.45rem);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0;
 }
 
@@ -5570,7 +5570,7 @@ select {
   background: #1c2a40;
   color: var(--training-muted);
   font-size: 0.86rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .training-request-stepper li.is-active span {
@@ -5581,7 +5581,7 @@ select {
 
 .training-request-stepper strong {
   color: inherit;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .training-request-stepper li.is-active strong {
@@ -5633,14 +5633,14 @@ select {
   background: rgba(95, 217, 201, 0.12);
   color: var(--training-teal);
   font-size: 0.78rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .training-request-section-title h3,
 .training-request-panel-head h3 {
   color: var(--training-primary);
   font-size: 1.16rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .training-equipment-picker {
@@ -5655,7 +5655,7 @@ select {
   gap: 0.68rem;
   color: var(--training-secondary);
   font-size: 0.92rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .training-equipment-search {
@@ -5757,7 +5757,7 @@ select {
 .training-selected-equipment strong {
   color: var(--training-primary);
   font-size: 1rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .training-selected-equipment span {
@@ -5780,7 +5780,7 @@ select {
   padding: 3px 9px;
   font-size: 0.76rem;
   font-style: normal;
-  font-weight: 700;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -5843,7 +5843,7 @@ select {
   padding: 0 1rem;
   color: #062018;
   font-size: 0.95rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .training-request-actions button:disabled {
@@ -5870,7 +5870,7 @@ select {
   padding: 0.4rem 0.62rem;
   color: var(--training-secondary);
   font-size: 0.86rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .training-request-panel-head button:hover {
@@ -5908,7 +5908,7 @@ select {
 .training-status-row strong {
   color: var(--training-primary);
   font-size: 0.96rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .training-status-row span {
@@ -5936,7 +5936,7 @@ select {
   padding: 0.34rem 0.58rem;
   color: var(--training-success);
   font-size: 0.82rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .training-permission-card {
@@ -5952,7 +5952,7 @@ select {
   padding: 0.3rem 0.58rem;
   color: var(--training-accent);
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .training-permission-list.is-card-list {
@@ -6002,7 +6002,7 @@ select {
   overflow: hidden;
   color: var(--training-primary);
   font-size: 0.94rem;
-  font-weight: 800;
+  font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -6012,7 +6012,7 @@ select {
   margin-top: 0.12rem;
   color: var(--training-muted);
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .training-permission-item button {
@@ -6022,7 +6022,7 @@ select {
   padding: 0.48rem 0.68rem;
   color: var(--training-accent);
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .training-permission-item button:hover {
@@ -6118,7 +6118,7 @@ select {
 .equipment-admin-summary span {
   color: #8fd8ff;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .equipment-admin-summary strong {
@@ -6126,7 +6126,7 @@ select {
   margin-top: 0.5rem;
   color: #ffffff;
   font-size: 2rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .equipment-admin-toolbar {
@@ -6144,7 +6144,7 @@ select {
   padding: 0 0.85rem;
   color: #f8fafc;
   font-size: 0.88rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .equipment-admin-actions {
@@ -6162,7 +6162,7 @@ select {
   border-radius: 10px;
   padding: 0 0.95rem;
   font-size: 0.86rem;
-  font-weight: 900;
+  font-weight: 700;
   transition: all 0.3s ease;
   white-space: nowrap;
 }
@@ -6210,7 +6210,7 @@ select {
   padding: 0.9rem 1rem;
   color: #8fd8ff;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 700;
   text-align: left;
 }
 
@@ -6231,7 +6231,7 @@ select {
   padding: 1rem;
   color: #dbeafe;
   font-size: 0.9rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .equipment-admin-table tbody tr {
@@ -6268,7 +6268,7 @@ select {
   border-radius: 999px;
   padding: 0.32rem 0.7rem;
   font-size: 0.76rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .equipment-admin-group.is-process {
@@ -6337,7 +6337,7 @@ select {
   padding: 0.9rem;
   color: #fecaca;
   font-size: 0.9rem;
-  font-weight: 900;
+  font-weight: 700;
   line-height: 1.55;
 }
 
@@ -6362,14 +6362,14 @@ select {
 
 .equipment-delete-list strong {
   color: #ffffff;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .equipment-delete-list span {
   margin-top: 0.22rem;
   color: #94a3b8;
   font-size: 0.82rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .equipment-edit-grid {
@@ -6384,7 +6384,7 @@ select {
   gap: 0.4rem;
   color: #8b96a8;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .equipment-edit-grid label.is-wide,
@@ -6410,7 +6410,7 @@ select {
   padding: 0 0.85rem;
   color: #f8fafc;
   font-size: 0.92rem;
-  font-weight: 800;
+  font-weight: 700;
   outline: none;
 }
 
@@ -6452,7 +6452,7 @@ select {
 .equipment-optional-head p {
   color: #5eead4;
   font-size: 0.72rem;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -6460,13 +6460,13 @@ select {
 .equipment-optional-head h4 {
   color: #f8fafc;
   font-size: 1rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .equipment-optional-head span {
   color: #94a3b8;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .equipment-edit-grid.is-nested {
@@ -6538,7 +6538,7 @@ select {
 .consumables-eyebrow {
   color: #5fd9c9;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -6547,14 +6547,14 @@ select {
   margin-top: 0.35rem;
   color: #f8fafc;
   font-size: clamp(2rem, 4vw, 3.2rem);
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .notice-hero h2 {
   margin-top: 0.35rem;
   color: #f8fafc;
   font-size: clamp(2rem, 4vw, 3.2rem);
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .consumables-hero span {
@@ -6587,7 +6587,7 @@ select {
 .notice-hero-meta strong {
   color: #f8fafc;
   font-size: 2rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .notice-hero-meta span,
@@ -6595,7 +6595,7 @@ select {
   color: #9fb0c8;
   font-size: 0.8rem;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .notice-hero-meta em {
@@ -6637,7 +6637,7 @@ select {
   padding: 0 0.9rem;
   color: #94a3b8;
   font-size: 0.9rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .notice-toolbar button {
@@ -6646,7 +6646,7 @@ select {
   background: rgba(45, 212, 191, 0.16);
   padding: 0 0.95rem;
   color: #99f6e4;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .notice-list {
@@ -6664,14 +6664,14 @@ select {
   padding: 1.1rem;
   color: #94a3b8;
   font-size: 0.9rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .notice-empty-state strong,
 .notice-empty-detail strong {
   color: #f8fafc;
   font-size: 1rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .notice-empty-detail {
@@ -6708,7 +6708,7 @@ select {
 .notice-index {
   color: #67e8f9;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .notice-row-main {
@@ -6723,7 +6723,7 @@ select {
   gap: 0.45rem;
   color: #f8fafc;
   font-size: 1rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .notice-row-title em {
@@ -6733,7 +6733,7 @@ select {
   color: #fecaca;
   font-size: 0.68rem;
   font-style: normal;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .notice-row-summary {
@@ -6751,7 +6751,7 @@ select {
   gap: 0.3rem;
   color: #94a3b8;
   font-size: 0.76rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .notice-row-side strong,
@@ -6766,7 +6766,7 @@ select {
   padding: 0.2rem 0.45rem;
   color: #bfdbfe;
   font-size: 0.72rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .notice-category-badge svg {
@@ -6793,7 +6793,7 @@ select {
   padding: 0.32rem 0.62rem;
   font-size: 0.72rem;
   font-style: normal;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .notice-detail-head .notice-category-badge {
@@ -6816,7 +6816,7 @@ select {
   margin: 0;
   color: #f8fafc;
   font-size: 1.55rem;
-  font-weight: 900;
+  font-weight: 700;
   line-height: 1.35;
 }
 
@@ -6826,7 +6826,7 @@ select {
   gap: 0.55rem;
   color: #94a3b8;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .notice-detail-panel p {
@@ -6886,7 +6886,7 @@ select {
   padding: 0;
   color: #bae6fd;
   font-size: 0.86rem;
-  font-weight: 900;
+  font-weight: 700;
   font-family: inherit;
   text-decoration: none;
   cursor: pointer;
@@ -6926,7 +6926,7 @@ select {
   margin: 0.35rem 0 0;
   color: #f8fafc;
   font-size: clamp(2rem, 4vw, 3.1rem);
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .notice-admin-hero span {
@@ -6934,7 +6934,7 @@ select {
   margin-top: 0.65rem;
   color: #9fb0c8;
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .notice-admin-hero button,
@@ -6947,7 +6947,7 @@ select {
   background: #2563eb;
   padding: 0.85rem 1rem;
   color: #fff;
-  font-weight: 900;
+  font-weight: 700;
   transition: all 0.3s ease;
 }
 
@@ -6974,7 +6974,7 @@ select {
   border-radius: 9px;
   padding: 0.7rem 0.95rem;
   color: #94a3b8;
-  font-weight: 900;
+  font-weight: 700;
   transition: all 0.3s ease;
 }
 
@@ -7018,7 +7018,7 @@ select {
   margin: 0;
   color: #5eead4;
   font-size: 0.75rem;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -7028,7 +7028,7 @@ select {
   margin: 0.25rem 0 0;
   color: #f8fafc;
   font-size: 1.25rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .notice-admin-list-head > span {
@@ -7037,7 +7037,7 @@ select {
   padding: 0.28rem 0.62rem;
   color: #99f6e4;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .notice-admin-row {
@@ -7063,7 +7063,7 @@ select {
   gap: 0.45rem;
   flex-wrap: wrap;
   color: #f8fafc;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .notice-admin-row .notice-category-badge {
@@ -7085,7 +7085,7 @@ select {
 .notice-admin-row small {
   color: #94a3b8;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .notice-admin-form-grid {
@@ -7106,7 +7106,7 @@ select {
   gap: 0.36rem;
   color: #bfdbfe;
   font-size: 0.82rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .notice-admin-form-grid .is-wide {
@@ -7122,7 +7122,7 @@ select {
   background: rgba(2, 6, 23, 0.62);
   padding: 0.82rem;
   color: #f8fafc;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .notice-admin-form-grid select {
@@ -7182,7 +7182,7 @@ select {
 .notice-create-file {
   color: #bfdbfe;
   font-size: 0.84rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .notice-admin-attachment-head span,
@@ -7190,7 +7190,7 @@ select {
 .notice-admin-attachment-empty {
   color: #94a3b8;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .notice-file-upload {
@@ -7206,7 +7206,7 @@ select {
   padding: 0.65rem 0.85rem;
   color: #99f6e4;
   font-size: 0.82rem;
-  font-weight: 900;
+  font-weight: 700;
   transition: all 0.25s ease;
 }
 
@@ -7248,7 +7248,7 @@ select {
   overflow: hidden;
   color: #f8fafc;
   font-size: 0.86rem;
-  font-weight: 900;
+  font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -7256,7 +7256,7 @@ select {
 .notice-admin-attachment-list li span {
   color: #94a3b8;
   font-size: 0.74rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .notice-admin-attachment-actions {
@@ -7312,7 +7312,7 @@ select {
   border: 1px solid rgba(248, 113, 113, 0.35);
   padding: 0.7rem 0.9rem;
   color: #fecaca;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .notice-create-modal {
@@ -7337,7 +7337,7 @@ select {
   border: 1px dashed rgba(148, 163, 184, 0.18);
   padding: 1rem;
   color: #94a3b8;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .inquiry-page {
@@ -7377,7 +7377,7 @@ select {
   background: rgba(2, 6, 23, 0.36);
   padding: 0 0.8rem;
   color: #cbd5e1;
-  font-weight: 900;
+  font-weight: 700;
   transition: all 0.3s ease;
 }
 
@@ -7486,7 +7486,7 @@ select {
   padding: 0.28rem 0.58rem;
   font-size: 0.72rem;
   font-style: normal;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .faq-category-pill {
@@ -7529,7 +7529,7 @@ select {
   margin: 0;
   color: #f8fafc;
   font-size: 1.18rem;
-  font-weight: 900;
+  font-weight: 700;
   line-height: 1.35;
 }
 
@@ -7557,7 +7557,7 @@ select {
   gap: 0.4rem;
   color: #94a3b8;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .qna-compose input {
@@ -7567,7 +7567,7 @@ select {
   background: transparent;
   padding: 0;
   color: #f8fafc;
-  font-weight: 800;
+  font-weight: 700;
   outline: none;
 }
 
@@ -7595,7 +7595,7 @@ select {
   background: #2563eb;
   padding: 0 1rem;
   color: #ffffff;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .qna-compose button:hover {
@@ -7635,7 +7635,7 @@ select {
 .qna-table th {
   color: #7dd3fc;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -7643,7 +7643,7 @@ select {
 .qna-table td {
   color: #dbeafe;
   font-size: 0.92rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .qna-table .qna-actions-header,
@@ -7680,7 +7680,7 @@ select {
   padding: 0.28rem 0.62rem;
   color: #cbd5e1;
   font-size: 0.8rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .qna-status i {
@@ -7740,7 +7740,7 @@ select {
   margin: 0 0 0.28rem;
   color: #5fd9c9;
   font-size: 0.76rem;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.1em;
 }
 
@@ -7748,7 +7748,7 @@ select {
   margin: 0;
   color: #f8fafc;
   font-size: 1.35rem;
-  font-weight: 900;
+  font-weight: 700;
   line-height: 1.35;
 }
 
@@ -7769,7 +7769,7 @@ select {
   padding: 0 0.72rem;
   color: #8b96a8;
   font-size: 0.82rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .qna-detail-meta strong {
@@ -7787,7 +7787,7 @@ select {
   padding: 0 0.78rem;
   color: #fecaca;
   font-size: 0.82rem;
-  font-weight: 900;
+  font-weight: 700;
   transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease, transform 0.18s ease;
 }
 
@@ -7809,7 +7809,7 @@ select {
   margin: 0;
   color: #7dd3fc;
   font-size: 0.9rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .qna-detail-content p,
@@ -7822,7 +7822,7 @@ select {
   padding: 0.9rem;
   color: #cbd5e1;
   font-size: 0.94rem;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.65;
 }
 
@@ -7836,7 +7836,7 @@ select {
 .qna-answer-head span {
   color: #8b96a8;
   font-size: 0.82rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .qna-answer-section textarea {
@@ -7848,7 +7848,7 @@ select {
   padding: 0.9rem;
   color: #f8fafc;
   font-size: 0.94rem;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.6;
   outline: none;
 }
@@ -7872,7 +7872,7 @@ select {
   background: #34d6b0;
   padding: 0 1rem;
   color: #062018;
-  font-weight: 900;
+  font-weight: 700;
   opacity: 1;
   transition: opacity 0.72s ease, background 0.28s ease, color 0.28s ease, transform 0.28s ease;
 }
@@ -7905,7 +7905,7 @@ select {
   border-radius: 12px;
   border: 1px dashed rgba(148, 163, 184, 0.22);
   color: #8b96a8;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .qna-modal {
@@ -7932,7 +7932,7 @@ select {
   margin: 0 0 0.2rem;
   color: #67e8f9;
   font-size: 0.76rem;
-  font-weight: 900;
+  font-weight: 700;
   text-transform: uppercase;
 }
 
@@ -7940,7 +7940,7 @@ select {
   margin: 0;
   color: #ffffff;
   font-size: 1.55rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .qna-modal-close,
@@ -7950,7 +7950,7 @@ select {
   background: rgba(127, 29, 29, 0.72);
   color: #fee2e2;
   padding: 0.7rem 1rem;
-  font-weight: 900;
+  font-weight: 700;
   transition: all 0.3s ease;
 }
 
@@ -7968,7 +7968,7 @@ select {
   background: rgba(2, 6, 23, 0.58);
   padding: 0.85rem;
   color: #f8fafc;
-  font-weight: 800;
+  font-weight: 700;
   outline: none;
 }
 
@@ -7988,7 +7988,7 @@ select {
   background: #2563eb;
   padding: 0.7rem 1.2rem;
   color: #ffffff;
-  font-weight: 900;
+  font-weight: 700;
   transition: all 0.3s ease;
 }
 
@@ -8009,7 +8009,7 @@ select {
   gap: 0.35rem;
   color: #8b96a8;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 700;
   text-transform: uppercase;
 }
 
@@ -8041,7 +8041,7 @@ select {
   padding: 0 1rem;
   color: #67e8f9;
   font-size: 0.9rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .consumables-actions button:hover {
@@ -8105,7 +8105,7 @@ select {
   color: #8b96a8;
   font-size: 0.86rem;
   font-style: normal;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .consumables-summary-grid strong,
@@ -8115,7 +8115,7 @@ select {
   margin-top: 0.35rem;
   color: #f8fafc;
   font-size: 2rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .permission-user-grid {
@@ -8152,7 +8152,7 @@ select {
 .permission-user-card strong {
   color: #f8fafc;
   font-size: 1.05rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .permission-user-card p,
@@ -8161,7 +8161,7 @@ select {
   margin: 0;
   color: #8b96a8;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .permission-user-card em {
@@ -8183,7 +8183,7 @@ select {
   gap: 0.55rem;
   color: #8b96a8;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 700;
   white-space: nowrap;
 }
 
@@ -8222,7 +8222,7 @@ select {
   background: rgba(2, 6, 23, 0.62);
   padding: 0 0.75rem;
   color: #f8fafc;
-  font-weight: 800;
+  font-weight: 700;
   white-space: nowrap;
   word-break: keep-all;
 }
@@ -8256,7 +8256,7 @@ select {
   padding: 0.38rem 0.7rem;
   color: #cbd5e1;
   font-size: 0.8rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .permission-grant-count.is-granted {
@@ -8287,7 +8287,7 @@ select {
   padding: 0 0.78rem;
   color: #67e8f9;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .permission-manage-button:hover {
@@ -8316,7 +8316,7 @@ select {
 .permission-pagination strong {
   color: #cbd5e1;
   font-size: 0.86rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .permission-pagination > div {
@@ -8334,7 +8334,7 @@ select {
   padding: 0 0.72rem;
   color: #dbeafe;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .permission-pagination button:hover:not(:disabled) {
@@ -8356,7 +8356,7 @@ select {
   padding: 0.35rem 0.65rem;
   color: #cbd5e1;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .permission-role-stack {
@@ -8429,7 +8429,7 @@ select {
 .permission-modal-user small {
   color: #dbeafe;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .permission-modal-user small {
@@ -8451,7 +8451,7 @@ select {
   padding: 0 0.9rem;
   color: #67e8f9;
   font-size: 0.85rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .permission-modal-toolbar button:hover {
@@ -8498,7 +8498,7 @@ select {
 .permission-equipment-group h4 {
   color: #7dd3fc;
   font-size: 0.86rem;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -8541,14 +8541,14 @@ select {
 .permission-equipment-item strong {
   color: #f8fafc;
   font-size: 0.96rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .permission-equipment-item em {
   color: #8b96a8;
   font-size: 0.78rem;
   font-style: normal;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .consumables-summary-action {
@@ -8568,7 +8568,7 @@ select {
   background: rgba(20, 184, 166, 0.16);
   color: #67e8f9;
   font-size: 0.92rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .consumables-summary-action button:hover {
@@ -8742,7 +8742,7 @@ select {
 .consumables-table th {
   color: #7dd3fc;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -8764,7 +8764,7 @@ select {
   padding: 0 0.55rem;
   color: #e2e8f0;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 700;
   outline: none;
 }
 
@@ -8777,7 +8777,7 @@ select {
 .consumables-table td {
   color: #dbeafe;
   font-size: 0.92rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .consumables-table input,
@@ -8786,7 +8786,7 @@ select {
   min-height: 2.35rem;
   border-radius: 8px;
   padding: 0 0.65rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .consumables-table select {
@@ -8797,7 +8797,7 @@ select {
 
 .users-table .user-role-select {
   border-width: 1.5px;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .users-table .user-role-select.is-lead {
@@ -8823,7 +8823,7 @@ select {
 
 .user-row-name {
   color: #f8fafc;
-  font-weight: 900;
+  font-weight: 700;
   text-align: left;
   white-space: nowrap;
   word-break: keep-all;
@@ -8843,7 +8843,7 @@ select {
   padding: 0.35rem 0.65rem;
   color: #cbd5e1;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .user-role-badge.is-faculty {
@@ -8900,7 +8900,7 @@ select {
   padding: 0 0.75rem;
   color: #fecaca;
   font-size: 0.82rem;
-  font-weight: 900;
+  font-weight: 700;
   white-space: nowrap;
   transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
 }
@@ -8918,7 +8918,7 @@ select {
   border-radius: 999px;
   padding: 0.35rem 0.65rem;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .consumable-status.is-good {
@@ -8959,7 +8959,7 @@ select {
   padding: 0.38rem 0.62rem;
   color: #dbeafe;
   font-size: 0.84rem;
-  font-weight: 900;
+  font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -8995,7 +8995,7 @@ select {
 .user-add-modal-head p {
   color: #5fd9c9;
   font-size: 0.72rem;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -9004,7 +9004,7 @@ select {
   margin-top: 0.25rem;
   color: #f8fafc;
   font-size: 1.35rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .user-add-modal-head button {
@@ -9017,7 +9017,7 @@ select {
   background: rgba(127, 29, 29, 0.2);
   color: #fca5a5;
   font-size: 1.4rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .user-add-modal-grid {
@@ -9032,7 +9032,7 @@ select {
   gap: 0.4rem;
   color: #8b96a8;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .user-add-modal-grid label.is-wide {
@@ -9048,7 +9048,7 @@ select {
   padding: 0 0.8rem;
   color: #f8fafc;
   font-size: 0.92rem;
-  font-weight: 800;
+  font-weight: 700;
   outline: none;
 }
 
@@ -9076,7 +9076,7 @@ select {
   border-radius: 9px;
   padding: 0 1rem;
   font-size: 0.9rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .user-add-modal-actions button.is-cancel {
@@ -9147,7 +9147,7 @@ select {
 .penalty-restricted-page p {
   color: #fb7185;
   font-size: 0.75rem;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -9159,7 +9159,7 @@ select {
 .penalty-restricted-page h2 {
   margin-top: 0.35rem;
   color: #f8fafc;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .penalty-hero h2 {
@@ -9193,14 +9193,14 @@ select {
   display: block;
   color: #ffffff;
   font-size: 1.7rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .penalty-summary-grid span {
   margin-top: 0.25rem;
   color: #fecaca;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .penalty-layout {
@@ -9225,7 +9225,7 @@ select {
   gap: 0.42rem;
   color: #94a3b8;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .penalty-form-card select,
@@ -9236,7 +9236,7 @@ select {
   background: rgba(2, 6, 23, 0.72);
   color: #f8fafc;
   font-size: 0.92rem;
-  font-weight: 800;
+  font-weight: 700;
   outline: none;
 }
 
@@ -9269,7 +9269,7 @@ select {
   border: 1px solid rgba(248, 113, 113, 0.7);
   background: #dc2626;
   color: #ffffff;
-  font-weight: 900;
+  font-weight: 700;
   transition: all 0.3s ease;
 }
 
@@ -9309,7 +9309,7 @@ select {
   padding: 0 0.75rem 0.35rem;
   color: #64748b;
   font-size: 0.74rem;
-  font-weight: 900;
+  font-weight: 700;
   text-align: left;
   text-transform: uppercase;
 }
@@ -9321,7 +9321,7 @@ select {
   padding: 0.9rem 0.75rem;
   color: #dbeafe;
   font-size: 0.86rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .penalty-table-wrap td:first-child {
@@ -9351,7 +9351,7 @@ select {
   border-radius: 999px;
   padding: 0.28rem 0.62rem;
   font-size: 0.74rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .penalty-status-badge.is-active {
@@ -9370,7 +9370,7 @@ select {
   background: rgba(127, 29, 29, 0.22);
   padding: 0.52rem 0.78rem;
   color: #fecaca;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .penalty-table-wrap td button:disabled {
@@ -9422,13 +9422,13 @@ select {
 .penalty-notice-grid span {
   color: #94a3b8;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .penalty-notice-grid strong {
   color: #f8fafc;
   font-size: 0.9rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .penalty-notice-reason {
@@ -9439,7 +9439,7 @@ select {
   padding: 0.9rem;
   color: #fecaca;
   font-size: 0.9rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .penalty-notice-modal button {
@@ -9496,7 +9496,7 @@ select {
   margin: 0;
   color: #34d6b0;
   font-size: 0.76rem;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.05em;
 }
 
@@ -9504,7 +9504,7 @@ select {
   margin: 0.25rem 0 0;
   color: #ffffff;
   font-size: 1.35rem;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0;
 }
 
@@ -9516,7 +9516,7 @@ select {
   padding: 0.9rem;
   color: #a9e9d7;
   font-size: 0.84rem;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.65;
 }
 
@@ -9543,7 +9543,7 @@ select {
 .user-delete-modal-head p {
   color: #fca5a5;
   font-size: 0.72rem;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -9552,7 +9552,7 @@ select {
   margin-top: 0.25rem;
   color: #ffffff;
   font-size: 1.35rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .user-delete-target {
@@ -9568,7 +9568,7 @@ select {
 .user-delete-target strong {
   color: #ffffff;
   font-size: 1.2rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .user-delete-target span,
@@ -9576,7 +9576,7 @@ select {
   color: #fecaca;
   font-size: 0.9rem;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .user-delete-warning {
@@ -9593,7 +9593,7 @@ select {
   margin-bottom: 1rem;
   color: #fca5a5;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .user-delete-confirm-field input {
@@ -9604,7 +9604,7 @@ select {
   padding: 0 0.85rem;
   color: #f8fafc;
   font-size: 0.92rem;
-  font-weight: 900;
+  font-weight: 700;
   outline: none;
 }
 
@@ -9623,7 +9623,7 @@ select {
   padding: 0.35rem 0.6rem;
   color: #cbd5e1;
   font-size: 0.78rem;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .auth-provider-badge.is-google {
@@ -9966,12 +9966,12 @@ select {
 
 .login-redesign-shell,
 .login-redesign-shell :is(h2, h3, p, span, strong, em, a, button, label, input) {
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .login-card-head h2,
 .login-stepper > h3 {
-  font-weight: 800;
+  font-weight: 700;
 }
 
 @media (max-width: 980px) {
@@ -10197,7 +10197,7 @@ select {
 .training-ui-header p {
   color: var(--training-teal);
   font-size: 0.86rem;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0;
 }
 
@@ -10205,7 +10205,7 @@ select {
   margin-top: 0.25rem;
   color: var(--training-primary);
   font-size: clamp(1.65rem, 2.2vw, 2.05rem);
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0;
 }
 
@@ -10246,7 +10246,7 @@ select {
 
 .training-month-control strong {
   font-size: 0.96rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .training-primary-button,
@@ -10263,7 +10263,7 @@ select {
   padding: 0 1.25rem;
   color: #062018;
   font-size: 0.95rem;
-  font-weight: 900;
+  font-weight: 700;
   cursor: pointer;
 }
 
@@ -10413,7 +10413,7 @@ select {
 
 .training-total-summary strong {
   font-size: 1.45rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .training-total-summary em {
@@ -10475,7 +10475,7 @@ select {
 .training-create-panel h3 {
   color: var(--training-teal);
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .training-create-grid {
@@ -10490,7 +10490,7 @@ select {
   gap: 0.35rem;
   color: var(--training-secondary);
   font-size: 0.82rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .training-create-grid input,
@@ -10520,7 +10520,7 @@ select {
   background: var(--training-selected);
   color: var(--training-info);
   font-size: 0.86rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .training-manager-list {
@@ -10544,7 +10544,7 @@ select {
   padding: 0.42rem 0.88rem;
   color: var(--training-secondary);
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .training-deadline-ribbon span,
@@ -10619,7 +10619,7 @@ select {
 .training-manager-card-head strong {
   color: var(--training-primary);
   font-size: 1.18rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .training-manager-card-head span {
@@ -10648,7 +10648,7 @@ select {
   min-height: 2.1rem;
   padding-inline: 0.85rem;
   font-size: 0.88rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .training-manager-card-head .training-ui-icon {
@@ -10720,7 +10720,7 @@ select {
   padding: 0 0.75rem;
   font-style: normal;
   font-size: 0.88rem;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 0.95;
   white-space: nowrap;
 }
@@ -10740,7 +10740,7 @@ select {
   height: 2.1rem;
   color: var(--training-accent);
   font-size: 0.9rem;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
 }
 
@@ -10810,13 +10810,13 @@ select {
   margin: 0;
   color: var(--training-secondary);
   font-size: 0.92rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .training-manager-roster-head span {
   color: var(--training-muted);
   font-size: 0.76rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .training-roster-row {
@@ -10853,7 +10853,7 @@ select {
   border: 1px solid rgba(106, 154, 221, 0.22);
   color: #dcecff;
   font-size: 1.18rem;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
   box-shadow: 0 0 18px rgba(92, 183, 255, 0.12);
   position: relative;
@@ -10867,7 +10867,7 @@ select {
   color: #dcecff;
   font-size: 1.18rem;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
 }
 
@@ -10885,7 +10885,7 @@ select {
   color: #06291f;
   font-size: 0.64rem;
   font-style: normal;
-  font-weight: 900;
+  font-weight: 700;
   line-height: 1;
 }
 
@@ -10932,7 +10932,7 @@ select {
   color: #9eb2cc;
   font-size: 0.76rem;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 700;
   padding: 0.34rem 0.62rem;
 }
 
@@ -10940,7 +10940,7 @@ select {
 .training-total-equipment strong {
   overflow: hidden;
   color: var(--training-primary);
-  font-weight: 700;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -10985,7 +10985,7 @@ select {
   padding: 0 1.1rem;
   color: var(--training-danger);
   font-size: 0.88rem;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1;
 }
 
@@ -11000,7 +11000,7 @@ select {
   padding: 0 1rem;
   color: var(--training-secondary);
   font-size: 0.88rem;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1;
 }
 
@@ -11026,7 +11026,7 @@ select {
   gap: 0.35rem;
   color: var(--training-secondary);
   font-size: 0.82rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .training-edit-panel input {
@@ -11103,7 +11103,7 @@ select {
 
 .training-manager-card-foot p.is-locked {
   color: var(--training-info);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .training-manager-card-foot p.is-locked svg {
@@ -11250,7 +11250,7 @@ select {
 .training-total-table th {
   color: var(--training-muted);
   font-size: 0.78rem;
-  font-weight: 700;
+  font-weight: 600;
   vertical-align: middle;
 }
 
@@ -11366,14 +11366,14 @@ select {
   gap: 0.35rem;
   color: inherit;
   font-size: 0.68rem;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.1;
 }
 
 .training-deadline-chip strong {
   color: var(--training-primary);
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.35;
   white-space: nowrap;
 }
@@ -11387,7 +11387,7 @@ select {
   padding: 0.14rem 0.42rem;
   font-size: 0.68rem;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.1;
 }
 
@@ -11538,7 +11538,7 @@ select {
 
 .training-link-button {
   color: var(--training-teal);
-  font-weight: 700;
+  font-weight: 600;
   text-decoration: none;
 }
 
@@ -11591,7 +11591,7 @@ select {
 .training-applicant-page .training-request-panel-head span {
   color: var(--training-muted);
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .training-application-summary {
@@ -11624,7 +11624,7 @@ select {
   display: block;
   color: var(--training-primary);
   font-size: 1.12rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .training-application-card-head span {
@@ -11679,7 +11679,7 @@ select {
   background: var(--training-selected);
   color: var(--training-muted);
   font-style: normal;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .training-timeline .is-done i {
@@ -11695,7 +11695,7 @@ select {
 .training-timeline strong {
   color: inherit;
   font-size: 0.84rem;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .training-timeline .is-done strong,
@@ -11726,7 +11726,7 @@ select {
   padding: 0 1.35rem;
   color: var(--training-secondary);
   font: inherit;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .training-application-card-foot button.is-cancelable {
@@ -11773,7 +11773,7 @@ select {
   margin-top: 0.75rem;
   color: var(--training-primary);
   font-size: 1rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .training-applicant-empty-timeline p {
@@ -11798,7 +11798,7 @@ select {
   color: var(--training-primary);
   font: inherit;
   font-size: 0.88rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .training-applicant-empty-timeline button:hover {
@@ -11818,7 +11818,7 @@ select {
   background: rgba(52, 214, 176, 0.13);
   padding: 0.48rem 0.85rem;
   color: var(--training-accent);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .training-applicant-permission-empty {
@@ -11863,7 +11863,7 @@ select {
   margin-top: 0.75rem;
   color: var(--training-primary);
   font-size: 1rem;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .training-applicant-permission-empty p {
@@ -11951,7 +11951,7 @@ select {
   margin: 0 0 0.25rem;
   color: #40e1c2;
   font-size: 0.72rem;
-  font-weight: 900;
+  font-weight: 700;
   text-transform: uppercase;
 }
 
@@ -11971,7 +11971,7 @@ select {
   margin: 0;
   color: #eef2f8;
   font-size: 1.18rem;
-  font-weight: 900;
+  font-weight: 700;
   line-height: 1.35;
 }
 
@@ -11979,7 +11979,7 @@ select {
   margin-top: 0.5rem;
   color: #b7c3d5;
   font-size: 0.92rem;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.65;
   white-space: pre-line;
 }
@@ -12010,7 +12010,7 @@ select {
   padding: 0 1rem;
   font: inherit;
   font-size: 0.9rem;
-  font-weight: 900;
+  font-weight: 700;
   cursor: pointer;
 }
 
@@ -12070,7 +12070,7 @@ select {
   flex: 1;
   min-width: 0;
   font-size: 0.9rem;
-  font-weight: 900;
+  font-weight: 700;
   line-height: 1.45;
 }
 
@@ -12135,7 +12135,7 @@ select {
 .training-cancel-modal-copy p {
   margin: 0.45rem 0 1.25rem;
   color: var(--training-secondary);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .training-cancel-modal-copy ul {
@@ -12160,7 +12160,7 @@ select {
   border-radius: 10px;
   padding: 0 1.2rem;
   font: inherit;
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
 }
 
