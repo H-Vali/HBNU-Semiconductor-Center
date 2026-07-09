@@ -9323,7 +9323,7 @@ export function App() {
 
   useEffect(() => {
     const token = localStorage.getItem(STORAGE_KEYS.sessionToken);
-    const accessPages: PageKey[] = ['reservations', 'training', 'trainingAll', 'trainingManagement', 'managerPermissions', 'mypage'];
+    const accessPages: PageKey[] = ['reservations', 'training', 'trainingAll', 'trainingManagement', 'managerPermissions', 'mypage', 'qna'];
     if (!token || !sessionRole || !accessPages.includes(activePage)) return;
     let isMounted = true;
 
@@ -9352,7 +9352,7 @@ export function App() {
   }, [activePage, sessionRole]);
 
   useEffect(() => {
-    const accessPages: PageKey[] = ['reservations', 'training', 'trainingAll', 'trainingManagement', 'managerPermissions', 'mypage'];
+    const accessPages: PageKey[] = ['reservations', 'training', 'trainingAll', 'trainingManagement', 'managerPermissions', 'mypage', 'qna'];
 
     function handleAccessRefresh() {
       const token = localStorage.getItem(STORAGE_KEYS.sessionToken);

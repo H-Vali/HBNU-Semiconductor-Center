@@ -51,6 +51,14 @@ export type Notice = z.infer<typeof noticeSchema>;
 export type Faq = z.infer<typeof faqSchema>;
 export type QnaItem = z.infer<typeof qnaSchema>;
 
+let qnaAuthorColumnReady = false;
+
+async function ensureQnaAuthorColumn() {
+  if (!hasDatabase() || qnaAuthorColumnReady) return;
+  await query(`alter table qna_items add column if not exists author_name text not null default ''`);
+  qnaAuthorColumnReady = true;
+}
+
 export const initialNotices: Notice[] = [
   {
     id: 'notice-1',
@@ -330,6 +338,7 @@ export async function deleteFaq(id: string) {
 
 export async function listQnaItems() {
   if (!hasDatabase()) return initialQnaItems;
+  await ensureQnaAuthorColumn();
   const result = await query<QnaItem>(
     `select id, department, coalesce(author_name, '') as "authorName", title, content, status, created_at as "createdAt",
       answer, answered_at as "answeredAt", answered_by as "answeredBy"
@@ -344,6 +353,7 @@ export async function createQnaItem(input: unknown) {
     initialQnaItems.unshift(item);
     return item;
   }
+  await ensureQnaAuthorColumn();
   const result = await query<QnaItem>(
     `insert into qna_items (id, department, author_name, title, content, status, created_at, answer, answered_at, answered_by)
      values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
