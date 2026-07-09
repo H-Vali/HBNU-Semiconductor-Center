@@ -9354,24 +9354,47 @@ export function App() {
   useEffect(() => {
     const accessPages: PageKey[] = ['reservations', 'training', 'trainingAll', 'trainingManagement', 'managerPermissions', 'mypage', 'qna'];
 
-    function handleAccessRefresh() {
+    async function refreshLiveAccessState() {
       const token = localStorage.getItem(STORAGE_KEYS.sessionToken);
       if (!token || !sessionRole || !accessPages.includes(activePage)) return;
-      void apiGet<EquipmentPermissionSnapshot>('/equipment-permissions', token).then((snapshot) => {
-        if (snapshot) applyEquipmentPermissionSnapshot(snapshot);
-      });
+      const [snapshot, penalties, reservations] = await Promise.all([
+        apiGet<EquipmentPermissionSnapshot>('/equipment-permissions', token),
+        apiGet<PenaltyRecord[]>('/penalties', token),
+        apiGet<ApiReservationEvent[]>('/reservations', token)
+      ]);
+      if (snapshot) applyEquipmentPermissionSnapshot(snapshot);
+      if (penalties) setPenaltyRecords(penalties);
+      if (reservations) {
+        const activeEquipmentIds = new Set(
+          equipmentItems
+            .filter((item) => !deletedEquipmentIds.includes(item.id))
+            .map((item) => item.id)
+        );
+        setReservationEvents(
+          reservations
+            .map(normalizeApiReservation)
+            .filter((event) => event.equipmentId && activeEquipmentIds.has(event.equipmentId))
+        );
+      }
       if (activePage === 'training' || activePage === 'trainingAll' || activePage === 'trainingManagement') {
         void reloadTrainingSessionData();
       }
     }
 
+    function handleAccessRefresh() {
+      if (document.visibilityState === 'hidden') return;
+      void refreshLiveAccessState();
+    }
+
+    const liveRefreshTimer = window.setInterval(handleAccessRefresh, 15000);
     window.addEventListener('focus', handleAccessRefresh);
     document.addEventListener('visibilitychange', handleAccessRefresh);
     return () => {
+      window.clearInterval(liveRefreshTimer);
       window.removeEventListener('focus', handleAccessRefresh);
       document.removeEventListener('visibilitychange', handleAccessRefresh);
     };
-  }, [activePage, sessionRole]);
+  }, [activePage, deletedEquipmentIds, equipmentItems, sessionRole]);
 
   useEffect(() => {
     const token = localStorage.getItem(STORAGE_KEYS.sessionToken);
@@ -9982,6 +10005,12 @@ export function App() {
       }
       if (result.status === 403) {
         window.alert('이 장비를 예약할 권한이 없습니다. 장비 권한 또는 교육 이수 상태를 확인해 주세요.');
+        return false;
+      }
+      if (result.status === 423) {
+        const penalties = await apiGet<PenaltyRecord[]>('/penalties', localStorage.getItem(STORAGE_KEYS.sessionToken));
+        if (penalties) setPenaltyRecords(penalties);
+        window.alert('현재 페널티가 적용 중이라 장비 예약을 진행할 수 없습니다. 마이페이지에서 페널티 상태를 확인해주세요.');
         return false;
       }
       if (result.status === 400) {

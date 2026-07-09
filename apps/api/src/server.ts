@@ -87,6 +87,7 @@ import {
 import {
   createPenalty,
   ensureOperationalDataSchema,
+  getActivePenaltyForUser,
   listConsumables,
   listPenalties,
   revokePenalty,
@@ -451,6 +452,15 @@ app.delete('/reservations/:id', requireAuth, async (req, res, next) => {
 });
 app.post('/reservations', requireAuth, async (req, res, next) => {
   try {
+    if (req.user!.role !== 'ADMIN') {
+      const activePenalty = await getActivePenaltyForUser(req.user!.id);
+      if (activePenalty) {
+        return res.status(423).json({
+          message: 'Equipment reservation is locked by an active penalty',
+          penalty: activePenalty
+        });
+      }
+    }
     const reservation = await createReservation(req.body, req.user);
     await writeAuditLog(req.user!, 'RESERVATION_CREATE', 'reservation', reservation.id, {
       equipmentId: reservation.equipmentId,

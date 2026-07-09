@@ -244,6 +244,43 @@ export async function listPenalties(actor: SessionUser) {
   return result.rows.map(mapPenalty);
 }
 
+export async function getActivePenaltyForUser(userId: string) {
+  const now = new Date();
+  if (!hasDatabase()) {
+    return fallbackPenalties.find((penalty) => (
+      penalty.userId === userId &&
+      !penalty.revokedAt &&
+      new Date(penalty.startsAt) <= now &&
+      (!penalty.endsAt || new Date(penalty.endsAt) > now)
+    )) ?? null;
+  }
+
+  const result = await query<PenaltyRow>(
+    `select pr.id,
+      pr.user_id as "userId",
+      u.name as "userName",
+      u.email as "userEmail",
+      pr.type,
+      pr.category,
+      pr.reason,
+      pr.starts_at as "startsAt",
+      pr.ends_at as "endsAt",
+      pr.created_at as "createdAt",
+      pr.revoked_at as "revokedAt"
+     from penalty_records pr
+     join users u on u.id = pr.user_id
+     where pr.deleted_at is null
+       and pr.revoked_at is null
+       and pr.user_id = $1
+       and pr.starts_at <= now()
+       and (pr.ends_at is null or pr.ends_at > now())
+     order by pr.starts_at desc
+     limit 1`,
+    [userId]
+  );
+  return result.rows[0] ? mapPenalty(result.rows[0]) : null;
+}
+
 export async function createPenalty(input: unknown, actor: SessionUser) {
   const body = penaltyCreateSchema.parse(input);
   const id = `penalty-${randomUUID()}`;
