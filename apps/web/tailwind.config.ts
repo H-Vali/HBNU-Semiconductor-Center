@@ -9,11 +9,11 @@ export default {
       },
       fontWeight: {
         normal: '400',
-        medium: '500',
-        semibold: '600',
-        bold: '600',
-        extrabold: '700',
-        black: '700'
+        medium: '400',
+        semibold: '500',
+        bold: '500',
+        extrabold: '600',
+        black: '600'
       },
       colors: {
         navy: '#1E3A8A',
