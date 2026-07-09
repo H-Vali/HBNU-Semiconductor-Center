@@ -37,6 +37,7 @@ export const faqSchema = z.object({
 export const qnaSchema = z.object({
   id: z.string(),
   department: z.string(),
+  authorName: z.string().default(''),
   title: z.string().min(1),
   content: z.string().default(''),
   status: z.enum(['답변대기', '답변완료']).default('답변대기'),
@@ -117,6 +118,7 @@ export const initialFaqs: Faq[] = [
 export const initialQnaItems: QnaItem[] = [
   {
     id: 'qna-1',
+    authorName: '박준호',
     department: '전자공학과',
     title: 'mini SEM 교육 인증 후 예약 권한 반영 시점 문의',
     content: '교육 이수 후 장비 예약 권한이 언제 반영되는지 확인 부탁드립니다.',
@@ -128,6 +130,7 @@ export const initialQnaItems: QnaItem[] = [
   },
   {
     id: 'qna-2',
+    authorName: '이서연',
     department: '기계공학과',
     title: 'Ebeam Evaporator 야간 사용 가능 여부 문의',
     content: '야간 시간대에도 담당자 승인 후 장비 사용이 가능한지 문의드립니다.',
@@ -328,7 +331,7 @@ export async function deleteFaq(id: string) {
 export async function listQnaItems() {
   if (!hasDatabase()) return initialQnaItems;
   const result = await query<QnaItem>(
-    `select id, department, title, content, status, created_at as "createdAt",
+    `select id, department, coalesce(author_name, '') as "authorName", title, content, status, created_at as "createdAt",
       answer, answered_at as "answeredAt", answered_by as "answeredBy"
      from qna_items where deleted_at is null order by created_at desc, id desc`
   );
@@ -342,13 +345,14 @@ export async function createQnaItem(input: unknown) {
     return item;
   }
   const result = await query<QnaItem>(
-    `insert into qna_items (id, department, title, content, status, created_at, answer, answered_at, answered_by)
-     values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-     returning id, department, title, content, status, created_at as "createdAt",
+    `insert into qna_items (id, department, author_name, title, content, status, created_at, answer, answered_at, answered_by)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+     returning id, department, coalesce(author_name, '') as "authorName", title, content, status, created_at as "createdAt",
        answer, answered_at as "answeredAt", answered_by as "answeredBy"`,
     [
       item.id,
       item.department,
+      item.authorName,
       item.title,
       item.content,
       item.status,
@@ -377,7 +381,7 @@ export async function answerQnaItem(id: string, input: unknown) {
     `update qna_items
      set answer = $2, answered_by = $3, answered_at = $4, status = '답변완료'
      where id = $1 and deleted_at is null
-     returning id, department, title, content, status, created_at as "createdAt",
+     returning id, department, coalesce(author_name, '') as "authorName", title, content, status, created_at as "createdAt",
        answer, answered_at as "answeredAt", answered_by as "answeredBy"`,
     [id, body.answer, body.answeredBy, body.answeredAt]
   );
@@ -395,7 +399,7 @@ export async function deleteQnaItem(id: string) {
     `update qna_items
      set deleted_at = now()
      where id = $1 and deleted_at is null
-     returning id, department, title, content, status, created_at as "createdAt",
+     returning id, department, coalesce(author_name, '') as "authorName", title, content, status, created_at as "createdAt",
        answer, answered_at as "answeredAt", answered_by as "answeredBy"`,
     [id]
   );

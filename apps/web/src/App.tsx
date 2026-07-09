@@ -1537,6 +1537,9 @@ function InstitutionHeader({
               <span className="rounded-md bg-white px-4 py-2 text-sm font-extrabold text-slate-950">
                 {sessionStatusLabel}
               </span>
+              <button type="button" className="rounded-md border border-cyan-300/45 px-4 py-2 text-sm font-extrabold text-cyan-100 hover:bg-cyan-300 hover:text-slate-950" onClick={() => onNavigate('mypage')}>
+                마이페이지
+              </button>
               <button type="button" className="rounded-md border border-white/25 px-4 py-2 text-sm font-extrabold text-white hover:bg-white hover:text-slate-950" onClick={onLogout}>
                 로그아웃
               </button>
@@ -10464,7 +10467,12 @@ export function App() {
             )
           )}
           {activePage === 'faq' && <FaqPage items={managedFaqItems} />}
-          {activePage === 'qna' && <QnaPage sessionRole={sessionRole} />}
+          {activePage === 'qna' && (
+            <QnaPage
+              sessionRole={sessionRole}
+              currentUser={currentManagedUser ? { name: currentManagedUser.name, department: currentManagedUser.department } : null}
+            />
+          )}
           {activePage === 'admin' && (
             sessionRole === 'ADMIN' ? (
               <AdminPage

@@ -226,6 +226,7 @@ const statements = [
   `create table if not exists qna_items (
     id text primary key,
     department text not null,
+    author_name text not null default '',
     title text not null,
     content text not null default '',
     status text not null check (status in ('답변대기', '답변완료')),
@@ -235,6 +236,7 @@ const statements = [
     answered_by text,
     deleted_at timestamptz
   )`,
+  `alter table qna_items add column if not exists author_name text not null default ''`,
   `create index if not exists qna_items_created_idx on qna_items (created_at desc) where deleted_at is null`,
   ...featureFlagSchemaStatements,
   ...operationalDataSchemaStatements,
@@ -411,12 +413,13 @@ async function seedContentData() {
 
   for (const item of initialQnaItems) {
     await query(
-      `insert into qna_items (id, department, title, content, status, created_at, answer, answered_at, answered_by)
-       values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      `insert into qna_items (id, department, author_name, title, content, status, created_at, answer, answered_at, answered_by)
+       values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        on conflict (id) do nothing`,
       [
         item.id,
         item.department,
+        item.authorName,
         item.title,
         item.content,
         item.status,

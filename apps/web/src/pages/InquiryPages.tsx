@@ -4,9 +4,13 @@ import { STORAGE_KEYS } from '../appStorage';
 import { apiDelete, apiGet, apiPatch, apiPost } from '../apiClient';
 
 type Role = 'USER' | 'MANAGER' | 'ADMIN';
+type QnaCurrentUser = { name?: string; department?: string } | null;
 
 function formatSeoulDateTime(value: string) {
-  const date = new Date(value);
+  const normalizedValue = /^\d{4}\.\d{2}\.\d{2}$/.test(value)
+    ? `${value.replace(/\./g, '-')}T00:00:00+09:00`
+    : value;
+  const date = new Date(normalizedValue);
   if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat('ko-KR', {
     timeZone: 'Asia/Seoul',
@@ -14,7 +18,8 @@ function formatSeoulDateTime(value: string) {
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    hourCycle: 'h23'
   }).format(date);
 }
 
@@ -80,6 +85,7 @@ export const faqItems: FaqItem[] = [
 type QnaItem = {
   id: string;
   department: string;
+  authorName?: string;
   title: string;
   content?: string;
   status: '답변대기' | '답변완료';
@@ -90,9 +96,9 @@ type QnaItem = {
 };
 
 const initialQnaItems: QnaItem[] = [
-  { id: 'qna-1', department: '전자공학과', title: 'mini SEM 교육 인증 후 예약 권한 반영 시점 문의', content: '교육 이수 후 장비 예약 가능 권한이 언제 반영되는지 확인 부탁드립니다.', status: '답변완료', createdAt: '2026.06.21' },
-  { id: 'qna-2', department: '기계공학과', title: 'Ebeam Evaporator 야간 사용 가능 여부 문의', content: '야간 시간대에도 담당자 승인 후 장비 사용이 가능한지 문의드립니다.', status: '답변대기', createdAt: '2026.06.22' },
-  { id: 'qna-3', department: '창의융합학과', title: '교육 신청 후 일정 변경 가능 여부 문의', content: '교육 신청 후 개인 일정으로 인해 교육 일정을 변경할 수 있는지 알고 싶습니다.', status: '답변대기', createdAt: '2026.06.22' }
+  { id: 'qna-1', department: '전자공학과', authorName: '박준호', title: 'mini SEM 교육 인증 후 예약 권한 반영 시점 문의', content: '교육 이수 후 장비 예약 가능 권한이 언제 반영되는지 확인 부탁드립니다.', status: '답변완료', createdAt: '2026.06.21' },
+  { id: 'qna-2', department: '기계공학과', authorName: '이서연', title: 'Ebeam Evaporator 야간 사용 가능 여부 문의', content: '야간 시간대에도 담당자 승인 후 장비 사용이 가능한지 문의드립니다.', status: '답변대기', createdAt: '2026.06.22' },
+  { id: 'qna-3', department: '창의융합학과', authorName: '임다인', title: '교육 신청 후 일정 변경 가능 여부 문의', content: '교육 신청 후 개인 일정으로 인해 교육 일정을 변경할 수 있는지 알고 싶습니다.', status: '답변대기', createdAt: '2026.06.22' }
 ];
 
 export function FaqPage({ items = faqItems }: { items?: FaqItem[] }) {
@@ -155,26 +161,32 @@ export function FaqPage({ items = faqItems }: { items?: FaqItem[] }) {
 }
 
 function QnaCreateModal({
+  currentUser,
   onClose,
   onSubmit
 }: {
+  currentUser: QnaCurrentUser;
   onClose: () => void;
-  onSubmit: (question: { department: string; title: string; content: string }) => void;
+  onSubmit: (question: { department: string; authorName: string; title: string; content: string }) => void;
 }) {
-  const [department, setDepartment] = useState('');
+  const department = currentUser?.department?.trim() ?? '';
+  const authorName = currentUser?.name?.trim() ?? '';
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
 
   function submitQuestion(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const trimmedDepartment = department.trim();
     const trimmedTitle = title.trim();
     const trimmedContent = content.trim();
-    if (!trimmedDepartment || !trimmedTitle || !trimmedContent) {
-      window.alert('소속 학과, 제목, 문의 내용을 모두 입력해주세요.');
+    if (!department || !authorName) {
+      window.alert('회원정보의 소속 학과와 성명을 확인한 뒤 질문을 등록할 수 있습니다.');
       return;
     }
-    onSubmit({ department: trimmedDepartment, title: trimmedTitle, content: trimmedContent });
+    if (!trimmedTitle || !trimmedContent) {
+      window.alert('제목과 문의 내용을 모두 입력해주세요.');
+      return;
+    }
+    onSubmit({ department, authorName, title: trimmedTitle, content: trimmedContent });
   }
 
   return (
@@ -187,7 +199,8 @@ function QnaCreateModal({
           </div>
           <button type="button" className="qna-modal-close" onClick={onClose}>닫기</button>
         </div>
-        <label className="reservation-label">소속 학과<input value={department} onChange={(event) => setDepartment(event.target.value)} placeholder="예: 전자공학과" /></label>
+        <label className="reservation-label">소속 학과<input value={department} readOnly placeholder="회원정보의 소속 학과가 자동 표시됩니다." /></label>
+        <label className="reservation-label">성명<input value={authorName} readOnly placeholder="회원정보의 성명이 자동 표시됩니다." /></label>
         <label className="reservation-label">문의 제목<input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="문의 제목을 입력" /></label>
         <label className="reservation-label">문의 내용<textarea value={content} onChange={(event) => setContent(event.target.value)} placeholder="관리자에게 전달할 문의 내용을 입력하세요." /></label>
         <div className="qna-modal-actions">
@@ -201,7 +214,7 @@ function QnaCreateModal({
 
 const QNA_PAGE_SIZE = 5;
 
-export function QnaPage({ sessionRole }: { sessionRole: Role | null }) {
+export function QnaPage({ sessionRole, currentUser }: { sessionRole: Role | null; currentUser?: QnaCurrentUser }) {
   const [qnaItems, setQnaItems] = useState<QnaItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -236,12 +249,12 @@ export function QnaPage({ sessionRole }: { sessionRole: Role | null }) {
     localStorage.setItem(STORAGE_KEYS.qnaItems, JSON.stringify(nextItems));
   }
 
-  function addQuestion(question: { department: string; title: string; content: string }) {
-    const now = new Date();
-    const createdAt = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`;
+  function addQuestion(question: { department: string; authorName: string; title: string; content: string }) {
+    const createdAt = new Date().toISOString();
     const newQuestion: QnaItem = {
       id: `qna-${Date.now()}`,
       department: question.department,
+      authorName: question.authorName,
       title: question.title,
       content: question.content,
       status: '답변대기',
@@ -264,6 +277,7 @@ export function QnaPage({ sessionRole }: { sessionRole: Role | null }) {
     normalizedSearch
       ? qnaItems.filter((item) => (
       item.department.toLowerCase().includes(normalizedSearch)
+      || (item.authorName ?? '').toLowerCase().includes(normalizedSearch)
       || item.title.toLowerCase().includes(normalizedSearch)
       || (item.content ?? '').toLowerCase().includes(normalizedSearch)
       || (item.answer ?? '').toLowerCase().includes(normalizedSearch)
@@ -308,7 +322,7 @@ export function QnaPage({ sessionRole }: { sessionRole: Role | null }) {
       window.alert('답변 내용을 입력해주세요.');
       return;
     }
-    const answeredAt = formatSeoulDateTime(new Date().toISOString());
+    const answeredAt = new Date().toISOString();
     const nextItems = qnaItems.map((item) => (
       item.id === selectedQna.id
         ? {
@@ -416,7 +430,7 @@ export function QnaPage({ sessionRole }: { sessionRole: Role | null }) {
           <thead>
             <tr>
               <th>번호</th>
-              <th>소속(학과)</th>
+              <th>소속 / 성명</th>
               <th>제목</th>
               <th>답변</th>
               <th>작성일</th>
@@ -438,7 +452,7 @@ export function QnaPage({ sessionRole }: { sessionRole: Role | null }) {
                 }}
               >
                 <td>{visibleQnaItems.length - (pageStartIndex + index)}</td>
-                <td>{item.department}</td>
+                <td>{item.department}{item.authorName ? ` · ${item.authorName}` : ''}</td>
                 <td>{item.title}</td>
                 <td>
                   <span className={`qna-status ${item.status === '답변완료' ? 'is-complete' : 'is-pending'}`}>
@@ -446,7 +460,7 @@ export function QnaPage({ sessionRole }: { sessionRole: Role | null }) {
                     {item.status}
                   </span>
                 </td>
-                <td>{item.createdAt}</td>
+                <td>{formatSeoulDateTime(item.createdAt)}</td>
                 {isAdmin && (
                   <td className="qna-actions-cell">
                     <button
@@ -511,8 +525,9 @@ export function QnaPage({ sessionRole }: { sessionRole: Role | null }) {
             </div>
             <div className="qna-detail-meta">
               <span>소속 <strong>{selectedQna.department}</strong></span>
-              <span>작성일 <strong>{selectedQna.createdAt}</strong></span>
-              {selectedQna.answeredAt && <span>답변일 <strong>{selectedQna.answeredAt}</strong></span>}
+              <span>성명 <strong>{selectedQna.authorName || '-'}</strong></span>
+              <span>작성일 <strong>{formatSeoulDateTime(selectedQna.createdAt)}</strong></span>
+              {selectedQna.answeredAt && <span>답변일 <strong>{formatSeoulDateTime(selectedQna.answeredAt)}</strong></span>}
             </div>
             <div className="qna-detail-content">
               <strong>문의내용</strong>
@@ -521,7 +536,7 @@ export function QnaPage({ sessionRole }: { sessionRole: Role | null }) {
             <div className="qna-answer-section">
               <div className="qna-answer-head">
                 <h4>관리자 답변</h4>
-                <span>{selectedQna.answeredBy ? `${selectedQna.answeredBy} · ${selectedQna.answeredAt ?? ''}` : '답변 대기'}</span>
+                <span>{selectedQna.answeredBy ? `${selectedQna.answeredBy} · ${selectedQna.answeredAt ? formatSeoulDateTime(selectedQna.answeredAt) : ''}` : '답변 대기'}</span>
               </div>
               {isAdmin ? (
                 <>
@@ -583,7 +598,7 @@ export function QnaPage({ sessionRole }: { sessionRole: Role | null }) {
           </section>
         </div>
       )}
-      {showCreateModal && <QnaCreateModal onClose={() => setShowCreateModal(false)} onSubmit={addQuestion} />}
+      {showCreateModal && <QnaCreateModal currentUser={currentUser ?? null} onClose={() => setShowCreateModal(false)} onSubmit={addQuestion} />}
     </section>
   );
 }
