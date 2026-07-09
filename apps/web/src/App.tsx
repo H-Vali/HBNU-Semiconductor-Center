@@ -70,6 +70,8 @@ type PageKey = 'home' | 'notice' | 'operationNotice' | 'meetingNotice' | 'center
 const pageKeys: PageKey[] = ['home', 'notice', 'operationNotice', 'meetingNotice', 'center', 'facility', 'equipment', 'training', 'trainingAll', 'trainingManagement', 'faq', 'qna', 'reservations', 'managerPermissions', 'mypage', 'admin', 'users', 'permissions', 'consumables', 'equipmentAdmin', 'penalties', 'noticeAdmin', 'educationAdmin', 'auditLogs', 'login'];
 const validPageKeys = new Set<PageKey>(pageKeys);
 type Role = 'USER' | 'MANAGER' | 'ADMIN';
+const INACTIVITY_TIMEOUT_MS = 20 * 60 * 1000;
+const INACTIVITY_WARNING_MS = 5 * 60 * 1000;
 type UsagePeriod = '24H' | '1W' | '1M';
 type EquipmentRuntimeStatus = 'active' | 'maintenance' | 'idle';
 type PenaltyType = '1주 사용정지' | '2주 사용정지' | '1개월 정지' | '6개월 사용정지' | '영구정지';
@@ -506,6 +508,13 @@ function readFileAsBase64(file: File) {
 
 function toFileAssetDownloadUrl(asset: FileAsset) {
   return getApiUrl(`/file-assets/${encodeURIComponent(asset.id)}/download`);
+}
+
+function formatIdleCountdown(remainingMs: number) {
+  const totalSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
 function isProtectedFileAssetUrl(src?: string) {
@@ -1584,12 +1593,16 @@ function SidebarNavigation({
   activePage,
   onNavigate,
   isAdmin,
-  canManageAssignedPermissions
+  canManageAssignedPermissions,
+  inactivityRemainingMs,
+  showInactivityTimer
 }: {
   activePage: PageKey;
   onNavigate: (page: PageKey) => void;
   isAdmin: boolean;
   canManageAssignedPermissions: boolean;
+  inactivityRemainingMs: number;
+  showInactivityTimer: boolean;
 }) {
   const noticePages: PageKey[] = ['notice', 'operationNotice', 'meetingNotice'];
   const inquiryPages: PageKey[] = ['faq', 'qna'];
@@ -1609,6 +1622,8 @@ function SidebarNavigation({
   const reservationItem = menu.find((item) => item.page === 'reservations');
   const trainingItem = menu.find((item) => item.page === 'training');
   const mypageItem = menu.find((item) => item.page === 'mypage');
+  const inactivityProgress = Math.max(0, Math.min(1, inactivityRemainingMs / INACTIVITY_TIMEOUT_MS));
+  const inactivityWarning = inactivityRemainingMs <= INACTIVITY_WARNING_MS;
 
   function renderNavButton(item: (typeof menu)[number] | undefined, selected: boolean, targetPage: PageKey = item?.page ?? 'home') {
     if (!item) return null;
@@ -1833,6 +1848,17 @@ function SidebarNavigation({
                 );
               })}
             </nav>
+          </div>
+        )}
+        {showInactivityTimer && (
+          <div className={`sidebar-session-timer ${inactivityWarning ? 'is-warning' : ''}`}>
+            <div className="sidebar-session-timer-row">
+              <span>자동 로그아웃</span>
+              <strong>{formatIdleCountdown(inactivityRemainingMs)}</strong>
+            </div>
+            <div className="sidebar-session-timer-track" aria-hidden="true">
+              <span style={{ width: `${inactivityProgress * 100}%` }} />
+            </div>
           </div>
         )}
       </aside>
@@ -9120,6 +9146,9 @@ export function App() {
       return null;
     }
   });
+  const [inactivityRemainingMs, setInactivityRemainingMs] = useState(INACTIVITY_TIMEOUT_MS);
+  const lastActivityAtRef = useRef(Date.now());
+  const automaticLogoutNoticeShownRef = useRef(false);
 
   useEffect(() => {
     const currentPage = getPageFromBrowserUrl();
@@ -9229,6 +9258,49 @@ export function App() {
     const timer = window.setTimeout(() => setAppToast(null), 3200);
     return () => window.clearTimeout(timer);
   }, [appToast?.id]);
+
+  useEffect(() => {
+    if (!sessionRole) {
+      setInactivityRemainingMs(INACTIVITY_TIMEOUT_MS);
+      return;
+    }
+
+    automaticLogoutNoticeShownRef.current = false;
+    lastActivityAtRef.current = Date.now();
+    setInactivityRemainingMs(INACTIVITY_TIMEOUT_MS);
+
+    const activityEvents = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'] as const;
+
+    function markActivity() {
+      const now = Date.now();
+      if (now - lastActivityAtRef.current < 1000) return;
+      lastActivityAtRef.current = now;
+      setInactivityRemainingMs(INACTIVITY_TIMEOUT_MS);
+    }
+
+    function tickInactivityTimer() {
+      const remaining = Math.max(0, INACTIVITY_TIMEOUT_MS - (Date.now() - lastActivityAtRef.current));
+      setInactivityRemainingMs(remaining);
+      if (remaining > 0 || automaticLogoutNoticeShownRef.current) return;
+
+      automaticLogoutNoticeShownRef.current = true;
+      logout();
+      setAppNotice({
+        title: '자동 로그아웃',
+        message: '20분 동안 활동이 없어 자동 로그아웃되었습니다. 다시 로그인해 주세요.',
+        tone: 'warning'
+      });
+    }
+
+    activityEvents.forEach((eventName) => window.addEventListener(eventName, markActivity, { passive: true }));
+    const timer = window.setInterval(tickInactivityTimer, 1000);
+    tickInactivityTimer();
+
+    return () => {
+      window.clearInterval(timer);
+      activityEvents.forEach((eventName) => window.removeEventListener(eventName, markActivity));
+    };
+  }, [sessionRole]);
 
   useEffect(() => {
     if (sessionRole !== 'ADMIN' && adminOnlyPages.has(activePage)) {
@@ -10390,7 +10462,14 @@ export function App() {
         onLogout={logout}
       />
       <div className="app-shell mx-auto max-w-[1800px] px-4 py-5 lg:px-6 2xl:px-8">
-        <SidebarNavigation activePage={activePage} onNavigate={navigate} isAdmin={sessionRole === 'ADMIN'} canManageAssignedPermissions={canManageAssignedPermissions} />
+        <SidebarNavigation
+          activePage={activePage}
+          onNavigate={navigate}
+          isAdmin={sessionRole === 'ADMIN'}
+          canManageAssignedPermissions={canManageAssignedPermissions}
+          inactivityRemainingMs={inactivityRemainingMs}
+          showInactivityTimer={Boolean(sessionRole)}
+        />
         <main className="app-main">
           {activePage === 'home' && (
             <>

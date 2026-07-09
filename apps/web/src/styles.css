@@ -1117,6 +1117,60 @@ select {
   color: #bfdbfe;
 }
 
+.sidebar-session-timer {
+  margin-top: 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(125, 211, 252, 0.16);
+  background: rgba(15, 23, 42, 0.58);
+  padding: 0.72rem 0.8rem;
+  color: #94a3b8;
+  font-size: 0.74rem;
+  font-weight: 500;
+}
+
+.sidebar-session-timer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.sidebar-session-timer-row strong {
+  color: #a5f3fc;
+  font-size: 0.86rem;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.sidebar-session-timer-track {
+  height: 3px;
+  margin-top: 0.55rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(51, 65, 85, 0.68);
+}
+
+.sidebar-session-timer-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #5eead4, #60a5fa);
+  transition: width 0.24s ease;
+}
+
+.sidebar-session-timer.is-warning {
+  border-color: rgba(245, 185, 66, 0.32);
+  background: rgba(245, 185, 66, 0.08);
+}
+
+.sidebar-session-timer.is-warning .sidebar-session-timer-row strong {
+  color: #f5b942;
+}
+
+.sidebar-session-timer.is-warning .sidebar-session-timer-track span {
+  background: linear-gradient(90deg, #f5b942, #fb7185);
+}
+
 .stat-card {
   position: relative;
   min-height: 0;
