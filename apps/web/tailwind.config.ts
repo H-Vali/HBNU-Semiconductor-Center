@@ -5,7 +5,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'ui-sans-serif', 'system-ui']
+        sans: ['A2z', 'ui-sans-serif', 'system-ui']
       },
       colors: {
         navy: '#1E3A8A',
