@@ -352,6 +352,7 @@ function projectReservations(rows: ReservationView[], actor?: SessionUser) {
     startsAt: reservation.startsAt,
     endsAt: reservation.endsAt,
     status: reservation.status,
+    userName: reservation.userName ?? undefined,
     ...(actor && reservation.userId === actor.id ? { userId: actor.id, userName: actor.name, mine: true } : {})
   }));
 }
