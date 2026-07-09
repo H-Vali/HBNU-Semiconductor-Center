@@ -32,6 +32,13 @@
   font-weight: 800;
   font-display: swap;
 }
+
+@font-face {
+  font-family: 'A2z';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2601-6@1.0/%EC%97%90%EC%9D%B4%ED%88%AC%EC%A7%80%EC%B2%B4-9Black.woff2') format('woff2');
+  font-weight: 900;
+  font-display: swap;
+}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -696,7 +703,7 @@ select {
   margin: 0;
   color: #f8fafc;
   font-size: 1.34rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .dashboard-notice-title {
@@ -725,7 +732,7 @@ select {
   color: #93c5fd;
   padding: 0.42rem 0.82rem;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 900;
   transition: all 0.3s ease;
 }
 
@@ -770,7 +777,7 @@ select {
   color: #7dd3fc;
   padding: 0.26rem 0.5rem;
   font-size: 0.72rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .dashboard-notice-category.is-operation,
@@ -805,7 +812,7 @@ select {
   overflow: hidden;
   color: #f8fafc;
   font-size: 0.98rem;
-  font-weight: 800;
+  font-weight: 900;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -963,7 +970,7 @@ select {
   margin-bottom: 0.75rem;
   color: #67e8f9;
   font-size: 0.74rem;
-  font-weight: 800;
+  font-weight: 900;
   letter-spacing: 0;
   text-transform: uppercase;
 }
@@ -984,7 +991,7 @@ select {
   padding: 0.7rem 0.8rem;
   color: #cbd5e1;
   font-size: 0.95rem;
-  font-weight: 800;
+  font-weight: 900;
   text-align: left;
 }
 
@@ -1002,7 +1009,7 @@ select {
   color: #a5f3fc;
   font-size: 0.62rem;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .sidebar-nav-item:hover,
@@ -1065,13 +1072,13 @@ select {
   padding: 0.48rem 0.65rem;
   color: #94a3b8;
   font-size: 0.84rem;
-  font-weight: 800;
+  font-weight: 900;
   text-align: left;
 }
 
 .sidebar-subnav-item.is-training-tab,
 .sidebar-subnav-item.is-training-tab span {
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .sidebar-subnav-item:hover,
@@ -1700,7 +1707,7 @@ select {
   border-radius: 999px;
   padding: 0.46rem 0.88rem;
   font-size: 0.84rem;
-  font-weight: 800;
+  font-weight: 900;
   line-height: 1;
 }
 
@@ -1756,13 +1763,13 @@ select {
 .realtime-digital-clock span {
   color: #93c5fd;
   font-size: 0.9rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .realtime-digital-clock strong {
   color: #67e8f9;
   font-size: clamp(1.15rem, 1.6vw, 1.55rem);
-  font-weight: 800;
+  font-weight: 900;
   text-shadow: 0 0 18px rgba(34, 211, 238, 0.42);
 }
 
@@ -1770,7 +1777,7 @@ select {
   color: rgba(125, 211, 252, 0.56);
   font-size: 1rem;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .realtime-digital-clock i {
@@ -1843,7 +1850,7 @@ select {
 .realtime-equipment-item p {
   color: #7dd3fc;
   font-size: 0.72rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .runtime-status-badge {
@@ -1853,7 +1860,7 @@ select {
   border-radius: 7px;
   padding: 0.28rem 0.5rem;
   font-size: 0.72rem;
-  font-weight: 800;
+  font-weight: 900;
   white-space: nowrap;
 }
 
@@ -1886,7 +1893,7 @@ select {
   margin-top: 0.6rem;
   color: #ffffff;
   font-size: 1.14rem;
-  font-weight: 800;
+  font-weight: 900;
   line-height: 1.2;
 }
 
@@ -1961,7 +1968,7 @@ select {
   padding: 0.34rem 0.65rem;
   color: #8b96a8;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .usage-period-toggle button:hover,
@@ -1982,7 +1989,7 @@ select {
 
 .usage-trend-summary strong {
   color: #cdd5e1;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .usage-trend-summary .is-up {
@@ -2106,7 +2113,7 @@ select {
 .eq-cat {
   color: #f3f6fb;
   font-size: 1.18rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .eq-desc {
@@ -2134,7 +2141,7 @@ select {
 .eq-count-num {
   color: rgb(var(--accent));
   font-size: 1.08rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .eq-body {
@@ -2164,7 +2171,7 @@ select {
   gap: 8px;
   color: rgb(var(--accent));
   font-size: 1rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .eq-arrow {
@@ -2318,7 +2325,7 @@ select {
 
 .calendar-event-time {
   flex: 0 0 auto;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .calendar-event-title {
@@ -2415,7 +2422,7 @@ select {
   background-size: 10px 10px, 10px 10px, auto;
   color: #ffffff;
   box-shadow: inset 0 0 16px rgba(34, 211, 238, 0.28), 0 0 22px rgba(34, 211, 238, 0.34);
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .fc .fc-daygrid-day.seoul-today .fc-daygrid-day-number::before {
@@ -2547,7 +2554,7 @@ select {
   display: block;
   color: #67e8f9;
   font-size: 0.72rem;
-  font-weight: 800;
+  font-weight: 900;
   letter-spacing: 0;
 }
 
@@ -2556,14 +2563,14 @@ select {
   margin-top: 0.15rem;
   color: #e0f2fe;
   font-size: 0.95rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .seoul-clock time {
   color: #ffffff;
   font-variant-numeric: tabular-nums;
   font-size: clamp(1.45rem, 3vw, 2.45rem);
-  font-weight: 800;
+  font-weight: 900;
   line-height: 1;
   text-shadow: 0 0 24px rgba(34, 211, 238, 0.28);
 }
@@ -2659,7 +2666,7 @@ select {
   padding: 0.2rem 0.34rem;
   color: #dbeafe;
   font-size: 0.66rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .equipment-type-chip {
@@ -2673,7 +2680,7 @@ select {
   padding: 0.32rem 0.34rem;
   font-size: 0.66rem;
   text-overflow: ellipsis;
-  font-weight: 800;
+  font-weight: 900;
   white-space: nowrap;
 }
 
@@ -3003,7 +3010,7 @@ select {
   margin-top: 1rem;
   color: #bfdbfe;
   font-size: 0.92rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .reservation-label input,
@@ -3048,7 +3055,7 @@ select {
   margin-top: 0.35rem;
   color: #ffffff;
   font-size: 1.05rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .reservation-day-list {
@@ -3068,7 +3075,7 @@ select {
   display: block;
   color: #7dd3fc;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .reservation-day-item strong {
@@ -3103,7 +3110,7 @@ select {
   color: #fecaca;
   font-size: 0.74rem;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .reservation-day-item em::before {
@@ -3140,7 +3147,7 @@ select {
 .reservation-confirm-button {
   border-radius: 7px;
   border: 0;
-  font-weight: 800;
+  font-weight: 900;
   color: #ffffff;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
@@ -3191,7 +3198,7 @@ select {
   padding: 0.42rem 0.62rem;
   color: #ffffff;
   font-size: 0.74rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .reservation-mini-danger:hover {
@@ -3208,7 +3215,7 @@ select {
   padding: 0.55rem 0.75rem;
   color: #cbd5e1;
   font-size: 0.82rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .reservation-status-tab span {
@@ -3472,7 +3479,7 @@ select {
   display: block;
   color: #ffffff;
   font-size: 1rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .admin-reservation-row span,
@@ -3514,7 +3521,7 @@ select {
   display: block;
   color: #ffffff;
   font-size: 0.95rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .audit-log-row span,
@@ -3530,7 +3537,7 @@ select {
   color: #67e8f9;
   font-size: 0.74rem;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .mypage-reservation-card button {
@@ -3541,7 +3548,7 @@ select {
   padding: 0.7rem 0.9rem;
   color: #ffffff;
   font-size: 0.82rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .mypage-reservation-card button:hover {
@@ -3592,7 +3599,7 @@ select {
   background: linear-gradient(135deg, #34d6b0, #38bdf8);
   color: #031a22;
   font-size: 1.18rem;
-  font-weight: 800;
+  font-weight: 900;
   box-shadow: 0 0 26px rgba(52, 214, 176, 0.28);
 }
 
@@ -3601,7 +3608,7 @@ select {
 .mypage-reservation-group h3 {
   margin: 0;
   color: #f8fafc;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .mypage-profile-main h2 {
@@ -3634,7 +3641,7 @@ select {
   padding: 0.42rem 0.7rem;
   color: #99f6e4;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .mypage-role-grid {
@@ -3654,7 +3661,7 @@ select {
   padding: 5px 11px;
   color: #94a3b8;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 900;
   transition: all 0.3s ease;
 }
 
@@ -3710,7 +3717,7 @@ select {
   display: block;
   color: #94a3b8;
   font-size: 0.76rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .mypage-summary-grid strong {
@@ -3718,7 +3725,7 @@ select {
   margin-top: 0.25rem;
   color: #f8fafc;
   font-size: 1.44rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .mypage-filter-tabs {
@@ -3734,7 +3741,7 @@ select {
   padding: 0.42rem 0.75rem;
   color: #94a3b8;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 900;
   transition: all 0.3s ease;
 }
 
@@ -3773,14 +3780,14 @@ select {
   margin: 0 0 0.2rem;
   color: #93c5fd;
   font-size: 0.76rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .mypage-reservation-row h3 {
   margin: 0;
   color: #f8fafc;
   font-size: 0.94rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .mypage-secondary-action,
@@ -3797,7 +3804,7 @@ select {
   padding: 0 0.75rem;
   color: #cbd5e1;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 900;
   transition: all 0.3s ease;
 }
 
@@ -3855,7 +3862,7 @@ select {
   min-width: 0;
   color: #f8fafc;
   font-size: 0.84rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .mypage-training-badge,
@@ -3864,7 +3871,7 @@ select {
   border-radius: 999px;
   padding: 0.32rem 0.55rem;
   font-size: 0.72rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .mypage-training-badge.is-complete,
@@ -3898,7 +3905,7 @@ select {
   align-items: center;
   gap: 0.45rem;
   color: #cbd5e1;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .mypage-cancel-modal {
@@ -3982,7 +3989,7 @@ select {
   margin-bottom: 0.45rem;
   color: #67e8f9;
   font-size: 0.76rem;
-  font-weight: 800;
+  font-weight: 900;
   letter-spacing: 0;
   text-transform: uppercase;
 }
@@ -3991,7 +3998,7 @@ select {
   margin: 0;
   color: #ffffff;
   font-size: clamp(1.2rem, 1.8vw, 1.7rem);
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .facility-lab-copy p {
@@ -4077,7 +4084,7 @@ select {
 .cleanroom-room strong {
   color: #ffffff;
   font-size: clamp(1.05rem, 1.8vw, 1.6rem);
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .cleanroom-room span {
@@ -4200,7 +4207,7 @@ select {
 .manager-permission-empty p {
   color: #5fd9c9;
   font-size: 0.74rem;
-  font-weight: 800;
+  font-weight: 900;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -4210,7 +4217,7 @@ select {
   margin-top: 0.3rem;
   color: #f8fafc;
   font-size: 1.3rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .manager-equipment-list {
@@ -4238,7 +4245,7 @@ select {
 .manager-equipment-button strong {
   color: #ffffff;
   font-size: 0.98rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .manager-equipment-button span {
@@ -4255,7 +4262,7 @@ select {
   color: #bfdbfe;
   font-size: 0.72rem;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .manager-grant-form {
@@ -4270,7 +4277,7 @@ select {
   gap: 0.4rem;
   color: #94a3b8;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .manager-grant-form select {
@@ -4280,7 +4287,7 @@ select {
   background: rgba(2, 6, 23, 0.72);
   padding: 0 0.85rem;
   color: #f8fafc;
-  font-weight: 800;
+  font-weight: 900;
   outline: none;
 }
 
@@ -4294,7 +4301,7 @@ select {
   background: #34d6b0;
   padding: 0 1rem;
   color: #062018;
-  font-weight: 800;
+  font-weight: 900;
   transition: all 0.3s ease;
 }
 
@@ -4348,7 +4355,7 @@ select {
 .manager-grant-confirm-grid span {
   color: #94a3b8;
   font-size: 0.76rem;
-  font-weight: 800;
+  font-weight: 900;
   text-transform: uppercase;
 }
 
@@ -4381,7 +4388,7 @@ select {
 .manager-granted-row strong {
   color: #f8fafc;
   font-size: 0.96rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .manager-granted-row span {
@@ -4413,7 +4420,7 @@ select {
 .training-manager-identity strong,
 .training-manager-identity span {
   display: block;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .training-manager-hero p {
@@ -4479,14 +4486,14 @@ select {
 .training-management-summary strong {
   color: #f8fafc;
   font-size: 1.65rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .training-management-summary span {
   margin-top: 0.15rem;
   color: #94a3b8;
   font-size: 0.82rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .training-management-layout {
@@ -4531,7 +4538,7 @@ select {
   padding: 0 0.85rem;
   color: #cbd5e1;
   font-size: 0.84rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .training-manager-tabs button span {
@@ -4604,7 +4611,7 @@ select {
 .training-side-list strong {
   color: #f8fafc;
   font-size: 1rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .training-manager-card-head span,
@@ -4621,7 +4628,7 @@ select {
   padding: 0.34rem 0.62rem;
   font-size: 0.74rem;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 900;
   white-space: nowrap;
 }
 
@@ -4669,7 +4676,7 @@ select {
   padding: 0 0.72rem;
   color: #bae6fd;
   font-size: 0.8rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .training-manager-card-body {
@@ -4686,14 +4693,14 @@ select {
 .training-manager-confirmed span {
   color: #7dd3fc;
   font-size: 0.76rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .training-manager-card-body strong,
 .training-manager-confirmed strong {
   color: #e2e8f0;
   font-size: 0.92rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .training-manager-card-body p {
@@ -4726,7 +4733,7 @@ select {
 .training-manager-table th {
   color: #94a3b8;
   font-size: 0.74rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .training-manager-table td {
@@ -4755,7 +4762,7 @@ select {
   margin-right: 0.5rem;
   color: #cbd5e1;
   font-size: 0.8rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .training-manager-compact-actions,
@@ -4775,7 +4782,7 @@ select {
 .training-manager-compact-actions span {
   color: #94a3b8;
   font-size: 0.82rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .training-manager-compact-actions button,
@@ -4789,7 +4796,7 @@ select {
   border-radius: 8px;
   padding: 0 0.78rem;
   font-size: 0.8rem;
-  font-weight: 800;
+  font-weight: 900;
   transition: all 0.3s ease;
 }
 
@@ -4841,7 +4848,7 @@ select {
   gap: 0.38rem;
   color: #cbd5e1;
   font-size: 0.8rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .training-schedule-grid input,
@@ -4853,7 +4860,7 @@ select {
   padding: 0 0.75rem;
   color: #f8fafc;
   font-size: 0.88rem;
-  font-weight: 800;
+  font-weight: 900;
   outline: none;
 }
 
@@ -4879,7 +4886,7 @@ select {
   padding: 0.65rem 0.75rem;
   color: #fcd34d;
   font-size: 0.82rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .training-manager-confirmed {
@@ -4896,7 +4903,7 @@ select {
   color: #94a3b8;
   font-size: 0.78rem;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .training-side-list > div {
@@ -4934,7 +4941,7 @@ select {
   padding: 0.36rem 0.62rem;
   color: #99f6e4;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .training-manager-empty {
@@ -4943,7 +4950,7 @@ select {
   padding: 1rem;
   color: #94a3b8;
   font-size: 0.86rem;
-  font-weight: 800;
+  font-weight: 900;
   text-align: center;
 }
 
@@ -5388,7 +5395,7 @@ select {
 .admin-education-permission strong,
 .admin-equipment-master-row strong,
 .admin-education-user-cell strong {
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .admin-education-permission input::placeholder,
@@ -5463,7 +5470,7 @@ select {
 .manager-granted-row .manager-granted-date {
   color: #67e8f9;
   font-size: 0.74rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .training-request-page {
@@ -6111,7 +6118,7 @@ select {
 .equipment-admin-summary span {
   color: #8fd8ff;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .equipment-admin-summary strong {
@@ -6119,7 +6126,7 @@ select {
   margin-top: 0.5rem;
   color: #ffffff;
   font-size: 2rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .equipment-admin-toolbar {
@@ -6137,7 +6144,7 @@ select {
   padding: 0 0.85rem;
   color: #f8fafc;
   font-size: 0.88rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .equipment-admin-actions {
@@ -6155,7 +6162,7 @@ select {
   border-radius: 10px;
   padding: 0 0.95rem;
   font-size: 0.86rem;
-  font-weight: 800;
+  font-weight: 900;
   transition: all 0.3s ease;
   white-space: nowrap;
 }
@@ -6203,7 +6210,7 @@ select {
   padding: 0.9rem 1rem;
   color: #8fd8ff;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 900;
   text-align: left;
 }
 
@@ -6261,7 +6268,7 @@ select {
   border-radius: 999px;
   padding: 0.32rem 0.7rem;
   font-size: 0.76rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .equipment-admin-group.is-process {
@@ -6330,7 +6337,7 @@ select {
   padding: 0.9rem;
   color: #fecaca;
   font-size: 0.9rem;
-  font-weight: 800;
+  font-weight: 900;
   line-height: 1.55;
 }
 
@@ -6355,7 +6362,7 @@ select {
 
 .equipment-delete-list strong {
   color: #ffffff;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .equipment-delete-list span {
@@ -6377,7 +6384,7 @@ select {
   gap: 0.4rem;
   color: #8b96a8;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .equipment-edit-grid label.is-wide,
@@ -6445,7 +6452,7 @@ select {
 .equipment-optional-head p {
   color: #5eead4;
   font-size: 0.72rem;
-  font-weight: 800;
+  font-weight: 900;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -6453,7 +6460,7 @@ select {
 .equipment-optional-head h4 {
   color: #f8fafc;
   font-size: 1rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .equipment-optional-head span {
@@ -6540,14 +6547,14 @@ select {
   margin-top: 0.35rem;
   color: #f8fafc;
   font-size: clamp(2rem, 4vw, 3.2rem);
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .notice-hero h2 {
   margin-top: 0.35rem;
   color: #f8fafc;
   font-size: clamp(2rem, 4vw, 3.2rem);
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .consumables-hero span {
@@ -6580,7 +6587,7 @@ select {
 .notice-hero-meta strong {
   color: #f8fafc;
   font-size: 2rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .notice-hero-meta span,
@@ -6639,7 +6646,7 @@ select {
   background: rgba(45, 212, 191, 0.16);
   padding: 0 0.95rem;
   color: #99f6e4;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .notice-list {
@@ -6664,7 +6671,7 @@ select {
 .notice-empty-detail strong {
   color: #f8fafc;
   font-size: 1rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .notice-empty-detail {
@@ -6701,7 +6708,7 @@ select {
 .notice-index {
   color: #67e8f9;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .notice-row-main {
@@ -6716,7 +6723,7 @@ select {
   gap: 0.45rem;
   color: #f8fafc;
   font-size: 1rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .notice-row-title em {
@@ -6726,7 +6733,7 @@ select {
   color: #fecaca;
   font-size: 0.68rem;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .notice-row-summary {
@@ -6759,7 +6766,7 @@ select {
   padding: 0.2rem 0.45rem;
   color: #bfdbfe;
   font-size: 0.72rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .notice-category-badge svg {
@@ -6786,7 +6793,7 @@ select {
   padding: 0.32rem 0.62rem;
   font-size: 0.72rem;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .notice-detail-head .notice-category-badge {
@@ -6809,7 +6816,7 @@ select {
   margin: 0;
   color: #f8fafc;
   font-size: 1.55rem;
-  font-weight: 800;
+  font-weight: 900;
   line-height: 1.35;
 }
 
@@ -6879,7 +6886,7 @@ select {
   padding: 0;
   color: #bae6fd;
   font-size: 0.86rem;
-  font-weight: 800;
+  font-weight: 900;
   font-family: inherit;
   text-decoration: none;
   cursor: pointer;
@@ -6919,7 +6926,7 @@ select {
   margin: 0.35rem 0 0;
   color: #f8fafc;
   font-size: clamp(2rem, 4vw, 3.1rem);
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .notice-admin-hero span {
@@ -6940,7 +6947,7 @@ select {
   background: #2563eb;
   padding: 0.85rem 1rem;
   color: #fff;
-  font-weight: 800;
+  font-weight: 900;
   transition: all 0.3s ease;
 }
 
@@ -6967,7 +6974,7 @@ select {
   border-radius: 9px;
   padding: 0.7rem 0.95rem;
   color: #94a3b8;
-  font-weight: 800;
+  font-weight: 900;
   transition: all 0.3s ease;
 }
 
@@ -7011,7 +7018,7 @@ select {
   margin: 0;
   color: #5eead4;
   font-size: 0.75rem;
-  font-weight: 800;
+  font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -7021,7 +7028,7 @@ select {
   margin: 0.25rem 0 0;
   color: #f8fafc;
   font-size: 1.25rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .notice-admin-list-head > span {
@@ -7030,7 +7037,7 @@ select {
   padding: 0.28rem 0.62rem;
   color: #99f6e4;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .notice-admin-row {
@@ -7056,7 +7063,7 @@ select {
   gap: 0.45rem;
   flex-wrap: wrap;
   color: #f8fafc;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .notice-admin-row .notice-category-badge {
@@ -7099,7 +7106,7 @@ select {
   gap: 0.36rem;
   color: #bfdbfe;
   font-size: 0.82rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .notice-admin-form-grid .is-wide {
@@ -7115,7 +7122,7 @@ select {
   background: rgba(2, 6, 23, 0.62);
   padding: 0.82rem;
   color: #f8fafc;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .notice-admin-form-grid select {
@@ -7175,7 +7182,7 @@ select {
 .notice-create-file {
   color: #bfdbfe;
   font-size: 0.84rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .notice-admin-attachment-head span,
@@ -7199,7 +7206,7 @@ select {
   padding: 0.65rem 0.85rem;
   color: #99f6e4;
   font-size: 0.82rem;
-  font-weight: 800;
+  font-weight: 900;
   transition: all 0.25s ease;
 }
 
@@ -7241,7 +7248,7 @@ select {
   overflow: hidden;
   color: #f8fafc;
   font-size: 0.86rem;
-  font-weight: 800;
+  font-weight: 900;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -7305,7 +7312,7 @@ select {
   border: 1px solid rgba(248, 113, 113, 0.35);
   padding: 0.7rem 0.9rem;
   color: #fecaca;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .notice-create-modal {
@@ -7370,7 +7377,7 @@ select {
   background: rgba(2, 6, 23, 0.36);
   padding: 0 0.8rem;
   color: #cbd5e1;
-  font-weight: 800;
+  font-weight: 900;
   transition: all 0.3s ease;
 }
 
@@ -7479,7 +7486,7 @@ select {
   padding: 0.28rem 0.58rem;
   font-size: 0.72rem;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .faq-category-pill {
@@ -7522,7 +7529,7 @@ select {
   margin: 0;
   color: #f8fafc;
   font-size: 1.18rem;
-  font-weight: 800;
+  font-weight: 900;
   line-height: 1.35;
 }
 
@@ -7550,7 +7557,7 @@ select {
   gap: 0.4rem;
   color: #94a3b8;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .qna-compose input {
@@ -7588,7 +7595,7 @@ select {
   background: #2563eb;
   padding: 0 1rem;
   color: #ffffff;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .qna-compose button:hover {
@@ -7628,7 +7635,7 @@ select {
 .qna-table th {
   color: #7dd3fc;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -7673,7 +7680,7 @@ select {
   padding: 0.28rem 0.62rem;
   color: #cbd5e1;
   font-size: 0.8rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .qna-status i {
@@ -7733,7 +7740,7 @@ select {
   margin: 0 0 0.28rem;
   color: #5fd9c9;
   font-size: 0.76rem;
-  font-weight: 800;
+  font-weight: 900;
   letter-spacing: 0.1em;
 }
 
@@ -7741,7 +7748,7 @@ select {
   margin: 0;
   color: #f8fafc;
   font-size: 1.35rem;
-  font-weight: 800;
+  font-weight: 900;
   line-height: 1.35;
 }
 
@@ -7762,7 +7769,7 @@ select {
   padding: 0 0.72rem;
   color: #8b96a8;
   font-size: 0.82rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .qna-detail-meta strong {
@@ -7780,7 +7787,7 @@ select {
   padding: 0 0.78rem;
   color: #fecaca;
   font-size: 0.82rem;
-  font-weight: 800;
+  font-weight: 900;
   transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease, transform 0.18s ease;
 }
 
@@ -7802,7 +7809,7 @@ select {
   margin: 0;
   color: #7dd3fc;
   font-size: 0.9rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .qna-detail-content p,
@@ -7829,7 +7836,7 @@ select {
 .qna-answer-head span {
   color: #8b96a8;
   font-size: 0.82rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .qna-answer-section textarea {
@@ -7865,7 +7872,7 @@ select {
   background: #34d6b0;
   padding: 0 1rem;
   color: #062018;
-  font-weight: 800;
+  font-weight: 900;
   opacity: 1;
   transition: opacity 0.72s ease, background 0.28s ease, color 0.28s ease, transform 0.28s ease;
 }
@@ -7898,7 +7905,7 @@ select {
   border-radius: 12px;
   border: 1px dashed rgba(148, 163, 184, 0.22);
   color: #8b96a8;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .qna-modal {
@@ -7925,7 +7932,7 @@ select {
   margin: 0 0 0.2rem;
   color: #67e8f9;
   font-size: 0.76rem;
-  font-weight: 800;
+  font-weight: 900;
   text-transform: uppercase;
 }
 
@@ -7933,7 +7940,7 @@ select {
   margin: 0;
   color: #ffffff;
   font-size: 1.55rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .qna-modal-close,
@@ -7943,7 +7950,7 @@ select {
   background: rgba(127, 29, 29, 0.72);
   color: #fee2e2;
   padding: 0.7rem 1rem;
-  font-weight: 800;
+  font-weight: 900;
   transition: all 0.3s ease;
 }
 
@@ -7981,7 +7988,7 @@ select {
   background: #2563eb;
   padding: 0.7rem 1.2rem;
   color: #ffffff;
-  font-weight: 800;
+  font-weight: 900;
   transition: all 0.3s ease;
 }
 
@@ -8108,7 +8115,7 @@ select {
   margin-top: 0.35rem;
   color: #f8fafc;
   font-size: 2rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .permission-user-grid {
@@ -8145,7 +8152,7 @@ select {
 .permission-user-card strong {
   color: #f8fafc;
   font-size: 1.05rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .permission-user-card p,
@@ -8176,7 +8183,7 @@ select {
   gap: 0.55rem;
   color: #8b96a8;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 900;
   white-space: nowrap;
 }
 
@@ -8249,7 +8256,7 @@ select {
   padding: 0.38rem 0.7rem;
   color: #cbd5e1;
   font-size: 0.8rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .permission-grant-count.is-granted {
@@ -8280,7 +8287,7 @@ select {
   padding: 0 0.78rem;
   color: #67e8f9;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .permission-manage-button:hover {
@@ -8309,7 +8316,7 @@ select {
 .permission-pagination strong {
   color: #cbd5e1;
   font-size: 0.86rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .permission-pagination > div {
@@ -8327,7 +8334,7 @@ select {
   padding: 0 0.72rem;
   color: #dbeafe;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .permission-pagination button:hover:not(:disabled) {
@@ -8349,7 +8356,7 @@ select {
   padding: 0.35rem 0.65rem;
   color: #cbd5e1;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .permission-role-stack {
@@ -8444,7 +8451,7 @@ select {
   padding: 0 0.9rem;
   color: #67e8f9;
   font-size: 0.85rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .permission-modal-toolbar button:hover {
@@ -8491,7 +8498,7 @@ select {
 .permission-equipment-group h4 {
   color: #7dd3fc;
   font-size: 0.86rem;
-  font-weight: 800;
+  font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -8534,7 +8541,7 @@ select {
 .permission-equipment-item strong {
   color: #f8fafc;
   font-size: 0.96rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .permission-equipment-item em {
@@ -8561,7 +8568,7 @@ select {
   background: rgba(20, 184, 166, 0.16);
   color: #67e8f9;
   font-size: 0.92rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .consumables-summary-action button:hover {
@@ -8735,7 +8742,7 @@ select {
 .consumables-table th {
   color: #7dd3fc;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -8790,7 +8797,7 @@ select {
 
 .users-table .user-role-select {
   border-width: 1.5px;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .users-table .user-role-select.is-lead {
@@ -8816,7 +8823,7 @@ select {
 
 .user-row-name {
   color: #f8fafc;
-  font-weight: 800;
+  font-weight: 900;
   text-align: left;
   white-space: nowrap;
   word-break: keep-all;
@@ -8836,7 +8843,7 @@ select {
   padding: 0.35rem 0.65rem;
   color: #cbd5e1;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .user-role-badge.is-faculty {
@@ -8893,7 +8900,7 @@ select {
   padding: 0 0.75rem;
   color: #fecaca;
   font-size: 0.82rem;
-  font-weight: 800;
+  font-weight: 900;
   white-space: nowrap;
   transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
 }
@@ -8911,7 +8918,7 @@ select {
   border-radius: 999px;
   padding: 0.35rem 0.65rem;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .consumable-status.is-good {
@@ -8952,7 +8959,7 @@ select {
   padding: 0.38rem 0.62rem;
   color: #dbeafe;
   font-size: 0.84rem;
-  font-weight: 800;
+  font-weight: 900;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -8988,7 +8995,7 @@ select {
 .user-add-modal-head p {
   color: #5fd9c9;
   font-size: 0.72rem;
-  font-weight: 800;
+  font-weight: 900;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -8997,7 +9004,7 @@ select {
   margin-top: 0.25rem;
   color: #f8fafc;
   font-size: 1.35rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .user-add-modal-head button {
@@ -9010,7 +9017,7 @@ select {
   background: rgba(127, 29, 29, 0.2);
   color: #fca5a5;
   font-size: 1.4rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .user-add-modal-grid {
@@ -9025,7 +9032,7 @@ select {
   gap: 0.4rem;
   color: #8b96a8;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .user-add-modal-grid label.is-wide {
@@ -9069,7 +9076,7 @@ select {
   border-radius: 9px;
   padding: 0 1rem;
   font-size: 0.9rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .user-add-modal-actions button.is-cancel {
@@ -9140,7 +9147,7 @@ select {
 .penalty-restricted-page p {
   color: #fb7185;
   font-size: 0.75rem;
-  font-weight: 800;
+  font-weight: 900;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -9152,7 +9159,7 @@ select {
 .penalty-restricted-page h2 {
   margin-top: 0.35rem;
   color: #f8fafc;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .penalty-hero h2 {
@@ -9186,14 +9193,14 @@ select {
   display: block;
   color: #ffffff;
   font-size: 1.7rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .penalty-summary-grid span {
   margin-top: 0.25rem;
   color: #fecaca;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .penalty-layout {
@@ -9218,7 +9225,7 @@ select {
   gap: 0.42rem;
   color: #94a3b8;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .penalty-form-card select,
@@ -9262,7 +9269,7 @@ select {
   border: 1px solid rgba(248, 113, 113, 0.7);
   background: #dc2626;
   color: #ffffff;
-  font-weight: 800;
+  font-weight: 900;
   transition: all 0.3s ease;
 }
 
@@ -9302,7 +9309,7 @@ select {
   padding: 0 0.75rem 0.35rem;
   color: #64748b;
   font-size: 0.74rem;
-  font-weight: 800;
+  font-weight: 900;
   text-align: left;
   text-transform: uppercase;
 }
@@ -9344,7 +9351,7 @@ select {
   border-radius: 999px;
   padding: 0.28rem 0.62rem;
   font-size: 0.74rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .penalty-status-badge.is-active {
@@ -9363,7 +9370,7 @@ select {
   background: rgba(127, 29, 29, 0.22);
   padding: 0.52rem 0.78rem;
   color: #fecaca;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .penalty-table-wrap td button:disabled {
@@ -9415,13 +9422,13 @@ select {
 .penalty-notice-grid span {
   color: #94a3b8;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .penalty-notice-grid strong {
   color: #f8fafc;
   font-size: 0.9rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .penalty-notice-reason {
@@ -9489,7 +9496,7 @@ select {
   margin: 0;
   color: #34d6b0;
   font-size: 0.76rem;
-  font-weight: 800;
+  font-weight: 900;
   letter-spacing: 0.05em;
 }
 
@@ -9497,7 +9504,7 @@ select {
   margin: 0.25rem 0 0;
   color: #ffffff;
   font-size: 1.35rem;
-  font-weight: 800;
+  font-weight: 900;
   letter-spacing: 0;
 }
 
@@ -9536,7 +9543,7 @@ select {
 .user-delete-modal-head p {
   color: #fca5a5;
   font-size: 0.72rem;
-  font-weight: 800;
+  font-weight: 900;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -9545,7 +9552,7 @@ select {
   margin-top: 0.25rem;
   color: #ffffff;
   font-size: 1.35rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .user-delete-target {
@@ -9561,7 +9568,7 @@ select {
 .user-delete-target strong {
   color: #ffffff;
   font-size: 1.2rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .user-delete-target span,
@@ -9586,7 +9593,7 @@ select {
   margin-bottom: 1rem;
   color: #fca5a5;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .user-delete-confirm-field input {
@@ -9597,7 +9604,7 @@ select {
   padding: 0 0.85rem;
   color: #f8fafc;
   font-size: 0.92rem;
-  font-weight: 800;
+  font-weight: 900;
   outline: none;
 }
 
@@ -9616,7 +9623,7 @@ select {
   padding: 0.35rem 0.6rem;
   color: #cbd5e1;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .auth-provider-badge.is-google {
@@ -10256,7 +10263,7 @@ select {
   padding: 0 1.25rem;
   color: #062018;
   font-size: 0.95rem;
-  font-weight: 800;
+  font-weight: 900;
   cursor: pointer;
 }
 
@@ -10878,7 +10885,7 @@ select {
   color: #06291f;
   font-size: 0.64rem;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 900;
   line-height: 1;
 }
 
@@ -11944,7 +11951,7 @@ select {
   margin: 0 0 0.25rem;
   color: #40e1c2;
   font-size: 0.72rem;
-  font-weight: 800;
+  font-weight: 900;
   text-transform: uppercase;
 }
 
@@ -11964,7 +11971,7 @@ select {
   margin: 0;
   color: #eef2f8;
   font-size: 1.18rem;
-  font-weight: 800;
+  font-weight: 900;
   line-height: 1.35;
 }
 
@@ -12003,7 +12010,7 @@ select {
   padding: 0 1rem;
   font: inherit;
   font-size: 0.9rem;
-  font-weight: 800;
+  font-weight: 900;
   cursor: pointer;
 }
 
@@ -12063,7 +12070,7 @@ select {
   flex: 1;
   min-width: 0;
   font-size: 0.9rem;
-  font-weight: 800;
+  font-weight: 900;
   line-height: 1.45;
 }
 

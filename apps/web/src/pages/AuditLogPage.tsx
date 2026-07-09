@@ -92,7 +92,7 @@ export function AuditLogPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs font-extrabold uppercase text-cyan-300">Audit Log</p>
-            <h2 className="text-2xl font-extrabold text-white">운영 감사 로그</h2>
+            <h2 className="text-2xl font-black text-white">운영 감사 로그</h2>
             <p className="mt-2 text-sm text-slate-400">예약, 교육, 권한, 사용자, 패널티 관련 관리자 작업 이력을 확인합니다.</p>
           </div>
           <button
