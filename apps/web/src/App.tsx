@@ -9287,7 +9287,7 @@ export function App() {
       logout();
       setAppNotice({
         title: '자동 로그아웃',
-        message: '20분 동안 활동이 없어 자동 로그아웃되었습니다. 다시 로그인해 주세요.',
+        message: '10분 동안 활동이 없어 자동 로그아웃되었습니다. 다시 로그인해 주세요.',
         tone: 'warning'
       });
     }
