@@ -60,6 +60,22 @@ Expected `/health` marker for the active API:
 {"ok":true,"api":"apps/api","build":"current-api"}
 ```
 
+## Cloudflare Pages Production Deployment
+
+The production web app is deployed from the source repository:
+
+- Source repository: `H-Vali/HBNU-Semiconductor-Center`
+- Production branch: `main`
+- Public URL: `https://hbnu-semiconductor-center.pages.dev`
+- API URL: `https://hbnu-semiconductor-center-api.onrender.com`
+
+Useful production checks:
+
+```bash
+curl https://hbnu-semiconductor-center.pages.dev
+curl https://hbnu-semiconductor-center-api.onrender.com/health
+```
+
 ## GitHub Pages Preview Deployment
 
 The public preview repository is separate:
@@ -92,5 +108,5 @@ For every change:
 2. Make the scoped change.
 3. Run the relevant build/typecheck.
 4. Commit and push the source repository.
-5. If the web changed, rebuild and push the preview repository.
-6. Verify Render API and public preview URLs.
+5. If the web changed, verify the Cloudflare Pages production URL after push.
+6. Verify Render API and public URLs.

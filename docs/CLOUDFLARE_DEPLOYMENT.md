@@ -3,6 +3,7 @@
 ## Pages Project
 
 - Source: GitHub repository `H-Vali/HBNU-Semiconductor-Center`
+- Production URL: `https://hbnu-semiconductor-center.pages.dev`
 - Production branch: `main`
 - Framework preset: Vite
 - Root directory: empty
@@ -21,10 +22,10 @@ VITE_GOOGLE_CLIENT_ID=349529254245-fi7fm18bck7tfcm5g67hj4uhihq0d91m.apps.googleu
 
 ## Render API Variables After Cloudflare URL Is Ready
 
-Update Render API service environment variables after Cloudflare Pages gives a production URL.
+Render API service environment variables should allow the Cloudflare Pages production URL.
 
 ```text
-CLIENT_ORIGIN=https://<cloudflare-pages-domain>
+CLIENT_ORIGIN=https://hbnu-semiconductor-center.pages.dev
 ```
 
 After buying and connecting the official domain, change it again.
@@ -37,8 +38,15 @@ CLIENT_ORIGIN=https://<official-domain>
 
 Add both URLs to Google OAuth authorized JavaScript origins before QA.
 
-- `https://<cloudflare-pages-domain>`
+- `https://hbnu-semiconductor-center.pages.dev`
 - `https://<official-domain>`
+
+## Production Checks
+
+```bash
+curl https://hbnu-semiconductor-center.pages.dev
+curl https://hbnu-semiconductor-center-api.onrender.com/health
+```
 
 ## Final QA Gate
 
