@@ -13356,3 +13356,364 @@ select {
     white-space: nowrap;
   }
 }
+
+/* Admin and operations mobile refinements */
+@media (max-width: 920px) {
+  .manager-permission-layout,
+  .penalty-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .equipment-admin-summary,
+  .permission-summary-grid,
+  .consumables-summary-grid,
+  .user-summary-grid,
+  .penalty-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .permission-modal-user {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .permission-equipment-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .consumables-page,
+  .user-management-page,
+  .permission-page,
+  .manager-permission-page,
+  .equipment-admin-page,
+  .penalty-page,
+  .notice-admin-page {
+    gap: 0.85rem;
+  }
+
+  .consumables-hero {
+    align-items: stretch;
+    flex-direction: column;
+    border-radius: 13px;
+    padding: 1rem;
+  }
+
+  .consumables-hero h2 {
+    font-size: 1.65rem;
+    line-height: 1.24;
+  }
+
+  .consumables-hero span {
+    font-size: 0.86rem;
+    line-height: 1.55;
+  }
+
+  .consumables-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    justify-content: stretch;
+  }
+
+  .consumables-actions label,
+  .consumables-actions button {
+    width: 100%;
+  }
+
+  .consumables-summary-grid,
+  .user-summary-grid,
+  .permission-summary-grid,
+  .equipment-admin-summary {
+    gap: 0.6rem;
+  }
+
+  .consumables-summary-grid > div,
+  .user-summary-grid > div,
+  .permission-summary-grid > div,
+  .equipment-admin-summary > div {
+    min-height: auto;
+    border-radius: 10px;
+    padding: 0.8rem;
+  }
+
+  .consumables-summary-grid strong,
+  .user-summary-grid strong,
+  .permission-summary-grid strong,
+  .equipment-admin-summary strong {
+    font-size: 1.35rem;
+  }
+
+  .consumables-toolbar,
+  .permission-toolbar,
+  .equipment-admin-toolbar {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: 0.65rem;
+    padding: 0.7rem;
+  }
+
+  .consumables-search,
+  .consumables-toolbar select,
+  .consumables-month-control,
+  .permission-page-size-control,
+  .equipment-admin-actions,
+  .equipment-admin-action {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .equipment-admin-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.55rem;
+  }
+
+  .consumables-table-wrap,
+  .equipment-admin-table-wrap,
+  .permission-table-wrap,
+  .admin-education-table-wrap,
+  .penalty-table-wrap,
+  .training-manager-table {
+    width: 100%;
+    border-radius: 12px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .consumables-table,
+  .users-table,
+  .equipment-admin-table,
+  .permission-table {
+    min-width: 58rem;
+  }
+
+  .users-table {
+    min-width: 72rem;
+  }
+
+  .permission-table {
+    min-width: 64rem;
+  }
+
+  .manager-equipment-panel,
+  .manager-grant-panel,
+  .manager-permission-empty,
+  .admin-education-permission,
+  .admin-education-master,
+  .admin-education-detail,
+  .penalty-form-card,
+  .penalty-table-card {
+    border-radius: 12px;
+    padding: 0.9rem;
+  }
+
+  .manager-panel-head h3,
+  .manager-permission-empty h2,
+  .admin-education-hero h2 {
+    font-size: 1.12rem;
+  }
+
+  .manager-grant-form,
+  .manager-grant-confirm-grid div,
+  .manager-granted-row,
+  .admin-education-detail-head,
+  .admin-education-footer,
+  .admin-education-revoke-actions,
+  .penalty-hero,
+  .penalty-table-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .manager-grant-form {
+    grid-template-columns: 1fr;
+  }
+
+  .manager-grant-form button,
+  .admin-education-revoke-actions button,
+  .penalty-form-card button,
+  .penalty-table-wrap td button {
+    width: 100%;
+  }
+
+  .manager-grant-confirm-grid strong {
+    text-align: left;
+  }
+
+  .admin-education-permission {
+    padding: 0.85rem;
+  }
+
+  .admin-education-hero {
+    border-radius: 12px;
+    padding: 0.9rem;
+  }
+
+  .admin-equipment-master-list {
+    display: flex;
+    gap: 0.65rem;
+    overflow-x: auto;
+    padding-bottom: 0.15rem;
+  }
+
+  .admin-equipment-master-group {
+    min-width: 12rem;
+  }
+
+  .admin-equipment-master-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .admin-equipment-master-row em {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .admin-education-equipment-title {
+    align-items: flex-start;
+  }
+
+  .admin-education-revoke-panel {
+    border-radius: 12px;
+    padding: 0.85rem;
+  }
+
+  .permission-pagination {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 0.75rem;
+  }
+
+  .permission-pagination > div {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .permission-pagination button {
+    width: 100%;
+  }
+
+  .permission-modal,
+  .user-add-modal,
+  .user-edit-modal,
+  .equipment-edit-modal,
+  .equipment-delete-confirm-modal,
+  .manager-grant-confirm-modal,
+  .user-delete-modal,
+  .penalty-notice-modal {
+    width: min(100%, calc(100vw - 1.25rem));
+    max-height: calc(100vh - 1.25rem);
+    border-radius: 14px;
+  }
+
+  .user-add-modal,
+  .user-edit-modal,
+  .equipment-edit-modal,
+  .equipment-delete-confirm-modal,
+  .manager-grant-confirm-modal,
+  .user-delete-modal,
+  .penalty-notice-modal {
+    padding: 0.95rem;
+    overflow: auto;
+  }
+
+  .user-add-modal-head,
+  .user-delete-modal-head,
+  .permission-modal .user-add-modal-head {
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .user-add-modal-grid,
+  .equipment-edit-grid,
+  .permission-modal-user,
+  .manager-grant-confirm-grid,
+  .penalty-notice-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .user-add-modal-grid label.is-wide {
+    grid-column: auto;
+  }
+
+  .user-add-modal-actions,
+  .permission-modal-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .user-add-modal-actions button,
+  .permission-modal-actions button {
+    width: 100%;
+  }
+
+  .permission-modal .user-add-modal-head,
+  .permission-modal-user,
+  .permission-modal-toolbar,
+  .permission-modal-body,
+  .permission-modal-actions {
+    padding-inline: 0.9rem;
+  }
+
+  .permission-modal-toolbar {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .permission-modal-toolbar button {
+    width: 100%;
+  }
+
+  .permission-equipment-item {
+    min-height: auto;
+    align-items: flex-start;
+  }
+
+  .penalty-hero {
+    padding: 1rem;
+  }
+
+  .penalty-summary-grid {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 520px) {
+  .consumables-summary-grid,
+  .user-summary-grid,
+  .permission-summary-grid,
+  .equipment-admin-summary,
+  .penalty-summary-grid,
+  .training-management-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .training-management-summary div + div,
+  .training-management-summary div:nth-child(3),
+  .training-management-summary div:nth-child(4) {
+    border-left: 0;
+    border-top: 1px solid rgba(148, 163, 184, 0.14);
+  }
+
+  .permission-pagination > div {
+    grid-template-columns: 1fr;
+  }
+
+  .user-add-modal-head h3,
+  .permission-modal .user-add-modal-head h3 {
+    font-size: 1.16rem;
+  }
+
+  .admin-equipment-master-group {
+    min-width: 10.5rem;
+  }
+
+  .penalty-notice-icon {
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: 14px;
+  }
+}
