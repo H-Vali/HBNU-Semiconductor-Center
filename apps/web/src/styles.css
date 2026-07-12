@@ -13988,6 +13988,42 @@ select {
     width: auto;
     justify-content: flex-end;
   }
+
+  .admin-utility-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.45rem;
+  }
+
+  .admin-utility-card {
+    display: flex;
+    min-height: 5.35rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    padding: 0.58rem 0.38rem;
+    text-align: center;
+  }
+
+  .admin-utility-card span {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.32rem;
+    font-size: 0.68rem;
+    line-height: 1.22;
+    word-break: keep-all;
+  }
+
+  .admin-utility-card svg {
+    width: 1.12rem;
+    height: 1.12rem;
+  }
+
+  .admin-utility-card p {
+    display: none;
+  }
 }
 
 @media (max-width: 760px) {
