@@ -13717,3 +13717,159 @@ select {
     border-radius: 14px;
   }
 }
+
+/* Mobile typography tightening */
+@media (max-width: 760px) {
+  .app-main,
+  .main-content {
+    font-size: 0.92rem;
+  }
+
+  .app-main :is(.text-sm, .text-base),
+  .main-content :is(.text-sm, .text-base) {
+    font-size: 0.82rem;
+    line-height: 1.45;
+  }
+
+  .app-main .text-lg,
+  .main-content .text-lg {
+    font-size: 0.98rem;
+    line-height: 1.35;
+  }
+
+  .app-main .text-xl,
+  .main-content .text-xl {
+    font-size: 1.08rem;
+    line-height: 1.32;
+  }
+
+  .app-main .text-2xl,
+  .main-content .text-2xl {
+    font-size: 1.28rem;
+    line-height: 1.26;
+  }
+
+  .app-main :is(button, input, select, textarea),
+  .main-content :is(button, input, select, textarea) {
+    font-size: 0.84rem;
+  }
+
+  .sidebar-nav-item,
+  .sidebar-subnav-item,
+  .mobile-nav-toggle {
+    font-size: 0.88rem;
+  }
+
+  .institution-brand-button,
+  .institution-action-button,
+  .institution-session-chip {
+    font-size: 0.78rem;
+  }
+
+  .hero-copy h1,
+  .notice-hero h2,
+  .notice-admin-hero h2,
+  .consumables-hero h2,
+  .training-ui-header h2,
+  .training-request-header h2 {
+    font-size: clamp(1.35rem, 7vw, 1.7rem);
+    line-height: 1.18;
+  }
+
+  .dashboard-notice-title,
+  .mypage-panel-head h2,
+  .mypage-profile-main h2,
+  .training-request-section-title h3,
+  .training-request-panel-head h3,
+  .training-manager-hero h2,
+  .penalty-hero h2 {
+    font-size: 1rem;
+    line-height: 1.32;
+  }
+
+  .notice-row-title,
+  .faq-card h3,
+  .qna-detail-head h3,
+  .training-total-equipment strong,
+  .training-manager-card-head strong,
+  .training-application-card-head strong,
+  .admin-education-equipment-title h3,
+  .manager-panel-head h3 {
+    font-size: 0.92rem;
+    line-height: 1.34;
+  }
+
+  .notice-row-summary,
+  .faq-card p,
+  .qna-detail-content p,
+  .qna-answer-readonly,
+  .training-request-help,
+  .training-empty-state,
+  .training-permission-note,
+  .consumables-hero span,
+  .notice-hero > div:first-child > span,
+  .notice-admin-hero span {
+    font-size: 0.8rem;
+    line-height: 1.55;
+  }
+
+  .dashboard-notice-category,
+  .notice-category-badge,
+  .qna-status,
+  .training-ui-badge,
+  .training-status-badge,
+  .permission-role-badge,
+  .user-role-badge,
+  .consumable-status,
+  .mypage-role-chip,
+  .mypage-training-badge,
+  .mypage-penalty-badge {
+    font-size: 0.72rem;
+  }
+
+  .consumables-table th,
+  .consumables-table td,
+  .equipment-admin-table th,
+  .equipment-admin-table td,
+  .permission-table th,
+  .permission-table td,
+  .admin-education-table th,
+  .admin-education-table td,
+  .training-manager-table th,
+  .training-manager-table td,
+  .qna-table th,
+  .qna-table td {
+    font-size: 0.78rem;
+  }
+}
+
+@media (max-width: 520px) {
+  .app-main,
+  .main-content {
+    font-size: 0.88rem;
+  }
+
+  .app-main :is(button, input, select, textarea),
+  .main-content :is(button, input, select, textarea) {
+    font-size: 0.8rem;
+  }
+
+  .hero-copy h1,
+  .notice-hero h2,
+  .notice-admin-hero h2,
+  .consumables-hero h2,
+  .training-ui-header h2,
+  .training-request-header h2 {
+    font-size: clamp(1.22rem, 7vw, 1.48rem);
+  }
+
+  .app-main .text-xl,
+  .main-content .text-xl {
+    font-size: 1rem;
+  }
+
+  .app-main .text-2xl,
+  .main-content .text-2xl {
+    font-size: 1.14rem;
+  }
+}
