@@ -3145,8 +3145,8 @@ function ReservationPage({
   }
 
   return (
-    <section className="grid gap-5 xl:grid-cols-[22rem_1fr]" id="예약현황">
-      <div className="rounded-lg border border-white/10 bg-surface/85 p-4">
+    <section className="reservation-page grid gap-5 xl:grid-cols-[22rem_1fr]" id="예약현황">
+      <div className="reservation-filter-panel rounded-lg border border-white/10 bg-surface/85 p-4">
         <div className="mb-4 flex items-center gap-2">
           <SlidersHorizontal size={20} className="text-cyan-300" />
           <h2 className="text-lg font-bold text-white">장비 검색/필터</h2>
@@ -3210,14 +3210,14 @@ function ReservationPage({
           )}
         </div>
       </div>
-      <div className="rounded-lg border border-white/10 bg-surface/85 p-5">
+      <div className="reservation-calendar-panel rounded-lg border border-white/10 bg-surface/85 p-5">
         <SectionTitle
           title={selectedEquipment ? `${selectedEquipment.name} \uC7A5\uBE44\uBCC4 \uC608\uC57D \uCE98\uB9B0\uB354` : '\uC804\uCCB4 \uC7A5\uBE44 \uC608\uC57D\uD604\uD669 \uCE98\uB9B0\uB354'}
           eyebrow="Equipment Calendar"
           action={
-            <div className="flex gap-2">
+            <div className="reservation-calendar-actions flex gap-2">
               <button
-                className="inline-flex items-center gap-2 rounded-md bg-blue-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-cyan-500 hover:text-slate-950 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+                className="reservation-open-button inline-flex items-center gap-2 rounded-md bg-blue-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-cyan-500 hover:text-slate-950 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
                 onClick={() => openReservation()}
                 disabled={!selectedEquipmentAvailable || !firstAvailableEquipmentId}
               >
@@ -3230,24 +3230,26 @@ function ReservationPage({
           <p className="reservation-warning mb-4">현재 선택한 장비는 이용불가 상태입니다. 장비관리에서 이용가능으로 전환 후 예약할 수 있습니다.</p>
         )}
         <SeoulClock />
-        <FullCalendar
-          plugins={[dayGridPlugin, interactionPlugin]}
-          initialView="dayGridMonth"
-          initialDate={todayKey}
-          timeZone="Asia/Seoul"
-          selectable
-          height="auto"
-          displayEventTime={false}
-          eventDisplay="block"
-          dayMaxEvents={3}
-          dayMaxEventRows={3}
-          moreLinkClick="popover"
-          dayCellClassNames={(arg) => (getSeoulDateKey(arg.date) === todayKey ? ['seoul-today'] : [])}
-          dateClick={(arg) => openReservation(arg.dateStr)}
-          eventClassNames={getReservationCalendarEventClassNames}
-          eventContent={renderReservationCalendarEvent}
-          events={reservationCalendarDisplayEvents}
-        />
+        <div className="reservation-calendar-shell">
+          <FullCalendar
+            plugins={[dayGridPlugin, interactionPlugin]}
+            initialView="dayGridMonth"
+            initialDate={todayKey}
+            timeZone="Asia/Seoul"
+            selectable
+            height="auto"
+            displayEventTime={false}
+            eventDisplay="block"
+            dayMaxEvents={3}
+            dayMaxEventRows={3}
+            moreLinkClick="popover"
+            dayCellClassNames={(arg) => (getSeoulDateKey(arg.date) === todayKey ? ['seoul-today'] : [])}
+            dateClick={(arg) => openReservation(arg.dateStr)}
+            eventClassNames={getReservationCalendarEventClassNames}
+            eventContent={renderReservationCalendarEvent}
+            events={reservationCalendarDisplayEvents}
+          />
+        </div>
         <ReservationCalendarLegend />
       </div>
       {showReservationModal && (
