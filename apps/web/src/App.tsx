@@ -1697,6 +1697,7 @@ function SidebarNavigation({
       <button
         type="button"
         className="mobile-nav-toggle"
+        aria-label={mobileNavOpen ? '메뉴 닫기' : '메뉴 열기'}
         aria-expanded={mobileNavOpen}
         aria-controls="primary-navigation-panel"
         onClick={() => setMobileNavOpen((current) => !current)}
@@ -1704,6 +1705,14 @@ function SidebarNavigation({
         {mobileNavOpen ? <X size={18} /> : <Menu size={18} />}
         <span>메뉴</span>
       </button>
+      {mobileNavOpen && (
+        <button
+          type="button"
+          className="mobile-nav-backdrop"
+          aria-label="메뉴 닫기"
+          onClick={() => setMobileNavOpen(false)}
+        />
+      )}
       <aside id="primary-navigation-panel" className="app-sidebar" aria-label="주요 메뉴">
         <div className="sidebar-section-label">Navigation</div>
         <nav className="sidebar-nav">

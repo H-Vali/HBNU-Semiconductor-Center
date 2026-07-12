@@ -925,6 +925,10 @@ select {
   display: none;
 }
 
+.mobile-nav-backdrop {
+  display: none;
+}
+
 .app-shell {
   display: grid;
   grid-template-columns: 15.5rem minmax(0, 1fr);
@@ -13871,5 +13875,96 @@ select {
   .app-main .text-2xl,
   .main-content .text-2xl {
     font-size: 1.14rem;
+  }
+}
+
+@media (max-width: 760px) {
+  .sidebar-stack {
+    position: static;
+    display: block;
+    max-height: 0;
+    overflow: visible;
+    z-index: auto;
+  }
+
+  .mobile-nav-toggle {
+    position: fixed;
+    top: 0.78rem;
+    right: 0.9rem;
+    z-index: 130;
+    display: inline-flex;
+    width: 2.35rem;
+    height: 2.35rem;
+    min-height: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    padding: 0;
+    box-shadow: 0 14px 32px rgba(2, 6, 23, 0.36);
+  }
+
+  .mobile-nav-toggle span {
+    display: none;
+  }
+
+  .mobile-nav-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 110;
+    display: block;
+    border: 0;
+    background: rgba(2, 6, 23, 0.62);
+    backdrop-filter: blur(4px);
+  }
+
+  .app-sidebar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: auto;
+    z-index: 120;
+    display: block;
+    width: min(84vw, 22rem);
+    max-width: 22rem;
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow-y: auto;
+    border-width: 0 0 0 1px;
+    border-radius: 0;
+    background: rgba(15, 23, 42, 0.97);
+    padding: 4.75rem 0.9rem 1.2rem;
+    box-shadow: -24px 0 70px rgba(2, 6, 23, 0.45);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(104%);
+    transition: transform 220ms ease, opacity 180ms ease;
+  }
+
+  .sidebar-stack.is-mobile-open .app-sidebar {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0);
+  }
+
+  .reservation-calendar-actions {
+    width: auto;
+    justify-content: flex-end;
+  }
+
+  .reservation-open-button,
+  .training-primary-button,
+  .admin-reservation-panel-head button,
+  .equipment-admin-action.is-add,
+  .training-create-grid button[type="submit"] {
+    width: auto;
+    min-width: 0;
+    padding-right: 0.9rem;
+    padding-left: 0.9rem;
+  }
+
+  .equipment-admin-actions {
+    width: auto;
+    justify-content: flex-end;
   }
 }
