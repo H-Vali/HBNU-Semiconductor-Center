@@ -14407,7 +14407,6 @@ select {
     justify-self: start;
   }
 
-  .stat-grid,
   .hero-process-grid {
     grid-template-columns: 1fr;
   }
