@@ -5976,7 +5976,7 @@ function AdminPage({
           </button>
         </div>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {[
           { title: '사용자관리', page: 'users' as PageKey, icon: UserRound, updatedAt: usersUpdatedAt },
           { title: '장비관리', page: 'equipmentAdmin' as PageKey, icon: Wrench },
@@ -5985,13 +5985,14 @@ function AdminPage({
           { title: '소모품관리', page: 'consumables' as PageKey, icon: PackageCheck, updatedAt: consumablesUpdatedAt },
           { title: '페널티 관리', page: 'penalties' as PageKey, icon: Ban },
           { title: '교육관리', page: 'educationAdmin' as PageKey, icon: GraduationCap },
+          { title: '문의사항 관리', page: 'qna' as PageKey, icon: MessageSquare },
           { title: '감사 로그', page: 'auditLogs' as PageKey, icon: Clock3 }
         ].map((item) => {
           const Icon = item.icon;
           return (
             <button
               key={item.title}
-              className="rounded-lg border border-white/10 bg-surface/85 p-6 text-left text-lg font-extrabold text-white hover:border-cyan-300 hover:bg-blue-500/20"
+              className="h-full min-h-[9.5rem] rounded-lg border border-white/10 bg-surface/85 p-6 text-left text-lg font-extrabold text-white hover:border-cyan-300 hover:bg-blue-500/20"
               onClick={() => item.title.includes('怨듭') || item.title.includes('공지') ? onNavigate('noticeAdmin') : item.page && onNavigate(item.page)}
             >
               <span className="inline-flex items-center gap-2">
