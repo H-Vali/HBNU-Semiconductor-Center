@@ -2905,6 +2905,79 @@ select {
 }
 
 @media (max-width: 640px) {
+  .app-shell {
+    gap: 0.85rem;
+    padding-top: 0.85rem;
+    padding-bottom: 1.25rem;
+  }
+
+  .app-main {
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .app-sidebar {
+    padding: 0.65rem;
+  }
+
+  .sidebar-nav,
+  .sidebar-nav-admin {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.45rem;
+    overflow: visible;
+    padding-bottom: 0;
+  }
+
+  .sidebar-dropdown {
+    grid-column: 1 / -1;
+  }
+
+  .sidebar-nav-item {
+    width: 100%;
+    min-height: 2.65rem;
+    grid-template-columns: 1.15rem minmax(0, 1fr) auto;
+    gap: 0.5rem;
+    padding: 0.6rem 0.65rem;
+    font-size: 0.86rem;
+    white-space: normal;
+  }
+
+  .sidebar-nav-item span {
+    white-space: normal;
+  }
+
+  .sidebar-subnav {
+    margin-left: 0;
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .sidebar-dropdown.is-open .sidebar-subnav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-height: none;
+    gap: 0.4rem;
+    padding-top: 0.45rem;
+  }
+
+  .sidebar-subnav-item {
+    min-height: 2.45rem;
+    gap: 0.45rem;
+    padding: 0.52rem 0.62rem;
+    font-size: 0.78rem;
+  }
+
+  .sidebar-admin-block {
+    margin-top: 0.7rem;
+    padding-top: 0.7rem;
+  }
+
+  .sidebar-session-timer {
+    margin-top: 0.7rem;
+  }
+
   .auto-equipment-status {
     padding: 18px;
   }
@@ -3023,8 +3096,41 @@ select {
     flex-direction: column;
   }
 
+  .calendar-area,
+  .admin-reservation-calendar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .calendar-area .fc,
+  .admin-reservation-calendar .fc {
+    min-width: 44rem;
+  }
+
   .fc .fc-daygrid-day-frame {
     min-height: 5rem;
+  }
+
+  .reservation-modal {
+    width: min(100%, calc(100vw - 1.25rem));
+    max-height: calc(100dvh - 1.25rem);
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar-nav,
+  .sidebar-nav-admin,
+  .sidebar-dropdown.is-open .sidebar-subnav {
+    grid-template-columns: 1fr;
+  }
+
+  .owner-info-brand {
+    align-items: flex-start;
+  }
+
+  .modal-backdrop {
+    padding: 0.65rem;
   }
 }
 
