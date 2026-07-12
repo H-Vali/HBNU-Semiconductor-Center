@@ -13027,3 +13027,332 @@ select {
     width: 100%;
   }
 }
+
+/* User-facing mobile refinements */
+@media (max-width: 760px) {
+  .mypage-shell {
+    gap: 0.85rem;
+  }
+
+  .mypage-profile-card,
+  .mypage-reservation-panel,
+  .mypage-training-panel {
+    border-radius: 12px;
+    padding: 0.9rem;
+  }
+
+  .mypage-profile-head,
+  .mypage-panel-head,
+  .mypage-reservation-row,
+  .mypage-penalty-row {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .mypage-profile-main {
+    align-items: flex-start;
+  }
+
+  .mypage-avatar {
+    width: 2.65rem;
+    height: 2.65rem;
+    font-size: 1rem;
+  }
+
+  .mypage-auth-badge {
+    width: fit-content;
+  }
+
+  .mypage-role-grid,
+  .mypage-summary-grid,
+  .mypage-reservation-groups,
+  .mypage-training-grid {
+    margin-top: 0.75rem;
+  }
+
+  .mypage-summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.55rem;
+  }
+
+  .mypage-summary-grid div {
+    padding: 0.7rem;
+  }
+
+  .mypage-summary-grid strong {
+    font-size: 1.16rem;
+  }
+
+  .mypage-filter-tabs {
+    width: 100%;
+  }
+
+  .mypage-filter-tabs button {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .mypage-reservation-row > div,
+  .mypage-penalty-row > div {
+    min-width: 0;
+  }
+
+  .mypage-secondary-action,
+  .mypage-neutral-action,
+  .mypage-empty-state button {
+    width: 100%;
+  }
+
+  .mypage-empty-state {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .notice-page,
+  .inquiry-page {
+    gap: 0.9rem;
+  }
+
+  .notice-hero,
+  .notice-admin-hero {
+    align-items: stretch;
+    flex-direction: column;
+    border-radius: 13px;
+    padding: 1rem;
+  }
+
+  .notice-hero h2,
+  .notice-admin-hero h2 {
+    font-size: 1.55rem;
+    line-height: 1.25;
+  }
+
+  .notice-hero > div:first-child > span,
+  .notice-admin-hero span {
+    font-size: 0.86rem;
+    line-height: 1.55;
+  }
+
+  .notice-layout,
+  .notice-admin-layout,
+  .faq-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .notice-list-panel,
+  .notice-detail-panel,
+  .notice-admin-list,
+  .notice-admin-editor {
+    border-radius: 13px;
+    padding: 0.85rem;
+  }
+
+  .notice-detail-panel {
+    position: static;
+  }
+
+  .notice-toolbar,
+  .notice-admin-list-head,
+  .notice-admin-editor-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .notice-toolbar button,
+  .notice-admin-hero button,
+  .notice-create-actions button {
+    width: 100%;
+  }
+
+  .notice-row {
+    grid-template-columns: 2rem minmax(0, 1fr);
+    gap: 0.65rem;
+    padding: 0.82rem;
+  }
+
+  .notice-row-title {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    line-height: 1.35;
+  }
+
+  .notice-row-summary {
+    white-space: normal;
+  }
+
+  .notice-row-side {
+    grid-column: 2;
+    justify-items: start;
+  }
+
+  .notice-detail-head,
+  .notice-attachment-box,
+  .notice-admin-attachment-head,
+  .notice-admin-attachment-list li {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .notice-detail-panel h3 {
+    font-size: 1.2rem;
+  }
+
+  .notice-admin-tabs {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .notice-admin-tabs button {
+    flex: 1 0 max-content;
+  }
+
+  .notice-admin-form-grid,
+  .notice-admin-attachment-list li,
+  .notice-create-modal .notice-admin-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .notice-admin-form-grid .is-wide,
+  .notice-create-modal .notice-admin-form-grid .is-wide {
+    grid-column: auto;
+  }
+
+  .notice-admin-attachment-actions,
+  .notice-create-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .notice-admin-attachment-actions a,
+  .notice-admin-attachment-actions button {
+    width: 100%;
+  }
+
+  .faq-filter-bar {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-radius: 13px;
+    padding: 0.65rem;
+  }
+
+  .faq-filter-button {
+    justify-content: center;
+    min-width: 0;
+    padding: 0 0.65rem;
+  }
+
+  .faq-card {
+    min-height: auto;
+    border-radius: 13px;
+    padding: 0.9rem;
+  }
+
+  .faq-card-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .qna-compose {
+    grid-template-columns: 1fr;
+    border-radius: 13px;
+    padding: 0.85rem;
+  }
+
+  .qna-compose button,
+  .qna-answer-save {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .qna-table-wrap {
+    border-radius: 13px;
+  }
+
+  .qna-table {
+    min-width: 38rem;
+  }
+
+  .qna-table th,
+  .qna-table td {
+    padding: 0.78rem 0.75rem;
+  }
+
+  .qna-detail-panel,
+  .qna-modal {
+    border-radius: 13px;
+    padding: 0.9rem;
+  }
+
+  .qna-detail-head,
+  .qna-answer-head,
+  .qna-modal-head,
+  .qna-modal-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .qna-modal-close,
+  .qna-modal-cancel,
+  .qna-modal-submit {
+    width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .mypage-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mypage-training-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .mypage-training-badge {
+    width: fit-content;
+  }
+
+  .login-redesign-shell {
+    width: 100%;
+    max-width: 100%;
+    min-height: auto;
+  }
+
+  .login-auth-card,
+  .login-flow-card {
+    border-radius: 13px;
+    padding: 0.85rem;
+  }
+
+  .login-card-head {
+    align-items: flex-start;
+  }
+
+  .login-google-visual {
+    gap: 0.65rem;
+    padding: 0.75rem;
+  }
+
+  .login-status-chip {
+    margin-top: 0.9rem;
+  }
+
+  .login-safe-footer {
+    padding-top: 1rem;
+  }
+
+  .faq-filter-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .notice-index {
+    align-self: start;
+  }
+
+  .notice-row-side strong,
+  .notice-category-badge,
+  .qna-status {
+    white-space: nowrap;
+  }
+}
