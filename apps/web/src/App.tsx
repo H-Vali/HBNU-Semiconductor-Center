@@ -1529,32 +1529,32 @@ function InstitutionHeader({
     : `${normalizedSessionUserName} 님, 환영합니다.`;
 
   return (
-    <header className="sticky top-0 z-20 border-b border-white/10 bg-slate-950/90 backdrop-blur">
-      <div className="mx-auto flex max-w-[1800px] items-center justify-between gap-5 px-5 py-3 2xl:px-8">
-        <button className="flex items-center gap-3 text-left" onClick={() => onNavigate('home')}>
+    <header className="institution-header sticky top-0 z-20 border-b border-white/10 bg-slate-950/90 backdrop-blur">
+      <div className="institution-header-inner mx-auto flex max-w-[1800px] items-center justify-between gap-5 px-5 py-3 2xl:px-8">
+        <button className="institution-brand-button flex items-center gap-3 text-left" onClick={() => onNavigate('home')}>
           <div className="brand-mark">
             <HanbatLogoMark />
           </div>
-          <div>
-            <p className="text-xs font-bold text-cyan-300">HBNU SEMICONDUCTOR CENTER</p>
+          <div className="institution-brand-copy">
+            <p className="institution-brand-kicker text-xs font-bold text-cyan-300">HBNU SEMICONDUCTOR CENTER</p>
             <h1 className="text-lg font-extrabold text-white sm:text-xl">창의융합교육센터 인프라 통합관리 시스템</h1>
           </div>
         </button>
-        <div className="hidden items-center gap-2 md:flex">
+        <div className="institution-actions items-center gap-2">
           {sessionRole ? (
             <>
-              <span className="rounded-md bg-white px-4 py-2 text-sm font-extrabold text-slate-950">
+              <span className="institution-session-chip rounded-md bg-white px-4 py-2 text-sm font-extrabold text-slate-950">
                 {sessionStatusLabel}
               </span>
-              <button type="button" className="rounded-md border border-cyan-300/45 px-4 py-2 text-sm font-extrabold text-cyan-100 hover:bg-cyan-300 hover:text-slate-950" onClick={() => onNavigate('mypage')}>
+              <button type="button" className="institution-action-button rounded-md border border-cyan-300/45 px-4 py-2 text-sm font-extrabold text-cyan-100 hover:bg-cyan-300 hover:text-slate-950" onClick={() => onNavigate('mypage')}>
                 마이페이지
               </button>
-              <button type="button" className="rounded-md border border-white/25 px-4 py-2 text-sm font-extrabold text-white hover:bg-white hover:text-slate-950" onClick={onLogout}>
+              <button type="button" className="institution-action-button rounded-md border border-white/25 px-4 py-2 text-sm font-extrabold text-white hover:bg-white hover:text-slate-950" onClick={onLogout}>
                 로그아웃
               </button>
             </>
           ) : (
-            <button type="button" className="rounded-md bg-white px-4 py-2 text-sm font-extrabold text-slate-950 hover:bg-cyan-200" onClick={() => onNavigate('login')}>
+            <button type="button" className="institution-action-button rounded-md bg-white px-4 py-2 text-sm font-extrabold text-slate-950 hover:bg-cyan-200" onClick={() => onNavigate('login')}>
               로그인
             </button>
           )}

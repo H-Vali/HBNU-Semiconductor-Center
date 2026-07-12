@@ -882,6 +882,45 @@ select {
     drop-shadow(0 0 12px rgba(96, 165, 250, 0.3));
 }
 
+.institution-header-inner {
+  min-width: 0;
+}
+
+.institution-brand-button {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.institution-brand-copy {
+  min-width: 0;
+}
+
+.institution-brand-kicker {
+  letter-spacing: 0.02em;
+}
+
+.institution-brand-copy h1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.institution-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.institution-session-chip,
+.institution-action-button {
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
 .app-shell {
   display: grid;
   grid-template-columns: 15.5rem minmax(0, 1fr);
@@ -2905,6 +2944,62 @@ select {
 }
 
 @media (max-width: 640px) {
+  .institution-header-inner {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .institution-brand-button {
+    width: 100%;
+    gap: 0.7rem;
+  }
+
+  .institution-brand-button .brand-mark {
+    width: 2.85rem;
+    height: 2.85rem;
+    border-radius: 12px;
+  }
+
+  .institution-brand-button .hanbat-logo-mark {
+    width: 1.9rem;
+    height: 1.9rem;
+  }
+
+  .institution-brand-kicker {
+    font-size: 0.67rem;
+  }
+
+  .institution-brand-copy h1 {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 1rem;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .institution-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    gap: 0.45rem;
+  }
+
+  .institution-session-chip {
+    grid-column: 1 / -1;
+  }
+
+  .institution-session-chip,
+  .institution-action-button {
+    min-height: 2.35rem;
+    padding: 0.55rem 0.7rem;
+    font-size: 0.78rem;
+  }
+
   .app-shell {
     gap: 0.85rem;
     padding-top: 0.85rem;
@@ -3119,6 +3214,24 @@ select {
 }
 
 @media (max-width: 480px) {
+  .institution-brand-button .brand-mark {
+    width: 2.55rem;
+    height: 2.55rem;
+  }
+
+  .institution-brand-button .hanbat-logo-mark {
+    width: 1.72rem;
+    height: 1.72rem;
+  }
+
+  .institution-brand-copy h1 {
+    font-size: 0.92rem;
+  }
+
+  .institution-actions {
+    grid-template-columns: 1fr;
+  }
+
   .sidebar-nav,
   .sidebar-nav-admin,
   .sidebar-dropdown.is-open .sidebar-subnav {
