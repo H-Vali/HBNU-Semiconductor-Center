@@ -37,6 +37,7 @@ import {
   LockKeyhole,
   LogIn,
   Mail,
+  Menu,
   Megaphone,
   MessageSquare,
   Microscope,
@@ -1612,6 +1613,7 @@ function SidebarNavigation({
   const [inquiryOpen, setInquiryOpen] = useState(() => inquiryPages.includes(activePage));
   const [reservationOpen, setReservationOpen] = useState(() => reservationPages.includes(activePage));
   const [trainingOpen, setTrainingOpen] = useState(() => trainingPages.includes(activePage));
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const noticeSelected = noticePages.includes(activePage);
   const inquirySelected = inquiryPages.includes(activePage);
   const reservationSelected = reservationPages.includes(activePage);
@@ -1686,9 +1688,23 @@ function SidebarNavigation({
     if (trainingSelected) setTrainingOpen(true);
   }, [trainingSelected]);
 
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [activePage]);
+
   return (
-    <div className="sidebar-stack">
-      <aside className="app-sidebar" aria-label="주요 메뉴">
+    <div className={`sidebar-stack ${mobileNavOpen ? 'is-mobile-open' : ''}`}>
+      <button
+        type="button"
+        className="mobile-nav-toggle"
+        aria-expanded={mobileNavOpen}
+        aria-controls="primary-navigation-panel"
+        onClick={() => setMobileNavOpen((current) => !current)}
+      >
+        {mobileNavOpen ? <X size={18} /> : <Menu size={18} />}
+        <span>메뉴</span>
+      </button>
+      <aside id="primary-navigation-panel" className="app-sidebar" aria-label="주요 메뉴">
         <div className="sidebar-section-label">Navigation</div>
         <nav className="sidebar-nav">
           {renderDropdown({
