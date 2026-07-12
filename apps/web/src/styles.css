@@ -12705,22 +12705,287 @@ select {
 }
 
 @media (max-width: 640px) {
+  .training-shell {
+    gap: 1rem;
+    min-height: auto;
+    border-radius: 14px;
+    padding: 0.95rem;
+  }
+
+  .training-ui-header {
+    gap: 0.75rem;
+  }
+
+  .training-ui-header h2 {
+    font-size: 1.28rem;
+    line-height: 1.25;
+  }
+
+  .training-ui-header p {
+    font-size: 0.74rem;
+  }
+
+  .training-month-control {
+    width: 100%;
+    min-height: 2.65rem;
+    justify-content: space-between;
+    padding: 0 0.8rem;
+  }
+
+  .training-month-control strong {
+    font-size: 0.88rem;
+  }
+
+  .training-primary-button {
+    width: 100%;
+  }
+
+  .training-filter-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .training-filter-row button,
+  .training-filter-row select,
+  .training-search-field {
+    width: 100%;
+    min-height: 2.45rem;
+    justify-content: center;
+    padding: 0 0.7rem;
+    font-size: 0.8rem;
+  }
+
+  .training-filter-row select,
+  .training-search-field {
+    grid-column: 1 / -1;
+  }
+
+  .training-total-table {
+    overflow: visible;
+    padding: 0.65rem;
+  }
+
+  .training-total-table table,
+  .training-total-table thead,
+  .training-total-table tbody,
+  .training-total-table tr,
+  .training-total-table th,
+  .training-total-table td {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .training-total-table table {
+    min-width: 0;
+  }
+
+  .training-total-table thead {
+    display: none;
+  }
+
+  .training-total-table tbody {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .training-total-table tbody tr {
+    display: grid;
+    gap: 0.6rem;
+    border: 1px solid rgba(154, 164, 178, 0.12);
+    border-radius: 10px;
+    background: rgba(10, 17, 30, 0.32);
+    padding: 0.75rem;
+  }
+
+  .training-total-table th,
+  .training-total-table td,
+  .training-total-table tbody tr:last-child td {
+    border-bottom: 0;
+    padding: 0;
+    text-align: left;
+  }
+
+  .training-total-table td:not(:first-child):not([colspan]) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.8rem;
+  }
+
+  .training-total-table td:not(:first-child):not([colspan])::before {
+    flex: 0 0 auto;
+    color: var(--training-muted);
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+
+  .training-total-table td:nth-child(2)::before {
+    content: "담당자";
+  }
+
+  .training-total-table td:nth-child(3)::before {
+    content: "신청마감";
+  }
+
+  .training-total-table td:nth-child(4)::before {
+    content: "신청현황";
+  }
+
+  .training-total-table td:nth-child(5)::before {
+    content: "상태";
+  }
+
+  .training-total-table td:nth-child(6)::before {
+    content: "관리";
+  }
+
+  .training-total-table td[colspan] {
+    padding: 1rem 0.5rem;
+    text-align: center;
+  }
+
+  .training-total-equipment {
+    gap: 0.7rem;
+  }
+
+  .training-total-table .training-ui-icon,
+  .training-manager-card-head .training-ui-icon {
+    width: 2.65rem;
+    height: 2.65rem;
+  }
+
+  .training-deadline-chip {
+    width: auto;
+    min-width: 8.2rem;
+    justify-items: end;
+    padding: 0.4rem 0.52rem;
+  }
+
+  .training-fill-meter {
+    justify-content: flex-end;
+  }
+
+  .training-fill-meter > span {
+    width: 5.5rem;
+  }
+
+  .training-ui-badge,
+  .training-seat-pill {
+    min-width: 4.6rem;
+    height: 1.95rem;
+    padding: 0 0.6rem;
+    font-size: 0.78rem;
+  }
+
+  .training-manager-card {
+    gap: 0.9rem;
+    padding: 1rem;
+  }
+
+  .training-deadline-ribbon {
+    margin: -1rem -1rem 0;
+    padding: 0.42rem 0.72rem;
+    font-size: 0.72rem;
+  }
+
   .training-manager-card-head,
   .training-application-card-head {
-    grid-template-columns: 1fr;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: 0.75rem;
   }
 
   .training-manager-card-meta {
-    flex-wrap: wrap;
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .training-manager-session-actions {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.45rem;
+  }
+
+  .training-manager-session-actions .training-ghost-button,
+  .training-manager-session-actions .training-danger-button {
+    width: 100%;
+  }
+
+  .training-create-panel,
+  .training-edit-panel {
+    padding: 0.8rem;
+  }
+
+  .training-create-grid,
+  .training-edit-panel,
+  .training-edit-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .training-edit-actions {
+    display: grid;
+  }
+
+  .training-edit-actions button,
+  .training-create-grid button {
+    width: 100%;
+  }
+
+  .training-roster-row,
+  .training-roster-row.is-empty {
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+    padding: 0.8rem 0;
+  }
+
+  .training-roster-contact {
+    gap: 0.3rem;
+    padding-left: 4.15rem;
+  }
+
+  .training-roster-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    width: 100%;
+  }
+
+  .training-roster-actions .training-danger-button {
+    width: 100%;
+  }
+
+  .training-manager-card-foot {
+    gap: 0.75rem;
+  }
+
+  .training-manager-card-foot button {
+    width: 100%;
+  }
+
+  .training-application-card {
+    padding: 0.9rem;
+  }
+
+  .training-application-card-head {
+    grid-template-columns: auto minmax(0, 1fr);
   }
 
   .training-application-head-meta {
+    grid-column: 1 / -1;
     justify-content: flex-start;
+    flex-wrap: wrap;
+    width: 100%;
   }
 
   .training-timeline {
     grid-template-columns: 1fr;
     gap: 0.75rem;
+    padding: 0.55rem 0 0.3rem;
   }
 
   .training-timeline span {
@@ -12731,6 +12996,22 @@ select {
 
   .training-timeline span::after {
     display: none;
+  }
+
+  .training-application-card-foot {
+    gap: 0.75rem;
+  }
+
+  .training-application-card-foot button {
+    width: 100%;
+  }
+
+  .training-applicant-empty-timeline {
+    padding: 1.6rem 0.9rem;
+  }
+
+  .training-applicant-empty-timeline button {
+    width: 100%;
   }
 
   .training-cancel-modal {
