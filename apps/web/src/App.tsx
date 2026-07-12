@@ -1475,10 +1475,10 @@ function parseConsumablesUpload(text: string) {
 
 function SectionTitle({ title, eyebrow, action }: { title: string; eyebrow?: string; action?: string | ReactNode }) {
   return (
-    <div className="mb-5 flex items-center justify-between gap-3">
-      <div>
-        {eyebrow && <p className="text-sm font-bold uppercase text-cyan-300">{eyebrow}</p>}
-        <h2 className="mt-1 text-2xl font-extrabold text-white">{title}</h2>
+    <div className="section-title mb-5 flex items-center justify-between gap-3">
+      <div className="section-title-main">
+        {eyebrow && <p className="section-title-eyebrow text-sm font-bold uppercase text-cyan-300">{eyebrow}</p>}
+        <h2 className="section-title-heading mt-1 text-2xl font-extrabold text-white">{title}</h2>
       </div>
       {typeof action === 'string' ? (
         <button className="rounded-md bg-blue-700 px-5 py-2.5 text-sm font-bold text-white hover:bg-cyan-500 hover:text-slate-950">
