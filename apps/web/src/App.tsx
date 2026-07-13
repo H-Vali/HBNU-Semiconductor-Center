@@ -3249,6 +3249,7 @@ function ReservationPage({
             dayMaxEvents={3}
             dayMaxEventRows={3}
             moreLinkClick="popover"
+            headerToolbar={{ left: 'title today', center: '', right: 'prev,next' }}
             dayCellClassNames={(arg) => (getSeoulDateKey(arg.date) === todayKey ? ['seoul-today'] : [])}
             dateClick={(arg) => openReservation(arg.dateStr)}
             eventClassNames={getReservationCalendarEventClassNames}
@@ -5887,10 +5888,10 @@ function AdminPage({
             dayMaxEvents={3}
             dayMaxEventRows={3}
             moreLinkClick="popover"
-            headerToolbar={{ left: 'title', center: '', right: 'adminToday prev,next' }}
+            headerToolbar={{ left: 'title adminToday', center: '', right: 'prev,next' }}
             customButtons={{
               adminToday: {
-                text: '오늘',
+                text: 'today',
                 click: moveAdminCalendarToToday
               }
             }}

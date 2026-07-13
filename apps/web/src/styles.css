@@ -2382,11 +2382,24 @@ select {
 .fc .fc-toolbar {
   align-items: center;
   gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.fc .fc-toolbar-chunk {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.fc .fc-toolbar-chunk:last-child {
+  margin-left: auto;
 }
 
 .fc .fc-toolbar-title {
   font-size: 1.1rem;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .fc .fc-button-primary {
@@ -3362,8 +3375,10 @@ select {
   }
 
   .fc .fc-toolbar {
-    align-items: flex-start;
-    flex-direction: column;
+    align-items: center;
+    flex-direction: row;
+    justify-content: space-between;
+    width: min(100%, calc(100vw - 2rem));
   }
 
   .reservation-page {
