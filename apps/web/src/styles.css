@@ -1026,7 +1026,7 @@ select {
 }
 
 .sidebar-auth-panel {
-  display: grid;
+  display: none;
   gap: 0.65rem;
   margin-bottom: 1rem;
   border-radius: 8px;
@@ -2966,6 +2966,10 @@ select {
     grid-template-columns: 1fr;
   }
 
+  .institution-actions {
+    display: none;
+  }
+
   .sidebar-stack {
     position: static;
     display: grid;
@@ -2976,6 +2980,10 @@ select {
 
   .app-sidebar {
     padding: 0.7rem;
+  }
+
+  .sidebar-auth-panel {
+    display: grid;
   }
 
   .sidebar-section-label {
