@@ -1514,21 +1514,10 @@ function HanbatLogoMark() {
 }
 
 function InstitutionHeader({
-  onNavigate,
-  sessionRole,
-  sessionUserName,
-  onLogout
+  onNavigate
 }: {
   onNavigate: (page: PageKey) => void;
-  sessionRole: Role | null;
-  sessionUserName: string;
-  onLogout: () => void;
 }) {
-  const normalizedSessionUserName = sessionUserName.trim() || '사용자';
-  const sessionStatusLabel = sessionRole === 'ADMIN'
-    ? 'ADMIN 접속중'
-    : `${normalizedSessionUserName} 님, 환영합니다.`;
-
   return (
     <header className="institution-header sticky top-0 z-20 border-b border-white/10 bg-slate-950/90 backdrop-blur">
       <div className="institution-header-inner mx-auto flex max-w-[1800px] items-center justify-between gap-5 px-5 py-3 2xl:px-8">
@@ -1541,25 +1530,6 @@ function InstitutionHeader({
             <h1 className="text-lg font-extrabold text-white sm:text-xl">창의융합교육센터 인프라 통합관리 시스템</h1>
           </div>
         </button>
-        <div className="institution-actions items-center gap-2">
-          {sessionRole ? (
-            <>
-              <span className="institution-session-chip rounded-md bg-white px-4 py-2 text-sm font-extrabold text-slate-950">
-                {sessionStatusLabel}
-              </span>
-              <button type="button" className="institution-action-button rounded-md border border-cyan-300/45 px-4 py-2 text-sm font-extrabold text-cyan-100 hover:bg-cyan-300 hover:text-slate-950" onClick={() => onNavigate('mypage')}>
-                마이페이지
-              </button>
-              <button type="button" className="institution-action-button rounded-md border border-white/25 px-4 py-2 text-sm font-extrabold text-white hover:bg-white hover:text-slate-950" onClick={onLogout}>
-                로그아웃
-              </button>
-            </>
-          ) : (
-            <button type="button" className="institution-action-button rounded-md bg-white px-4 py-2 text-sm font-extrabold text-slate-950 hover:bg-cyan-200" onClick={() => onNavigate('login')}>
-              로그인
-            </button>
-          )}
-        </div>
       </div>
     </header>
   );
@@ -1595,6 +1565,9 @@ function SidebarNavigation({
   onNavigate,
   isAdmin,
   canManageAssignedPermissions,
+  sessionRole,
+  sessionUserName,
+  onLogout,
   inactivityRemainingMs,
   showInactivityTimer
 }: {
@@ -1602,6 +1575,9 @@ function SidebarNavigation({
   onNavigate: (page: PageKey) => void;
   isAdmin: boolean;
   canManageAssignedPermissions: boolean;
+  sessionRole: Role | null;
+  sessionUserName: string;
+  onLogout: () => void;
   inactivityRemainingMs: number;
   showInactivityTimer: boolean;
 }) {
@@ -1626,6 +1602,10 @@ function SidebarNavigation({
   const mypageItem = menu.find((item) => item.page === 'mypage');
   const inactivityProgress = Math.max(0, Math.min(1, inactivityRemainingMs / INACTIVITY_TIMEOUT_MS));
   const inactivityWarning = inactivityRemainingMs <= INACTIVITY_WARNING_MS;
+  const normalizedSessionUserName = sessionUserName.trim() || '사용자';
+  const sessionStatusLabel = sessionRole === 'ADMIN'
+    ? 'ADMIN 접속중'
+    : `${normalizedSessionUserName} 님, 환영합니다.`;
 
   function renderNavButton(item: (typeof menu)[number] | undefined, selected: boolean, targetPage: PageKey = item?.page ?? 'home') {
     if (!item) return null;
@@ -1714,6 +1694,23 @@ function SidebarNavigation({
         />
       )}
       <aside id="primary-navigation-panel" className="app-sidebar" aria-label="주요 메뉴">
+        <div className={`sidebar-auth-panel ${sessionRole ? 'is-signed-in' : 'is-guest'}`}>
+          {sessionRole ? (
+            <>
+              <div className="sidebar-auth-copy">
+                <span>로그인 계정</span>
+                <strong>{sessionStatusLabel}</strong>
+              </div>
+              <button type="button" className="sidebar-auth-button is-logout" onClick={onLogout}>
+                로그아웃
+              </button>
+            </>
+          ) : (
+            <button type="button" className="sidebar-auth-button is-login" onClick={() => onNavigate('login')}>
+              로그인
+            </button>
+          )}
+        </div>
         <div className="sidebar-section-label">Navigation</div>
         <nav className="sidebar-nav">
           {renderDropdown({
@@ -10485,9 +10482,6 @@ export function App() {
       <LoadingOverlay visible={loading} />
       <InstitutionHeader
         onNavigate={navigate}
-        sessionRole={sessionRole}
-        sessionUserName={headerSessionUserName}
-        onLogout={logout}
       />
       <div className="app-shell mx-auto max-w-[1800px] px-4 py-5 lg:px-6 2xl:px-8">
         <SidebarNavigation
@@ -10495,6 +10489,9 @@ export function App() {
           onNavigate={navigate}
           isAdmin={sessionRole === 'ADMIN'}
           canManageAssignedPermissions={canManageAssignedPermissions}
+          sessionRole={sessionRole}
+          sessionUserName={headerSessionUserName}
+          onLogout={logout}
           inactivityRemainingMs={inactivityRemainingMs}
           showInactivityTimer={Boolean(sessionRole)}
         />
