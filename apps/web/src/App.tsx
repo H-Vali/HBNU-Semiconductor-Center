@@ -445,6 +445,8 @@ const adminMenu: Array<{ label: string; page: PageKey; icon: typeof ShieldCheck 
 ];
 
 const adminOnlyPages = new Set<PageKey>(['admin', 'users', 'permissions', 'consumables', 'equipmentAdmin', 'penalties', 'noticeAdmin', 'educationAdmin', 'auditLogs']);
+const crossDeviceSyncPages: PageKey[] = ['home', 'reservations', 'training', 'trainingAll', 'trainingManagement', 'managerPermissions', 'mypage', 'qna'];
+const trainingSessionSyncPages: PageKey[] = ['training', 'trainingAll', 'trainingManagement', 'mypage'];
 
 const quickLinks: Array<{ label: string; page: PageKey; icon: typeof CalendarDays }> = [
   { label: '장비 사용 예약', page: 'reservations', icon: CalendarDays },
@@ -9248,6 +9250,65 @@ export function App() {
     () => getActivePenaltyForSession(sessionUser, managedUsers, penaltyRecords),
     [sessionRole, managedUsers, penaltyRecords]
   );
+
+  function applyReservationSnapshot(items: ApiReservationEvent[]) {
+    const activeEquipmentIds = new Set(
+      equipmentItems
+        .filter((item) => !deletedEquipmentIds.includes(item.id))
+        .map((item) => item.id)
+    );
+    setReservationEvents(
+      items
+        .map(normalizeApiReservation)
+        .filter((event) => event.equipmentId && activeEquipmentIds.has(event.equipmentId))
+    );
+  }
+
+  async function refreshReservationSnapshot(token = localStorage.getItem(STORAGE_KEYS.sessionToken)) {
+    if (!token || !sessionRole) {
+      setReservationEvents([]);
+      return false;
+    }
+    const items = await apiGet<ApiReservationEvent[]>('/reservations', token);
+    if (!items) return false;
+    applyReservationSnapshot(items);
+    return true;
+  }
+
+  async function refreshTrainingRequestSnapshot(token = localStorage.getItem(STORAGE_KEYS.sessionToken)) {
+    if (!token || !sessionRole) {
+      setTrainingRequests([]);
+      return;
+    }
+    const items = await apiGet<ApiTrainingRequest[]>('/training-requests', token);
+    if (items) setTrainingRequests(items);
+  }
+
+  async function refreshSharedOperationalState(options: { includeTrainingSessions?: boolean } = {}) {
+    const token = localStorage.getItem(STORAGE_KEYS.sessionToken);
+    if (!token || !sessionRole || !crossDeviceSyncPages.includes(activePage)) return;
+
+    const [session, permissionSnapshot, penalties, reservations, trainingRequestsSnapshot] = await Promise.all([
+      apiGet<GoogleAuthResponse>('/auth/me', token),
+      apiGet<EquipmentPermissionSnapshot>('/equipment-permissions', token),
+      apiGet<PenaltyRecord[]>('/penalties', token),
+      apiGet<ApiReservationEvent[]>('/reservations', token),
+      apiGet<ApiTrainingRequest[]>('/training-requests', token)
+    ]);
+
+    if (session?.user && session.token) {
+      localStorage.setItem(STORAGE_KEYS.sessionToken, session.token);
+      localStorage.setItem(STORAGE_KEYS.sessionUser, JSON.stringify(session.user));
+      if (session.managedUser) registerAuthenticatedUser(session.managedUser);
+      setSessionRole(session.user.role ?? 'USER');
+    }
+    if (permissionSnapshot) applyEquipmentPermissionSnapshot(permissionSnapshot);
+    if (penalties) setPenaltyRecords(penalties);
+    if (reservations) applyReservationSnapshot(reservations);
+    if (trainingRequestsSnapshot) setTrainingRequests(trainingRequestsSnapshot);
+    if (options.includeTrainingSessions) await reloadTrainingSessionData();
+  }
+
   useEffect(() => {
     if (sessionRole && sessionRole !== 'ADMIN' && activeSessionPenalty) {
       setShowPenaltyNotice(true);
@@ -9421,26 +9482,12 @@ export function App() {
 
   useEffect(() => {
     const token = localStorage.getItem(STORAGE_KEYS.sessionToken);
-    const accessPages: PageKey[] = ['reservations', 'training', 'trainingAll', 'trainingManagement', 'managerPermissions', 'mypage', 'qna'];
-    if (!token || !sessionRole || !accessPages.includes(activePage)) return;
+    if (!token || !sessionRole || !crossDeviceSyncPages.includes(activePage)) return;
     let isMounted = true;
 
     async function refreshAccessState() {
-      const [session, snapshot] = await Promise.all([
-        apiGet<GoogleAuthResponse>('/auth/me', token),
-        apiGet<EquipmentPermissionSnapshot>('/equipment-permissions', token)
-      ]);
+      await refreshSharedOperationalState({ includeTrainingSessions: trainingSessionSyncPages.includes(activePage) });
       if (!isMounted) return;
-      if (session?.user && session.token) {
-        localStorage.setItem(STORAGE_KEYS.sessionToken, session.token);
-        localStorage.setItem(STORAGE_KEYS.sessionUser, JSON.stringify(session.user));
-        if (session.managedUser) registerAuthenticatedUser(session.managedUser);
-        setSessionRole(session.user.role ?? 'USER');
-      }
-      if (snapshot) applyEquipmentPermissionSnapshot(snapshot);
-      if (activePage === 'training' || activePage === 'trainingAll' || activePage === 'trainingManagement') {
-        void reloadTrainingSessionData();
-      }
     }
 
     void refreshAccessState();
@@ -9450,33 +9497,10 @@ export function App() {
   }, [activePage, sessionRole]);
 
   useEffect(() => {
-    const accessPages: PageKey[] = ['reservations', 'training', 'trainingAll', 'trainingManagement', 'managerPermissions', 'mypage', 'qna'];
-
     async function refreshLiveAccessState() {
       const token = localStorage.getItem(STORAGE_KEYS.sessionToken);
-      if (!token || !sessionRole || !accessPages.includes(activePage)) return;
-      const [snapshot, penalties, reservations] = await Promise.all([
-        apiGet<EquipmentPermissionSnapshot>('/equipment-permissions', token),
-        apiGet<PenaltyRecord[]>('/penalties', token),
-        apiGet<ApiReservationEvent[]>('/reservations', token)
-      ]);
-      if (snapshot) applyEquipmentPermissionSnapshot(snapshot);
-      if (penalties) setPenaltyRecords(penalties);
-      if (reservations) {
-        const activeEquipmentIds = new Set(
-          equipmentItems
-            .filter((item) => !deletedEquipmentIds.includes(item.id))
-            .map((item) => item.id)
-        );
-        setReservationEvents(
-          reservations
-            .map(normalizeApiReservation)
-            .filter((event) => event.equipmentId && activeEquipmentIds.has(event.equipmentId))
-        );
-      }
-      if (activePage === 'training' || activePage === 'trainingAll' || activePage === 'trainingManagement') {
-        void reloadTrainingSessionData();
-      }
+      if (!token || !sessionRole || !crossDeviceSyncPages.includes(activePage)) return;
+      await refreshSharedOperationalState({ includeTrainingSessions: trainingSessionSyncPages.includes(activePage) });
     }
 
     function handleAccessRefresh() {
@@ -9503,16 +9527,7 @@ export function App() {
     let isMounted = true;
     void apiGet<ApiReservationEvent[]>('/reservations', token).then((items) => {
       if (!isMounted || !items) return;
-      const activeEquipmentIds = new Set(
-        equipmentItems
-          .filter((item) => !deletedEquipmentIds.includes(item.id))
-          .map((item) => item.id)
-      );
-      setReservationEvents(
-        items
-          .map(normalizeApiReservation)
-          .filter((event) => event.equipmentId && activeEquipmentIds.has(event.equipmentId))
-      );
+      applyReservationSnapshot(items);
     });
     return () => {
       isMounted = false;
@@ -9526,8 +9541,8 @@ export function App() {
       return;
     }
     let isMounted = true;
-    void apiGet<ApiTrainingRequest[]>('/training-requests', token).then((items) => {
-      if (isMounted && items) setTrainingRequests(items);
+    void refreshTrainingRequestSnapshot(token).then(() => {
+      if (!isMounted) return;
     });
     return () => {
       isMounted = false;
@@ -10123,7 +10138,8 @@ export function App() {
       window.alert('예약을 DB에 저장하지 못했습니다. 장비 권한, 교육 이수 상태 또는 중복 예약 여부를 확인해 주세요.');
       return false;
     }
-    setReservationEvents((current) => [...current, normalizeApiReservation(savedEvent)]);
+    const refreshed = await refreshReservationSnapshot();
+    if (!refreshed) setReservationEvents((current) => [...current, normalizeApiReservation(savedEvent)]);
     return true;
   }
 
@@ -10136,7 +10152,7 @@ export function App() {
       window.alert('예약 삭제에 실패했습니다. 권한 또는 예약 상태를 확인해 주세요.');
       return false;
     }
-    setReservationEvents((current) => current.filter((event) => event.id !== reservationId));
+    await refreshReservationSnapshot();
     return true;
   }
 
