@@ -2983,23 +2983,23 @@ select {
   }
 
   .sidebar-nav {
-    display: flex;
-    overflow-x: auto;
+    display: grid;
+    overflow-x: visible;
     width: 100%;
     min-width: 0;
     gap: 0.45rem;
-    padding-bottom: 0.15rem;
+    padding-bottom: 0;
   }
 
   .sidebar-nav-item {
-    flex: 0 0 auto;
-    grid-template-columns: 1.25rem auto auto;
+    width: 100%;
+    grid-template-columns: 1.25rem minmax(0, 1fr) auto;
     min-height: 2.75rem;
-    white-space: nowrap;
+    white-space: normal;
   }
 
   .sidebar-subnav-item {
-    flex: 0 0 auto;
+    width: 100%;
   }
 
   .sidebar-admin-block {
