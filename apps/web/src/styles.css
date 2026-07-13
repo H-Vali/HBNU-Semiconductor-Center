@@ -14162,8 +14162,19 @@ select {
 
   .hero-title {
     gap: 0.1rem;
-    font-size: clamp(1.28rem, 7vw, 1.72rem);
-    line-height: 1.14;
+    max-width: 100%;
+    font-size: clamp(1.08rem, 5.45vw, 1.38rem);
+    line-height: 1.18;
+  }
+
+  .hero-title span,
+  .hero-title span:first-child,
+  .hero-title span:last-child {
+    width: auto;
+    max-width: 100%;
+    white-space: normal;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
   }
 
   .hero-copy {
@@ -14504,6 +14515,11 @@ select {
 }
 
 @media (max-width: 430px) {
+  .hero-title {
+    font-size: clamp(1rem, 5.1vw, 1.24rem);
+    line-height: 1.2;
+  }
+
   .hero-reservation-row {
     grid-template-columns: 2.8rem minmax(0, 1fr);
   }
