@@ -1069,25 +1069,31 @@ const defaultDashboardMetrics: DashboardMetrics = {
 
 function useDashboardMetrics() {
   const [metrics, setMetrics] = useState<DashboardMetrics>(defaultDashboardMetrics);
+  const normalizeMetrics = useCallback((items: DashboardMetrics): DashboardMetrics => ({
+    monthlyUptimeHours: Number(items.monthlyUptimeHours) || 0,
+    monthlyUptimeDeltaPercent: Number(items.monthlyUptimeDeltaPercent) || 0,
+    certifiedUsers: Number(items.certifiedUsers) || 0,
+    totalUsers: Number(items.totalUsers) || 0
+  }), []);
+
+  const refreshMetrics = useCallback(async () => {
+    const items = await apiGet<DashboardMetrics>('/dashboard/metrics');
+    if (!items) return false;
+    setMetrics(normalizeMetrics(items));
+    return true;
+  }, [normalizeMetrics]);
 
   useEffect(() => {
     let isMounted = true;
     void apiGet<DashboardMetrics>('/dashboard/metrics').then((items) => {
-      if (isMounted && items) {
-        setMetrics({
-          monthlyUptimeHours: Number(items.monthlyUptimeHours) || 0,
-          monthlyUptimeDeltaPercent: Number(items.monthlyUptimeDeltaPercent) || 0,
-          certifiedUsers: Number(items.certifiedUsers) || 0,
-          totalUsers: Number(items.totalUsers) || 0
-        });
-      }
+      if (isMounted && items) setMetrics(normalizeMetrics(items));
     });
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [normalizeMetrics]);
 
-  return metrics;
+  return { metrics, refreshMetrics };
 }
 
 function downloadCsv(filename: string, rows: Array<Record<string, string | number>>) {
@@ -9168,7 +9174,7 @@ function PlaceholderPage({ title }: { title: string }) {
 
 export function App() {
   const { items: equipmentItems, setItems: setEquipmentItems, source } = useEquipmentData();
-  const dashboardMetrics = useDashboardMetrics();
+  const { metrics: dashboardMetrics, refreshMetrics: refreshDashboardMetrics } = useDashboardMetrics();
   const [activePage, setActivePage] = useState<PageKey>(() => getPageFromBrowserUrl());
   const [loading, setLoading] = useState(false);
   const [globalAccessNotice, setGlobalAccessNotice] = useState<AccessRequirementNotice | null>(null);
@@ -9549,6 +9555,24 @@ export function App() {
   }, [activePage, deletedEquipmentIds, equipmentItems, sessionRole]);
 
   useEffect(() => {
+    if (activePage !== 'home') return;
+
+    function handleDashboardMetricsRefresh() {
+      if (document.visibilityState === 'hidden') return;
+      void refreshDashboardMetrics();
+    }
+
+    const dashboardMetricsTimer = window.setInterval(handleDashboardMetricsRefresh, 30000);
+    window.addEventListener('focus', handleDashboardMetricsRefresh);
+    document.addEventListener('visibilitychange', handleDashboardMetricsRefresh);
+    return () => {
+      window.clearInterval(dashboardMetricsTimer);
+      window.removeEventListener('focus', handleDashboardMetricsRefresh);
+      document.removeEventListener('visibilitychange', handleDashboardMetricsRefresh);
+    };
+  }, [activePage, refreshDashboardMetrics]);
+
+  useEffect(() => {
     const token = localStorage.getItem(STORAGE_KEYS.sessionToken);
     if (!token || !sessionRole) {
       setReservationEvents([]);
@@ -9772,6 +9796,7 @@ export function App() {
       return false;
     }
     setEquipmentItems((current) => [...current, normalizeEquipment(savedItem, current.length)]);
+    void refreshDashboardMetrics();
     return true;
   }
 
@@ -9787,6 +9812,7 @@ export function App() {
     setDeletedEquipmentIds((current) => current.includes(equipmentId) ? current : [...current, equipmentId]);
     setReservationEvents((current) => current.filter((event) => event.equipmentId !== equipmentId));
     setTrainingRequests((current) => current.filter((request) => request.equipmentId !== equipmentId));
+    void refreshDashboardMetrics();
     return true;
   }
 
@@ -9803,6 +9829,7 @@ export function App() {
     setEquipmentItems((current) => current.map((item, index) => (
       item.id === equipmentId ? normalizeEquipment(savedItem, index) : item
     )));
+    void refreshDashboardMetrics();
     return true;
   }
 
@@ -10354,6 +10381,7 @@ export function App() {
         return next;
       });
       setUsersUpdatedAt(savedAt);
+      void refreshDashboardMetrics();
     });
   }
 
@@ -10384,6 +10412,7 @@ export function App() {
         return normalized;
       });
       setUsersUpdatedAt(savedAt);
+      void refreshDashboardMetrics();
     });
   }
 
@@ -10410,6 +10439,7 @@ export function App() {
         return next;
       });
       setUsersUpdatedAt(savedAt);
+      void refreshDashboardMetrics();
     });
   }
 
@@ -10436,6 +10466,7 @@ export function App() {
       localStorage.setItem(STORAGE_KEYS.managedUsers, JSON.stringify(normalized));
       localStorage.setItem(STORAGE_KEYS.usersUpdatedAt, savedAt);
       setUsersUpdatedAt(savedAt);
+      void refreshDashboardMetrics();
       window.requestAnimationFrame(() => setUserSaveFeedbackPhase('feedback'));
       userSaveFeedbackTimers.current = [
         window.setTimeout(() => setUserSaveFeedbackPhase('returning'), 2600),
@@ -10458,6 +10489,7 @@ export function App() {
         return false;
       }
       applyEquipmentPermissionSnapshot(snapshot);
+      void refreshDashboardMetrics();
       return true;
   }
 
@@ -10470,6 +10502,7 @@ export function App() {
     });
     localStorage.setItem(STORAGE_KEYS.usersUpdatedAt, savedAt);
     setUsersUpdatedAt(savedAt);
+    void refreshDashboardMetrics();
   }
 
   const activeEquipmentItems = equipmentItems.filter((item) => !deletedEquipmentIds.includes(item.id));
@@ -10505,6 +10538,7 @@ export function App() {
         return false;
       }
       applyEquipmentPermissionSnapshot(snapshot);
+      void refreshDashboardMetrics();
       return true;
   }
 
@@ -10521,6 +10555,7 @@ export function App() {
         return false;
       }
       applyEquipmentPermissionSnapshot(snapshot);
+      void refreshDashboardMetrics();
       return true;
   }
 
