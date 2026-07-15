@@ -2853,7 +2853,7 @@ function EquipmentPage({
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {activeItems.map((item) => (
           <article key={item.id} className="overflow-hidden rounded-lg border border-white/10 bg-surface/85">
-            <AuthenticatedImage className="h-40 w-full object-cover" src={item.image} alt={item.name} />
+            <AuthenticatedImage className="h-60 w-full object-cover" src={item.image} alt={item.name} />
             <div className="p-4">
               <div className="mb-3 flex items-start justify-between gap-3">
                 <div>
