@@ -53,6 +53,7 @@ import {
   PermissionDeniedError,
   ensureEquipmentPermissionSchema,
   grantEquipmentPermission,
+  listEquipmentPermissionGrantTargets,
   listEquipmentPermissions,
   revokeEquipmentPermission,
   setUserEquipmentPermissions
@@ -588,6 +589,15 @@ app.delete('/file-assets/:id', requireAuth, requireRole(['ADMIN', 'MANAGER']), a
 app.get('/equipment-permissions', requireAuth, async (req, res, next) => {
   try {
     res.json(await listEquipmentPermissions(req.user!));
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/equipment-permissions/grant-targets/:equipmentId', requireAuth, requireRole(['ADMIN', 'MANAGER']), async (req, res, next) => {
+  try {
+    const { equipmentId } = z.object({ equipmentId: z.string().min(1) }).parse(req.params);
+    res.json(await listEquipmentPermissionGrantTargets(equipmentId, req.user!));
   } catch (error) {
     next(error);
   }

@@ -282,6 +282,10 @@ type EquipmentPermissionSnapshot = {
   grantMeta: EquipmentPermissionGrantMetaMap;
   history: EquipmentPermissionHistoryRecord[];
 };
+type EquipmentPermissionGrantTargets = {
+  grantableUsers: ManagedUser[];
+  grantedUsers: ManagedUser[];
+};
 type PenaltyRecord = {
   id: string;
   userId: string;
@@ -8423,6 +8427,8 @@ function ManagerPermissionGrantPage({
   const [selectedEquipmentId, setSelectedEquipmentId] = useState(manageableEquipment[0]?.id ?? '');
   const [selectedUserId, setSelectedUserId] = useState('');
   const [pendingGrant, setPendingGrant] = useState<{ user: ManagedUser; equipment: EquipmentItem } | null>(null);
+  const [grantTargets, setGrantTargets] = useState<EquipmentPermissionGrantTargets | null>(null);
+  const [grantTargetsLoading, setGrantTargetsLoading] = useState(false);
   const selectedEquipment = manageableEquipment.find((item) => item.id === selectedEquipmentId) ?? manageableEquipment[0];
 
   useEffect(() => {
@@ -8434,19 +8440,49 @@ function ManagerPermissionGrantPage({
     }
   }, [manageableEquipment, selectedEquipmentId]);
 
+  useEffect(() => {
+    if (!selectedEquipment) {
+      setGrantTargets(null);
+      setGrantTargetsLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+    setSelectedUserId('');
+    setGrantTargetsLoading(true);
+
+    void apiGet<EquipmentPermissionGrantTargets>(
+      `/equipment-permissions/grant-targets/${encodeURIComponent(selectedEquipment.id)}`,
+      localStorage.getItem(STORAGE_KEYS.sessionToken)
+    ).then((targets) => {
+      if (!isMounted) return;
+      setGrantTargets(targets ?? { grantableUsers: [], grantedUsers: [] });
+      setGrantTargetsLoading(false);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedEquipment?.id]);
+
+  const equipmentScopedUsers = useMemo(() => (
+    grantTargets
+      ? mergeManagedUsers(users, [...grantTargets.grantedUsers, ...grantTargets.grantableUsers])
+      : users
+  ), [grantTargets, users]);
+  const grantableSourceUsers = grantTargets ? grantTargets.grantableUsers : equipmentScopedUsers;
   const grantedUsers = selectedEquipment
-    ? users.filter((user) => permissions[user.id]?.includes(selectedEquipment.id))
+    ? equipmentScopedUsers.filter((user) => permissions[user.id]?.includes(selectedEquipment.id))
     : [];
   const grantableUsers = selectedEquipment
-    ? users.filter((user) => !permissions[user.id]?.includes(selectedEquipment.id))
+    ? grantableSourceUsers.filter((user) => !permissions[user.id]?.includes(selectedEquipment.id))
     : [];
+  const selectedGrantableUser = grantableUsers.find((user) => user.id === selectedUserId);
 
   function requestGrantPermission(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!selectedEquipment || !selectedUserId) return;
-    const targetUser = users.find((user) => user.id === selectedUserId);
-    if (!targetUser) return;
-    setPendingGrant({ user: targetUser, equipment: selectedEquipment });
+    if (!selectedEquipment || !selectedGrantableUser) return;
+    setPendingGrant({ user: selectedGrantableUser, equipment: selectedEquipment });
   }
 
   async function confirmGrantPermission() {
@@ -8489,7 +8525,7 @@ function ManagerPermissionGrantPage({
           </div>
           <div className="manager-equipment-list">
             {manageableEquipment.map((item) => {
-              const grantedCount = users.filter((user) => permissions[user.id]?.includes(item.id)).length;
+              const grantedCount = equipmentScopedUsers.filter((user) => permissions[user.id]?.includes(item.id)).length;
               return (
                 <button
                   key={item.id}
@@ -8514,14 +8550,14 @@ function ManagerPermissionGrantPage({
           <form className="manager-grant-form" onSubmit={requestGrantPermission}>
             <label>
               권한 부여 대상
-              <select value={selectedUserId} onChange={(event) => setSelectedUserId(event.target.value)}>
+              <select value={selectedUserId} onChange={(event) => setSelectedUserId(event.target.value)} disabled={grantTargetsLoading}>
                 <option value="">사용자 선택</option>
                 {grantableUsers.map((user) => (
                   <option key={user.id} value={user.id}>{user.name} · {user.department}</option>
                 ))}
               </select>
             </label>
-            <button type="submit" disabled={!selectedUserId}>
+            <button type="submit" disabled={!selectedGrantableUser || grantTargetsLoading}>
               <Plus size={16} /> 권한 부여
             </button>
           </form>

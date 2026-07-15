@@ -43,6 +43,21 @@ type PermissionEventRow = {
   createdAt: Date | string;
 };
 
+type PermissionGrantTargetRow = {
+  id: string;
+  email: string;
+  name: string;
+  authProvider: string | null;
+  googleSubject: string | null;
+  department: string | null;
+  labProfessor: string | null;
+  phone: string | null;
+  memo: string | null;
+  roleLevel: string | null;
+  onboardingStatus: string | null;
+  hasPermission: boolean;
+};
+
 export class PermissionDeniedError extends Error {
   constructor() {
     super('Insufficient equipment permission scope');
@@ -160,6 +175,26 @@ function createFallbackSnapshot(): PermissionSnapshot {
   };
 }
 
+function mapPermissionGrantTarget(row: PermissionGrantTargetRow, index: number) {
+  const authProvider = row.authProvider ?? 'Manual';
+  return {
+    id: row.id,
+    index,
+    name: row.name,
+    roleLevel: row.roleLevel ?? '일반',
+    department: row.department ?? '',
+    labProfessor: row.labProfessor ?? '',
+    phone: row.phone ?? '',
+    email: row.email,
+    memo: row.memo ?? '',
+    authProvider: authProvider === 'Google' || authProvider === 'Kakao' ? authProvider : 'Manual',
+    ...(row.googleSubject ? { googleSubject: row.googleSubject } : {}),
+    onboardingStatus: row.onboardingStatus === 'active' || row.onboardingStatus === 'profile_pending'
+      ? row.onboardingStatus
+      : 'training_pending'
+  };
+}
+
 async function assertEquipmentScope(actor: SessionUser, equipmentId: string) {
   if (!hasDatabase()) return;
 
@@ -262,6 +297,49 @@ export async function listEquipmentPermissions(actor?: SessionUser) {
     params
   );
   return createSnapshot(permissions.rows, events.rows);
+}
+
+export async function listEquipmentPermissionGrantTargets(equipmentId: string, actor: SessionUser) {
+  await assertEquipmentScope(actor, equipmentId);
+
+  if (!hasDatabase()) {
+    return { grantableUsers: [], grantedUsers: [] };
+  }
+
+  const result = await query<PermissionGrantTargetRow>(
+    `select u.id,
+      u.email,
+      u.name,
+      u.auth_provider as "authProvider",
+      u.google_subject as "googleSubject",
+      u.department,
+      u.lab_professor as "labProfessor",
+      u.phone,
+      u.memo,
+      u.role_level as "roleLevel",
+      u.onboarding_status as "onboardingStatus",
+      exists (
+        select 1
+        from equipment_permissions ep
+        where ep.user_id = u.id
+          and ep.equipment_id = $1
+          and ep.revoked_at is null
+      ) as "hasPermission"
+     from users u
+     where u.deleted_at is null
+       and u.status = 'active'
+     order by u.name asc, u.created_at asc`,
+    [equipmentId]
+  );
+
+  const grantableUsers = result.rows
+    .filter((row) => !row.hasPermission)
+    .map((row, index) => mapPermissionGrantTarget(row, index + 1));
+  const grantedUsers = result.rows
+    .filter((row) => row.hasPermission)
+    .map((row, index) => mapPermissionGrantTarget(row, index + 1));
+
+  return { grantableUsers, grantedUsers };
 }
 
 export async function grantEquipmentPermission(input: unknown, actor: SessionUser) {
