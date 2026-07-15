@@ -449,7 +449,7 @@ const adminMenu: Array<{ label: string; page: PageKey; icon: typeof ShieldCheck 
 ];
 
 const adminOnlyPages = new Set<PageKey>(['admin', 'users', 'permissions', 'consumables', 'equipmentAdmin', 'penalties', 'noticeAdmin', 'educationAdmin', 'auditLogs']);
-const crossDeviceSyncPages: PageKey[] = ['home', 'reservations', 'training', 'trainingAll', 'trainingManagement', 'managerPermissions', 'mypage', 'qna'];
+const crossDeviceSyncPages: PageKey[] = ['home', 'reservations', 'training', 'trainingAll', 'trainingManagement', 'managerPermissions', 'permissions', 'mypage', 'qna'];
 const trainingSessionSyncPages: PageKey[] = ['training', 'trainingAll', 'trainingManagement', 'mypage'];
 
 const quickLinks: Array<{ label: string; page: PageKey; icon: typeof CalendarDays }> = [
