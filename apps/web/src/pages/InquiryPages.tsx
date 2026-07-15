@@ -155,7 +155,7 @@ export function FaqPage({ items = faqItems }: { items?: FaqItem[] }) {
               <em>{item.updatedAt}</em>
             </div>
             <h3>{item.question}</h3>
-            <p>{item.answer}</p>
+            <p className="faq-answer">{item.answer}</p>
           </article>
           );
         })}
