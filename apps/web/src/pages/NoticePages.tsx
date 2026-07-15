@@ -272,7 +272,13 @@ export function NoticePage({
             <span>등록일 {selectedNotice.date}</span>
             <span>조회 {selectedNotice.views}</span>
           </div>
-          <p>{selectedNotice.body}</p>
+          {selectedNotice.summary.trim() && (
+            <div className="notice-detail-summary">
+              <strong>요약</strong>
+              <span>{selectedNotice.summary}</span>
+            </div>
+          )}
+          <div className="notice-detail-body">{selectedNotice.body}</div>
           <div className="notice-attachment-box">
             <BookOpen size={18} />
             <div>

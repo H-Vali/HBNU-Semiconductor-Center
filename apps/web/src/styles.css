@@ -7439,12 +7439,38 @@ select {
   font-weight: 600;
 }
 
-.notice-detail-panel p {
+.notice-detail-summary {
+  display: grid;
+  gap: 0.35rem;
+  border-radius: 12px;
+  border: 1px solid rgba(34, 211, 238, 0.18);
+  background: rgba(8, 47, 73, 0.26);
+  padding: 0.85rem 0.95rem;
+}
+
+.notice-detail-summary strong {
+  color: #67e8f9;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.notice-detail-summary span {
+  color: #dbeafe;
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.notice-detail-body {
   margin: 0;
   color: #cbd5e1;
   font-size: 0.98rem;
   font-weight: 500;
   line-height: 1.8;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
 }
 
 .notice-attachment-box {
