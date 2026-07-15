@@ -15,6 +15,9 @@ export default {
         extrabold: '600',
         black: '600'
       },
+      spacing: {
+        70: '17.5rem'
+      },
       colors: {
         navy: '#1E3A8A',
         surface: '#1E293B',
