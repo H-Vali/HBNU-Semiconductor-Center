@@ -9977,10 +9977,15 @@ select {
   display: block;
 }
 
-.penalty-table-wrap td span {
+.penalty-table-wrap td strong {
+  font-weight: 700;
+}
+
+.penalty-table-wrap td span:not(.penalty-status-badge) {
   margin-top: 0.22rem;
   color: #94a3b8;
   font-size: 0.76rem;
+  font-weight: 500;
 }
 
 .penalty-status-badge {
