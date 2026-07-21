@@ -138,8 +138,89 @@ function parseConsumableItems(input: unknown) {
   return Array.isArray(parsed) ? parsed : parsed.items;
 }
 
+function createCarriedConsumableItem(month: string, item: ConsumableItem): ConsumableItem {
+  return {
+    ...item,
+    id: `supply-${month}-${randomUUID()}`,
+    monthStart: item.current,
+    current: item.current
+  };
+}
+
+async function createConsumableCarryover(month: string) {
+  return transaction(async (client) => {
+    await client.query(`select pg_advisory_xact_lock(hashtext($1))`, [`consumables:${month}`]);
+
+    const existingRows = await client.query<ConsumableRow>(
+      `select id, category, name, unit, month_start as "monthStart",
+        current_count as "current", minimum_count as "minimum", note
+       from consumable_items
+       where month = $1 and deleted_at is null
+       order by sort_order asc, name asc`,
+      [month]
+    );
+    if (existingRows.rows.length > 0) return existingRows.rows;
+
+    const latestMonth = await client.query<{ month: string }>(
+      `select month
+       from consumable_items
+       where month < $1 and deleted_at is null
+       group by month
+       order by month desc
+       limit 1`,
+      [month]
+    );
+    const previousMonth = latestMonth.rows[0]?.month;
+    if (!previousMonth) return [];
+
+    const previousRows = await client.query<ConsumableRow>(
+      `select id, category, name, unit, month_start as "monthStart",
+        current_count as "current", minimum_count as "minimum", note
+       from consumable_items
+       where month = $1 and deleted_at is null
+       order by sort_order asc, name asc`,
+      [previousMonth]
+    );
+    if (previousRows.rows.length === 0) return [];
+
+    const carriedItems = previousRows.rows.map((item) => createCarriedConsumableItem(month, item));
+    for (const [index, item] of carriedItems.entries()) {
+      await client.query(
+        `insert into consumable_items (
+          id, month, category, name, unit, month_start, current_count, minimum_count, note, sort_order, deleted_at, updated_at
+        )
+        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, null, now())
+        on conflict (id) do nothing`,
+        [
+          item.id,
+          month,
+          item.category,
+          item.name,
+          item.unit,
+          item.monthStart,
+          item.current,
+          item.minimum,
+          item.note,
+          index
+        ]
+      );
+    }
+
+    return carriedItems;
+  });
+}
+
 export async function listConsumables(month: string) {
-  if (!hasDatabase()) return fallbackConsumables[month] ?? [];
+  if (!hasDatabase()) {
+    if (fallbackConsumables[month]) return fallbackConsumables[month];
+    const previousMonth = Object.keys(fallbackConsumables)
+      .filter((key) => key < month)
+      .sort()
+      .at(-1);
+    if (!previousMonth) return [];
+    fallbackConsumables[month] = fallbackConsumables[previousMonth].map((item) => createCarriedConsumableItem(month, item));
+    return fallbackConsumables[month];
+  }
 
   const result = await query<ConsumableRow>(
     `select id, category, name, unit, month_start as "monthStart",
@@ -149,6 +230,9 @@ export async function listConsumables(month: string) {
      order by sort_order asc, name asc`,
     [month]
   );
+  if (result.rows.length === 0) {
+    return createConsumableCarryover(month);
+  }
   return result.rows;
 }
 

@@ -60,7 +60,7 @@ import {
 } from 'lucide-react';
 import { equipment as fallbackEquipment, events, monthlyUsage, type EquipmentGroup, type EquipmentItem } from './data';
 import { STORAGE_KEYS } from './appStorage';
-import { initialConsumablesData, initialManagedUsersData } from './mockData';
+import { initialManagedUsersData } from './mockData';
 import { NoticeAdminPage, NoticePage, getNoticeCategoryTone, normalizeNoticeItems, noticeBoardMeta, type NoticeAttachment, type NoticeBoardKey, type NoticeItem } from './pages/NoticePages';
 import { FaqPage, QnaPage, type FaqItem } from './pages/InquiryPages';
 import { AuditLogPage } from './pages/AuditLogPage';
@@ -467,8 +467,6 @@ const MY_PAGE_ROLE_META: Record<MyPageRole, { label: string; tone: string; icon:
   general: { label: '일반', tone: 'gray', icon: UserRound }
 };
 const initialManagedUsers = initialManagedUsersData as ManagedUser[];
-const initialConsumables = initialConsumablesData as ConsumableItem[];
-
 const categoryMeta: Record<EquipmentGroup, { title: string; subtitle: string; image: string; bullets: string[] }> = {
   process: {
     title: '공정',
@@ -1117,10 +1115,6 @@ function getConsumableStatus(item: ConsumableItem) {
   if (item.current <= item.minimum) return { label: '발주 필요', tone: 'danger' };
   if (item.current <= item.minimum * 1.5) return { label: '주의', tone: 'warning' };
   return { label: '정상', tone: 'good' };
-}
-
-function cloneConsumables(items = initialConsumables) {
-  return items.map((item) => ({ ...item }));
 }
 
 function formatSeoulDateTime(value: string) {
@@ -9217,8 +9211,8 @@ export function App() {
   const [initialGroup, setInitialGroup] = useState<EquipmentGroup>('process');
   const [deletedEquipmentIds, setDeletedEquipmentIds] = useState<string[]>([]);
   const [selectedTrainingMonth, setSelectedTrainingMonth] = useState(getCurrentTrainingMonth);
-  const [selectedConsumableMonth, setSelectedConsumableMonth] = useState('2026-06');
-  const [monthlyConsumables, setMonthlyConsumables] = useState<Record<string, ConsumableItem[]>>({ '2026-06': [] });
+  const [selectedConsumableMonth, setSelectedConsumableMonth] = useState(getCurrentTrainingMonth);
+  const [monthlyConsumables, setMonthlyConsumables] = useState<Record<string, ConsumableItem[]>>(() => ({ [getCurrentTrainingMonth()]: [] }));
   const [consumablesUpdatedAt, setConsumablesUpdatedAt] = useState(() => (
     new Date().toISOString()
   ));
@@ -10316,7 +10310,7 @@ export function App() {
     setSaveFeedbackPhase('idle');
     setMonthlyConsumables((current) => ({
       ...current,
-      [selectedConsumableMonth]: (current[selectedConsumableMonth] ?? cloneConsumables()).map((item) => (
+      [selectedConsumableMonth]: (current[selectedConsumableMonth] ?? []).map((item) => (
         item.id === id ? { ...item, ...patch } : item
       ))
     }));
@@ -10327,7 +10321,7 @@ export function App() {
     clearSaveFeedbackTimers();
     setSaveFeedbackPhase('idle');
     setMonthlyConsumables((current) => {
-      const rows = current[selectedConsumableMonth] ?? cloneConsumables();
+      const rows = current[selectedConsumableMonth] ?? [];
       return {
         ...current,
         [selectedConsumableMonth]: [
@@ -10353,7 +10347,7 @@ export function App() {
     setSaveFeedbackPhase('idle');
     setMonthlyConsumables((current) => ({
       ...current,
-      [selectedConsumableMonth]: (current[selectedConsumableMonth] ?? cloneConsumables()).filter((item) => item.id !== id)
+      [selectedConsumableMonth]: (current[selectedConsumableMonth] ?? []).filter((item) => item.id !== id)
     }));
   }
 
@@ -10546,7 +10540,7 @@ export function App() {
   const activeReservationEvents = useMemo(() => (
     reservationEvents.filter((event) => event.equipmentId && activeEquipmentIds.has(event.equipmentId))
   ), [activeEquipmentIds, reservationEvents]);
-  const activeConsumables = monthlyConsumables[selectedConsumableMonth] ?? cloneConsumables();
+  const activeConsumables = monthlyConsumables[selectedConsumableMonth] ?? [];
   const managerUserIds = useMemo(() => new Set(activeEquipmentItems.map((item) => item.managerId).filter(Boolean) as string[]), [activeEquipmentItems]);
   const currentManagedUser = useMemo(
     () => {
