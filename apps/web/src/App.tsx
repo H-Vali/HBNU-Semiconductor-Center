@@ -6684,7 +6684,10 @@ function MyPageV2({
   const activeEquipmentIds = useMemo(() => new Set(equipmentItems.map((item) => item.id)), [equipmentItems]);
   const myReservations = calendarEvents
     .filter((event) => event.equipmentId && activeEquipmentIds.has(event.equipmentId))
-    .filter((event) => event.createdBy !== 'ADMIN')
+    // Exclude admin-managed blocks (maintenance / external) that don't belong to the
+    // current user. Admin-placed reservations that are flagged as mine (the admin
+    // booked on behalf of this user) should still appear.
+    .filter((event) => event.createdBy !== 'ADMIN' || event.mine || (Boolean(sessionUserId) && event.userId === sessionUserId))
     .filter((event) => isAdminSession || event.mine || (Boolean(sessionUserId) && event.userId === sessionUserId))
     .sort((first, second) => first.start.localeCompare(second.start));
   const upcomingReservations = myReservations

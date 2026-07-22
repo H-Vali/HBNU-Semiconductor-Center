@@ -345,16 +345,23 @@ function getPublicReservationTitle(reservation: ReservationView) {
 
 function projectReservations(rows: ReservationView[], actor?: SessionUser) {
   if (actor?.role === 'ADMIN') return rows;
-  return rows.map((reservation) => ({
-    id: reservation.id,
-    equipmentId: reservation.equipmentId,
-    title: getPublicReservationTitle(reservation),
-    startsAt: reservation.startsAt,
-    endsAt: reservation.endsAt,
-    status: reservation.status,
-    userName: reservation.userName ?? undefined,
-    ...(actor && reservation.userId === actor.id ? { userId: actor.id, userName: actor.name, mine: true } : {})
-  }));
+  return rows.map((reservation) => {
+    const isMine = Boolean(actor && reservation.userId === actor.id);
+    return {
+      id: reservation.id,
+      equipmentId: reservation.equipmentId,
+      title: getPublicReservationTitle(reservation),
+      startsAt: reservation.startsAt,
+      endsAt: reservation.endsAt,
+      status: reservation.status,
+      userName: reservation.userName ?? undefined,
+      // createdByRole is always included so the client can tell whether this is
+      // an admin-placed block (maintenance / external) vs a user reservation.
+      createdByRole: reservation.createdByRole ?? undefined,
+      // userId / mine are only exposed for the owner's own reservations.
+      ...(isMine ? { userId: actor!.id, userName: actor!.name, mine: true } : {})
+    };
+  });
 }
 
 function projectReservation(reservation: ReservationView, actor?: SessionUser) {
